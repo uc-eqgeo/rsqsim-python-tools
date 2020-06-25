@@ -42,19 +42,33 @@ class RsqSimMultiFault:
 
     @classmethod
     def read_fault_file(cls, fault_file: str, verbose: bool = False):
+        """
+        Read in opensha xml file?
+        TODO: decide whether this is necessary, and if so finish it
+        :param fault_file:
+        :param verbose:
+        :return:
+        """
         assert os.path.exists(fault_file)
         # Read first 10 lines of file
 
 
-
     @classmethod
     def read_fault_file_keith(cls, fault_file: str, verbose: bool = False):
+        """
+        Read in an RSQSim fault file written according to Keith Richards-Dinger's convention.
+        :param fault_file: Path to fault file
+        :param verbose: Spit out more info if desired
+        :return:
+        """
         assert os.path.exists(fault_file)
 
+        # Prepare info (types and headers) about columns
         column_dtypes = [float] * 11 + [int] + ["U50"]
         column_names = ["x1", "y1", "z1", "x2", "y2", "z2", "x3", "y3", "z3", "rake",
                         "slip_rate", "fault_num", "fault_name"]
 
+        # Read in data
         data = np.genfromtxt(fault_file, dtype=column_dtypes, names=column_names).T
         all_fault_nums = np.unique(data["fault_num"])
         num_faults = len(all_fault_nums)
@@ -63,6 +77,7 @@ class RsqSimMultiFault:
         if not len(all_fault_names) == num_faults:
             print("Warning: not every fault has a corresponding name")
 
+        # Populate faults with triangular patches
         patch_start = 0
         segment_ls = []
 
@@ -79,8 +94,10 @@ class RsqSimMultiFault:
             if verbose:
                 print("Reading fault: {:d}/{:d}: {}".format(number, num_faults, fault_name))
 
+            # Extract data relevant for making triangles
             triangles = np.array([data[name] for name in column_names[:9]]).T
             num_triangles = triangles.shape[0]
+            # Reshape for creation of triangular patches
             all_vertices = triangles.reshape(triangles.shape[0] * 3, int(triangles.shape[1] / 3))
 
             patch_numbers = np.arange(patch_start, patch_start + num_triangles)
@@ -91,6 +108,7 @@ class RsqSimMultiFault:
                 if num_closer > 0:
                     print("{:d} points are closer than {:.2f} m together: duplicates?". format(num_closer, tolerance))
 
+            # Create fault object
             fault_i = RsqSimSegment.from_triangles(triangles=triangles, patch_numbers=patch_numbers,
                                                    segment_number=number, fault_name=fault_name)
 
@@ -103,17 +121,19 @@ class RsqSimMultiFault:
 
     @classmethod
     def read_cfm(cls, directory: str = None, files: Union[str, list, tuple] = None, shapefile = None):
-        ditectory_vs_file = [directory is None, files is None]
-        assert not all()
-
-
-
-
-
+        # TODO: finish writing
+        directory_vs_file = [directory is None, files is None]
+        # assert not all()
 
 
 class RsqSimSegment:
     def __init__(self, segment_number: int, patch_type: str = "triangle", fault_name: str = None):
+        """
+
+        :param segment_number:
+        :param patch_type:
+        :param fault_name:
+        """
         self._name = None
         self._patch_numbers = None
         self._patch_outlines = None
@@ -136,10 +156,6 @@ class RsqSimSegment:
             assert isinstance(fault_name, str)
             assert " " not in fault_name, "No spaces in fault name, please..."
             self._name = fault_name.lower()
-
-
-
-
 
     @property
     def patch_numbers(self):
@@ -186,8 +202,8 @@ class RsqSimSegment:
                        patch_numbers: Union[list, tuple, set, np.ndarray], fault_name: str = None,
                        strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None):
         """
-
-        :param fault_number:
+        Create a segment from triangle vertices and (if appropriate) populate it with strike-slip/dip-slip values
+        :param segment_number:
         :param triangles:
         :param patch_numbers:
         :param fault_name:
@@ -195,14 +211,17 @@ class RsqSimSegment:
         :param dip_slip:
         :return:
         """
+        # Test shape of input array is appropriate
         triangle_array = np.array(triangles)
         assert triangle_array.shape[1] == 9, "Expecting 3d coordinates of 3 vertices"
         assert len(patch_numbers) == triangle_array.shape[0], "Need one patch for each triangle"
 
+        # Create empty segment object
         fault = cls(patch_type="triangle", segment_number=segment_number, fault_name=fault_name)
 
         triangle_ls = []
 
+        # Populate segment object
         for patch_num, triangle in zip(patch_numbers, triangle_array):
             triangle3 = triangle.reshape(3, 3)
             patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num, strike_slip=strike_slip,
@@ -214,12 +233,13 @@ class RsqSimSegment:
         return fault
 
 
-
 class RsqSimFault:
+    """
+    The idea is to allow a falut to have one or more segments
+    """
     def __init__(self, segments: Union[RsqSimSegment, List[RsqSimSegment]]):
         self._segments = None
         self._vertices = None
-
 
         if segments is not None:
             self.segments = segments
@@ -237,19 +257,6 @@ class RsqSimFault:
             assert isinstance(segments, Iterable), "Expected either one segment or a list of segments"
             assert all([isinstance(segment, RsqSimSegment) for segment in segments]), "Expected a list of segments"
             self._segments = list(segments)
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class RsqSimGenericPatch:
@@ -329,6 +336,10 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
 
     @property
     def normal_vector(self):
+        """
+        Calculates normal vector of patch based on 3D vectors between vertices
+        :return:
+        """
         a = self.vertices[1] - self.vertices[0]
         b = self.vertices[1] - self.vertices[2]
         cross_a_b = np.cross(a, b)
@@ -341,30 +352,44 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
 
     @property
     def down_dip_vector(self):
+        """
+        Calculated from normal vectors
+        :return:
+        """
         dx, dy, dz = self.normal_vector
         dd_vec = np.array(dx, dy, -1 / dz)
         return dd_vec / np.linalg.norm(dd_vec)
 
     @property
     def dip(self):
+        """
+
+        :return:
+        """
         horizontal = np.linalg.norm(self.down_dip_vector[:-1])
         vertical = -1 * self.down_dip_vector[:-1]
         return np.degrees(np.arctan(vertical / horizontal))
     
     @property
     def along_strike_vector(self):
+        #TODO: finish
         pass
     
     @property
     def centre(self):
+        """
+        patch centre
+        :return:
+        """
         return np.mean(self.vertices, axis=0)
 
     @property
     def area(self):
+        """
+        patch_area
+        :return:
+        """
         a = self.vertices[1] - self.vertices[0]
         b = self.vertices[1] - self.vertices[2]
         area = 0.5 * np.linalg.norm(np.cross(a, b))
         return area
-
-
-
