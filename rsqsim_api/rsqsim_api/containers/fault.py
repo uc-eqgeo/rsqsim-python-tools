@@ -2,7 +2,9 @@ import numpy as np
 from typing import Union, List
 from collections import Iterable
 import os
+import glob
 from rsqsim_api.read_outputs.read_utils import read_ts_coords
+
 
 
 def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float] = 1):
@@ -120,10 +122,42 @@ class RsqSimMultiFault:
         return multi_fault
 
     @classmethod
-    def read_cfm(cls, directory: str = None, files: Union[str, list, tuple] = None, shapefile = None):
+    def read_cfm_directory(cls, directory: str = None, files: Union[str, list, tuple] = None, shapefile = None):
         # TODO: finish writing
         directory_vs_file = [directory is None, files is None]
-        # assert not all()
+        assert not all(directory_vs_file)
+        assert any(directory_vs_file)
+
+        # Turn input of whatever format into list of ts files to read.
+        if directory is not None:
+            assert isinstance(directory, str)
+            assert os.path.exists(directory)
+            if directory[-1] != "/":
+                ts_dir = directory + "/"
+            else:
+                ts_dir = directory
+
+            ts_list = glob.glob(ts_dir + "*.ts")
+
+        else:
+            if isinstance(files, str):
+                ts_list = [files]
+            else:
+                assert all([isinstance(fname, str) for fname in files])
+                ts_list = list(files)
+
+        assert len(ts_list) > 0, "No .ts files found..."
+
+        for ts_file in ts_list:
+            # Get fault name for comparison with shapefile
+            ts_no_path = os.path.basename(ts_file)
+            ts_name = ts_no_path.split(".ts")[0]
+
+
+
+
+
+
 
 
 class RsqSimSegment:
@@ -231,6 +265,8 @@ class RsqSimSegment:
         fault.patch_outlines = triangle_ls
 
         return fault
+
+
 
 
 class RsqSimFault:
