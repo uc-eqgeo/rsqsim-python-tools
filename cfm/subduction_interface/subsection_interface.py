@@ -2,6 +2,10 @@ from icp_error.io.array_operations import read_tiff
 import geopandas as gpd
 import numpy as np
 from shapely.geometry import LineString, Polygon, Point
+from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
+from matplotlib import cm
+
 
 def fit_plane_svd(point_cloud):
     G = point_cloud.sum(axis=0) / point_cloud.shape[0]
@@ -39,7 +43,7 @@ along_dists = (x_grid - corner[0]) * along_overall[0] + (y_grid - corner[1]) * a
 across_dists = (x_grid - corner[0]) * across_vec[0] + (y_grid - corner[1]) * across_vec[1]
 
 profile_half_width = 2000
-profile_spacing = 7000
+profile_spacing = 25000
 
 # Find start location
 start_along = min(along_dists[~np.isnan(z)])
@@ -88,7 +92,7 @@ all_points_array = np.vstack(all_points_ls)
 
 search_radius = 1e4
 
-all_polygons = []
+all_tile_ls = []
 
 for centre_point in all_points_array:
     difference_vectors = all_xyz - centre_point
@@ -118,7 +122,9 @@ for centre_point in all_points_array:
         corner_i = centre_point + (i * strike_vector + j * down_dip_vector) * profile_spacing / 2
         poly_ls.append(corner_i)
 
-    all_polygons.append(Polygon(poly_ls))
+    all_tile_ls.append(np.array(poly_ls))
+
+all_polygons = [Polygon(array_i) for array_i in all_tile_ls]
 
 outlines = gpd.GeoSeries(all_polygons, crs="epsg:2193")
 outlines.to_file("tile_outlines.shp")
@@ -126,4 +132,47 @@ outlines.to_file("tile_outlines.shp")
 all_points = [Point(row) for row in all_points_array]
 centres = gpd.GeoSeries(all_points, crs="epsg:2193")
 centres.to_file("tile_centres.shp")
+all_points_z = np.array([point.z for point in all_points])
 
+
+patch_colour = "b"
+patch_alpha = 0.5
+line_colour = "k"
+line_width = 0.2
+vertical_exaggeration = 10
+
+collection_list = []
+for corners in all_tile_ls:
+    xc, yc, zc = corners.T.tolist()
+    collection_list.append(list(zip(xc, yc, zc)))
+
+patch_collection = Poly3DCollection(collection_list, alpha=patch_alpha, facecolors=patch_colour)
+line_collection = Line3DCollection(collection_list, linewidths=line_width, colors=line_colour)
+
+colormap = cm.ScalarMappable(cmap=cm.magma)
+colormap.set_array(np.array([min(all_points_z), max(all_points_z)]))
+colormap.set_clim(vmin=min(all_points_z), vmax=max(all_points_z))
+
+patch_collection.set_facecolor(colormap.to_rgba(all_points_z, alpha=patch_alpha))
+
+plt.close("all")
+fig = plt.figure()
+ax = fig.add_subplot(111, projection="3d")
+
+
+x1, y1 = min(x), min(y)
+x_range = max(x) - x1
+y_range = max(y) - y1
+
+plot_width = max([x_range, y_range])
+
+x2 = x1 + plot_width
+y2 = y1 + plot_width
+
+ax.add_collection3d(patch_collection)
+ax.add_collection3d(line_collection)
+ax.set_ylim((y1, y2))
+ax.set_xlim((x1, x2))
+ax.set_zlim((-(1/vertical_exaggeration) * plot_width, 10))
+
+fig.show()
