@@ -1,31 +1,28 @@
 from icp_error.io.array_operations import read_tiff
 import geopandas as gpd
 import numpy as np
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Polygon, Point
 
+def fit_plane_svd(point_cloud):
+    G = point_cloud.sum(axis=0) / point_cloud.shape[0]
 
-def nan_helper(a):
-    """Helper to handle indices and logical indices of NaNs.
+    # run SVD
+    u, s, vh = np.linalg.svd(point_cloud - G)
 
-    Input:
-        - y, 1d numpy array with possible NaNs
-    Output:
-        - nans, logical indices of NaNs
-        - index, a function, with signature indices= index(logical_indices),
-          to convert logical indices of NaNs to 'equivalent' indices
-    Example:
-        >>> # linear interpolation of NaNs
-        >>> nans, b= nan_helper(a)
-        >>> b[nans]= np.interp(x(nans), x(~nans), y[~nans])
-    """
-
-    return np.isnan(a), lambda b: b.nonzero()[0]
+    # unitary normal vector
+    u_norm = vh[2, :]
+    return u_norm
 
 
 x, y, z = read_tiff("hik_res_0.01_lt50_nztm.tif")
 z *= 1000
 
 x_grid, y_grid = np.meshgrid(x, y)
+
+all_xyz_with_nans = np.vstack((x_grid.flatten(), y_grid.flatten(), z.flatten())).T
+all_xyz = all_xyz_with_nans[~np.isnan(all_xyz_with_nans).any(axis=1)]
+
+
 
 overall_trace = gpd.GeoDataFrame.from_file("overall_trace.shp")
 overall_line = overall_trace.geometry[0]
@@ -41,7 +38,7 @@ across_vec = np.matmul(np.array([[0, -1], [1, 0]]), along_overall)
 along_dists = (x_grid - corner[0]) * along_overall[0] + (y_grid - corner[1]) * along_overall[1]
 across_dists = (x_grid - corner[0]) * across_vec[0] + (y_grid - corner[1]) * across_vec[1]
 
-profile_half_width = 1000
+profile_half_width = 2000
 profile_spacing = 7000
 
 # Find start location
@@ -49,6 +46,8 @@ start_along = min(along_dists[~np.isnan(z)])
 end_along = max(along_dists[~np.isnan(z)])
 
 along_spaced = np.arange(start_along + profile_spacing/2, end_along, profile_spacing)
+
+all_points_ls = []
 
 for along in along_spaced:
     row_end = corner + along * along_overall
@@ -83,9 +82,48 @@ for along in along_spaced:
     point_xys = np.array([row_end + across_i * across_vec for across_i in interpolated_x])
     point_xyz = np.vstack((point_xys.T, interpolated_z_values)).T
 
+    all_points_ls.append(point_xyz)
 
+all_points_array = np.vstack(all_points_ls)
 
+search_radius = 1e4
 
+all_polygons = []
 
+for centre_point in all_points_array:
+    difference_vectors = all_xyz - centre_point
+    distances = np.linalg.norm(difference_vectors, axis=1)
+    small_cloud = all_xyz[distances < search_radius]
 
+    u_norm_i = fit_plane_svd(small_cloud)
+
+    # normal_i = np.array(model_i[:-1])
+    #
+    normal_i = u_norm_i
+    if normal_i[-1] < 0:
+        normal_i *= -1
+
+    strike_vector = np.cross(normal_i, np.array([0, 0, -1]))
+    strike_vector[-1] = 0
+    strike_vector /= np.linalg.norm(strike_vector)
+
+    down_dip_vector = np.cross(normal_i, strike_vector)
+    if down_dip_vector[-1] > 0:
+        down_dip_vector *= -1
+
+    dip = np.degrees(np.arctan(-1 * down_dip_vector[-1] / np.linalg.norm(down_dip_vector[:-1])))
+
+    poly_ls = []
+    for i, j in zip([1, 1, -1, -1], [1, -1, -1, 1]):
+        corner_i = centre_point + (i * strike_vector + j * down_dip_vector) * profile_spacing / 2
+        poly_ls.append(corner_i)
+
+    all_polygons.append(Polygon(poly_ls))
+
+outlines = gpd.GeoSeries(all_polygons, crs="epsg:2193")
+outlines.to_file("tile_outlines.shp")
+
+all_points = [Point(row) for row in all_points_array]
+centres = gpd.GeoSeries(all_points, crs="epsg:2193")
+centres.to_file("tile_centres.shp")
 
