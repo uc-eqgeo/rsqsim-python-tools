@@ -1,9 +1,14 @@
 import numpy as np
 from typing import Union, List
-from collections import Iterable
+from collections.abc import Iterable
 import os
 import glob
 from rsqsim_api.read_outputs.read_utils import read_ts_coords
+import pandas as pd
+import geopandas as gpd
+from pyproj import Transformer
+
+transformer = Transformer.from_crs(32759, 2193)
 
 
 
@@ -32,6 +37,7 @@ class RsqSimMultiFault:
         self._faults = None
 
         self.faults = faults
+        self.patch_dic = {}
 
     @property
     def faults(self):
@@ -120,6 +126,54 @@ class RsqSimMultiFault:
         multi_fault = cls(segment_ls)
 
         return multi_fault
+
+    @classmethod
+    def read_fault_file_bruce(cls, main_fault_file: str, name_file: str, transform_from_utm: bool = False):
+        assert all([os.path.exists(fname) for fname in (main_fault_file, name_file)])
+        fault_names_messy = np.genfromtxt(name_file, dtype="U50")
+        fault_names = []
+        for name in fault_names_messy[:, 0]:
+            fault_names.append("".join([char for char in name if char.isalnum()]))
+
+        # Prepare info (types and headers) about columns
+        column_dtypes = [float] * 11 + [int] + ["U50"]
+        column_names = ["x1", "y1", "z1", "x2", "y2", "z2", "x3", "y3", "z3", "rake",
+                        "slip_rate", "fault_num", "bruce_name"]
+
+        # Read in data
+        data = np.genfromtxt(main_fault_file, dtype=column_dtypes, names=column_names).T
+        all_fault_df = pd.DataFrame(data)
+
+        fault_names_set = set(fault_names)
+        fault_num_set = set(data["fault_num"])
+        fault_names_ordered = [x for x in fault_names if x in fault_names_set]
+
+        assert len(fault_names_set) == len(fault_num_set)
+
+        # Populate faults with triangular patches
+        patch_start = 0
+        segment_ls = []
+
+        for fault_num, fault_name in zip(fault_num_set, fault_names_ordered):
+            fault_data = all_fault_df[all_fault_df.fault_num == fault_num]
+
+            num_triangles = len(fault_data)
+            patch_numbers = np.arange(patch_start, patch_start + num_triangles)
+
+            fault_i = RsqSimSegment.from_pandas(fault_data, fault_num, patch_numbers, fault_name,
+                                                transform_from_utm=transform_from_utm)
+            segment_ls.append(fault_i)
+            patch_start += num_triangles
+
+        multi_fault = cls(segment_ls)
+        return multi_fault
+
+
+
+
+
+
+
 
     @classmethod
     def read_cfm_directory(cls, directory: str = None, files: Union[str, list, tuple] = None, shapefile = None):
@@ -266,6 +320,44 @@ class RsqSimSegment:
 
         return fault
 
+    @classmethod
+    def from_pandas(cls, dataframe: pd.DataFrame, segment_number: int,
+                    patch_numbers: Union[list, tuple, set, np.ndarray], fault_name: str = None,
+                    strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None,
+                    transform_from_utm: bool = False):
+
+        triangles = dataframe.iloc[:, :9].to_numpy()
+        if transform_from_utm:
+            reshaped_array = triangles.reshape((len(triangles) * 3), 3)
+            transformed_array = transformer.transform(reshaped_array[:, 0], reshaped_array[:, 1],
+                                                      reshaped_array[:, 2])
+            reordered_array = np.vstack((transformed_array[:, 1], transformed_array[:, 0],
+                                         transformed_array[:, 2])).T
+            triangles_nztm = reordered_array.reshape((len(triangles), 9))
+
+        else:
+            triangles_nztm = triangles
+
+        # Create empty segment object
+        fault = cls(patch_type="triangle", segment_number=segment_number, fault_name=fault_name)
+
+        triangle_ls = []
+
+        # Populate segment object
+        for patch_num, triangle in zip(patch_numbers, triangles_nztm):
+            triangle3 = triangle.reshape(3, 3)
+            patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
+                                          strike_slip=strike_slip,
+                                          dip_slip=dip_slip)
+            triangle_ls.append(patch)
+
+        fault.patch_outlines = triangle_ls
+
+        return fault
+
+
+
+
 
 
 
@@ -346,11 +438,14 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
     class to store information on an individual triangular patch of a fault
     """
     def __init__(self, segment: RsqSimSegment, vertices: Union[list, np.ndarray, tuple], patch_number: int = 0,
-                 dip_slip: float = None, strike_slip: float = None):
+                 dip_slip: float = None, strike_slip: float = None, rake: Union[int, float] = None,
+                 ):
 
         super(RsqSimTriangularPatch, self).__init__(segment=segment, patch_number=patch_number,
                                                     dip_slip=dip_slip, strike_slip=strike_slip)
         self.vertices = vertices
+
+
 
     @RsqSimGenericPatch.vertices.setter
     def vertices(self, vertices: Union[list, np.ndarray, tuple]):

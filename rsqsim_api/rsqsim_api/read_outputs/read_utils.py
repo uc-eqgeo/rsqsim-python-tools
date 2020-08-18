@@ -1,8 +1,9 @@
 import os
 import numpy as np
+import struct
 
 
-def read_binary(file: str, num_read: int, size: int, endian: str = "little", signed: bool = False):
+def read_binary(file: str, format: str, endian: str = "little"):
     """
     Reads integer values from binary files that are output of RSQSim
 
@@ -16,24 +17,19 @@ def read_binary(file: str, num_read: int, size: int, endian: str = "little", sig
     """
     # Check that parameter supplied for endianness makes sense
     assert endian in ("little", "big"), "Must specify either 'big' or 'little' endian"
+    endian_sign = "<" if endian == "little" else ">"
+    assert format in ("d", "i")
     assert os.path.exists(file)
     with open(file, "rb") as fid:
-        # Container to store numbers as they are read
-        number_list = []
-        # Set counter to zero... indexing necessary because of the way RSQSim is set up
-        count = 0
-        # Read in required number of bytes
-        byte = fid.read(size)
-        # TODO: is there a better way of dealing with empty bytes?
-        while count < num_read and byte != b"":
-            # turn bytes into python integer
-            byte_int = int.from_bytes(byte, byteorder=endian, signed=signed)
-            # add to list of read integers
-            number_list.append(byte_int)
-            # Increase index and read bytes for next integer
-            count += 1
-            byte = fid.read(size)
-    return number_list
+        data = fid.read()
+        if format == "d":
+            numbers = np.array([struct.unpack(endian_sign + "d", data[i:i+8], ) for i in np.arange(0, len(data),
+                                                                                                   8)]).flatten()
+        else:
+            numbers = np.array([struct.unpack(endian_sign + "i", data[i:i+4], ) for i in np.arange(0, len(data),
+                                                                                                   4)]).flatten()
+
+    return numbers
 
 
 def read_earthquakes(earthquake_file: str, get_patch: bool = False, eq_start_index: int = None,
@@ -80,6 +76,19 @@ def read_earthquakes(earthquake_file: str, get_patch: bool = False, eq_start_ind
     # Search for binary files in directory
     tau_file = abs_file_path + "/tauDot.{}.out".format(prefix)
     sigmat_file = abs_file_path + "/sigmaDot.{}.out".format(prefix)
+
+
+def read_earthquake_catalogue(catalogue_file: str):
+    assert os.path.exists(catalogue_file)
+
+    with open(catalogue_file, "r") as fid:
+        data = fid.readlines()
+
+    start_eqs = data.index("%%% end input files\n") + 1
+    earthquake_catalogue = np.loadtxt(data[start_eqs:])
+    return earthquake_catalogue
+
+
 
 
 # def read_fault(fault_file_name: str, check_if_grid: bool = True, )
