@@ -1,7 +1,9 @@
 import os
 import numpy as np
+import pandas as pd
 import struct
 
+catalogue_columns = ["t0", "m0", "mw", "x", "y", "z", "area", "dt"]
 
 def read_binary(file: str, format: str, endian: str = "little"):
     """
@@ -12,7 +14,6 @@ def read_binary(file: str, format: str, endian: str = "little"):
     :param size: size of number to read (in bytes)
     :param endian: usually "little" unless we end up running on a non-standard system
     :param signed: include capacity for reading negative values (False if reading positive integers only)
-    TODO: Could this be faster in cython?
     :return:
     """
     # Check that parameter supplied for endianness makes sense
@@ -79,13 +80,15 @@ def read_earthquakes(earthquake_file: str, get_patch: bool = False, eq_start_ind
 
 
 def read_earthquake_catalogue(catalogue_file: str):
+
     assert os.path.exists(catalogue_file)
 
     with open(catalogue_file, "r") as fid:
         data = fid.readlines()
 
     start_eqs = data.index("%%% end input files\n") + 1
-    earthquake_catalogue = np.loadtxt(data[start_eqs:])
+    data_array = np.loadtxt(data[start_eqs:])
+    earthquake_catalogue = pd.DataFrame(data_array[:, :8], columns=catalogue_columns)
     return earthquake_catalogue
 
 

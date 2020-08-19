@@ -3,9 +3,7 @@ from typing import Union, List
 from collections.abc import Iterable
 import os
 import glob
-from rsqsim_api.read_outputs.read_utils import read_ts_coords
 import pandas as pd
-import geopandas as gpd
 from pyproj import Transformer
 
 transformer = Transformer.from_crs(32759, 2193)
@@ -62,7 +60,7 @@ class RsqSimMultiFault:
 
 
     @classmethod
-    def read_fault_file_keith(cls, fault_file: str, verbose: bool = False):
+    def from_fault_file_keith(cls, fault_file: str, verbose: bool = False):
         """
         Read in an RSQSim fault file written according to Keith Richards-Dinger's convention.
         :param fault_file: Path to fault file
