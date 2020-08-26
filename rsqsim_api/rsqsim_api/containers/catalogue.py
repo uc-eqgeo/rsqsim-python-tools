@@ -5,17 +5,24 @@ import pandas as pd
 import numpy as np
 
 from rsqsim_api.containers.fault import RsqSimMultiFault
-from rsqsim_api.io.read_utils import read_earthquake_catalogue, catalogue_columns
+from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, catalogue_columns
 
 fint = Union[int, float]
 sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
                    "x": (0, 1.e8), "y": (0, 1.e8), "z": (-1.e6, 0),
                    "area": (0, 1.e12), "dt": (0, 1200)}
 
+list_file_suffixes = (".pList", ".eList", ".dList", ".tList")
+extra_file_suffixes = (".dmuList", ".dsigmaList", ".dtauList", ".taupList")
+
 class RsqSimCatalogue:
     def __init__(self):
-        # Better to have array for searching rather than attributes
+        # Essential attributes
         self._catalogue_df = None
+        self._event_list = None
+        self._patch_list = None
+        self._patch_time_list = None
+        self._patch_slip = None
         # Useful attributes
         self.t0, self.m0, self.mw = (None,) * 3
         self.x, self.y, self.z = (None,) * 3
@@ -28,13 +35,64 @@ class RsqSimCatalogue:
     @catalogue_df.setter
     def catalogue_df(self, dataframe: pd.DataFrame):
         assert dataframe.columns.size == 8, "Should have 8 columns"
+        assert all([col.dtype in ("float", "int") for i, col in dataframe.iteritems()])
+        dataframe.columns = catalogue_columns
+        self._catalogue_df = dataframe
+
+    def check_list(self, data_list: np.ndarray, data_type: str):
+        assert data_type in ("i", "d")
+        if self.catalogue_df is None:
+            raise AttributeError("Read in main catalogue (eqs.*.out) before list files")
+        if data_type == "i":
+            assert data_list.dtype == int
+        else:
+            assert data_list.dtype == float
+        assert data_list.ndim == 1, "Expecting 1D array as input"
+        return
+
+    @property
+    def event_list(self):
+        return self._event_list
+
+    @event_list.setter
+    def event_list(self, data_list: np.ndarray):
+        self.check_list(data_list, data_type="i")
+        if not len(np.unique(data_list)) == len(self.catalogue_df):
+            raise ValueError("Numbers of events in catalogue and supplied list are different!")
+        self._event_list = data_list - 1
+
+    @property
+    def patch_list(self):
+        return self._patch_list
+
+    @patch_list.setter
+    def patch_list(self, data_list: np.ndarray):
+        self.check_list(data_list, data_type="i")
+        self._patch_list = data_list
+
+    @property
+    def patch_time_list(self):
+        return self._patch_time_list
+
+    @patch_time_list.setter
+    def patch_time_list(self, data_list: np.ndarray):
+        self.check_list(data_list, data_type="d")
+        self._patch_time_list = data_list
+
+    @property
+    def patch_slip(self):
+        return self._patch_slip
+
+    @patch_slip.setter
+    def patch_slip(self, data_list: np.ndarray):
+        self.check_list(data_list, data_type="d")
+        self._patch_slip = data_list
 
     @classmethod
     def from_dataframe(cls, dataframe: pd.DataFrame):
         rsqsim_cat = cls()
         rsqsim_cat.catalogue_df = dataframe
         return rsqsim_cat
-
 
     @classmethod
     def from_catalogue_file(cls, filename: str):
@@ -44,8 +102,26 @@ class RsqSimCatalogue:
         return rsqsim_cat
 
     @classmethod
-    def from_catalogue_file_and_lists(cls):
-        pass
+    def from_catalogue_file_and_lists(cls, catalogue_file: str, list_file_directory: str,
+                                      list_file_prefix: str, read_extra_lists: bool = False):
+        assert os.path.exists(catalogue_file)
+        assert os.path.exists(list_file_directory)
+        standard_list_files = [os.path.join(list_file_directory, list_file_prefix + suffix)
+                               for suffix in list_file_suffixes]
+        for fname, suffix in zip(standard_list_files, list_file_suffixes):
+            if not os.path.exists(fname):
+                raise FileNotFoundError("{} file required to populate event slip distributions".format(suffix))
+
+
+        # Read in catalogue to dataframe and initiate class instance
+        rcat = cls.from_catalogue_file(catalogue_file)
+        rcat.patch_list, rcat.event_list = [read_binary(fname, format="i") for fname in standard_list_files[:2]]
+        rcat.patch_slip, rcat.patch_time_list = [read_binary(fname, format="d") for fname in standard_list_files[2:]]
+
+        return rcat
+
+
+
 
     def filter_earthquakes(self, min_t0: fint = None, max_t0: fint = None, min_m0: fint = None,
                            max_m0: fint = None, min_mw: fint = None, max_mw: fint = None,
@@ -88,10 +164,7 @@ class RsqSimCatalogue:
             return
 
         trimmed_df = self.catalogue_df[self.catalogue_df.eval(conditions_str)]
-
-
-
-
+        return trimmed_df
 
 
 class RsqSimEvent:

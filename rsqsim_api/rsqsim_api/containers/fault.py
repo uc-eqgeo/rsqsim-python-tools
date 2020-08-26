@@ -36,6 +36,21 @@ class RsqSimMultiFault:
 
         self.faults = faults
         self.patch_dic = {}
+        for fault in self.faults:
+            if self.patch_dic is not None:
+                self.patch_dic.update(fault.patch_dic)
+
+        self.faults_with_patches = {patch_num: patch.segment for patch_num, patch in self.patch_dic.items()}
+
+    def filter_faults_by_patch_numbers(self, patch_ls: Union[int, list, tuple, np.ndarray]):
+        if isinstance(patch_ls, int):
+            return self.patch_dic[patch_ls].fault
+        else:
+            assert isinstance(patch_ls, (tuple, list, np.ndarray))
+            assert patch_ls
+            assert all([isinstance(x, int) for x in patch_ls])
+            fault_ls = list(set([self.patch_dic[patch_number].segment for patch_number in patch_ls]))
+            return RsqSimMultiFault(fault_ls)
 
     @property
     def faults(self):
@@ -57,7 +72,6 @@ class RsqSimMultiFault:
         """
         assert os.path.exists(fault_file)
         # Read first 10 lines of file
-
 
     @classmethod
     def from_fault_file_keith(cls, fault_file: str, verbose: bool = False):
@@ -164,7 +178,10 @@ class RsqSimMultiFault:
             patch_start += num_triangles
 
         multi_fault = cls(segment_ls)
+
         return multi_fault
+
+
 
 
 
@@ -247,6 +264,14 @@ class RsqSimSegment:
     def patch_numbers(self):
         return self._patch_numbers
 
+    @patch_numbers.setter
+    def patch_numbers(self, numbers: Union[list, tuple, np.ndarray]):
+        number_array = np.array(numbers)
+        assert number_array.dtype == "int"
+        if self.patch_outlines is not None:
+            assert len(number_array) == len(self.patch_outlines)
+        self._patch_numbers = number_array
+
     @property
     def segment_number(self):
         return self._segment_number
@@ -315,6 +340,8 @@ class RsqSimSegment:
             triangle_ls.append(patch)
 
         fault.patch_outlines = triangle_ls
+        fault.patch_numbers = np.array([patch.patch_number for patch in triangle_ls])
+        fault.patch_dic = {p_num: patch for p_num, patch in zip(fault.patch_numbers, fault.patch_outlines)}
 
         return fault
 
@@ -350,8 +377,20 @@ class RsqSimSegment:
             triangle_ls.append(patch)
 
         fault.patch_outlines = triangle_ls
+        print(fault.patch_numbers, fault.patch_outlines)
+        fault.patch_dic = {p_num: patch for p_num, patch in zip(fault.patch_numbers, fault.patch_outlines)}
 
         return fault
+
+    def build_adjacency_map(self):
+        """
+        For use building Laplacian... not sure it belongs here!
+        :return:
+        """
+
+        assert self.patch_outlines is not None
+        adjacency_dic = {}
+
 
 
 
@@ -361,7 +400,7 @@ class RsqSimSegment:
 
 class RsqSimFault:
     """
-    The idea is to allow a falut to have one or more segments
+    The idea is to allow a fault to have one or more segments
     """
     def __init__(self, segments: Union[RsqSimSegment, List[RsqSimSegment]]):
         self._segments = None
@@ -442,8 +481,6 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         super(RsqSimTriangularPatch, self).__init__(segment=segment, patch_number=patch_number,
                                                     dip_slip=dip_slip, strike_slip=strike_slip)
         self.vertices = vertices
-
-
 
     @RsqSimGenericPatch.vertices.setter
     def vertices(self, vertices: Union[list, np.ndarray, tuple]):

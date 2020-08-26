@@ -10,10 +10,8 @@ def read_binary(file: str, format: str, endian: str = "little"):
     Reads integer values from binary files that are output of RSQSim
 
     :param file: file to read
-    :param num_read: number of integers to read
-    :param size: size of number to read (in bytes)
+    :param format: either "d" (double) or "i" (integer)
     :param endian: usually "little" unless we end up running on a non-standard system
-    :param signed: include capacity for reading negative values (False if reading positive integers only)
     :return:
     """
     # Check that parameter supplied for endianness makes sense
