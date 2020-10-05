@@ -1,9 +1,9 @@
 import os
 import numpy as np
 import pandas as pd
-import struct
 
 catalogue_columns = ["t0", "m0", "mw", "x", "y", "z", "area", "dt"]
+
 
 def read_binary(file: str, format: str, endian: str = "little"):
     """
@@ -19,14 +19,10 @@ def read_binary(file: str, format: str, endian: str = "little"):
     endian_sign = "<" if endian == "little" else ">"
     assert format in ("d", "i")
     assert os.path.exists(file)
-    with open(file, "rb") as fid:
-        data = fid.read()
-        if format == "d":
-            numbers = np.array([struct.unpack(endian_sign + "d", data[i:i+8], ) for i in np.arange(0, len(data),
-                                                                                                   8)]).flatten()
-        else:
-            numbers = np.array([struct.unpack(endian_sign + "i", data[i:i+4], ) for i in np.arange(0, len(data),
-                                                                                                   4)]).flatten()
+    if format == "d":
+        numbers = np.fromfile(file, endian_sign + "f8").flatten()
+    else:
+        numbers = np.fromfile(file, endian_sign + "i4").flatten()
 
     return numbers
 

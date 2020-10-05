@@ -9,5 +9,6 @@ setup(name='rsqsim-api',
       install_requires=["numpy>=1.18.1",
                         "geopandas>=0.6.1",
                         "ipyvolume>=0.5.2",
-                        "jupyter-client>=6.1.7"],
+                        "jupyter-client>=6.1.7",
+                        "matplotlib>=3.1.1"],
       )

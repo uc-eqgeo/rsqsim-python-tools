@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import numpy as np
 
-from rsqsim_api.containers.fault import RsqSimMultiFault
+from rsqsim_api.containers.fault import RsqSimMultiFault, RsqSimSegment
 from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, catalogue_columns
 
 fint = Union[int, float]
@@ -44,9 +44,9 @@ class RsqSimCatalogue:
         if self.catalogue_df is None:
             raise AttributeError("Read in main catalogue (eqs.*.out) before list files")
         if data_type == "i":
-            assert data_list.dtype == int
+            assert data_list.dtype.char in np.typecodes['AllInteger']
         else:
-            assert data_list.dtype == float
+            assert data_list.dtype.char in np.typecodes['AllFloat']
         assert data_list.ndim == 1, "Expecting 1D array as input"
         return
 
@@ -165,6 +165,15 @@ class RsqSimCatalogue:
 
         trimmed_df = self.catalogue_df[self.catalogue_df.eval(conditions_str)]
         return trimmed_df
+
+    def filter_by_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple]):
+        if isinstance(fault_or_faults, (RsqSimSegment, RsqSimMultiFault)):
+            fault_ls = [fault_or_faults]
+        else:
+            fault_ls = list(fault_or_faults)
+
+        
+
 
 
 class RsqSimEvent:

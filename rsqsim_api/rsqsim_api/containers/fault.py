@@ -6,7 +6,7 @@ import glob
 import pandas as pd
 from pyproj import Transformer
 
-transformer = Transformer.from_crs(32759, 2193)
+transformer = Transformer.from_crs(32759, 2193, always_xy=True)
 
 
 
@@ -115,7 +115,7 @@ class RsqSimMultiFault:
                 print("Reading fault: {:d}/{:d}: {}".format(number, num_faults, fault_name))
 
             # Extract data relevant for making triangles
-            triangles = np.array([data[name] for name in column_names[:9]]).T
+            triangles = np.array([fault_data[name] for name in column_names[:9]]).T
             num_triangles = triangles.shape[0]
             # Reshape for creation of triangular patches
             all_vertices = triangles.reshape(triangles.shape[0] * 3, int(triangles.shape[1] / 3))
@@ -158,7 +158,10 @@ class RsqSimMultiFault:
 
         fault_names_set = set(fault_names)
         fault_num_set = set(data["fault_num"])
-        fault_names_ordered = [x for x in fault_names if x in fault_names_set]
+        fault_names_unique = []
+        for name in fault_names:
+            if name not in fault_names_unique:
+                fault_names_unique.append(name)
 
         assert len(fault_names_set) == len(fault_num_set)
 
@@ -166,7 +169,7 @@ class RsqSimMultiFault:
         patch_start = 0
         segment_ls = []
 
-        for fault_num, fault_name in zip(fault_num_set, fault_names_ordered):
+        for fault_num, fault_name in zip(fault_num_set, fault_names_unique):
             fault_data = all_fault_df[all_fault_df.fault_num == fault_num]
 
             num_triangles = len(fault_data)
@@ -241,6 +244,8 @@ class RsqSimSegment:
         self._patch_numbers = None
         self._patch_outlines = None
         self._vertices = None
+        self._triangles = None
+        self._edge_lines = None
         self._segment_number = segment_number
         self._patch_type = None
 
@@ -305,8 +310,43 @@ class RsqSimSegment:
 
         self._patch_outlines = patches
 
+    @property
     def vertices(self):
+        if self._triangles is None:
+            self.generate_triangles()
         return self._vertices
+
+    @property
+    def triangles(self):
+        if self._triangles is None:
+            self.generate_triangles()
+        return self._triangles
+
+    @property
+    def edge_lines(self):
+        if self._edge_lines is None:
+            self.generate_triangles()
+        return self._edge_lines
+
+    def generate_triangles(self):
+        assert self.patch_outlines is not None, "Load patches first!"
+        all_vertices = [patch.vertices for patch in self.patch_outlines]
+        unique_vertices = np.unique(np.vstack(all_vertices), axis=0)
+        self._vertices = unique_vertices
+
+        triangle_ls = []
+        line_ls = []
+        for triangle in all_vertices:
+            vertex_numbers = []
+            for vertex in triangle:
+                index = np.where((unique_vertices == vertex).all(axis=1))[0][0]
+                vertex_numbers.append(index)
+            triangle_ls.append(vertex_numbers)
+            line_ls += [[vertex_numbers[0], vertex_numbers[1]],
+                        [vertex_numbers[0], vertex_numbers[2]],
+                        [vertex_numbers[1], vertex_numbers[2]]]
+        self._triangles = np.array(triangle_ls)
+        self._edge_lines = np.array(line_ls)
 
     @classmethod
     def from_triangles(cls, segment_number: int, triangles: Union[np.ndarray, list, tuple],
@@ -377,7 +417,7 @@ class RsqSimSegment:
             triangle_ls.append(patch)
 
         fault.patch_outlines = triangle_ls
-        print(fault.patch_numbers, fault.patch_outlines)
+        fault.patch_numbers = np.array([patch.patch_number for patch in triangle_ls])
         fault.patch_dic = {p_num: patch for p_num, patch in zip(fault.patch_numbers, fault.patch_outlines)}
 
         return fault
@@ -444,7 +484,7 @@ class RsqSimGenericPatch:
 
     @patch_number.setter
     def patch_number(self, patch_number: np.integer):
-        assert isinstance(patch_number, np.integer), "Patch number must be an integer"
+        assert isinstance(patch_number, (np.integer, int)), "Patch number must be an integer"
         assert patch_number >= 0, "Must be greater than zero!"
         self._patch_number = patch_number
 
@@ -523,7 +563,10 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         :return:
         """
         dx, dy, dz = self.normal_vector
-        dd_vec = np.array(dx, dy, -1 / dz)
+        if dz == 0:
+            dd_vec = np.array([dx, dy, -1.])
+        else:
+            dd_vec = np.array([dx, dy, -1 / dz])
         return dd_vec / np.linalg.norm(dd_vec)
 
     @property
