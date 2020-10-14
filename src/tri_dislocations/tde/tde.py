@@ -1,11 +1,12 @@
 import numpy as np
 import tde.disp_functions as df
-import tde.strain_functions_cy as sf
 from numba import jit
-# try:
-#     import tde.strain_functions_cy as sf
-# except ImportError:
-#     import tde.strain_functions as sf
+# Leaving this as it is for now, but additional steps are required to install using cython.
+# See Styron's readme
+try:
+    import tde.strain_functions_cy as sf
+except ImportError:
+    import tde.strain_functions as sf
 
 
 '''

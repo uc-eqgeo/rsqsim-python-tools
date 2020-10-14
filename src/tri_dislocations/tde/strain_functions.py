@@ -1,4 +1,3 @@
-from __future__ import division
 from numpy import sin, cos, pi, tan
 import numpy as np
 
