@@ -1,10 +1,11 @@
-'''
+"""
 This script reads in the tsurf (*.ts) files for the SCEC Community Fault Model (cfm)
 as a numpy array.
 The script is based on the matlab script ReadAndSaveCfm.m by Brendan Meade available
 from http://structure.rc.fas.harvard.edu/cfm/download/meade/ReadAndSaveCfm.m
 Copyright Paul Kaeufl, July 2014
-'''
+"""
+
 import numpy as np
 
 
