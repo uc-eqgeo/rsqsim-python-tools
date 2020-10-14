@@ -15,6 +15,7 @@ sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
 list_file_suffixes = (".pList", ".eList", ".dList", ".tList")
 extra_file_suffixes = (".dmuList", ".dsigmaList", ".dtauList", ".taupList")
 
+
 class RsqSimCatalogue:
     def __init__(self):
         # Essential attributes
