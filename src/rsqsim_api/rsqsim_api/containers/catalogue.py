@@ -1,6 +1,10 @@
-from typing import Union
+from typing import Union, Iterable
+from collections import abc
 import os
 
+from matplotlib import pyplot as plt
+from matplotlib.patches import Polygon
+from matplotlib.collections import PatchCollection
 import pandas as pd
 import numpy as np
 
@@ -121,9 +125,6 @@ class RsqSimCatalogue:
 
         return rcat
 
-
-
-
     def filter_earthquakes(self, min_t0: fint = None, max_t0: fint = None, min_m0: fint = None,
                            max_m0: fint = None, min_mw: fint = None, max_mw: fint = None,
                            min_x: fint = None, max_x: fint = None, min_y: fint = None, max_y: fint = None,
@@ -132,7 +133,7 @@ class RsqSimCatalogue:
 
         assert isinstance(self.catalogue_df, pd.DataFrame), "Read in data first!"
         conditions_str = ""
-        range_checks = [(min_t0, max_t0, "t0"), (min_m0, max_m0, "m0"), (min_mw, max_mw, "m0"),
+        range_checks = [(min_t0, max_t0, "t0"), (min_m0, max_m0, "m0"), (min_mw, max_mw, "mw"),
                         (min_x, max_x, "x"), (min_y, max_y, "y"), (min_z, max_z, "z"),
                         (min_area, max_area, "area"), (min_dt, max_dt, "dt")]
 
@@ -173,7 +174,28 @@ class RsqSimCatalogue:
         else:
             fault_ls = list(fault_or_faults)
 
-        
+    def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault):
+        if isinstance(event_number, (int, np.int)):
+            ev_ls = [event_number]
+        else:
+            assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
+            ev_ls = list(event_number)
+            assert all([isinstance(event_number, (int, np.int)) for a in ev_ls])
+        out_events = []
+        for index in ev_ls:
+            ev_indices = np.argwhere(self.event_list == index).flatten()
+            df = self.catalogue_df
+            event_i = RsqSimEvent.from_earthquake_list(df.t0[index], df.m0[index], df.mw[index], df.x[index],
+                                                       df.y[index], df.z[index], df.area[index], df.dt[index],
+                                                       patch_numbers=self.patch_list[ev_indices],
+                                                       patch_slip=self.patch_slip[ev_indices],
+                                                       patch_time=self.patch_time_list[ev_indices],
+                                                       fault_model=fault_model)
+            out_events.append(event_i)
+        return out_events
+
+
+
 
 
 
@@ -196,6 +218,7 @@ class RsqSimEvent:
         self.patch_slip = None
         self.faults = None
         self.patch_time = None
+        self.patch_numbers = None
 
     @classmethod
     def from_catalogue_array(cls, t0: float, m0: float, mw: float, x: float,
@@ -227,14 +250,28 @@ class RsqSimEvent:
                              patch_time: Union[list, np.ndarray, tuple],
                              fault_model: RsqSimMultiFault):
         event = cls.from_catalogue_array(t0, m0, mw, x, y, z, area, dt)
-        event.patches = np.array(patch_numbers)
+        event.patch_numbers = np.array(patch_numbers)
         event.patch_slip = np.array(patch_slip)
         event.patch_time = np.array(patch_time)
-        event.faults = list(set([fault_model.patch_dic[a] for a in event.patches]))
+        event.patches = [fault_model.patch_dic[i] for i in patch_numbers]
+        event.faults = list(set([fault_model.patch_dic[a].segment for a in event.patch_numbers]))
+        return event
 
-    def plot_slip_2d(self):
+    def plot_slip_2d(self, cmap: str = "inferno"):
+        #TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
-        pass
+        fig, ax = plt.subplots()
+        for fault in self.faults:
+            colours = np.zeros(fault.patch_numbers.shape)
+            for local_id, patch_id in enumerate(fault.patch_numbers):
+                if patch_id in self.patch_numbers:
+                    slip_index = np.argwhere(self.patch_numbers == patch_id)[0]
+                    colours[local_id] = self.patch_slip[slip_index]
+            ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles, facecolors=colours, cmap=cmap)
+        ax.set_aspect("equal")
+        fig.show()
+
+
 
     def plot_slip_3d(self):
         pass

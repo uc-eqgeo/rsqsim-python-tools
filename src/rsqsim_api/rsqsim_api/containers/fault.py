@@ -58,7 +58,7 @@ class RsqSimMultiFault:
 
     def filter_faults_by_patch_numbers(self, patch_ls: Union[int, list, tuple, np.ndarray]):
         if isinstance(patch_ls, int):
-            return self.patch_dic[patch_ls].fault
+            return self.patch_dic[patch_ls]
         else:
             assert isinstance(patch_ls, (tuple, list, np.ndarray))
             assert patch_ls
