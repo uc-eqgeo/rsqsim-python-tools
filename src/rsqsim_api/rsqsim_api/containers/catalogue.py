@@ -3,13 +3,12 @@ from collections import abc
 import os
 
 from matplotlib import pyplot as plt
-from matplotlib.patches import Polygon
-from matplotlib.collections import PatchCollection
 import pandas as pd
 import numpy as np
 
 from rsqsim_api.containers.fault import RsqSimMultiFault, RsqSimSegment
 from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, catalogue_columns
+from rsqsim_api.visualisation.utilities import plot_coast
 
 fint = Union[int, float]
 sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
@@ -195,10 +194,6 @@ class RsqSimCatalogue:
         return out_events
 
 
-
-
-
-
 class RsqSimEvent:
     def __init__(self):
         # Origin time
@@ -219,6 +214,18 @@ class RsqSimEvent:
         self.faults = None
         self.patch_time = None
         self.patch_numbers = None
+
+    @property
+    def num_faults(self):
+        return len(self.faults)
+
+    @property
+    def boundary(self):
+        x1 = min([min(fault.vertices[:, 0]) for fault in self.faults])
+        y1 = min([min(fault.vertices[:, 1]) for fault in self.faults])
+        x2 = max([max(fault.vertices[:, 0]) for fault in self.faults])
+        y2 = max([max(fault.vertices[:, 1]) for fault in self.faults])
+        return [x1, y1, x2, y2]
 
     @classmethod
     def from_catalogue_array(cls, t0: float, m0: float, mw: float, x: float,
@@ -248,17 +255,34 @@ class RsqSimEvent:
                              patch_numbers: Union[list, np.ndarray, tuple],
                              patch_slip: Union[list, np.ndarray, tuple],
                              patch_time: Union[list, np.ndarray, tuple],
-                             fault_model: RsqSimMultiFault):
+                             fault_model: RsqSimMultiFault, filter_single_patches: bool = True,
+                             min_patches: int = 10, min_slip: Union[float, int] = 1):
+        print(patch_slip)
         event = cls.from_catalogue_array(t0, m0, mw, x, y, z, area, dt)
+        faults = list(set([fault_model.patch_dic[a].segment for a in patch_numbers]))
+        patch_faults = [fault_model.patch_dic[a].segment for a in patch_numbers]
+        indices_to_delete = []
+        for fault in faults:
+            if patch_faults.count(fault) < min_patches:
+                patches_on_fault = np.array([a for a in patch_numbers if fault_model.patch_dic[a].segment == fault])
+                patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_fault])
+                # if patch_slip[patch_on_fault_indices].max() < min_slip:
+                indices_to_delete += list(patch_on_fault_indices)
+        indices_to_delete_array = np.array(indices_to_delete)
+        if indices_to_delete:
+            patch_numbers = np.delete(patch_numbers, indices_to_delete_array)
+            patch_slip = np.delete(patch_slip, indices_to_delete_array)
+            patch_time = np.delete(patch_time, indices_to_delete_array)
+
         event.patch_numbers = np.array(patch_numbers)
         event.patch_slip = np.array(patch_slip)
         event.patch_time = np.array(patch_time)
-        event.patches = [fault_model.patch_dic[i] for i in patch_numbers]
+        event.patches = [fault_model.patch_dic[i] for i in event.patch_numbers]
         event.faults = list(set([fault_model.patch_dic[a].segment for a in event.patch_numbers]))
         return event
 
     def plot_slip_2d(self, cmap: str = "inferno"):
-        #TODO: Plot coast (and major rivers?)
+        # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
         fig, ax = plt.subplots()
         for fault in self.faults:
@@ -268,19 +292,9 @@ class RsqSimEvent:
                     slip_index = np.argwhere(self.patch_numbers == patch_id)[0]
                     colours[local_id] = self.patch_slip[slip_index]
             ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles, facecolors=colours, cmap=cmap)
+        plot_coast(ax, clip_boundary=self.boundary)
         ax.set_aspect("equal")
         fig.show()
 
-
-
     def plot_slip_3d(self):
         pass
-
-
-
-
-
-
-
-
-

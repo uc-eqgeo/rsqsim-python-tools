@@ -432,8 +432,7 @@ class RsqSimSegment:
             reshaped_array = triangles.reshape((len(triangles) * 3), 3)
             transformed_array = transformer_utm2nztm.transform(reshaped_array[:, 0], reshaped_array[:, 1],
                                                                reshaped_array[:, 2])
-            reordered_array = np.vstack((transformed_array[:, 1], transformed_array[:, 0],
-                                         transformed_array[:, 2])).T
+            reordered_array = np.vstack(transformed_array).T
             triangles_nztm = reordered_array.reshape((len(triangles), 9))
 
         else:
