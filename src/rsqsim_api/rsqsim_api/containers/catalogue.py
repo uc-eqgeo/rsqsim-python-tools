@@ -1,5 +1,5 @@
 from typing import Union, Iterable
-from collections import abc
+from collections import abc, Counter
 import os
 
 from matplotlib import pyplot as plt
@@ -167,11 +167,67 @@ class RsqSimCatalogue:
         trimmed_df = self.catalogue_df[self.catalogue_df.eval(conditions_str)]
         return trimmed_df
 
-    def filter_by_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple]):
+    def filter_by_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],
+                        minimum_patches_per_fault: int = None):
         if isinstance(fault_or_faults, (RsqSimSegment, RsqSimMultiFault)):
             fault_ls = [fault_or_faults]
         else:
             fault_ls = list(fault_or_faults)
+
+        if minimum_patches_per_fault is not None:
+            assert isinstance(minimum_patches_per_fault, int)
+            assert minimum_patches_per_fault > 0
+
+        all_patches = []
+        for fault in fault_ls:
+            all_patches += list(fault.patch_dic.keys())
+        patch_numbers = np.unique(np.array(all_patches))
+
+        patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
+        selected_events = self.event_list[patch_indices]
+        selected_patches = self.patch_list[patch_indices]
+        if selected_events:
+            if minimum_patches_per_fault is not None:
+                events_gt_min = []
+                for fault in fault_ls:
+                    fault_patches = np.array(list(fault.patch_dic.keys()))
+                    fault_patch_indices = np.where(np.in1d(selected_patches, fault_patches))[0]
+                    fault_event_list = selected_events[fault_patch_indices]
+                    events_counter = Counter(fault_event_list)
+                    events_sufficient_patches = np.array([ev for ev, count in events_counter.items()
+                                                          if count >= minimum_patches_per_fault])
+                    events_gt_min += list(events_sufficient_patches)
+                event_numbers = np.unique(np.array(events_gt_min))
+                event_indices = np.where(np.in1d(self.event_list, event_numbers))[0]
+
+            else:
+                event_numbers = selected_events
+                event_indices = patch_indices
+            trimmed_df = self.catalogue_df.iloc[event_numbers]
+
+            filtered_cat = self.from_dataframe(trimmed_df)
+            filtered_cat.event_list = event_numbers
+            filtered_cat.patch_list = self.patch_list[event_indices]
+            filtered_cat.patch_slip = self.patch_slip[event_indices]
+            filtered_cat.patch_time_list = self.patch_time_list[event_indices]
+
+            return filtered_cat
+        else:
+            print("No events found on the following faults:")
+            for fault in fault_or_faults:
+                print(fault.name)
+            return
+
+
+
+
+
+    def filter_by_bounding_box(self):
+        pass
+
+
+
+
 
     def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault):
         if isinstance(event_number, (int, np.int)):

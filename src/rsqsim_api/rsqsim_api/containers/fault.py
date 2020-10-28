@@ -708,7 +708,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         try:
             vertex_array = np.array(vertices, dtype=np.float64)
         except ValueError:
-            raise ValueError("Error parsing vertices for {}, patch {:d}".format(self.name, self.patch_number))
+            raise ValueError("Error parsing vertices for {}, patch {:d}".format(self.segment.name, self.patch_number))
 
         assert vertex_array.ndim == 2, "2D array expected"
         # Check that at least 3 vertices supplied
@@ -716,7 +716,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         assert vertex_array.shape[1] == 3, "Three coordinates (x,y,z expected for each vertex"
 
         if vertex_array.shape[0] > 4:
-            print("{}, patch {:d}: more patches than expected".format(self.name, self.patch_number))
+            print("{}, patch {:d}: more patches than expected".format(self.segment.name, self.patch_number))
             print("Taking first 3 vertices...")
 
         self._vertices = vertices[:3, :]
@@ -824,4 +824,19 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
     def as_polygon(self):
         return Polygon(self.vertices)
 
-    # def calculate_greens_functions(self, ):
+    def calculate_tsunami_greens_functions(self, x_array: np.ndarray, y_array: np.ndarray, z_array: np.ndarray,
+                                            poisson_ratio: float = 0.25, slip_magnitude: Union[int, float] = 1.):
+        assert all([isinstance(a, np.ndarray) for a in [x_array, y_array]])
+        assert x_array.shape == y_array.shape == z_array.shape
+        assert x_array.ndim == 1
+
+        xv, yv, zv = [self.vertices.T[i] for i in range(3)]
+        ds_gf = calc_tri_displacements(x_array, y_array, z_array, xv, yv, -1. * zv,
+                                       poisson_ratio, 0., 0., slip_magnitude)
+        ss_gf = calc_tri_displacements(x_array, y_array, z_array, xv, yv, -1. * zv,
+                                       poisson_ratio, slip_magnitude, 0., 0.)
+
+        ds_vert = np.array(ds_gf["z"])
+        ss_vert = np.array(ss_gf["z"])
+
+        return ds_vert, ss_vert
