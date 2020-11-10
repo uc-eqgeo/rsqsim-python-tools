@@ -14,3 +14,7 @@ def handle_output(output: mp.Queue, output_file: str):
     hdf.close()
 
 
+# Subduction tiles for plotting first and applying different colour ramp
+bruce_subduction = ['hikhbaymax', 'hikraukmax', 'hikwgtnmax', 'fiordsz03', 'fiordpusz09']
+
+

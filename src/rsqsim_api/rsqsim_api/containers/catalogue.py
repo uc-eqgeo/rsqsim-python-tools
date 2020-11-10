@@ -218,7 +218,8 @@ class RsqSimCatalogue:
                 print(fault.name)
             return
 
-
+    def find_multi_fault(self):
+        pass
 
 
 
@@ -235,7 +236,7 @@ class RsqSimCatalogue:
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
             ev_ls = list(event_number)
-            assert all([isinstance(event_number, (int, np.int)) for a in ev_ls])
+            assert all([isinstance(a, (int, np.int)) for a in ev_ls])
         out_events = []
         for index in ev_ls:
             ev_indices = np.argwhere(self.event_list == index).flatten()
@@ -245,13 +246,16 @@ class RsqSimCatalogue:
                                                        patch_numbers=self.patch_list[ev_indices],
                                                        patch_slip=self.patch_slip[ev_indices],
                                                        patch_time=self.patch_time_list[ev_indices],
-                                                       fault_model=fault_model)
+                                                       fault_model=fault_model, min_patches=50,
+                                                       event_id=index)
             out_events.append(event_i)
         return out_events
 
 
 class RsqSimEvent:
     def __init__(self):
+        # Event ID
+        self.event_id = None
         # Origin time
         self.t0 = None
         # Seismic moment and mw
@@ -285,7 +289,7 @@ class RsqSimEvent:
 
     @classmethod
     def from_catalogue_array(cls, t0: float, m0: float, mw: float, x: float,
-                             y: float, z: float, area: float, dt: float):
+                             y: float, z: float, area: float, dt: float, event_id: int = None):
         """
 
         :param t0:
@@ -296,12 +300,14 @@ class RsqSimEvent:
         :param z:
         :param area:
         :param dt:
+        :param event_id:
         :return:
         """
 
         event = cls()
         event.t0, event.m0, event.mw, event.x, event.y, event.z = [t0, m0, mw, x, y, z]
         event.area, event.dt = [area, dt]
+        event.event_id = None
 
         return event
 
@@ -312,9 +318,8 @@ class RsqSimEvent:
                              patch_slip: Union[list, np.ndarray, tuple],
                              patch_time: Union[list, np.ndarray, tuple],
                              fault_model: RsqSimMultiFault, filter_single_patches: bool = True,
-                             min_patches: int = 10, min_slip: Union[float, int] = 1):
-        print(patch_slip)
-        event = cls.from_catalogue_array(t0, m0, mw, x, y, z, area, dt)
+                             min_patches: int = 10, min_slip: Union[float, int] = 1, event_id: int = None):
+        event = cls.from_catalogue_array(t0, m0, mw, x, y, z, area, dt, event_id=event_id)
         faults = list(set([fault_model.patch_dic[a].segment for a in patch_numbers]))
         patch_faults = [fault_model.patch_dic[a].segment for a in patch_numbers]
         indices_to_delete = []
@@ -337,20 +342,67 @@ class RsqSimEvent:
         event.faults = list(set([fault_model.patch_dic[a].segment for a in event.patch_numbers]))
         return event
 
-    def plot_slip_2d(self, cmap: str = "inferno"):
+    def plot_slip_2d(self, cmap: str = "inferno", show: bool = True, write: str = None):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
         fig, ax = plt.subplots()
-        for fault in self.faults:
+        # Find maximum slip to scale colourbar
+        max_slip = 0
+
+        colour_dic = {}
+        for f_i, fault in enumerate(self.faults):
             colours = np.zeros(fault.patch_numbers.shape)
             for local_id, patch_id in enumerate(fault.patch_numbers):
                 if patch_id in self.patch_numbers:
                     slip_index = np.argwhere(self.patch_numbers == patch_id)[0]
                     colours[local_id] = self.patch_slip[slip_index]
-            ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles, facecolors=colours, cmap=cmap)
+            colour_dic[f_i] = colours
+            if max(colours) > max_slip:
+                max_slip = max(colours)
+
+        for f_i, fault in enumerate(self.faults):
+            ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles, facecolors=colour_dic[f_i],
+                         cmap=cmap, vmin=0, vmax=max_slip)
+
+        print(self.boundary)
         plot_coast(ax, clip_boundary=self.boundary)
         ax.set_aspect("equal")
-        fig.show()
+        if write is not None:
+            fig.savefig(write, dpi=300)
+        if show:
+            fig.show()
 
     def plot_slip_3d(self):
         pass
+
+
+def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/bruce/rundir4627",
+               fault_file: str = "zfault_Deepen.in", names_file: str = "znames_Deepen.in",
+               catalogue_file: str = "eqs..out"):
+    fault_full = os.path.join(run_dir, fault_file)
+    names_full = os.path.join(run_dir, names_file)
+
+    assert os.path.exists(fault_full)
+
+    bruce_faults = RsqSimMultiFault.read_fault_file_bruce(fault_full,
+                                                          names_full,
+                                                          transform_from_utm=True)
+
+    catalogue_full = os.path.join(run_dir, catalogue_file)
+    assert os.path.exists(catalogue_full)
+
+    catalogue = RsqSimCatalogue.from_catalogue_file_and_lists(catalogue_full,
+                                                              run_dir, "rundir4627")
+
+    return bruce_faults, catalogue
+
+
+def read_bruce_if_necessary(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/bruce/rundir4627",
+                            fault_file: str = "zfault_Deepen.in", names_file: str = "znames_Deepen.in",
+                            catalogue_file: str = "eqs..out", default_faults: str = "bruce_faults",
+                            default_cat: str = "catalogue"):
+    print(globals())
+    if not all([a in globals() for a in (default_faults, default_cat)]):
+        bruce_faults, catalogue = read_bruce(run_dir=run_dir, fault_file=fault_file, names_file=names_file,
+                                             catalogue_file=catalogue_file)
+        return bruce_faults, catalogue

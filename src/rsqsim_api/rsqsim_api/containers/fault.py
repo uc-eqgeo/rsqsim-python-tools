@@ -2,6 +2,7 @@ import glob
 import os
 from collections import Iterable
 from typing import Union, List
+import fnmatch
 
 import numpy as np
 import pandas as pd
@@ -10,6 +11,9 @@ from shapely.geometry import Polygon
 from tde.tde import calc_tri_displacements
 from triangular_faults.displacements import DisplacementArray
 from triangular_faults.utilities import read_ts_coords
+from matplotlib import pyplot as plt
+from rsqsim_api.visualisation.utilities import plot_coast
+
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
 
@@ -47,8 +51,9 @@ def normalize_bearing(bearing: Union[float, int]):
 class RsqSimMultiFault:
     def __init__(self, faults: Union[list, tuple, set]):
         self._faults = None
-
         self.faults = faults
+        self._names = None
+        self._name_dic = None
         self.patch_dic = {}
         for fault in self.faults:
             if self.patch_dic is not None:
@@ -74,6 +79,23 @@ class RsqSimMultiFault:
     def faults(self, faults: Union[list, tuple, set]):
         assert all([isinstance(fault, (RsqSimMultiFault, RsqSimSegment)) for fault in faults])
         self._faults = faults
+
+    @property
+    def names(self):
+        if self._names is None:
+            self.get_names()
+        return self._names
+
+    @property
+    def name_dic(self):
+        if self._name_dic is None:
+            self.get_names()
+        return self._name_dic
+
+    def get_names(self):
+        assert self.faults is not None
+        self._names = [fault.name for fault in self.faults]
+        self._name_dic = {fault.name: fault for fault in self.faults}
 
     @classmethod
     def read_fault_file(cls, fault_file: str, verbose: bool = False):
@@ -229,6 +251,48 @@ class RsqSimMultiFault:
             # Get fault name for comparison with shapefile
             ts_no_path = os.path.basename(ts_file)
             ts_name = ts_no_path.split(".ts")[0]
+
+    def plot_faults_2d(self, fault_list: Iterable = None, show: bool = True, write: str = None):
+        # TODO: Plot coast (and major rivers?)
+        if fault_list is not None:
+            assert isinstance(fault_list, Iterable)
+            assert any([fault.lower() in self.names for fault in fault_list])
+            valid_names = []
+            for fault_name in fault_list:
+                if fault_name not in self.names:
+                    print("Fault not found: {}".format(fault_name))
+                else:
+                    valid_names.append(fault_name)
+            assert valid_names, "No valid fault names supplied"
+        else:
+            valid_names = self.names
+
+        # Find boundary
+        valid_faults = [self.name_dic[name] for name in valid_names]
+        x1 = min([min(fault.vertices[:, 0]) for fault in valid_faults])
+        y1 = min([min(fault.vertices[:, 1]) for fault in valid_faults])
+        x2 = max([max(fault.vertices[:, 0]) for fault in valid_faults])
+        y2 = max([max(fault.vertices[:, 1]) for fault in valid_faults])
+        boundary = [x1, y1, x2, y2]
+
+        fig, ax = plt.subplots()
+        for name in valid_names:
+            fault_i = self.name_dic[name]
+            fault_i.plot_2d(ax)
+
+        plot_coast(ax, clip_boundary=boundary)
+        ax.set_aspect("equal")
+        if write is not None:
+            fig.savefig(write, dpi=300)
+        if show:
+            fig.show()
+
+    def search_name(self, search_string: str):
+        """
+        Search fault names using wildcard string
+        """
+        assert isinstance(search_string, str)
+        return [name for name in self.names if fnmatch.fnmatch(name, search_string.lower())]
 
 
 class RsqSimSegment:
@@ -606,6 +670,9 @@ class RsqSimSegment:
         shallow_indices = np.where(self.vertices[:, -1] >= top_vertex_depth - depth_tolerance)[0]
         return shallow_indices
 
+    def plot_2d(self, ax: plt.Axes):
+        ax.triplot(self.vertices[:, 0], self.vertices[:, 1], self.triangles)
+
 
 class RsqSimFault:
     """
@@ -840,3 +907,14 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         ss_vert = np.array(ss_gf["z"])
 
         return ds_vert, ss_vert
+
+
+def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/bruce/rundir4627",
+               fault_file: str = "zfault_Deepen.in", names_file: str = "znames_Deepen.in"):
+    fault_full = os.path.join(run_dir, fault_file)
+    names_full = os.path.join(run_dir, names_file)
+
+    bruce_faults = RsqSimMultiFault.read_fault_file_bruce(fault_full,
+                                                          names_full,
+                                                          transform_from_utm=True)
+    return bruce_faults
