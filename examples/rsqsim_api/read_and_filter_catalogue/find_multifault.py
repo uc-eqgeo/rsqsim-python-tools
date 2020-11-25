@@ -9,7 +9,7 @@ if not all([a in globals() for a in ("m75plus", "m75_events")]):
     m75plus = catalogue.filter_earthquakes(min_mw=8, max_mw=10)
     m75_events = catalogue.events_by_number(m75plus.index, bruce_faults)
 
-multifault = [ev for ev in m75_events if ev.num_faults > 5]
+multifault = [ev for ev in m75_events if ev.num_faults > 1]
 
 if os.path.exists("multifault_images"):
     shutil.rmtree("multifault_images")

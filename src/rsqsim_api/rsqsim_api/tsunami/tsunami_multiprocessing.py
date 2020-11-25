@@ -1,4 +1,4 @@
-from rsqsim_api.containers.fault import RsqSimMultiFault, RsqSimTriangularPatch, RsqSimSegment
+from rsqsim_api.containers.fault import RsqSimMultiFault, RsqSimSegment
 import multiprocessing as mp
 from typing import Union
 import h5py
@@ -42,7 +42,7 @@ def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_site
 
     for i in range(num_processes):
         p = mp.Process(target=patch_greens_functions,
-                       args=(in_queue, x_array, y_array, z_array, out_queue, dset_shape))
+                       args=(in_queue, x_array, y_array, z_array, out_queue, dset_shape, slip_magnitude))
         jobs.append(p)
         p.start()
 
@@ -54,7 +54,6 @@ def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_site
 
     for p in jobs:
         p.join()
-
 
     out_queue.put(None)
 
@@ -79,16 +78,16 @@ def handle_output(output_queue: mp.Queue, output_file: str, dset_shape: tuple):
 
 def patch_greens_functions(in_queue: mp.Queue, x_sites: np.ndarray, y_sites: np.ndarray,
                            z_sites: np.ndarray,
-                           out_queue: mp.Queue, grid_shape: tuple):
+                           out_queue: mp.Queue, grid_shape: tuple, slip_magnitude: Union[int, float] = 1):
     while True:
         queue_contents = in_queue.get()
         if queue_contents:
             index, patch = queue_contents
-            ds_array, ss_array = patch.calculate_tsunami_greens_functions(x_sites, y_sites, z_sites)
+            ds_array, ss_array = patch.calculate_tsunami_greens_functions(x_sites, y_sites, z_sites,
+                                                                          slip_magnitude=slip_magnitude)
             ds_grid = ds_array.reshape(grid_shape[1:])
             ss_grid = ss_array.reshape(grid_shape[1:])
 
             out_queue.put((index, ds_grid, ss_grid))
         else:
             break
-

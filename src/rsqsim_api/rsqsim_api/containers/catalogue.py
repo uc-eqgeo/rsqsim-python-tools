@@ -9,6 +9,7 @@ import numpy as np
 from rsqsim_api.containers.fault import RsqSimMultiFault, RsqSimSegment
 from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, catalogue_columns
 from rsqsim_api.visualisation.utilities import plot_coast
+from rsqsim_api.containers.utilities import bruce_subduction
 
 fint = Union[int, float]
 sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
@@ -342,33 +343,68 @@ class RsqSimEvent:
         event.faults = list(set([fault_model.patch_dic[a].segment for a in event.patch_numbers]))
         return event
 
-    def plot_slip_2d(self, cmap: str = "inferno", show: bool = True, write: str = None):
+    def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True, write: str = None):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
         fig, ax = plt.subplots()
+
+        # Find maximum slip for subduction interface
+
         # Find maximum slip to scale colourbar
         max_slip = 0
 
         colour_dic = {}
         for f_i, fault in enumerate(self.faults):
-            colours = np.zeros(fault.patch_numbers.shape)
-            for local_id, patch_id in enumerate(fault.patch_numbers):
-                if patch_id in self.patch_numbers:
-                    slip_index = np.argwhere(self.patch_numbers == patch_id)[0]
-                    colours[local_id] = self.patch_slip[slip_index]
-            colour_dic[f_i] = colours
-            if max(colours) > max_slip:
-                max_slip = max(colours)
+            if fault.name in bruce_subduction:
+                colours = np.zeros(fault.patch_numbers.shape)
+                for local_id, patch_id in enumerate(fault.patch_numbers):
+                    if patch_id in self.patch_numbers:
+                        slip_index = np.argwhere(self.patch_numbers == patch_id)[0]
+                        colours[local_id] = self.patch_slip[slip_index]
+                colour_dic[f_i] = colours
+                if max(colours) > max_slip:
+                    max_slip = max(colours)
 
+        # Plot subduction interface
+        subduction_list = []
+        subduction_plot = None
         for f_i, fault in enumerate(self.faults):
-            ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles, facecolors=colour_dic[f_i],
-                         cmap=cmap, vmin=0, vmax=max_slip)
+            if fault.name in bruce_subduction:
+                subduction_list.append(fault.name)
+                subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles, facecolors=colour_dic[f_i],
+                                               cmap=subduction_cmap, vmin=0, vmax=max_slip)
 
-        print(self.boundary)
+        max_slip = 0
+        colour_dic = {}
+        for f_i, fault in enumerate(self.faults):
+            if fault.name not in bruce_subduction:
+                colours = np.zeros(fault.patch_numbers.shape)
+                for local_id, patch_id in enumerate(fault.patch_numbers):
+                    if patch_id in self.patch_numbers:
+                        slip_index = np.argwhere(self.patch_numbers == patch_id)[0]
+                        colours[local_id] = self.patch_slip[slip_index]
+                colour_dic[f_i] = colours
+                if max(colours) > max_slip:
+                    max_slip = max(colours)
+
+        crustal_plot = None
+        for f_i, fault in enumerate(self.faults):
+            if fault.name not in bruce_subduction:
+                crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles, facecolors=colour_dic[f_i],
+                                            cmap=crustal_cmap, vmin=0, vmax=max_slip)
+
+        if subduction_list:
+            sub_cbar = fig.colorbar(subduction_plot, ax=ax)
+            sub_cbar.set_label("Subduction slip (m)")
+        if crustal_plot is not None:
+            crust_cbar = fig.colorbar(crustal_plot, ax=ax)
+            crust_cbar.set_label("Slip (m)")
+
         plot_coast(ax, clip_boundary=self.boundary)
         ax.set_aspect("equal")
         if write is not None:
             fig.savefig(write, dpi=300)
+            plt.close(fig)
         if show:
             fig.show()
 

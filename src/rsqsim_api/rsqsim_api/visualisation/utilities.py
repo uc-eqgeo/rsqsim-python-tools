@@ -67,7 +67,7 @@ def clip_coast(x1: Union[int, float], y1: Union[int, float], x2: Union[int, floa
     return polygon_geoseries
 
 
-def plot_coast(ax: plt.Axes, clip_boundary: list = None, colors: str = "k", linewidth: int = 0.1,
+def plot_coast(ax: plt.Axes, clip_boundary: list = None, colors: str = "0.5", linewidth: int = 0.3,
                trim_polygons=True):
     if clip_boundary is None:
         x1, y1, x2, y2 = [min_x1, min_y1, max_x2, max_y2]
