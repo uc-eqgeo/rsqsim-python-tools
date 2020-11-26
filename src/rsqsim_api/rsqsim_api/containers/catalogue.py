@@ -9,7 +9,7 @@ import numpy as np
 from rsqsim_api.containers.fault import RsqSimMultiFault, RsqSimSegment
 from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, catalogue_columns
 from rsqsim_api.visualisation.utilities import plot_coast
-from rsqsim_api.containers.utilities import bruce_subduction
+from rsqsim_api.containers.bruce_shaw_utilities import bruce_subduction
 
 fint = Union[int, float]
 sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
