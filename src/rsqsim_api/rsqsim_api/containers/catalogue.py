@@ -7,7 +7,8 @@ import pandas as pd
 import numpy as np
 
 from rsqsim_api.containers.fault import RsqSimMultiFault, RsqSimSegment
-from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, catalogue_columns
+from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, catalogue_columns, read_csv_and_array
+from rsqsim_api.io.write_utils import write_catalogue_dataframe_and_arrays
 from rsqsim_api.visualisation.utilities import plot_coast
 from rsqsim_api.containers.bruce_shaw_utilities import bruce_subduction
 
@@ -119,7 +120,6 @@ class RsqSimCatalogue:
             if not os.path.exists(fname):
                 raise FileNotFoundError("{} file required to populate event slip distributions".format(suffix))
 
-
         # Read in catalogue to dataframe and initiate class instance
         rcat = cls.from_catalogue_file(catalogue_file)
         rcat.patch_list = read_binary(standard_list_files[0], format="i")
@@ -140,6 +140,15 @@ class RsqSimCatalogue:
         rcat.event_list, rcat.patch_list, rcat.patch_slip, rcat.patch_time_list = [event_list, patch_list,
                                                                                    patch_slip, patch_time_list]
         return rcat
+
+    @classmethod
+    def from_csv_and_arrays(cls, prefix: str, read_index: bool = True):
+        df, event_ls, patch_ls, slip_ls, time_ls = read_csv_and_array(prefix, read_index=read_index)
+        return cls.from_dataframe_and_arrays(df, event_ls, patch_ls, slip_ls, time_ls)
+
+    def write_csv_and_arrays(self, prefix: str, directory: str = None, write_index: bool = True):
+        assert prefix, "Empty prefix!"
+        write_catalogue_dataframe_and_arrays(prefix, self, directory=directory, write_index=write_index)
 
     def filter_df(self, min_t0: fint = None, max_t0: fint = None, min_m0: fint = None,
                   max_m0: fint = None, min_mw: fint = None, max_mw: fint = None,
