@@ -19,6 +19,8 @@ sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
 list_file_suffixes = (".pList", ".eList", ".dList", ".tList")
 extra_file_suffixes = (".dmuList", ".dsigmaList", ".dtauList", ".taupList")
 
+seconds_per_year = 31557600.0
+
 
 class RsqSimCatalogue:
     def __init__(self):
@@ -64,7 +66,7 @@ class RsqSimCatalogue:
         self.check_list(data_list, data_type="i")
         if not len(np.unique(data_list)) == len(self.catalogue_df):
             raise ValueError("Numbers of events in catalogue and supplied list are different!")
-        self._event_list = data_list - 1
+        self._event_list = data_list
 
     @property
     def patch_list(self):
@@ -120,16 +122,30 @@ class RsqSimCatalogue:
 
         # Read in catalogue to dataframe and initiate class instance
         rcat = cls.from_catalogue_file(catalogue_file)
-        rcat.patch_list, rcat.event_list = [read_binary(fname, format="i") for fname in standard_list_files[:2]]
+        rcat.patch_list = read_binary(standard_list_files[0], format="i")
+        # indices start from 1, change so that it is zero instead
+        rcat.event_list = read_binary(standard_list_files[1], format="i") - 1
         rcat.patch_slip, rcat.patch_time_list = [read_binary(fname, format="d") for fname in standard_list_files[2:]]
 
         return rcat
 
-    def filter_earthquakes(self, min_t0: fint = None, max_t0: fint = None, min_m0: fint = None,
-                           max_m0: fint = None, min_mw: fint = None, max_mw: fint = None,
-                           min_x: fint = None, max_x: fint = None, min_y: fint = None, max_y: fint = None,
-                           min_z: fint = None, max_z: fint = None, min_area: fint = None, max_area: fint = None,
-                           min_dt: fint = None, max_dt: fint = None):
+    @classmethod
+    def from_dataframe_and_arrays(cls, dataframe: pd.DataFrame, event_list: np.ndarray, patch_list: np.ndarray,
+                                  patch_slip: np.ndarray, patch_time_list: np.ndarray):
+        assert all([arr.ndim == 1 for arr in [event_list, patch_list, patch_slip, patch_time_list]])
+        list_len = event_list.size
+        assert all([arr.size == list_len for arr in [patch_list, patch_slip, patch_time_list]])
+        assert len(np.unique(event_list)) == len(dataframe), "Number of events in dataframe and lists do not match"
+        rcat = cls.from_dataframe(dataframe)
+        rcat.event_list, rcat.patch_list, rcat.patch_slip, rcat.patch_time_list = [event_list, patch_list,
+                                                                                   patch_slip, patch_time_list]
+        return rcat
+
+    def filter_df(self, min_t0: fint = None, max_t0: fint = None, min_m0: fint = None,
+                  max_m0: fint = None, min_mw: fint = None, max_mw: fint = None,
+                  min_x: fint = None, max_x: fint = None, min_y: fint = None, max_y: fint = None,
+                  min_z: fint = None, max_z: fint = None, min_area: fint = None, max_area: fint = None,
+                  min_dt: fint = None, max_dt: fint = None):
 
         assert isinstance(self.catalogue_df, pd.DataFrame), "Read in data first!"
         conditions_str = ""
@@ -144,12 +160,16 @@ class RsqSimCatalogue:
         for range_check in range_checks:
             min_i, max_i, label = range_check
             if any([a is not None for a in (min_i, max_i)]):
-                if not all([a is not None for a in (min_i, max_i)]):
-                    raise ValueError("Need to provide both max and min {}".format(label))
-                if not all([isinstance(a, (int, float)) for a in (min_i, max_i)]):
-                    raise ValueError("Min and max {} should be int or float".format(label))
+                for a in (min_i, max_i):
+                    if not any([a is None, isinstance(a, (float, int))]):
+                        raise ValueError("Min and max {} should be int or float".format(label))
                 sensible_min, sensible_max = sensible_ranges[label]
+                if min_i is None:
+                    min_i = sensible_min
+                if max_i is None:
+                    max_i = sensible_max
                 sensible_conditions = all([sensible_min <= a <= sensible_max for a in (min_i, max_i)])
+
                 if not sensible_conditions:
                     raise ValueError("{} values should be between {:e} and {:e}".format(label, sensible_min,
                                                                                         sensible_max))
@@ -167,6 +187,37 @@ class RsqSimCatalogue:
 
         trimmed_df = self.catalogue_df[self.catalogue_df.eval(conditions_str)]
         return trimmed_df
+
+    def filter_whole_catalogue(self, min_t0: fint = None, max_t0: fint = None, min_m0: fint = None,
+                               max_m0: fint = None, min_mw: fint = None, max_mw: fint = None,
+                               min_x: fint = None, max_x: fint = None, min_y: fint = None, max_y: fint = None,
+                               min_z: fint = None, max_z: fint = None, min_area: fint = None, max_area: fint = None,
+                               min_dt: fint = None, max_dt: fint = None, reset_index: bool = False):
+
+        trimmed_df = self.filter_df(min_t0, max_t0, min_m0, max_m0, min_mw, max_mw, min_x, max_x, min_y, max_y,
+                                    min_z, max_z, min_area, max_area, min_dt, max_dt)
+        event_indices = np.where(np.in1d(self.event_list, np.array(trimmed_df.index)))[0]
+        trimmed_event_ls = self.event_list[event_indices]
+        trimmed_patch_ls = self.patch_list[event_indices]
+        trimmed_patch_slip = self.patch_slip[event_indices]
+        trimmed_patch_time = self.patch_time_list[event_indices]
+
+        if reset_index:
+            trimmed_df.reset_index(inplace=True, drop=True)
+            unique_indices = np.unique(trimmed_event_ls)
+            index_array = np.zeros(trimmed_event_ls.shape, dtype=np.int)
+            for new_i, old_i in enumerate(unique_indices):
+                index_array[np.where(trimmed_event_ls == old_i)] = new_i
+            print(index_array)
+        else:
+            index_array = trimmed_event_ls
+
+        rcat = self.from_dataframe_and_arrays(trimmed_df, event_list=index_array, patch_list=trimmed_patch_ls,
+                                              patch_slip=trimmed_patch_slip, patch_time_list=trimmed_patch_time)
+        return rcat
+
+
+
 
     def filter_by_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],
                         minimum_patches_per_fault: int = None):
@@ -222,14 +273,8 @@ class RsqSimCatalogue:
     def find_multi_fault(self):
         pass
 
-
-
     def filter_by_bounding_box(self):
         pass
-
-
-
-
 
     def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault):
         if isinstance(event_number, (int, np.int)):
@@ -343,7 +388,8 @@ class RsqSimEvent:
         event.faults = list(set([fault_model.patch_dic[a].segment for a in event.patch_numbers]))
         return event
 
-    def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True, write: str = None):
+    def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
+                     write: str = None):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
         fig, ax = plt.subplots()
@@ -371,7 +417,8 @@ class RsqSimEvent:
         for f_i, fault in enumerate(self.faults):
             if fault.name in bruce_subduction:
                 subduction_list.append(fault.name)
-                subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles, facecolors=colour_dic[f_i],
+                subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                               facecolors=colour_dic[f_i],
                                                cmap=subduction_cmap, vmin=0, vmax=max_slip)
 
         max_slip = 0
@@ -390,7 +437,8 @@ class RsqSimEvent:
         crustal_plot = None
         for f_i, fault in enumerate(self.faults):
             if fault.name not in bruce_subduction:
-                crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles, facecolors=colour_dic[f_i],
+                crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                            facecolors=colour_dic[f_i],
                                             cmap=crustal_cmap, vmin=0, vmax=max_slip)
 
         if subduction_list:
