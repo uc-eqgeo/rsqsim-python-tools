@@ -27,6 +27,25 @@ def read_binary(file: str, format: str, endian: str = "little"):
     return numbers
 
 
+def read_csv_and_array(prefix: str, read_index: bool = True):
+    assert prefix, "Empty prefix string supplied"
+    if prefix[-1] != "_":
+        prefix += "_"
+    suffixes = ["catalogue.csv", "events.npy", "patches.npy", "slip.npy", "slip_time.npy"]
+    file_list = [prefix + suffix for suffix in suffixes]
+    for file, suffix in zip(file_list, suffixes):
+        if not os.path.exists(file):
+            raise FileNotFoundError("{} file missing!".format(suffix))
+    if read_index:
+        df = pd.read_csv(file_list[0], index_col=0)
+    else:
+        df = pd.read_csv(file_list[0])
+    array_ls = [np.load(file) for file in file_list[1:]]
+
+    return [df] + array_ls
+
+
+
 def read_earthquakes(earthquake_file: str, get_patch: bool = False, eq_start_index: int = None,
                      eq_end_index: int = None, endian: str = "little"):
     """
