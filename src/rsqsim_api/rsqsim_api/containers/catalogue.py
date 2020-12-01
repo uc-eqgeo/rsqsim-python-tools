@@ -461,9 +461,12 @@ class RsqSimEvent:
         ax.set_aspect("equal")
         if write is not None:
             fig.savefig(write, dpi=300)
-            plt.close(fig)
+            if show:
+                plt.show()
+            else:
+                plt.close(fig)
         if show:
-            fig.show()
+            plt.show()
 
     def plot_slip_3d(self):
         pass
