@@ -90,5 +90,6 @@ def patch_greens_functions(in_queue: mp.Queue, x_sites: np.ndarray, y_sites: np.
 
             out_queue.put((index, patch.calculate_tsunami_greens_functions(x_sites, y_sites, z_sites, grid_shape,
                                                                            slip_magnitude=slip_magnitude)))
+            print(out_queue.qsize())
         else:
             break
