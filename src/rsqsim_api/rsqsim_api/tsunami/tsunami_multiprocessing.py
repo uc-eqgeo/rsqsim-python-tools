@@ -62,15 +62,13 @@ def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_site
 
 def handle_output(output_queue: mp.Queue, output_file: str, dset_shape: tuple):
     f = h5py.File(output_file, "w")
-    ds_dset = f.create_dataset("dip_slip", shape=dset_shape, dtype="f")
-    ss_dset = f.create_dataset("strike_slip", shape=dset_shape, dtype="f")
+    disp_dset = f.create_dataset("ssd_1m", shape=dset_shape, dtype="f")
 
     while True:
         args = output_queue.get()
         if args:
-            index, dip_slip, strike_slip = args
-            ds_dset[index] = dip_slip
-            ss_dset[index] = strike_slip
+            index, vert_disp = args
+            disp_dset[index] = vert_disp
         else:
             break
     f.close()
@@ -84,11 +82,10 @@ def patch_greens_functions(in_queue: mp.Queue, x_sites: np.ndarray, y_sites: np.
         if queue_contents:
             index, patch = queue_contents
             print(patch.patch_number)
-            ds_array, ss_array = patch.calculate_tsunami_greens_functions(x_sites, y_sites, z_sites,
-                                                                          slip_magnitude=slip_magnitude)
-            ds_grid = ds_array.reshape(grid_shape[1:])
-            ss_grid = ss_array.reshape(grid_shape[1:])
+            disp_array = patch.calculate_tsunami_greens_functions(x_sites, y_sites, z_sites,
+                                                                  slip_magnitude=slip_magnitude)
+            disp_grid = disp_array.reshape(grid_shape[1:])
 
-            out_queue.put((index, ds_grid, ss_grid))
+            out_queue.put((index, disp_grid))
         else:
             break
