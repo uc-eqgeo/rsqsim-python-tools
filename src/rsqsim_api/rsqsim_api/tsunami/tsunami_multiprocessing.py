@@ -83,6 +83,7 @@ def patch_greens_functions(in_queue: mp.Queue, x_sites: np.ndarray, y_sites: np.
         queue_contents = in_queue.get()
         if queue_contents:
             index, patch = queue_contents
+            print(patch.patch_number)
             ds_array, ss_array = patch.calculate_tsunami_greens_functions(x_sites, y_sites, z_sites,
                                                                           slip_magnitude=slip_magnitude)
             ds_grid = ds_array.reshape(grid_shape[1:])

@@ -836,7 +836,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
 
     def calculate_dip(self):
         horizontal = np.linalg.norm(self.down_dip_vector[:-1])
-        vertical = -1 * self.down_dip_vector[:-1]
+        vertical = -1 * self.down_dip_vector[-1]
         return np.degrees(np.arctan(vertical / horizontal))
 
     @property
