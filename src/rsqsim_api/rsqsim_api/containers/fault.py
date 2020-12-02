@@ -920,7 +920,8 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         return Polygon(self.vertices)
 
     def calculate_tsunami_greens_functions(self, x_array: np.ndarray, y_array: np.ndarray, z_array: np.ndarray,
-                                            poisson_ratio: float = 0.25, slip_magnitude: Union[int, float] = 1.):
+                                           grid_shape: tuple, poisson_ratio: float = 0.25,
+                                           slip_magnitude: Union[int, float] = 1.):
         assert all([isinstance(a, np.ndarray) for a in [x_array, y_array]])
         assert x_array.shape == y_array.shape == z_array.shape
         assert x_array.ndim == 1
@@ -932,8 +933,8 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
                                        poisson_ratio, self.strike_slip, 0., self.dip_slip)
 
         vert_disp = np.array(gf["z"])
-
-        return vert_disp
+        vert_grid = vert_disp.reshape(grid_shape[1:])
+        return vert_grid
 
 
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/bruce/rundir4627",

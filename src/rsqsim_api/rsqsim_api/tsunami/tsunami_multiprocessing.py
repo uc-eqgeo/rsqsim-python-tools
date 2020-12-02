@@ -2,6 +2,7 @@ from rsqsim_api.containers.fault import RsqSimMultiFault, RsqSimSegment
 import multiprocessing as mp
 from typing import Union
 import h5py
+import netCDF4
 import numpy as np
 
 sentinel = None
@@ -86,10 +87,8 @@ def patch_greens_functions(in_queue: mp.Queue, x_sites: np.ndarray, y_sites: np.
         if queue_contents:
             index, patch = queue_contents
             print(patch.patch_number)
-            disp_array = patch.calculate_tsunami_greens_functions(x_sites, y_sites, z_sites,
-                                                                  slip_magnitude=slip_magnitude)
-            disp_grid = disp_array.reshape(grid_shape[1:])
 
-            out_queue.put((index, disp_grid))
+            out_queue.put((index, patch.calculate_tsunami_greens_functions(x_sites, y_sites, z_sites, grid_shape,
+                                                                           slip_magnitude=slip_magnitude)))
         else:
             break
