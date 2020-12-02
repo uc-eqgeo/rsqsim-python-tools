@@ -97,6 +97,15 @@ class RsqSimMultiFault:
         self._names = [fault.name for fault in self.faults]
         self._name_dic = {fault.name: fault for fault in self.faults}
 
+    @property
+    def bounds(self):
+        x0 = min([fault.bounds[0] for fault in self.faults])
+        y0 = min([fault.bounds[1] for fault in self.faults])
+        x1 = max([fault.bounds[2] for fault in self.faults])
+        y1 = max([fault.bounds[3] for fault in self.faults])
+
+        return np.array([x0, y0, x1, y1])
+
     @classmethod
     def read_fault_file(cls, fault_file: str, verbose: bool = False):
         """
@@ -387,6 +396,15 @@ class RsqSimSegment:
         if self._vertices is None:
             self.get_unique_vertices()
         return self._vertices
+
+    @property
+    def bounds(self):
+        x0 = min(self.vertices[:, 0])
+        y0 = min(self.vertices[:, 1])
+        x1 = max(self.vertices[:, 0])
+        y1 = max(self.vertices[:, 1])
+        bounds = np.array([x0, y0, x1, y1])
+        return bounds
 
     def get_unique_vertices(self):
         if self.patch_vertices is None:
