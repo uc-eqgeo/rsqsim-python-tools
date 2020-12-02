@@ -506,7 +506,7 @@ class RsqSimSegment:
     @classmethod
     def from_pandas(cls, dataframe: pd.DataFrame, segment_number: int,
                     patch_numbers: Union[list, tuple, set, np.ndarray], fault_name: str = None,
-                    strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None,
+                    strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None, read_rake: bool = True,
                     transform_from_utm: bool = False):
 
         triangles = dataframe.iloc[:, :9].to_numpy()
@@ -525,9 +525,15 @@ class RsqSimSegment:
 
         triangle_ls = []
 
+        if read_rake:
+            assert "rake" in dataframe.columns, "Cannot read rake"
+
+
         # Populate segment object
         for patch_num, triangle in zip(patch_numbers, triangles_nztm):
             triangle3 = triangle.reshape(3, 3)
+            if read_rake:
+
             patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
                                           strike_slip=strike_slip,
                                           dip_slip=dip_slip)
@@ -919,7 +925,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         ds_gf = calc_tri_displacements(x_array, y_array, z_array, xv, yv, -1. * zv,
                                        poisson_ratio, 0., 0., slip_magnitude)
         ss_gf = calc_tri_displacements(x_array, y_array, z_array, xv, yv, -1. * zv,
-                                       poisson_ratio, slip_magnitude, 0., 0.)
+                                       poisson_ratio, -1 * slip_magnitude, 0., 0.)
 
         ds_vert = np.array(ds_gf["z"])
         ss_vert = np.array(ss_gf["z"])
