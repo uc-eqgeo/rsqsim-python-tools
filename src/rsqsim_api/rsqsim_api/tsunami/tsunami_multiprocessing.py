@@ -46,8 +46,12 @@ def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_site
         jobs.append(p)
         p.start()
 
-    for patch_i, patch in enumerate(fault.patch_outlines):
-        in_queue.put((patch_i, patch))
+    if isinstance(fault, RsqSimSegment):
+        for patch_i, patch in enumerate(fault.patch_outlines):
+            in_queue.put((patch_i, patch))
+    else:
+        for patch_i, patch in fault.patch_dic.items():
+            in_queue.put((patch_i, patch))
 
     for i in range(num_processes):
         in_queue.put(sentinel)
