@@ -8,8 +8,10 @@ from mpi4py import MPI
 sentinel = None
 
 
+
 def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_sites: np.ndarray, y_sites: np.ndarray,
-                           out_file: str, z_sites: np.ndarray = None, slip_magnitude: Union[float, int] = 1.):
+                           out_file: str, z_sites: np.ndarray = None, slip_magnitude: Union[float, int] = 1.,
+                           num_processors: int = None):
     # Check sites arrays
     assert all([isinstance(a, np.ndarray) for a in [x_sites, y_sites]])
     assert x_sites.shape == y_sites.shape
@@ -34,7 +36,11 @@ def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_site
         z_array = z_sites
         dset_shape = (n_patches, x_sites.size)
 
-    num_processes = int(np.round(mp.cpu_count() / 2))
+    if num_processors is None:
+        num_processes = int(np.round(mp.cpu_count() / 2))
+    else:
+        assert isinstance(num_processors, int)
+        num_processes = num_processors
     jobs = []
     out_queue = mp.Queue()
     in_queue = mp.Queue()
@@ -68,6 +74,26 @@ def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_site
 def handle_output(output_queue: mp.Queue, output_file: str, dset_shape: tuple):
     f = h5py.File(output_file, "w")
     disp_dset = f.create_dataset("ssd_1m", shape=dset_shape, dtype="f")
+
+    while True:
+        args = output_queue.get()
+        if args:
+            index, vert_disp = args
+            disp_dset[index] = vert_disp
+        else:
+            break
+    f.close()
+
+def handle_output_netcdf_parallel(output_queue: mp.Queue, output_file: str, dset_shape: tuple,
+                                  mpi_rank: MPI.Intracom):
+    assert len(dset_shape) == 3
+    dset = nc.Dataset(output_file, "w", parallel=True, comm=mpi_rank, info=MPI.Info(), format="NETCDF4_CLASSIC")
+    for dim, dim_len in zip(("y", "x", "npatch"), dset_shape):
+        dset.createDimension(dim, dim_len)
+    dset.createVariable("ssd_1m", np.float32, ())
+    dset.set_collective(True)
+
+
 
     while True:
         args = output_queue.get()
