@@ -398,10 +398,14 @@ class RsqSimEvent:
         return event
 
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
-                     write: str = None):
+                     write: str = None, clip: bool = True, subplots=None):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
-        fig, ax = plt.subplots()
+
+        if subplots is not None:
+            fig, ax = subplots
+        else:
+            fig, ax = plt.subplots()
 
         # Find maximum slip for subduction interface
 
@@ -457,7 +461,11 @@ class RsqSimEvent:
             crust_cbar = fig.colorbar(crustal_plot, ax=ax)
             crust_cbar.set_label("Slip (m)")
 
-        plot_coast(ax, clip_boundary=self.boundary)
+        if clip:
+            plot_coast(ax, clip_boundary=self.boundary)
+        else:
+            plot_coast(ax)
+
         ax.set_aspect("equal")
         if write is not None:
             fig.savefig(write, dpi=300)
