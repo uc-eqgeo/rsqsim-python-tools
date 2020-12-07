@@ -39,9 +39,9 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     sub_mappable.set_clim(vmin=0, vmax=global_max_slip)
     crust_mappable = ScalarMappable(cmap=crustal_cmap)
     crust_mappable.set_clim(vmin=0, vmax=global_max_slip)
-    sub_cbar = plt.colorbar(sub_mappable, ax=axes.fig.axes)
+    sub_cbar = plt.colorbar(sub_mappable, ax=axes.fig.axes, extend='max')
     sub_cbar.set_label("Subduction slip (m)")
-    crust_cbar = plt.colorbar(crust_mappable, ax=axes.fig.axes)
+    crust_cbar = plt.colorbar(crust_mappable, ax=axes.fig.axes, extend='max')
     crust_cbar.set_label("Slip (m)")
     axes.sub_mappable = sub_mappable
     axes.crust_mappable = crust_mappable
@@ -50,7 +50,7 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     axcolor = 'lightgoldenrodyellow'
     axtime = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
     time_slider = Slider(
-        axtime, 'Time', axes.timestamps[0], axes.timestamps[-1], valstep=step_size)
+        axtime, 'Time', axes.timestamps[0], axes.timestamps[-1], valinit=axes.timestamps[0], valstep=step_size)
 
     def update(val):
         time = time_slider.val
@@ -97,4 +97,5 @@ class AxesSequence(object):
             self._i = i
 
     def show(self):
+        self.axes[0].set_visible(True)
         plt.show()
