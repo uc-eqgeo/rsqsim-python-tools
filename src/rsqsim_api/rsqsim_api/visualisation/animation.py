@@ -8,7 +8,7 @@ from matplotlib.cm import ScalarMappable
 import os
 
 
-def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", global_max_slip: int = 0, step_size: int = 1e8, interval: int = 100):
+def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", global_max_slip: int = 10, step_size: int = 1e8, interval: int = 100):
     # get all unique values
     event_list = dict.fromkeys(catalogue.event_list.tolist())
     # get RsqSimEvent objects
@@ -24,9 +24,9 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
 
     # Build colorbars
     sub_mappable = ScalarMappable(cmap=subduction_cmap)
-    sub_mappable.set_clim(vmin=0, vmax=10)
+    sub_mappable.set_clim(vmin=0, vmax=global_max_slip)
     crust_mappable = ScalarMappable(cmap=crustal_cmap)
-    crust_mappable.set_clim(vmin=0, vmax=10)
+    crust_mappable.set_clim(vmin=0, vmax=global_max_slip)
     sub_cbar = plt.colorbar(sub_mappable, ax=axes.fig.axes)
     sub_cbar.set_label("Subduction slip (m)")
     crust_cbar = plt.colorbar(crust_mappable, ax=axes.fig.axes)
