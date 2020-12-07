@@ -9,6 +9,18 @@ import os
 
 
 def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", global_max_slip: int = 10, step_size: int = 1e8, interval: int = 100):
+    """Shows an animation of a sequence of earthquake events over time
+
+    Args:
+        catalogue (RsqSimCatalogue): Catalogue of events to animate
+        fault_model (RsqSimMultiFault): Fault model for events
+        subduction_cmap (str): Colourmap for subduction colorbar
+        crustal_cmap (str): Colourmap for crustal_cmap colorbar
+        global_max_slip (int): Max slip to use for the colorscale
+        step_size (int): Step size to advance every interval
+        interval (int): How long each frame lasts
+    """
+
     # get all unique values
     event_list = dict.fromkeys(catalogue.event_list.tolist())
     # get RsqSimEvent objects
