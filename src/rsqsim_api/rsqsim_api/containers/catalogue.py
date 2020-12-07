@@ -398,7 +398,7 @@ class RsqSimEvent:
         return event
 
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
-                     write: str = None, clip: bool = True, subplots=None):
+                     write: str = None, clip: bool = True, subplots=None, show_cbar: bool = False, global_max_slip: int = 0):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
 
@@ -423,6 +423,7 @@ class RsqSimEvent:
                 colour_dic[f_i] = colours
                 if max(colours) > max_slip:
                     max_slip = max(colours)
+        max_slip = global_max_slip if global_max_slip > 0 else max_slip
 
         # Plot subduction interface
         subduction_list = []
@@ -446,6 +447,7 @@ class RsqSimEvent:
                 colour_dic[f_i] = colours
                 if max(colours) > max_slip:
                     max_slip = max(colours)
+        max_slip = global_max_slip if global_max_slip > 0 else max_slip
 
         crustal_plot = None
         for f_i, fault in enumerate(self.faults):
@@ -454,12 +456,13 @@ class RsqSimEvent:
                                             facecolors=colour_dic[f_i],
                                             cmap=crustal_cmap, vmin=0, vmax=max_slip)
 
-        if subduction_list:
-            sub_cbar = fig.colorbar(subduction_plot, ax=ax)
-            sub_cbar.set_label("Subduction slip (m)")
-        if crustal_plot is not None:
-            crust_cbar = fig.colorbar(crustal_plot, ax=ax)
-            crust_cbar.set_label("Slip (m)")
+        if show_cbar:
+            if subduction_list:
+                sub_cbar = fig.colorbar(subduction_plot, ax=ax)
+                sub_cbar.set_label("Subduction slip (m)")
+            if crustal_plot is not None:
+                crust_cbar = fig.colorbar(crustal_plot, ax=ax)
+                crust_cbar.set_label("Slip (m)")
 
         if clip:
             plot_coast(ax, clip_boundary=self.boundary)
