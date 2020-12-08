@@ -50,8 +50,6 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     sub_cbar.set_label("Subduction slip (m)")
     crust_cbar = plt.colorbar(crust_mappable, ax=axes.fig.axes, extend='max')
     crust_cbar.set_label("Slip (m)")
-    axes.sub_mappable = sub_mappable
-    axes.crust_mappable = crust_mappable
 
     # Slider to represent time progression
     axcolor = 'lightgoldenrodyellow'
@@ -67,7 +65,8 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     time_slider.on_changed(update)
 
     def update_plot(num):
-        val = (time_slider.val + step_size) % time_slider.valmax
+        val = (time_slider.val + step_size - time_slider.valmin) % (
+            time_slider.valmax - time_slider.valmin) + time_slider.valmin
         time_slider.set_val(val)
 
     animation = FuncAnimation(axes.fig, update_plot, interval=interval)
@@ -82,8 +81,6 @@ class AxesSequence(object):
         self.axes = []
         self.timestamps = []
         self.on_screen = []  # earthquakes currently displayed
-        self.sub_mappable = None
-        self.crust_mappable = None
         self._i = 0  # Currently displayed axes index
         self._n = 0  # Last created axes index
 
@@ -103,7 +100,6 @@ class AxesSequence(object):
             i = self.timestamps.index(val)
             curr_ax = self.axes[i]
             curr_ax.set_visible(True)
-            self.fade(curr_ax)
             self.on_screen.append(curr_ax)
             self._i = i
         for ax in self.on_screen:
@@ -124,6 +120,5 @@ class AxesSequence(object):
 
     def show(self):
         self.axes[0].set_visible(True)
-        self.fade(self.axes[0])
         self.on_screen.append(self.axes[0])
         plt.show()
