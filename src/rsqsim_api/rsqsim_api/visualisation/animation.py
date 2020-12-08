@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 from matplotlib.widgets import Slider
 from matplotlib.animation import FuncAnimation
 from matplotlib.cm import ScalarMappable
+from matplotlib.collections import PolyCollection
 import os
 
 
@@ -33,6 +34,12 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
             show=False, clip=False, subplots=(axes.fig, ax), show_cbar=False, global_max_slip=global_max_slip)
         axes.timestamps.append(round(events[i].t0, -8))
         print("Plotting: " + str(i+1) + "/" + str(num_events))
+
+    # Plot coast
+    coast_ax = axes.fig.add_subplot(111, label="coast")
+    plot_coast(coast_ax)
+    coast_ax.set_aspect("equal")
+    coast_ax.patch.set_alpha(0)
 
     # Build colorbars
     sub_mappable = ScalarMappable(cmap=subduction_cmap)
@@ -74,6 +81,7 @@ class AxesSequence(object):
         self.fig = plt.figure()
         self.axes = []
         self.timestamps = []
+        self.on_screen = []  # earthquakes currently displayed
         self.sub_mappable = None
         self.crust_mappable = None
         self._i = 0  # Currently displayed axes index
@@ -85,6 +93,7 @@ class AxesSequence(object):
 
     def new(self):
         ax = self.fig.add_subplot(111, visible=False, label=self._n)
+        ax.patch.set_alpha(0)
         self._n += 1
         self.axes.append(ax)
         return ax
@@ -92,10 +101,29 @@ class AxesSequence(object):
     def set_plot(self, val):
         if val in self.timestamps:
             i = self.timestamps.index(val)
-            self.axes[self._i].set_visible(False)
-            self.axes[i].set_visible(True)
+            curr_ax = self.axes[i]
+            curr_ax.set_visible(True)
+            self.fade(curr_ax)
+            self.on_screen.append(curr_ax)
             self._i = i
+        for ax in self.on_screen:
+            self.fade(ax)
+
+    def fade(self, ax):
+        visible = True
+        for obj in ax.findobj(match=PolyCollection):
+            opacity = obj.get_alpha()
+            if opacity - .05 <= 0:
+                obj.set_alpha(1)
+                visible = False
+            else:
+                obj.set_alpha(opacity - .05)
+        if visible is False:
+            self.on_screen.remove(ax)
+            ax.set_visible(False)
 
     def show(self):
         self.axes[0].set_visible(True)
+        self.fade(self.axes[0])
+        self.on_screen.append(self.axes[0])
         plt.show()
