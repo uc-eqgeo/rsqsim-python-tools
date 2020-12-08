@@ -398,7 +398,7 @@ class RsqSimEvent:
         return event
 
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
-                     write: str = None, show_coast: bool = True, subplots=None, show_cbar: bool = True, global_max_slip: int = 0):
+                     write: str = None, show_coast: bool = True, subplots=None, show_cbar: bool = True, global_max_sub_slip: int = 0, global_max_slip: int = 0):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
 
@@ -423,7 +423,7 @@ class RsqSimEvent:
                 colour_dic[f_i] = colours
                 if max(colours) > max_slip:
                     max_slip = max(colours)
-        max_slip = global_max_slip if global_max_slip > 0 else max_slip
+        max_slip = global_max_sub_slip if global_max_sub_slip > 0 else max_slip
 
         # Plot subduction interface
         subduction_list = []

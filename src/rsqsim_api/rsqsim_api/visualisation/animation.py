@@ -10,7 +10,7 @@ import numpy as np
 import os
 
 
-def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", global_max_slip: int = 10, step_size: int = 1e8, interval: int = 100):
+def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40, step_size: int = 1e8, interval: int = 100):
     """Shows an animation of a sequence of earthquake events over time
 
     Args:
@@ -19,6 +19,7 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
         subduction_cmap (str): Colourmap for subduction colorbar
         crustal_cmap (str): Colourmap for crustal_cmap colorbar
         global_max_slip (int): Max slip to use for the colorscale
+        global_max_sub_slip (int): Max subduction slip to use for the colorscale
         step_size (int): Step size to advance every interval
         interval (int): How long each frame lasts
     """
@@ -32,13 +33,13 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     num_events = len(events)
     for i, ax in zip(range(num_events), axes):
         max_slips = events[i].plot_slip_2d(
-            show=False, show_coast=False, subplots=(axes.fig, ax), show_cbar=False, global_max_slip=global_max_slip)
+            show=False, show_coast=False, subplots=(axes.fig, ax), show_cbar=False, global_max_slip=global_max_slip, global_max_sub_slip=global_max_sub_slip)
         axes.timestamps.append(round(events[i].t0, -8))
         print("Plotting: " + str(i+1) + "/" + str(num_events))
 
     # Build colorbars
     sub_mappable = ScalarMappable(cmap=subduction_cmap)
-    sub_mappable.set_clim(vmin=0, vmax=global_max_slip)
+    sub_mappable.set_clim(vmin=0, vmax=global_max_sub_slip)
     crust_mappable = ScalarMappable(cmap=crustal_cmap)
     crust_mappable.set_clim(vmin=0, vmax=global_max_slip)
     sub_cbar = plt.colorbar(sub_mappable, ax=axes.fig.axes, extend='max')
