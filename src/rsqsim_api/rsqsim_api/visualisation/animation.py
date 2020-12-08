@@ -6,6 +6,7 @@ from matplotlib.widgets import Slider
 from matplotlib.animation import FuncAnimation
 from matplotlib.cm import ScalarMappable
 from matplotlib.collections import PolyCollection
+import numpy as np
 import os
 
 
@@ -31,15 +32,9 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     num_events = len(events)
     for i, ax in zip(range(num_events), axes):
         max_slips = events[i].plot_slip_2d(
-            show=False, clip=False, subplots=(axes.fig, ax), show_cbar=False, global_max_slip=global_max_slip)
+            show=False, show_coast=False, subplots=(axes.fig, ax), show_cbar=False, global_max_slip=global_max_slip)
         axes.timestamps.append(round(events[i].t0, -8))
         print("Plotting: " + str(i+1) + "/" + str(num_events))
-
-    # Plot coast
-    coast_ax = axes.fig.add_subplot(111, label="coast")
-    plot_coast(coast_ax)
-    coast_ax.set_aspect("equal")
-    coast_ax.patch.set_alpha(0)
 
     # Build colorbars
     sub_mappable = ScalarMappable(cmap=subduction_cmap)
@@ -81,6 +76,10 @@ class AxesSequence(object):
         self.axes = []
         self.timestamps = []
         self.on_screen = []  # earthquakes currently displayed
+        self.coast_ax = self.fig.add_subplot(111, label="coast")
+        plot_coast(self.coast_ax)
+        self.coast_ax.set_aspect("equal")
+        self.coast_ax.patch.set_alpha(0)
         self._i = 0  # Currently displayed axes index
         self._n = 0  # Last created axes index
 
@@ -89,7 +88,8 @@ class AxesSequence(object):
             yield self.new()
 
     def new(self):
-        ax = self.fig.add_subplot(111, visible=False, label=self._n)
+        ax = self.fig.add_subplot(
+            111, visible=False, label=self._n, sharex=self.coast_ax, sharey=self.coast_ax)
         ax.patch.set_alpha(0)
         self._n += 1
         self.axes.append(ax)
@@ -100,6 +100,7 @@ class AxesSequence(object):
             i = self.timestamps.index(val)
             curr_ax = self.axes[i]
             curr_ax.set_visible(True)
+            self.fade(curr_ax)
             self.on_screen.append(curr_ax)
             self._i = i
         for ax in self.on_screen:
@@ -120,5 +121,6 @@ class AxesSequence(object):
 
     def show(self):
         self.axes[0].set_visible(True)
+        self.fade(self.axes[0])
         self.on_screen.append(self.axes[0])
         plt.show()

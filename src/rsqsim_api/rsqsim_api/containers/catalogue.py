@@ -398,7 +398,7 @@ class RsqSimEvent:
         return event
 
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
-                     write: str = None, clip: bool = True, subplots=None, show_cbar: bool = True, global_max_slip: int = 0):
+                     write: str = None, show_coast: bool = True, subplots=None, show_cbar: bool = True, global_max_slip: int = 0):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
 
@@ -464,10 +464,8 @@ class RsqSimEvent:
                 crust_cbar = fig.colorbar(crustal_plot, ax=ax)
                 crust_cbar.set_label("Slip (m)")
 
-        if clip:
+        if show_coast:
             plot_coast(ax, clip_boundary=self.boundary)
-        else:
-            plot_coast(ax)
 
         ax.set_aspect("equal")
         if write is not None:
