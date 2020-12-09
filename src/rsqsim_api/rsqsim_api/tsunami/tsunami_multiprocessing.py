@@ -4,14 +4,13 @@ from typing import Union
 import h5py
 import netCDF4 as nc
 import numpy as np
-from mpi4py import MPI
+import random
 sentinel = None
 
 
-
 def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_sites: np.ndarray, y_sites: np.ndarray,
-                           out_file: str, z_sites: np.ndarray = None, slip_magnitude: Union[float, int] = 1.,
-                           num_processors: int = None):
+                           out_file_prefix: str, z_sites: np.ndarray = None, slip_magnitude: Union[float, int] = 1.,
+                           num_processors: int = None, num_write: int = 4):
     # Check sites arrays
     assert all([isinstance(a, np.ndarray) for a in [x_sites, y_sites]])
     assert x_sites.shape == y_sites.shape
@@ -41,24 +40,59 @@ def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_site
     else:
         assert isinstance(num_processors, int)
         num_processes = num_processors
-    jobs = []
-    out_queue = mp.Queue()
-    in_queue = mp.Queue()
-    output_proc = mp.Process(target=handle_output, args=(out_queue, out_file, dset_shape))
-    output_proc.start()
 
+    all_patch_ls = []
+    if isinstance(fault, RsqSimSegment):
+        for patch in fault.patch_outlines:
+            all_patch_ls.append([patch.patch_number, patch])
+    else:
+        for patch_i, patch in fault.patch_dic.items():
+            all_patch_ls.append([patch_i, patch])
+
+    num_per_write = int(np.round(len(all_patch_ls) / num_write))
+    all_patches_with_write_indices = []
+    separate_write_index_dic = {}
+    for i in range(num_write):
+        range_min = i * num_per_write
+        range_max = (i + 1) * num_per_write
+        index_ls = []
+        for file_index, patch_tuple in enumerate(all_patch_ls[range_min:range_max]):
+            new_ls = [i, file_index] + patch_tuple
+            all_patches_with_write_indices.append(new_ls)
+            index_ls.append(patch_tuple[0])
+        separate_write_index_dic[i] = np.array(index_ls)
+
+    random.shuffle(all_patches_with_write_indices)
+
+    out_queue_dic = {}
+    out_proc_ls = []
+    for i in range(num_write):
+
+        patch_indices = separate_write_index_dic[i]
+        dset_shape_i = (len(patch_indices), dset_shape[1], dset_shape[-1])
+        out_queue = mp.Queue(maxsize=1000)
+        out_file_name = out_file_prefix + "{:d}.nc".format(i)
+        out_queue_dic[i] = out_queue
+        output_proc = mp.Process(target=handle_output_netcdf, args=(out_queue, separate_write_index_dic[i],
+                                                                    out_file_name, dset_shape_i))
+        out_proc_ls.append(output_proc)
+        output_proc.start()
+
+
+
+
+
+    jobs = []
+    in_queue = mp.Queue()
     for i in range(num_processes):
         p = mp.Process(target=patch_greens_functions,
-                       args=(in_queue, x_array, y_array, z_array, out_queue, dset_shape, slip_magnitude))
+                       args=(in_queue, x_array, y_array, z_array, out_queue_dic, dset_shape, slip_magnitude))
         jobs.append(p)
         p.start()
 
-    if isinstance(fault, RsqSimSegment):
-        for patch_i, patch in enumerate(fault.patch_outlines):
-            in_queue.put((patch_i, patch))
-    else:
-        for patch_i, patch in fault.patch_dic.items():
-            in_queue.put((patch_i, patch))
+    for row in all_patches_with_write_indices:
+        file_no, file_index, patch_index, patch = row
+        in_queue.put((file_no, file_index, patch_index, patch))
 
     for i in range(num_processes):
         in_queue.put(sentinel)
@@ -66,9 +100,13 @@ def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_site
     for p in jobs:
         p.join()
 
-    out_queue.put(None)
+    for i in range(num_write):
+        out_queue_dic[i].put(sentinel)
+        out_proc_ls[i].join()
 
-    output_proc.join()
+    in_queue.close()
+    for i in range(num_write):
+        out_queue_dic[i].close()
 
 
 def handle_output(output_queue: mp.Queue, output_file: str, dset_shape: tuple):
@@ -84,37 +122,40 @@ def handle_output(output_queue: mp.Queue, output_file: str, dset_shape: tuple):
             break
     f.close()
 
-def handle_output_netcdf_parallel(output_queue: mp.Queue, output_file: str, dset_shape: tuple,
-                                  mpi_rank: MPI.Intracom):
+
+def handle_output_netcdf(output_queue: mp.Queue, patch_indices: np.ndarray, output_file: str, dset_shape: tuple):
     assert len(dset_shape) == 3
-    dset = nc.Dataset(output_file, "w", parallel=True, comm=mpi_rank, info=MPI.Info(), format="NETCDF4_CLASSIC")
-    for dim, dim_len in zip(("y", "x", "npatch"), dset_shape):
+    assert len(patch_indices) == dset_shape[0]
+
+    dset = nc.Dataset(output_file, "w")
+    for dim, dim_len in zip(("npatch", "y", "x"), dset_shape):
         dset.createDimension(dim, dim_len)
-    dset.createVariable("ssd_1m", np.float32, ())
-    dset.set_collective(True)
-
-
+    patch_var = dset.createVariable("index", np.int, ("npatch"))
+    patch_var[:] = patch_indices
+    ssd = dset.createVariable("ssd", np.float32, ("npatch", "y", "x"), least_significant_digit=4)
 
     while True:
         args = output_queue.get()
         if args:
-            index, vert_disp = args
-            disp_dset[index] = vert_disp
+            index, patch_index, vert_disp = args
+            assert patch_index in patch_indices
+            ssd[index] = vert_disp
+            print(patch_index)
         else:
             break
-    f.close()
+    dset.close()
 
 
 def patch_greens_functions(in_queue: mp.Queue, x_sites: np.ndarray, y_sites: np.ndarray,
                            z_sites: np.ndarray,
-                           out_queue: mp.Queue, grid_shape: tuple, slip_magnitude: Union[int, float] = 1):
+                           out_queue_dic: dict, grid_shape: tuple, slip_magnitude: Union[int, float] = 1):
     while True:
         queue_contents = in_queue.get()
         if queue_contents:
-            index, patch = queue_contents
-            print(patch.patch_number, out_queue.qsize())
+            file_no, file_index, patch_number, patch = queue_contents
 
-            out_queue.put((index, patch.calculate_tsunami_greens_functions(x_sites, y_sites, z_sites, grid_shape,
-                                                                           slip_magnitude=slip_magnitude)))
+            out_queue_dic[file_no].put((file_index, patch_number,
+                                        patch.calculate_tsunami_greens_functions(x_sites, y_sites, z_sites, grid_shape,
+                                                                                 slip_magnitude=slip_magnitude)))
         else:
             break
