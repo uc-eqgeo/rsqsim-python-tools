@@ -10,7 +10,7 @@ sentinel = None
 
 def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_sites: np.ndarray, y_sites: np.ndarray,
                            out_file_prefix: str, z_sites: np.ndarray = None, slip_magnitude: Union[float, int] = 1.,
-                           num_processors: int = None, num_write: int = 4):
+                           num_processors: int = None, num_write: int = 8):
     # Check sites arrays
     assert all([isinstance(a, np.ndarray) for a in [x_sites, y_sites]])
     assert x_sites.shape == y_sites.shape
@@ -133,14 +133,16 @@ def handle_output_netcdf(output_queue: mp.Queue, patch_indices: np.ndarray, outp
     patch_var = dset.createVariable("index", np.int, ("npatch"))
     patch_var[:] = patch_indices
     ssd = dset.createVariable("ssd", np.float32, ("npatch", "y", "x"), least_significant_digit=4)
-
+    counter = 0
+    num_patch = len(patch_indices)
     while True:
         args = output_queue.get()
         if args:
             index, patch_index, vert_disp = args
             assert patch_index in patch_indices
             ssd[index] = vert_disp
-            print(patch_index)
+            counter += 1
+            print("{:d}/{:d} complete".format(counter, num_patch))
         else:
             break
     dset.close()
