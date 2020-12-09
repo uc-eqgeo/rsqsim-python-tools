@@ -88,6 +88,8 @@ class AxesSequence(object):
         plot_coast(self.coast_ax)
         self.coast_ax.set_aspect("equal")
         self.coast_ax.patch.set_alpha(0)
+        self.coast_ax.get_xaxis().set_visible(False)
+        self.coast_ax.get_yaxis().set_visible(False)
         self._i = 0  # Currently displayed axes index
         self._n = 0  # Last created axes index
 
@@ -99,6 +101,9 @@ class AxesSequence(object):
         ax = self.fig.add_subplot(
             111, visible=False, label=self._n, sharex=self.coast_ax, sharey=self.coast_ax)
         ax.patch.set_alpha(0)
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+        ax.axis('off')
         self._n += 1
         self.axes.append(ax)
         return ax
