@@ -12,5 +12,6 @@ bruce_faults = RsqSimMultiFault.read_fault_file_bruce(os.path.join(run_dir, "../
     run_dir, "../../../data/bruce_m7/znames_Deepen.in"),
     transform_from_utm=True)
 
-filtered_cat = catalogue.filter_whole_catalogue(max_t0=20e9)
+filtered_cat = catalogue.filter_whole_catalogue(
+    max_t0=1000*3.154e7)  # 1000 years
 AnimateSequence(filtered_cat, bruce_faults)

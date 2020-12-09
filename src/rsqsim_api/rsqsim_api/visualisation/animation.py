@@ -6,11 +6,11 @@ from matplotlib.widgets import Slider
 from matplotlib.animation import FuncAnimation
 from matplotlib.cm import ScalarMappable
 from matplotlib.collections import PolyCollection
-import numpy as np
+import math
 import os
 
 
-def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40, step_size: int = 1e8, interval: int = 100):
+def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40, step_size: int = 5, interval: int = 50):
     """Shows an animation of a sequence of earthquake events over time
 
     Args:
@@ -21,7 +21,7 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
         global_max_slip (int): Max slip to use for the colorscale
         global_max_sub_slip (int): Max subduction slip to use for the colorscale
         step_size (int): Step size to advance every interval
-        interval (int): How long each frame lasts
+        interval (int): Time (ms) between each frame
     """
 
     # get all unique values
@@ -34,8 +34,9 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     for i, ax in zip(range(num_events), axes):
         max_slips = events[i].plot_slip_2d(
             show=False, show_coast=False, subplots=(axes.fig, ax), show_cbar=False, global_max_slip=global_max_slip, global_max_sub_slip=global_max_sub_slip)
-        axes.timestamps.append(round(events[i].t0, -8))
-        print("Plotting: " + str(i+1) + "/" + str(num_events))
+        years = math.floor(events[i].t0 / 3.154e7)
+        axes.timestamps.append(step_size * round(years/step_size))
+        print("Plotting: " + str(i + 1) + "/" + str(num_events))
 
     # Build colorbars
     sub_mappable = ScalarMappable(cmap=subduction_cmap)
@@ -51,7 +52,7 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     axcolor = 'lightgoldenrodyellow'
     axtime = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
     time_slider = Slider(
-        axtime, 'Time', axes.timestamps[0], axes.timestamps[-1], valinit=axes.timestamps[0], valstep=step_size)
+        axtime, 'Year', axes.timestamps[0] - step_size, axes.timestamps[-1] + step_size, valinit=axes.timestamps[0] - step_size, valstep=step_size)
 
     def update(val):
         time = time_slider.val
@@ -63,6 +64,12 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     def update_plot(num):
         val = (time_slider.val + step_size - time_slider.valmin) % (
             time_slider.valmax - time_slider.valmin) + time_slider.valmin
+        if val == time_slider.valmin:
+            for ax in axes.on_screen:
+                ax.set_visible(False)
+                for obj in ax.findobj(match=PolyCollection):
+                    obj.set_alpha(1)
+            axes.on_screen.clear()
         time_slider.set_val(val)
 
     animation = FuncAnimation(axes.fig, update_plot, interval=interval)
@@ -97,13 +104,14 @@ class AxesSequence(object):
         return ax
 
     def set_plot(self, val):
-        if val in self.timestamps:
-            i = self.timestamps.index(val)
-            curr_ax = self.axes[i]
+        while val == self.timestamps[self._i + 1]:
+            self._i += 1
+            curr_ax = self.axes[self._i]
             curr_ax.set_visible(True)
-            self.fade(curr_ax)
             self.on_screen.append(curr_ax)
-            self._i = i
+            if self._i == len(self.timestamps) - 1:
+                self._i = -1  # ready for next loop
+
         for ax in self.on_screen:
             self.fade(ax)
 
@@ -111,17 +119,16 @@ class AxesSequence(object):
         visible = True
         for obj in ax.findobj(match=PolyCollection):
             opacity = obj.get_alpha()
-            if opacity - .05 <= 0:
+            if opacity - .15 <= 0:
                 obj.set_alpha(1)
                 visible = False
             else:
-                obj.set_alpha(opacity - .05)
+                obj.set_alpha(opacity - .15)
         if visible is False:
             self.on_screen.remove(ax)
             ax.set_visible(False)
 
     def show(self):
-        self.axes[0].set_visible(True)
-        self.fade(self.axes[0])
-        self.on_screen.append(self.axes[0])
+        self.axes[self._i].set_visible(True)
+        self.on_screen.append(self.axes[self._i])
         plt.show()
