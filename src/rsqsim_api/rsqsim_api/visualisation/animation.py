@@ -6,6 +6,7 @@ from matplotlib.widgets import Slider
 from matplotlib.animation import FuncAnimation
 from matplotlib.cm import ScalarMappable
 from matplotlib.collections import PolyCollection
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import math
 import os
 
@@ -29,7 +30,6 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     # get RsqSimEvent objects
     events = catalogue.events_by_number(list(event_list), fault_model)
     axes = AxesSequence()
-    plt.subplots_adjust(left=0.25, bottom=0.25)
     num_events = len(events)
     for i, ax in zip(range(num_events), axes):
         max_slips = events[i].plot_slip_2d(
@@ -38,19 +38,27 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
         axes.timestamps.append(step_size * round(years/step_size))
         print("Plotting: " + str(i + 1) + "/" + str(num_events))
 
+    coast_ax_divider = make_axes_locatable(axes.coast_ax)
+
     # Build colorbars
     sub_mappable = ScalarMappable(cmap=subduction_cmap)
     sub_mappable.set_clim(vmin=0, vmax=global_max_sub_slip)
     crust_mappable = ScalarMappable(cmap=crustal_cmap)
     crust_mappable.set_clim(vmin=0, vmax=global_max_slip)
-    sub_cbar = plt.colorbar(sub_mappable, ax=axes.fig.axes, extend='max')
+    parent_axes = axes.axes + [axes.coast_ax]
+    sub_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.25)
+    crust_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.5)
+    sub_cbar = axes.fig.colorbar(
+        sub_mappable, cax=sub_ax, extend='max')
     sub_cbar.set_label("Subduction slip (m)")
-    crust_cbar = plt.colorbar(crust_mappable, ax=axes.fig.axes, extend='max')
+    crust_cbar = axes.fig.colorbar(
+        crust_mappable, cax=crust_ax, extend='max')
     crust_cbar.set_label("Slip (m)")
 
     # Slider to represent time progression
     axcolor = 'lightgoldenrodyellow'
-    axtime = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
+    axtime = coast_ax_divider.append_axes(
+        "bottom", size="3%", pad=0.5)
     time_slider = Slider(
         axtime, 'Year', axes.timestamps[0] - step_size, axes.timestamps[-1] + step_size, valinit=axes.timestamps[0] - step_size, valstep=step_size)
 
@@ -72,7 +80,8 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
             axes.on_screen.clear()
         time_slider.set_val(val)
 
-    animation = FuncAnimation(axes.fig, update_plot, interval=interval)
+    animation = FuncAnimation(axes.fig, update_plot,
+                              interval=interval)
     axes.show()
 
 
@@ -104,6 +113,13 @@ class AxesSequence(object):
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
         ax.axis('off')
+        ax_divider = make_axes_locatable(ax)
+        ax_slider = ax_divider.append_axes(
+            "bottom", size="3%", pad=0.5)
+        ax_cbar = ax_divider.append_axes(
+            "right", size="10%", pad=0.75)
+        ax_slider.set_visible(False)
+        ax_cbar.set_visible(False)
         self._n += 1
         self.axes.append(ax)
         return ax
@@ -124,11 +140,11 @@ class AxesSequence(object):
         visible = True
         for obj in ax.findobj(match=PolyCollection):
             opacity = obj.get_alpha()
-            if opacity - .15 <= 0:
+            if opacity / 2 <= 1e-2:
                 obj.set_alpha(1)
                 visible = False
             else:
-                obj.set_alpha(opacity - .15)
+                obj.set_alpha(opacity / 2)
         if visible is False:
             self.on_screen.remove(ax)
             ax.set_visible(False)
