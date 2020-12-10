@@ -97,6 +97,15 @@ class RsqSimMultiFault:
         self._names = [fault.name for fault in self.faults]
         self._name_dic = {fault.name: fault for fault in self.faults}
 
+    @property
+    def bounds(self):
+        x0 = min([fault.bounds[0] for fault in self.faults])
+        y0 = min([fault.bounds[1] for fault in self.faults])
+        x1 = max([fault.bounds[2] for fault in self.faults])
+        y1 = max([fault.bounds[3] for fault in self.faults])
+
+        return np.array([x0, y0, x1, y1])
+
     @classmethod
     def read_fault_file(cls, fault_file: str, verbose: bool = False):
         """
@@ -388,6 +397,15 @@ class RsqSimSegment:
             self.get_unique_vertices()
         return self._vertices
 
+    @property
+    def bounds(self):
+        x0 = min(self.vertices[:, 0])
+        y0 = min(self.vertices[:, 1])
+        x1 = max(self.vertices[:, 0])
+        y1 = max(self.vertices[:, 1])
+        bounds = np.array([x0, y0, x1, y1])
+        return bounds
+
     def get_unique_vertices(self):
         if self.patch_vertices is None:
             raise ValueError("Read in triangles first!")
@@ -488,8 +506,8 @@ class RsqSimSegment:
     @classmethod
     def from_pandas(cls, dataframe: pd.DataFrame, segment_number: int,
                     patch_numbers: Union[list, tuple, set, np.ndarray], fault_name: str = None,
-                    strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None,
-                    transform_from_utm: bool = False):
+                    strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None, read_rake: bool = True,
+                    normalize_slip: Union[float, int] = 1, transform_from_utm: bool = False):
 
         triangles = dataframe.iloc[:, :9].to_numpy()
         if transform_from_utm:
@@ -507,9 +525,20 @@ class RsqSimSegment:
 
         triangle_ls = []
 
+        if read_rake:
+            assert "rake" in dataframe.columns, "Cannot read rake"
+            assert all([a is None for a in (dip_slip, strike_slip)]), "Either read_rake or specify ds and ss, not both!"
+            rake = dataframe.rake.to_numpy()
+            assert len(rake) == len(triangles_nztm)
+        else:
+            rake = np.zeros((len(triangles_nztm),))
+
         # Populate segment object
-        for patch_num, triangle in zip(patch_numbers, triangles_nztm):
+        for i, (patch_num, triangle) in enumerate(zip(patch_numbers, triangles_nztm)):
             triangle3 = triangle.reshape(3, 3)
+            if read_rake:
+                strike_slip = np.cos(np.radians(rake[i])) * normalize_slip
+                dip_slip = np.sin(np.radians(rake[i])) * normalize_slip
             patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
                                           strike_slip=strike_slip,
                                           dip_slip=dip_slip)
@@ -589,7 +618,7 @@ class RsqSimSegment:
         return self._adjacency_map
 
     def build_adjacency_map(self):
-        '''
+        """
         For each triangle vertex, find the indices of the adjacent triangles.
         This function overwrites that from the parent class TriangularPatches.
 
@@ -598,7 +627,7 @@ class RsqSimSegment:
 
         :Returns:
             * None
-        '''
+        """
 
         self._adjacency_map = []
 
@@ -616,7 +645,7 @@ class RsqSimSegment:
 
     def build_laplacian_matrix(self):
 
-        '''
+        """
         Build a discrete Laplacian smoothing matrix.
 
         :Args:
@@ -630,7 +659,7 @@ class RsqSimSegment:
 
         :Returns:
             * Laplacian     : 2D array
-        '''
+        """
 
         # Build the tent adjacency map
         if self.adjacency_map is None:
@@ -757,8 +786,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
     """
 
     def __init__(self, segment: RsqSimSegment, vertices: Union[list, np.ndarray, tuple], patch_number: int = 0,
-                 dip_slip: float = None, strike_slip: float = None, rake: Union[int, float] = None,
-                 ):
+                 dip_slip: float = None, strike_slip: float = None):
 
         super(RsqSimTriangularPatch, self).__init__(segment=segment, patch_number=patch_number,
                                                     dip_slip=dip_slip, strike_slip=strike_slip)
@@ -818,7 +846,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
 
     def calculate_dip(self):
         horizontal = np.linalg.norm(self.down_dip_vector[:-1])
-        vertical = -1 * self.down_dip_vector[:-1]
+        vertical = -1 * self.down_dip_vector[-1]
         return np.degrees(np.arctan(vertical / horizontal))
 
     @property
@@ -892,21 +920,21 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         return Polygon(self.vertices)
 
     def calculate_tsunami_greens_functions(self, x_array: np.ndarray, y_array: np.ndarray, z_array: np.ndarray,
-                                            poisson_ratio: float = 0.25, slip_magnitude: Union[int, float] = 1.):
+                                           grid_shape: tuple, poisson_ratio: float = 0.25,
+                                           slip_magnitude: Union[int, float] = 1.):
         assert all([isinstance(a, np.ndarray) for a in [x_array, y_array]])
         assert x_array.shape == y_array.shape == z_array.shape
         assert x_array.ndim == 1
 
+        assert all([a is not None for a in (self.dip_slip, self.strike_slip)])
+
         xv, yv, zv = [self.vertices.T[i] for i in range(3)]
-        ds_gf = calc_tri_displacements(x_array, y_array, z_array, xv, yv, -1. * zv,
-                                       poisson_ratio, 0., 0., slip_magnitude)
-        ss_gf = calc_tri_displacements(x_array, y_array, z_array, xv, yv, -1. * zv,
-                                       poisson_ratio, slip_magnitude, 0., 0.)
+        gf = calc_tri_displacements(x_array, y_array, z_array, xv, yv, -1. * zv,
+                                       poisson_ratio, self.strike_slip, 0., self.dip_slip)
 
-        ds_vert = np.array(ds_gf["z"])
-        ss_vert = np.array(ss_gf["z"])
-
-        return ds_vert, ss_vert
+        vert_disp = np.array(gf["z"])
+        vert_grid = vert_disp.reshape(grid_shape[1:])
+        return vert_grid
 
 
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/bruce/rundir4627",

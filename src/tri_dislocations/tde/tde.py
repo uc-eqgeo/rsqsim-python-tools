@@ -319,7 +319,7 @@ def rotate_xy_vec(x, y, alpha):
 @jit(nopython=True)
 def offset_underlying_points(x, y, z, sx, sy, sz, slip_vec, U):
 
-    poly = list(zip(x,y))
+    poly = list(zip(x, y))
 
     for i in range(len(sx)):
         xi, yi, zi = sx[i], sy[i], sz[i]
