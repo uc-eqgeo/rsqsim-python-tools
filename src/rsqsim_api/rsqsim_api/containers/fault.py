@@ -323,6 +323,7 @@ class RsqSimSegment:
         self._patch_type = None
         self._adjacency_map = None
         self._laplacian = None
+        self._boundary = None
 
         self.patch_type = patch_type
         self.name = fault_name
@@ -399,12 +400,29 @@ class RsqSimSegment:
 
     @property
     def bounds(self):
+        """
+        Square box in XY plane containing all vertices
+        """
         x0 = min(self.vertices[:, 0])
         y0 = min(self.vertices[:, 1])
         x1 = max(self.vertices[:, 0])
         y1 = max(self.vertices[:, 1])
         bounds = np.array([x0, y0, x1, y1])
         return bounds
+
+    @property
+    def boundary(self):
+        return self._boundary
+
+    @boundary.setter
+    def boundary(self, boundary_array: np.ndarray):
+        if boundary_array is not None:
+            assert isinstance(boundary_array, np.ndarray)
+            assert boundary_array.ndim == 2  # 2D array
+            assert boundary_array.shape[0] == 3  # Three columns
+
+        self._boundary = boundary_array
+
 
     def get_unique_vertices(self):
         if self.patch_vertices is None:
