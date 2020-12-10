@@ -96,7 +96,7 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
 
 
 class AxesSequence(object):
-    """Creates a series of axes in a figure where only one is displayed at any given time."""
+    """Controls a series of plots on the screen and when they are visible"""
 
     def __init__(self, fig, timestamps, plots, coast_ax):
         self.fig = fig
