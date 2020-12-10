@@ -425,6 +425,8 @@ class RsqSimEvent:
                     max_slip = max(colours)
         max_slip = global_max_sub_slip if global_max_sub_slip > 0 else max_slip
 
+        plots = []
+
         # Plot subduction interface
         subduction_list = []
         subduction_plot = None
@@ -434,6 +436,7 @@ class RsqSimEvent:
                 subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
                                                facecolors=colour_dic[f_i],
                                                cmap=subduction_cmap, vmin=0, vmax=max_slip)
+                plots.append(subduction_plot)
 
         max_slip = 0
         colour_dic = {}
@@ -455,6 +458,7 @@ class RsqSimEvent:
                 crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
                                             facecolors=colour_dic[f_i],
                                             cmap=crustal_cmap, vmin=0, vmax=max_slip)
+                plots.append(crustal_plot)
 
         if show_cbar:
             if subduction_list:
@@ -476,6 +480,8 @@ class RsqSimEvent:
                 plt.close(fig)
         if show:
             plt.show()
+
+        return plots
 
     def plot_slip_3d(self):
         pass

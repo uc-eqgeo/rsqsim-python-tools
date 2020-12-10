@@ -29,29 +29,43 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     event_list = dict.fromkeys(catalogue.event_list.tolist())
     # get RsqSimEvent objects
     events = catalogue.events_by_number(list(event_list), fault_model)
-    axes = AxesSequence()
+
+    fig = plt.figure()
+
+    # plot map
+    coast_ax = fig.add_subplot(111, label="coast")
+    plot_coast(coast_ax)
+    coast_ax.set_aspect("equal")
+    coast_ax.patch.set_alpha(0)
+    coast_ax.get_xaxis().set_visible(False)
+    coast_ax.get_yaxis().set_visible(False)
+
     num_events = len(events)
-    for i, ax in zip(range(num_events), axes):
-        max_slips = events[i].plot_slip_2d(
-            show=False, show_coast=False, subplots=(axes.fig, ax), show_cbar=False, global_max_slip=global_max_slip, global_max_sub_slip=global_max_sub_slip)
-        years = math.floor(events[i].t0 / 3.154e7)
-        axes.timestamps.append(step_size * round(years/step_size))
+    all_plots = []
+    timestamps = []
+    for i, e in enumerate(events):
+        plots = e.plot_slip_2d(
+            show=False, show_coast=False, subplots=(fig, coast_ax), show_cbar=False, global_max_slip=global_max_slip, global_max_sub_slip=global_max_sub_slip)
+        for p in plots:
+            p.set_visible(False)
+        years = math.floor(e.t0 / 3.154e7)
+        all_plots.append(plots)
+        timestamps.append(step_size * round(years/step_size))
         print("Plotting: " + str(i + 1) + "/" + str(num_events))
 
-    coast_ax_divider = make_axes_locatable(axes.coast_ax)
+    coast_ax_divider = make_axes_locatable(coast_ax)
 
     # Build colorbars
     sub_mappable = ScalarMappable(cmap=subduction_cmap)
     sub_mappable.set_clim(vmin=0, vmax=global_max_sub_slip)
     crust_mappable = ScalarMappable(cmap=crustal_cmap)
     crust_mappable.set_clim(vmin=0, vmax=global_max_slip)
-    parent_axes = axes.axes + [axes.coast_ax]
     sub_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.25)
     crust_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.5)
-    sub_cbar = axes.fig.colorbar(
+    sub_cbar = fig.colorbar(
         sub_mappable, cax=sub_ax, extend='max')
     sub_cbar.set_label("Subduction slip (m)")
-    crust_cbar = axes.fig.colorbar(
+    crust_cbar = fig.colorbar(
         crust_mappable, cax=crust_ax, extend='max')
     crust_cbar.set_label("Slip (m)")
 
@@ -60,7 +74,9 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     axtime = coast_ax_divider.append_axes(
         "bottom", size="3%", pad=0.5)
     time_slider = Slider(
-        axtime, 'Year', axes.timestamps[0] - step_size, axes.timestamps[-1] + step_size, valinit=axes.timestamps[0] - step_size, valstep=step_size)
+        axtime, 'Year', timestamps[0] - step_size, timestamps[-1], valinit=timestamps[0] - step_size, valstep=step_size)
+
+    axes = AxesSequence(fig, timestamps, all_plots, coast_ax)
 
     def update(val):
         time = time_slider.val
@@ -70,86 +86,63 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     time_slider.on_changed(update)
 
     def update_plot(num):
-        val = (time_slider.val + step_size - time_slider.valmin) % (
-            time_slider.valmax - time_slider.valmin) + time_slider.valmin
-        if val == time_slider.valmin:
-            for ax in axes.on_screen:
-                ax.set_visible(False)
-                for obj in ax.findobj(match=PolyCollection):
-                    obj.set_alpha(1)
-            axes.on_screen.clear()
+        val = time_slider.valmin + num * step_size
         time_slider.set_val(val)
 
+    frames = int((time_slider.valmax - time_slider.valmin) / step_size) + 1
     animation = FuncAnimation(axes.fig, update_plot,
-                              interval=interval)
+                              interval=interval, frames=frames)
     axes.show()
 
 
 class AxesSequence(object):
     """Creates a series of axes in a figure where only one is displayed at any given time."""
 
-    def __init__(self):
-        self.fig = plt.figure()
-        self.axes = []
-        self.timestamps = []
+    def __init__(self, fig, timestamps, plots, coast_ax):
+        self.fig = fig
+        self.timestamps = timestamps
+        self.plots = plots
+        self.coast_ax = coast_ax
         self.on_screen = []  # earthquakes currently displayed
-        self.coast_ax = self.fig.add_subplot(111, label="coast")
-        plot_coast(self.coast_ax)
-        self.coast_ax.set_aspect("equal")
-        self.coast_ax.patch.set_alpha(0)
-        self.coast_ax.get_xaxis().set_visible(False)
-        self.coast_ax.get_yaxis().set_visible(False)
         self._i = 0  # Currently displayed axes index
         self._n = 0  # Last created axes index
 
-    def __iter__(self):
-        while True:
-            yield self.new()
-
-    def new(self):
-        ax = self.fig.add_subplot(
-            111, visible=False, label=self._n, sharex=self.coast_ax, sharey=self.coast_ax)
-        ax.patch.set_alpha(0)
-        ax.get_xaxis().set_visible(False)
-        ax.get_yaxis().set_visible(False)
-        ax.axis('off')
-        ax_divider = make_axes_locatable(ax)
-        ax_slider = ax_divider.append_axes(
-            "bottom", size="3%", pad=0.5)
-        ax_cbar = ax_divider.append_axes(
-            "right", size="10%", pad=0.75)
-        ax_slider.set_visible(False)
-        ax_cbar.set_visible(False)
-        self._n += 1
-        self.axes.append(ax)
-        return ax
-
     def set_plot(self, val):
+        # reset loop
+        if self._i + 1 == len(self.timestamps) - 1:
+            for plot in self.on_screen:
+                for p in plot:
+                    p.set_alpha(1)
+                    p.set_visible(False)
+            self.on_screen.clear()
+            self._i = -1
+
+        # plot corresponding event
         while val == self.timestamps[self._i + 1]:
             self._i += 1
-            curr_ax = self.axes[self._i]
-            curr_ax.set_visible(True)
-            self.on_screen.append(curr_ax)
-            if self._i == len(self.timestamps) - 1:
-                self._i = -1  # ready for next loop
+            curr_plots = self.plots[self._i]
+            for p in curr_plots:
+                p.set_visible(True)
+            self.on_screen.append(curr_plots)
 
-        for ax in self.on_screen:
-            self.fade(ax)
+        for i, p in enumerate(self.on_screen):
+            self.fade(p, i)
 
-    def fade(self, ax):
+    def fade(self, plot, index):
         visible = True
-        for obj in ax.findobj(match=PolyCollection):
-            opacity = obj.get_alpha()
+        for p in plot:
+            opacity = p.get_alpha()
             if opacity / 2 <= 1e-2:
-                obj.set_alpha(1)
+                p.set_alpha(1)
                 visible = False
+                p.set_visible(False)
             else:
-                obj.set_alpha(opacity / 2)
+                p.set_alpha(opacity / 2)
         if visible is False:
-            self.on_screen.remove(ax)
-            ax.set_visible(False)
+            self.on_screen.pop(index)
 
     def show(self):
-        self.axes[self._i].set_visible(True)
-        self.on_screen.append(self.axes[self._i])
+        for p in self.plots[self._i]:
+            p.set_visible(True)
+        self.on_screen.append(self.plots[self._i])
         plt.show()
