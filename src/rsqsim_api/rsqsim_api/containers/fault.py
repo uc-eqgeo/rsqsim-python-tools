@@ -423,6 +423,10 @@ class RsqSimSegment:
 
         self._boundary = boundary_array
 
+    @property
+    def quaternion(self):
+        return None
+
 
     def get_unique_vertices(self):
         if self.patch_vertices is None:
