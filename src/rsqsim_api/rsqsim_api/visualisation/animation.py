@@ -5,7 +5,6 @@ from matplotlib import pyplot as plt
 from matplotlib.widgets import Slider
 from matplotlib.animation import FuncAnimation
 from matplotlib.cm import ScalarMappable
-from matplotlib.collections import PolyCollection
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import math
 import os
@@ -70,17 +69,18 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     crust_cbar.set_label("Slip (m)")
 
     # Slider to represent time progression
-    axcolor = 'lightgoldenrodyellow'
     axtime = coast_ax_divider.append_axes(
         "bottom", size="3%", pad=0.5)
     time_slider = Slider(
-        axtime, 'Year', timestamps[0] - step_size, timestamps[-1], valinit=timestamps[0] - step_size, valstep=step_size)
+        axtime, 'Year', timestamps[0] - step_size, timestamps[-1] + step_size, valinit=timestamps[0] - step_size, valstep=step_size)
 
     axes = AxesSequence(fig, timestamps, all_plots, coast_ax)
 
     def update(val):
         time = time_slider.val
         axes.set_plot(time)
+        if val == time_slider.valmax:
+            axes.stop()
         axes.fig.canvas.draw_idle()
 
     time_slider.on_changed(update)
@@ -104,21 +104,11 @@ class AxesSequence(object):
         self.plots = plots
         self.coast_ax = coast_ax
         self.on_screen = []  # earthquakes currently displayed
-        self._i = 0  # Currently displayed axes index
-        self._n = 0  # Last created axes index
+        self._i = -1  # Currently displayed axes index
 
     def set_plot(self, val):
-        # reset loop
-        if self._i + 1 == len(self.timestamps) - 1:
-            for plot in self.on_screen:
-                for p in plot:
-                    p.set_alpha(1)
-                    p.set_visible(False)
-            self.on_screen.clear()
-            self._i = -1
-
         # plot corresponding event
-        while val == self.timestamps[self._i + 1]:
+        while self._i < len(self.timestamps) - 1 and val == self.timestamps[self._i + 1]:
             self._i += 1
             curr_plots = self.plots[self._i]
             for p in curr_plots:
@@ -138,11 +128,16 @@ class AxesSequence(object):
                 p.set_visible(False)
             else:
                 p.set_alpha(opacity / 2)
-        if visible is False:
+        if not visible:
             self.on_screen.pop(index)
 
+    def stop(self):
+        for plot in self.on_screen:
+            for p in plot:
+                p.set_visible(False)
+                p.set_alpha(1)
+        self._i = -1
+        self.on_screen.clear()
+
     def show(self):
-        for p in self.plots[self._i]:
-            p.set_visible(True)
-        self.on_screen.append(self.plots[self._i])
         plt.show()
