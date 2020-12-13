@@ -3,14 +3,14 @@ from rsqsim_api.containers.fault import RsqSimMultiFault
 from rsqsim_api.visualisation.utilities import plot_coast
 from matplotlib import pyplot as plt
 from matplotlib.widgets import Slider
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, PillowWriter
 from matplotlib.cm import ScalarMappable
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import math
 import os
 
 
-def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40, step_size: int = 5, interval: int = 50):
+def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40, step_size: int = 5, interval: int = 50, write: str = None, fps: int = 20):
     """Shows an animation of a sequence of earthquake events over time
 
     Args:
@@ -22,6 +22,8 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
         global_max_sub_slip (int): Max subduction slip to use for the colorscale
         step_size (int): Step size to advance every interval
         interval (int): Time (ms) between each frame
+        write (str): Write animation to .gif with given filename.
+        fps (int): Frames per second for .gif
     """
 
     # get all unique values
@@ -81,7 +83,7 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
         axes.set_plot(time)
         if val == time_slider.valmax:
             axes.stop()
-        axes.fig.canvas.draw_idle()
+        fig.canvas.draw_idle()
 
     time_slider.on_changed(update)
 
@@ -90,9 +92,14 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
         time_slider.set_val(val)
 
     frames = int((time_slider.valmax - time_slider.valmin) / step_size) + 1
-    animation = FuncAnimation(axes.fig, update_plot,
+    animation = FuncAnimation(fig, update_plot,
                               interval=interval, frames=frames)
-    axes.show()
+
+    if write is not None:
+        writer = PillowWriter(fps=fps)
+        animation.save(f"{write}.gif", writer=writer)
+    else:
+        axes.show()
 
 
 class AxesSequence(object):
