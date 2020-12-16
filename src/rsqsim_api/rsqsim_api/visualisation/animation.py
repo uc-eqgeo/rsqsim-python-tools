@@ -31,7 +31,11 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     # get all unique values
     event_list = np.unique(catalogue.event_list)
     # get RsqSimEvent objects
+
+    t0 = time.time()
     events = catalogue.events_by_number(event_list.tolist(), fault_model)
+    t1 = time.time()
+    print(t1 - t0)
     fig = plt.figure()
 
     # plot map
@@ -46,8 +50,7 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     all_plots = []
     timestamps = []
     for i, e in enumerate(events):
-        plots = e.plot_slip_2d(
-            show=False, show_coast=False, subplots=(fig, coast_ax), show_cbar=False, global_max_slip=global_max_slip, global_max_sub_slip=global_max_sub_slip)
+        plots = e.plot_slip_2d(subplots=(fig, coast_ax), global_max_slip=global_max_slip, global_max_sub_slip=global_max_sub_slip)
         for p in plots:
             p.set_visible(False)
         years = math.floor(e.t0 / 3.154e7)
