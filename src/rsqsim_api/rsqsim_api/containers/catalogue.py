@@ -374,16 +374,20 @@ class RsqSimEvent:
                              patch_time: Union[list, np.ndarray, tuple],
                              fault_model: RsqSimMultiFault, filter_single_patches: bool = True,
                              min_patches: int = 10, min_slip: Union[float, int] = 1, event_id: int = None):
-        event = cls.from_catalogue_array(t0, m0, mw, x, y, z, area, dt, event_id=event_id)
-        faults = list(set([fault_model.patch_dic[a].segment for a in patch_numbers]))
-        patch_faults = [fault_model.patch_dic[a].segment for a in patch_numbers]
+        event = cls.from_catalogue_array(
+            t0, m0, mw, x, y, z, area, dt, event_id=event_id)
+        filtered_patch_dic = { i: fault_model.patch_dic[i] for i in patch_numbers }
+        patch_faults = [i.segment for i in filtered_patch_dic.values()]
+        patch_faults_counter = Counter(patch_faults)
+
         indices_to_delete = []
-        for fault in faults:
-            if patch_faults.count(fault) < min_patches:
-                patches_on_fault = np.array([a for a in patch_numbers if fault_model.patch_dic[a].segment == fault])
-                patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_fault])
+        for fault in set(patch_faults):
+            if patch_faults_counter[fault] < min_patches:
+                patches_on_fault = (a for a in patch_numbers if filtered_patch_dic[a].segment == fault)
+                patch_on_fault_indices = (np.argwhere(patch_numbers == i)[0][0] for i in patches_on_fault)
                 # if patch_slip[patch_on_fault_indices].max() < min_slip:
-                indices_to_delete += list(patch_on_fault_indices)
+                indices_to_delete.extend(list(patch_on_fault_indices))
+
         indices_to_delete_array = np.array(indices_to_delete)
         if indices_to_delete:
             patch_numbers = np.delete(patch_numbers, indices_to_delete_array)
@@ -393,8 +397,9 @@ class RsqSimEvent:
         event.patch_numbers = np.array(patch_numbers)
         event.patch_slip = np.array(patch_slip)
         event.patch_time = np.array(patch_time)
-        event.patches = [fault_model.patch_dic[i] for i in event.patch_numbers]
-        event.faults = list(set([fault_model.patch_dic[a].segment for a in event.patch_numbers]))
+        event.patches = [filtered_patch_dic[i] for i in event.patch_numbers]
+        event.faults = list(set([filtered_patch_dic[a].segment for a in event.patch_numbers]))
+
         return event
 
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
