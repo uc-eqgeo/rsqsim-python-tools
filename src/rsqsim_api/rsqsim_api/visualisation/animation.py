@@ -9,7 +9,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import math
 import os
 import numpy as np
-import time
 
 
 def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40, step_size: int = 5, interval: int = 50, write: str = None, fps: int = 20):
@@ -32,10 +31,7 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     event_list = np.unique(catalogue.event_list)
     # get RsqSimEvent objects
 
-    t0 = time.time()
     events = catalogue.events_by_number(event_list.tolist(), fault_model)
-    t1 = time.time()
-    print(t1 - t0)
     fig = plt.figure()
 
     # plot map

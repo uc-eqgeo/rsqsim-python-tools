@@ -1,5 +1,5 @@
 from typing import Union, Iterable
-from collections import abc, Counter
+from collections import abc, Counter, defaultdict
 import os
 
 from matplotlib import pyplot as plt
@@ -299,13 +299,12 @@ class RsqSimCatalogue:
             patch_numbers = self.patch_list[ev_indices]
             patch_slip = self.patch_slip[ev_indices]
             patch_time_list = self.patch_time_list[ev_indices]
-            patch_dic = { i: fault_model.patch_dic[i] for i in patch_numbers }
             event_i = RsqSimEvent.from_earthquake_list(df.t0[index], df.m0[index], df.mw[index], df.x[index],
                                                        df.y[index], df.z[index], df.area[index], df.dt[index],
                                                        patch_numbers=patch_numbers,
                                                        patch_slip=patch_slip,
                                                        patch_time=patch_time_list,
-                                                       patch_dic=patch_dic, min_patches=50,
+                                                       fault_model=fault_model, min_patches=50,
                                                        event_id=index)
             out_events.append(event_i)
         return out_events
@@ -376,29 +375,26 @@ class RsqSimEvent:
                              patch_numbers: Union[list, np.ndarray, tuple],
                              patch_slip: Union[list, np.ndarray, tuple],
                              patch_time: Union[list, np.ndarray, tuple],
-                             patch_dic: dict, filter_single_patches: bool = True,
+                             fault_model: RsqSimMultiFault, filter_single_patches: bool = True,
                              min_patches: int = 10, min_slip: Union[float, int] = 1, event_id: int = None):
         event = cls.from_catalogue_array(
             t0, m0, mw, x, y, z, area, dt, event_id=event_id)
-        patch_faults = [i.segment for i in patch_dic.values()]
-        patch_faults_counter = Counter(patch_faults)
+
+        patch_dic = { i: fault_model.patch_dic[i] for i in patch_numbers }
+        patches_on_fault = defaultdict(list)
+        for patch_number, patch in patch_dic.items():
+            patches_on_fault[patch.segment].append(patch_number)
 
         mask = np.full(len(patch_numbers), True)
-        for fault in set(patch_faults):
-            if patch_faults_counter[fault] < min_patches:
-                patches_on_fault = np.array([a for a in patch_numbers if patch_dic[a].segment == fault])
-                patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_fault])
+        for fault in patches_on_fault.keys():
+            if len(patches_on_fault[fault]) < min_patches:
+                patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_fault[fault]])
                 # if patch_slip[patch_on_fault_indices].max() < min_slip:
                 mask[patch_on_fault_indices] = False
 
-        if not all(mask):
-            patch_numbers = np.delete(patch_numbers, mask)
-            patch_slip = np.delete(patch_slip, mask)
-            patch_time = np.delete(patch_time, mask)
-
-        event.patch_numbers = np.array(patch_numbers)
-        event.patch_slip = np.array(patch_slip)
-        event.patch_time = np.array(patch_time)
+        event.patch_numbers = patch_numbers[mask]
+        event.patch_slip = patch_slip[mask]
+        event.patch_time = patch_time[mask]
         event.patches = [patch_dic[i] for i in event.patch_numbers]
         event.faults = list(set([a.segment for a in event.patches]))
         return event
