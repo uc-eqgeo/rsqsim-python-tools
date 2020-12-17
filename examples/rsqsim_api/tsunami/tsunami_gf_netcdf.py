@@ -10,6 +10,5 @@ if __name__ == "__main__":
     # All of NZ
     x_data = np.arange(800000, 2200000, 2000)
     y_data = np.arange(4200000, 6020000, 2000)
-    x_grid, y_grid = np.meshgrid(x_data, y_data)
 
-    multiprocess_gf_to_hdf(faults, x_grid, y_grid, out_file_prefix="bruce_2km_")
+    multiprocess_gf_to_hdf(faults, x_data, y_data, out_file_prefix="bruce_2km_")

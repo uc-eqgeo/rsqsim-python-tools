@@ -8,32 +8,40 @@ import random
 sentinel = None
 
 
-def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_sites: np.ndarray, y_sites: np.ndarray,
-                           out_file_prefix: str, z_sites: np.ndarray = None, slip_magnitude: Union[float, int] = 1.,
+def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_range: np.ndarray, y_range: np.ndarray,
+                           out_file_prefix: str, x_grid: np.ndarray = None, y_grid: np.ndarray = None, z_grid: np.ndarray = None, slip_magnitude: Union[float, int] = 1.,
                            num_processors: int = None, num_write: int = 8):
-    # Check sites arrays
-    assert all([isinstance(a, np.ndarray) for a in [x_sites, y_sites]])
-    assert x_sites.shape == y_sites.shape
-    assert x_sites.ndim <= 2
+    assert all([isinstance(a, np.ndarray) for a in [x_range, y_range]])
+    assert all([x_range.ndim == 1, y_range.ndim == 1])
 
-    if z_sites is not None:
-        assert isinstance(z_sites, np.ndarray)
-        assert z_sites.shape == x_sites.shape
+    # Check sites arrays
+
+    if all([a is not None for a in (x_grid, y_grid)]):
+        assert all([isinstance(a, np.ndarray) for a in [x_grid, y_grid]])
+        assert x_grid.shape == (y_range.size, x_range.size)
+        assert x_grid.shape == y_grid.shape
+        assert x_grid.ndim <= 2
     else:
-        z_sites = np.zeros(x_sites.shape)
+        x_grid, y_grid = np.meshgrid(x_range, y_range)
+
+    if z_grid is not None:
+        assert isinstance(z_grid, np.ndarray)
+        assert z_grid.shape == x_grid.shape
+    else:
+        z_grid = np.zeros(x_grid.shape)
 
     n_patches = len(fault.patch_dic)
 
-    if x_sites.ndim == 2:
-        x_array = x_sites.flatten()
-        y_array = y_sites.flatten()
-        z_array = z_sites.flatten()
-        dset_shape = (n_patches, x_sites.shape[0], x_sites.shape[1])
+    if x_grid.ndim == 2:
+        x_array = x_grid.flatten()
+        y_array = y_grid.flatten()
+        z_array = z_grid.flatten()
+        dset_shape = (n_patches, x_grid.shape[0], x_grid.shape[1])
     else:
-        x_array = x_sites
-        y_array = y_sites
-        z_array = z_sites
-        dset_shape = (n_patches, x_sites.size)
+        x_array = x_grid
+        y_array = y_grid
+        z_array = z_grid
+        dset_shape = (n_patches, x_grid.size)
 
     if num_processors is None:
         num_processes = int(np.round(mp.cpu_count() / 2))
@@ -74,7 +82,7 @@ def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_site
         out_file_name = out_file_prefix + "{:d}.nc".format(i)
         out_queue_dic[i] = out_queue
         output_proc = mp.Process(target=handle_output_netcdf, args=(out_queue, separate_write_index_dic[i],
-                                                                    out_file_name, dset_shape_i))
+                                                                    out_file_name, dset_shape_i, x_range, y_range))
         out_proc_ls.append(output_proc)
         output_proc.start()
 
@@ -123,14 +131,20 @@ def handle_output(output_queue: mp.Queue, output_file: str, dset_shape: tuple):
     f.close()
 
 
-def handle_output_netcdf(output_queue: mp.Queue, patch_indices: np.ndarray, output_file: str, dset_shape: tuple):
+def handle_output_netcdf(output_queue: mp.Queue, patch_indices: np.ndarray, output_file: str, dset_shape: tuple,
+                         x_range: np.ndarray, y_range: np.ndarray):
     assert len(dset_shape) == 3
     assert len(patch_indices) == dset_shape[0]
 
     dset = nc.Dataset(output_file, "w")
     for dim, dim_len in zip(("npatch", "y", "x"), dset_shape):
         dset.createDimension(dim, dim_len)
-    patch_var = dset.createVariable("index", np.int, ("npatch"))
+    patch_var = dset.createVariable("index", np.int, ("npatch",))
+    dset.createVariable("x", np.float32, ("x",))
+    dset.createVariable("y", np.float32, ("y",))
+    dset["x"][:] = x_range
+    dset["y"][:] = y_range
+
     patch_var[:] = patch_indices
     ssd = dset.createVariable("ssd", np.float32, ("npatch", "y", "x"), least_significant_digit=4)
     counter = 0
