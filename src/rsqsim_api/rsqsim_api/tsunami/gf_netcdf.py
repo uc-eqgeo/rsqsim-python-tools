@@ -28,7 +28,7 @@ def create_lookup_dict(search_string: str):
 
 def sea_surface_displacements(input_tuple):
     event, lookup = input_tuple
-    event_id = event.event.event_id
+    event_id = event.event_id
     disp_shape = lookup[0].dset["ssd"][0].data.shape
     disp = np.zeros(disp_shape)
     for slip, patch in zip(event.patch_slip, event.patches):
