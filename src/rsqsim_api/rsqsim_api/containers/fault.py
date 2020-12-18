@@ -303,6 +303,15 @@ class RsqSimMultiFault:
         assert isinstance(search_string, str)
         return [name for name in self.names if fnmatch.fnmatch(name, search_string.lower())]
 
+    def filter_by_name(self, search_string: str):
+        matching_names = self.search_name(search_string)
+        if matching_names:
+            matching_indices = [self.names.index(name) for name in matching_names]
+            matching_segments = [self.faults[index] for index in matching_indices]
+            return matching_segments
+        else:
+            raise ValueError("Name not found")
+
 
 class RsqSimSegment:
     def __init__(self, segment_number: int, patch_type: str = "triangle", fault_name: str = None):

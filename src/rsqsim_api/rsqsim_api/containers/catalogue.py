@@ -227,7 +227,6 @@ class RsqSimCatalogue:
 
 
 
-
     def filter_by_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],
                         minimum_patches_per_fault: int = None):
         if isinstance(fault_or_faults, (RsqSimSegment, RsqSimMultiFault)):
@@ -247,7 +246,7 @@ class RsqSimCatalogue:
         patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
         selected_events = self.event_list[patch_indices]
         selected_patches = self.patch_list[patch_indices]
-        if selected_events:
+        if selected_events.size > 0:
             if minimum_patches_per_fault is not None:
                 events_gt_min = []
                 for fault in fault_ls:
@@ -264,8 +263,7 @@ class RsqSimCatalogue:
             else:
                 event_numbers = selected_events
                 event_indices = patch_indices
-            trimmed_df = self.catalogue_df.iloc[event_numbers]
-
+            trimmed_df = self.catalogue_df.loc[np.unique(event_numbers)]
             filtered_cat = self.from_dataframe(trimmed_df)
             filtered_cat.event_list = event_numbers
             filtered_cat.patch_list = self.patch_list[event_indices]
