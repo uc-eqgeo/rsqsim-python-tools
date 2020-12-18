@@ -3,6 +3,8 @@ from collections import abc, Counter, defaultdict
 import os
 
 from matplotlib import pyplot as plt
+from multiprocessing import Pool
+from functools import partial
 import pandas as pd
 import numpy as np
 
@@ -21,6 +23,22 @@ list_file_suffixes = (".pList", ".eList", ".dList", ".tList")
 extra_file_suffixes = (".dmuList", ".dsigmaList", ".dtauList", ".taupList")
 
 seconds_per_year = 31557600.0
+
+
+def get_mask(segment_dic, min_patches):
+    patch_numbers = list(segment_dic.keys())
+
+    patches_on_fault = defaultdict(list)
+    for patch_number, segment_number in segment_dic.items():
+        patches_on_fault[segment_number].append(patch_number)
+
+    mask = np.full(len(patch_numbers), True)
+    for fault in patches_on_fault.keys():
+        if len(patches_on_fault[fault]) < min_patches:
+            patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_fault[fault]])
+            mask[patch_on_fault_indices] = False
+
+    return mask
 
 
 class RsqSimCatalogue:
@@ -285,28 +303,52 @@ class RsqSimCatalogue:
     def filter_by_bounding_box(self):
         pass
 
-    def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault):
+    def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault, child_processes: int = 0):
         if isinstance(event_number, (int, np.int)):
             ev_ls = [event_number]
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
             ev_ls = list(event_number)
             assert all([isinstance(a, (int, np.int)) for a in ev_ls])
+
         out_events = []
-        for index in ev_ls:
-            ev_indices = np.argwhere(self.event_list == index).flatten()
-            df = self.catalogue_df
-            patch_numbers = self.patch_list[ev_indices]
-            patch_slip = self.patch_slip[ev_indices]
-            patch_time_list = self.patch_time_list[ev_indices]
-            event_i = RsqSimEvent.from_earthquake_list(df.t0[index], df.m0[index], df.mw[index], df.x[index],
-                                                       df.y[index], df.z[index], df.area[index], df.dt[index],
-                                                       patch_numbers=patch_numbers,
-                                                       patch_slip=patch_slip,
-                                                       patch_time=patch_time_list,
-                                                       fault_model=fault_model, min_patches=50,
-                                                       event_id=index)
-            out_events.append(event_i)
+        min_patches = 50
+        df = self.catalogue_df
+        if child_processes == 0:
+            for index in ev_ls:
+                ev_indices = np.argwhere(self.event_list == index).flatten()
+                patch_numbers = self.patch_list[ev_indices]
+                patch_slip = self.patch_slip[ev_indices]
+                patch_time_list = self.patch_time_list[ev_indices]
+                event_i = RsqSimEvent.from_earthquake_list(df.t0[index], df.m0[index], df.mw[index], df.x[index],
+                                                           df.y[index], df.z[index], df.area[index], df.dt[index],
+                                                           patch_numbers=patch_numbers,
+                                                           patch_slip=patch_slip,
+                                                           patch_time=patch_time_list,
+                                                           fault_model=fault_model, min_patches=min_patches,
+                                                           event_id=index)
+                out_events.append(event_i)
+
+        else:
+            def collect_events(mask, index, ev_indices):
+                patch_numbers = self.patch_list[ev_indices]
+                patch_slip = self.patch_slip[ev_indices]
+                patch_time = self.patch_time_list[ev_indices]
+                event = RsqSimEvent.from_multiprocessing(df.t0[index], df.m0[index], df.mw[index], df.x[index],
+                                                        df.y[index], df.z[index], df.area[index], df.dt[index],
+                                                        patch_numbers, patch_slip, patch_time,
+                                                        fault_model, mask, event_id=index)
+                out_events.append(event)
+
+            with Pool(processes=child_processes) as pool:
+                for index in ev_ls:
+                    ev_indices = np.argwhere(self.event_list == index).flatten()
+                    patch_numbers = self.patch_list[ev_indices]
+                    patch_dic = { i: fault_model.patch_dic[i].segment.segment_number for i in patch_numbers }
+                    callback = partial(collect_events, index=index, ev_indices=ev_indices)
+                    res = pool.apply_async(get_mask, (patch_dic, min_patches), callback=callback)
+
+
         return out_events
 
 
@@ -389,7 +431,6 @@ class RsqSimEvent:
         for fault in patches_on_fault.keys():
             if len(patches_on_fault[fault]) < min_patches:
                 patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_fault[fault]])
-                # if patch_slip[patch_on_fault_indices].max() < min_slip:
                 mask[patch_on_fault_indices] = False
 
         event.patch_numbers = patch_numbers[mask]
@@ -398,6 +439,23 @@ class RsqSimEvent:
         event.patches = [patch_dic[i] for i in event.patch_numbers]
         event.faults = list(set([a.segment for a in event.patches]))
         return event
+
+    @classmethod
+    def from_multiprocessing(cls, t0: float, m0: float, mw: float, x: float,
+                             y: float, z: float, area: float, dt: float,
+                             patch_numbers: Union[list, np.ndarray, tuple],
+                             patch_slip: Union[list, np.ndarray, tuple],
+                             patch_time: Union[list, np.ndarray, tuple],
+                             fault_model: RsqSimMultiFault, mask: list, event_id: int = None):
+        event = cls.from_catalogue_array(
+            t0, m0, mw, x, y, z, area, dt, event_id=event_id)
+        event.patch_numbers = patch_numbers[mask]
+        event.patch_slip = patch_slip[mask]
+        event.patch_time = patch_time[mask]
+        event.patches = [fault_model.patch_dic[i] for i in event.patch_numbers]
+        event.faults = list(set([a.segment for a in event.patches]))
+        return event
+
 
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
                      write: str = None, subplots = None, global_max_sub_slip: int = 0, global_max_slip: int = 0):

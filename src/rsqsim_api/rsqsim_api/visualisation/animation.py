@@ -6,17 +6,17 @@ from matplotlib.widgets import Slider
 from matplotlib.animation import FuncAnimation, PillowWriter
 from matplotlib.cm import ScalarMappable
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from bisect import bisect
 import math
 import os
 import numpy as np
 
 
-def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40, step_size: int = 5, interval: int = 50, write: str = None, fps: int = 20):
+def AnimateSequence(events: list, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40, step_size: int = 5, interval: int = 50, write: str = None, fps: int = 20):
     """Shows an animation of a sequence of earthquake events over time
 
     Args:
-        catalogue (RsqSimCatalogue): Catalogue of events to animate
-        fault_model (RsqSimMultiFault): Fault model for events
+        events: List of RsqSimEvents
         subduction_cmap (str): Colourmap for subduction colorbar
         crustal_cmap (str): Colourmap for crustal_cmap colorbar
         global_max_slip (int): Max slip to use for the colorscale
@@ -27,11 +27,6 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
         fps (int): Frames per second for .gif
     """
 
-    # get all unique values
-    event_list = np.unique(catalogue.event_list)
-    # get RsqSimEvent objects
-
-    events = catalogue.events_by_number(event_list.tolist(), fault_model)
     fig = plt.figure()
 
     # plot map
@@ -50,8 +45,12 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
         for p in plots:
             p.set_visible(False)
         years = math.floor(e.t0 / 3.154e7)
-        all_plots.append(plots)
-        timestamps.append(step_size * round(years/step_size))
+        timestamp = step_size * round(years/step_size)
+
+        # we can't guarantee order of events list
+        index = bisect(timestamps, timestamp)
+        timestamps.insert(index, timestamp)
+        all_plots.insert(index, plots)
         print("Plotting: " + str(i + 1) + "/" + str(num_events))
 
     coast_ax_divider = make_axes_locatable(coast_ax)
