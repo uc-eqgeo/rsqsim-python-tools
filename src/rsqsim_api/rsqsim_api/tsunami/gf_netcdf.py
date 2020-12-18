@@ -1,9 +1,8 @@
 import numpy as np
 import netCDF4
 from glob import glob
-import multiprocessing as mp
-from threading import Thread
 from concurrent.futures import ThreadPoolExecutor
+
 
 class LookupPatch:
     def __init__(self, patch_index: int, dset: netCDF4.Dataset, dset_index: int):
@@ -13,6 +12,9 @@ class LookupPatch:
 
 
 def create_lookup_dict(search_string: str):
+    """
+    Allows reading of data from different files: Might be possible to replace with netCDF4.MFDataset at some point
+    """
     lookup_dict = {}
     nc_list = []
     files = glob(search_string)
@@ -64,4 +66,3 @@ def sea_surface_displacements_multi(event_ls: list, lookup: dict, out_netcdf: st
         out_dset["ssd"][i] = event_disp
 
     out_dset.close()
-
