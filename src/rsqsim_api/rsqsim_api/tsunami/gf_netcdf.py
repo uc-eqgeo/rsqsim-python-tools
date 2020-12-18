@@ -2,6 +2,8 @@ import numpy as np
 import netCDF4
 from glob import glob
 import multiprocessing as mp
+from threading import Thread
+from concurrent.futures import ThreadPoolExecutor
 
 class LookupPatch:
     def __init__(self, patch_index: int, dset: netCDF4.Dataset, dset_index: int):
@@ -36,11 +38,8 @@ def sea_surface_displacements(input_tuple):
 
 
 def sea_surface_displacements_multi(event_ls: list, lookup: dict, out_netcdf: str, num_processes: int = None):
-    pool = mp.Pool(processes=num_processes)
-    results = pool.map(sea_surface_displacements, [(event, lookup) for event in event_ls])
-    pool.close()
-    pool.join()
-
+    with ThreadPoolExecutor(max_workers=num_processes) as executor:
+        results = executor.map(sea_surface_displacements, [(event, lookup) for event in event_ls])
     template_dset = lookup[0].dset
     x_data = template_dset["x"][:]
     y_data = template_dset["y"][:]
