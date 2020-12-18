@@ -2,7 +2,7 @@ import numpy as np
 from scipy.interpolate import RectBivariateSpline
 from typing import Iterable, Union
 from netCDF4 import Dataset
-from rsqsim_api.io.array_operations import write_gmt_grd
+from rsqsim_api.io.array_operations import write_gmt_grd, write_tiff
 import os
 
 
@@ -24,6 +24,8 @@ class SeaSurfaceDisplacements:
     def to_grid(self, grid_name: str):
         write_gmt_grd(self.x_range, self.y_range, self.disps, grid_name)
 
+    def to_tiff(self, tiff_name: str, epsg: int = 2193):
+        write_tiff(tiff_name, self.x_range, self.y_range, self.disps, epsg=epsg)
 
 class MultiEventSeaSurface:
     def __init__(self, events: Iterable[SeaSurfaceDisplacements]):
@@ -43,6 +45,15 @@ class MultiEventSeaSurface:
         for ev_id, event in self.event_dic.items():
             grid_name = prefix + "{:d}.grd".format(ev_id)
             event.to_grid(grid_name)
+
+    def to_tiffs(self, prefix: str, epsg: int = 2193):
+        for ev_id, event in self.event_dic.items():
+            grid_name = prefix + "{:d}.tif".format(ev_id)
+            event.to_tiff(grid_name, epsg=epsg)
+    def plot_2d(self):
+        pass
+
+
 
 def events_from_ssd_netcdf(event_ids: Union[int, Iterable[int]], nc: Dataset, get_xy: bool = True):
     if isinstance(event_ids, int):
