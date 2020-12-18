@@ -54,11 +54,12 @@ def sea_surface_displacements_multi(event_ls: list, lookup: dict, out_netcdf: st
     out_dset.createVariable("event_id", np.int, ("event_id",))
     out_dset.createVariable("ssd", np.float32, ("event_id", "y", "x"))
 
-    result_id_ls = [result[0] for result in results]
+    result_list = list(results)
+    result_id_ls = [result[0] for result in result_list]
 
     for i, event_id in enumerate(event_id_ls):
         event_index = result_id_ls.index(event_id)
-        event_disp = results[event_index][1]
+        event_disp = result_list[event_index][1]
         out_dset["event_id"][i] = event_id
         out_dset["ssd"][i] = event_disp
 
