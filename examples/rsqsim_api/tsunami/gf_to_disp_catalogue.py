@@ -1,5 +1,6 @@
 from rsqsim_api.containers.catalogue import RsqSimCatalogue
 from rsqsim_api.containers.fault import RsqSimMultiFault
+from rsqsim_api.tsunami.gf_netcdf import create_lookup_dict, sea_surface_displacements_multi
 import os
 
 run_dir = os.path.dirname(__file__)
@@ -14,3 +15,7 @@ bruce_faults = RsqSimMultiFault.read_fault_file_bruce(os.path.join(run_dir, "../
 subduction = bruce_faults.filter_by_name("*hik*")
 sub_only = catalogue.filter_by_fault(subduction)
 events = sub_only.events_by_number(sub_only.catalogue_df.index, bruce_faults)
+
+lookup = create_lookup_dict("bruce_2km_?.nc")
+
+sea_surface_displacements_multi(events, lookup, "test_disp.nc", num_processes=32)

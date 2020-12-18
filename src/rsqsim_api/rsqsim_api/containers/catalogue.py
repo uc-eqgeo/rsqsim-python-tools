@@ -360,7 +360,7 @@ class RsqSimEvent:
         event = cls()
         event.t0, event.m0, event.mw, event.x, event.y, event.z = [t0, m0, mw, x, y, z]
         event.area, event.dt = [area, dt]
-        event.event_id = None
+        event.event_id = event_id
 
         return event
 
