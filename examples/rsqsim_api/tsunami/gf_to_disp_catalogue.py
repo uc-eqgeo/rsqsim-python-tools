@@ -18,4 +18,4 @@ events = sub_only.events_by_number(sub_only.catalogue_df.index, bruce_faults)
 
 lookup = create_lookup_dict("bruce_2km_?.nc")
 
-sea_surface_displacements_multi(events[1:5], lookup, "test_disp.nc")
+sea_surface_displacements_multi(events, lookup, "test_disp.nc")
