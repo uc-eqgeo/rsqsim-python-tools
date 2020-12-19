@@ -49,7 +49,7 @@ def sea_surface_displacements_multi(event_ls: list, lookup: dict, out_netcdf: st
     event_id_ls = [event.event_id for event in event_ls]
 
     out_dset = netCDF4.Dataset(out_netcdf, "w")
-    out_dset.set_auto_maskandscale(False)
+    out_dset.set_always_mask(False)
     for dim, dim_len in zip(["x", "y", "event_id"], [x_data.size, y_data.size, len(event_ls)]):
         out_dset.createDimension(dim, dim_len)
     out_dset.createVariable("x", np.float32, ("x",))
@@ -57,7 +57,7 @@ def sea_surface_displacements_multi(event_ls: list, lookup: dict, out_netcdf: st
     out_dset["x"][:] = x_data
     out_dset["y"][:] = y_data
     out_dset.createVariable("event_id", np.int, ("event_id",))
-    out_dset.createVariable("ssd", np.float32, ("event_id", "y", "x"))
+    out_dset.createVariable("ssd", np.float32, ("event_id", "y", "x"), zlib=True)
 
     result_list = list(results)
     result_id_ls = [result[0] for result in result_list]

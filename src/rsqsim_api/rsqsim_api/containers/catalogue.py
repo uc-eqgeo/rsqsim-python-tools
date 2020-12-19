@@ -217,14 +217,12 @@ class RsqSimCatalogue:
             index_array = np.zeros(trimmed_event_ls.shape, dtype=np.int)
             for new_i, old_i in enumerate(unique_indices):
                 index_array[np.where(trimmed_event_ls == old_i)] = new_i
-            print(index_array)
         else:
             index_array = trimmed_event_ls
 
         rcat = self.from_dataframe_and_arrays(trimmed_df, event_list=index_array, patch_list=trimmed_patch_ls,
                                               patch_slip=trimmed_patch_slip, patch_time_list=trimmed_patch_time)
         return rcat
-
 
     def filter_by_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],
                         minimum_patches_per_fault: int = None):
@@ -262,10 +260,10 @@ class RsqSimCatalogue:
 
             else:
                 event_numbers = selected_events
-                event_indices = patch_indices
+                event_indices = np.where(np.in1d(self.event_list, event_numbers))[0]
             trimmed_df = self.catalogue_df.loc[np.unique(event_numbers)]
             filtered_cat = self.from_dataframe(trimmed_df)
-            filtered_cat.event_list = event_numbers
+            filtered_cat.event_list = self.event_list[event_indices]
             filtered_cat.patch_list = self.patch_list[event_indices]
             filtered_cat.patch_slip = self.patch_slip[event_indices]
             filtered_cat.patch_time_list = self.patch_time_list[event_indices]

@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.interpolate import RectBivariateSpline
 from typing import Iterable, Union
 from netCDF4 import Dataset
 from rsqsim_api.io.array_operations import write_gmt_grd, write_tiff
@@ -13,6 +12,7 @@ class SeaSurfaceDisplacements:
         self.x_range = np.array(x_range, dtype=np.float32)
         self.y_range = np.array(y_range, dtype=np.float32)
         self.disps = np.array(disps, dtype=np.float32)
+        print(event_number, np.max(disps))
 
     @classmethod
     def from_netcdf_file(cls, event_id: int, nc_file: str):
@@ -26,6 +26,7 @@ class SeaSurfaceDisplacements:
 
     def to_tiff(self, tiff_name: str, epsg: int = 2193):
         write_tiff(tiff_name, self.x_range, self.y_range, self.disps, epsg=epsg)
+
 
 class MultiEventSeaSurface:
     def __init__(self, events: Iterable[SeaSurfaceDisplacements]):
