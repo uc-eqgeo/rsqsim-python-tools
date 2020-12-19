@@ -422,22 +422,27 @@ class RsqSimEvent:
         event = cls.from_catalogue_array(
             t0, m0, mw, x, y, z, area, dt, event_id=event_id)
 
-        patch_dic = { i: fault_model.patch_dic[i] for i in patch_numbers }
+        faults_with_patches = fault_model.faults_with_patches
         patches_on_fault = defaultdict(list)
-        for patch_number, patch in patch_dic.items():
-            patches_on_fault[patch.segment].append(patch_number)
+        for i in patch_numbers:
+            patches_on_fault[faults_with_patches[i]].append(i)
 
+        faults = set()
         mask = np.full(len(patch_numbers), True)
         for fault in patches_on_fault.keys():
-            if len(patches_on_fault[fault]) < min_patches:
-                patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_fault[fault]])
+            patches_on_this_fault = patches_on_fault[fault]
+            if len(patches_on_this_fault) < min_patches:
+                patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_this_fault])
                 mask[patch_on_fault_indices] = False
+            else:
+                faults.add(fault)
 
         event.patch_numbers = patch_numbers[mask]
         event.patch_slip = patch_slip[mask]
         event.patch_time = patch_time[mask]
+        patch_dic = fault_model.patch_dic
         event.patches = [patch_dic[i] for i in event.patch_numbers]
-        event.faults = list(set([a.segment for a in event.patches]))
+        event.faults = list(faults)
         return event
 
     @classmethod
