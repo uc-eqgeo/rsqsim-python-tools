@@ -226,7 +226,6 @@ class RsqSimCatalogue:
         return rcat
 
 
-
     def filter_by_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],
                         minimum_patches_per_fault: int = None):
         if isinstance(fault_or_faults, (RsqSimSegment, RsqSimMultiFault)):
@@ -238,6 +237,7 @@ class RsqSimCatalogue:
             assert isinstance(minimum_patches_per_fault, int)
             assert minimum_patches_per_fault > 0
 
+        # Collect all fault numbers
         all_patches = []
         for fault in fault_ls:
             all_patches += list(fault.patch_dic.keys())
