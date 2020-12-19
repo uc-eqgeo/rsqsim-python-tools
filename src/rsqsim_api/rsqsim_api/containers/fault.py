@@ -3,6 +3,7 @@ import os
 from collections import Iterable
 from typing import Union, List
 import fnmatch
+import multiprocessing as mp
 
 import numpy as np
 import pandas as pd
@@ -14,7 +15,7 @@ from triangular_faults.utilities import read_ts_coords
 from matplotlib import pyplot as plt
 from rsqsim_api.visualisation.utilities import plot_coast
 
-
+num_processes = int(np.round(mp.cpu_count() / 2))
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
 
 
@@ -185,7 +186,8 @@ class RsqSimMultiFault:
         return multi_fault
 
     @classmethod
-    def read_fault_file_bruce(cls, main_fault_file: str, name_file: str, transform_from_utm: bool = False):
+    def read_fault_file_bruce(cls, main_fault_file: str, name_file: str, transform_from_utm: bool = False,
+                              multiprocessing: bool = False):
         assert all([os.path.exists(fname) for fname in (main_fault_file, name_file)])
         fault_names_messy = np.genfromtxt(name_file, dtype="U50")
         fault_names = []
@@ -212,18 +214,32 @@ class RsqSimMultiFault:
 
         # Populate faults with triangular patches
         patch_start = 0
-        segment_ls = []
+        if multiprocessing:
+            mp_arg_ls = []
+            for fault_num, fault_name in zip(fault_num_set, fault_names_unique):
+                fault_data = all_fault_df[all_fault_df.fault_num == fault_num]
 
-        for fault_num, fault_name in zip(fault_num_set, fault_names_unique):
-            fault_data = all_fault_df[all_fault_df.fault_num == fault_num]
+                num_triangles = len(fault_data)
+                patch_numbers = np.arange(patch_start, patch_start + num_triangles)
+                mp_arg_ls.append((fault_data, fault_num, patch_numbers, fault_name, transform_from_utm))
+                patch_start += num_triangles
 
-            num_triangles = len(fault_data)
-            patch_numbers = np.arange(patch_start, patch_start + num_triangles)
+            with mp.Pool(processes=num_processes) as pool:
+                results = pool.starmap(RsqSimSegment.from_pandas, [arg_ls for arg_ls in mp_arg_ls])
 
-            fault_i = RsqSimSegment.from_pandas(fault_data, fault_num, patch_numbers, fault_name,
-                                                transform_from_utm=transform_from_utm)
-            segment_ls.append(fault_i)
-            patch_start += num_triangles
+            result_dic = {fault_i.segment_number: fault_i for fault_i in list(results)}
+            segment_ls = [result_dic[i] for i in fault_num_set]
+        else:
+            segment_ls = []
+            for fault_num, fault_name in zip(fault_num_set, fault_names_unique):
+                fault_data = all_fault_df[all_fault_df.fault_num == fault_num]
+
+                num_triangles = len(fault_data)
+                patch_numbers = np.arange(patch_start, patch_start + num_triangles)
+                segment = RsqSimSegment.from_pandas(fault_data, fault_num, patch_numbers, fault_name=fault_name,
+                                                    transform_from_utm=transform_from_utm)
+                segment_ls.append(segment)
+                patch_start += num_triangles
 
         multi_fault = cls(segment_ls)
 
@@ -515,8 +531,9 @@ class RsqSimSegment:
     @classmethod
     def from_pandas(cls, dataframe: pd.DataFrame, segment_number: int,
                     patch_numbers: Union[list, tuple, set, np.ndarray], fault_name: str = None,
+                    transform_from_utm: bool = False,
                     strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None, read_rake: bool = True,
-                    normalize_slip: Union[float, int] = 1, transform_from_utm: bool = False):
+                    normalize_slip: Union[float, int] = 1):
 
         triangles = dataframe.iloc[:, :9].to_numpy()
         if transform_from_utm:
@@ -846,8 +863,11 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
 
     def calculate_down_dip_vector(self):
         dx, dy, dz = self.normal_vector
-        dd_vec = np.array([dx, dy, -1 / dz])
-        return dd_vec / np.linalg.norm(dd_vec)
+        if dz == 0.:
+            return np.array([0., 0., -1])
+        else:
+            dd_vec = np.array([dx, dy, -1 / dz])
+            return dd_vec / np.linalg.norm(dd_vec)
 
     @property
     def dip(self):
@@ -856,7 +876,10 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
     def calculate_dip(self):
         horizontal = np.linalg.norm(self.down_dip_vector[:-1])
         vertical = -1 * self.down_dip_vector[-1]
-        return np.degrees(np.arctan(vertical / horizontal))
+        if horizontal == 0.:
+            return 90.
+        else:
+            return np.degrees(np.arctan(vertical / horizontal))
 
     @property
     def along_strike_vector(self):
@@ -955,3 +978,6 @@ def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/bruc
                                                           names_full,
                                                           transform_from_utm=True)
     return bruce_faults
+
+
+
