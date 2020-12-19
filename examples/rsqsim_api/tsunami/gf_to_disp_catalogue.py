@@ -13,7 +13,7 @@ bruce_faults = RsqSimMultiFault.read_fault_file_bruce(os.path.join(run_dir, "../
                                                       transform_from_utm=True)
 
 subduction = bruce_faults.filter_by_name("*hik*")
-sub_only = catalogue.filter_by_fault(subduction, minimum_patches_per_fault=10)
+sub_only = catalogue.filter_by_fault(subduction, minimum_patches_per_fault=20)
 events = sub_only.events_by_number(sub_only.catalogue_df.index, bruce_faults)
 
 lookup = create_lookup_dict("bruce_2km_?.nc")
