@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 from multiprocessing import Queue, Process
 from multiprocessing.sharedctypes import RawArray
 from functools import partial
+import operator
 import pandas as pd
 import numpy as np
 
@@ -445,22 +446,25 @@ class RsqSimEvent:
         for i in patch_numbers:
             patches_on_fault[faults_with_patches[i]].append(i)
 
-        faults = set()
         mask = np.full(len(patch_numbers), True)
         for fault in patches_on_fault.keys():
             patches_on_this_fault = patches_on_fault[fault]
             if len(patches_on_this_fault) < min_patches:
                 patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_this_fault])
                 mask[patch_on_fault_indices] = False
-            else:
-                faults.add(fault)
 
         event.patch_numbers = patch_numbers[mask]
         event.patch_slip = patch_slip[mask]
         event.patch_time = patch_time[mask]
-        patch_dic = fault_model.patch_dic
-        event.patches = [patch_dic[i] for i in event.patch_numbers]
-        event.faults = list(faults)
+
+        if event.patch_numbers.size > 0:
+            patchnum_lookup = operator.itemgetter(*(event.patch_numbers))
+            event.patches = list(patchnum_lookup(fault_model.patch_dic))
+            event.faults = list(set(patchnum_lookup(fault_model.faults_with_patches)))
+        else:
+            event.patches = []
+            event.faults = []
+
         return event
 
     @classmethod
@@ -475,9 +479,15 @@ class RsqSimEvent:
         event.patch_numbers = patch_numbers[mask]
         event.patch_slip = patch_slip[mask]
         event.patch_time = patch_time[mask]
-        patch_dic = fault_model.patch_dic
-        event.patches = [patch_dic[i] for i in event.patch_numbers]
-        event.faults = list(set([a.segment for a in event.patches]))
+
+        if event.patch_numbers.size > 0:
+            patchnum_lookup = operator.itemgetter(*(event.patch_numbers))
+            event.patches = list(patchnum_lookup(fault_model.patch_dic))
+            event.faults = list(set(patchnum_lookup(fault_model.faults_with_patches)))
+        else:
+            event.patches = []
+            event.faults = []
+
         return event
 
 
