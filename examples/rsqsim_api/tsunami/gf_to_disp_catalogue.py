@@ -17,6 +17,6 @@ if __name__ == "__main__":
     sub_only = catalogue.filter_by_fault(subduction, minimum_patches_per_fault=20)
     events = sub_only.events_by_number(sub_only.catalogue_df.index, bruce_faults)
 
-    lookup = create_lookup_dict("bruce_2km_?.nc")
-
-    sea_surface_displacements_multi(events, lookup, "test_disp.nc")
+    # lookup = create_lookup_dict("bruce_2km_?.nc")
+    #
+    # sea_surface_displacements_multi(events, lookup, "test_disp.nc")

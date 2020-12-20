@@ -137,6 +137,7 @@ def handle_output_netcdf(output_queue: mp.Queue, patch_indices: np.ndarray, outp
     assert len(patch_indices) == dset_shape[0]
 
     dset = nc.Dataset(output_file, "w")
+    dset.set_always_mask(False)
     for dim, dim_len in zip(("npatch", "y", "x"), dset_shape):
         dset.createDimension(dim, dim_len)
     patch_var = dset.createVariable("index", np.int, ("npatch",))
