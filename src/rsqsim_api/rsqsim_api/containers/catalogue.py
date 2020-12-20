@@ -394,7 +394,7 @@ class RsqSimEvent:
         return event
 
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
-                     write: str = None, clip: bool = True, subplots=None, show_cbar: bool = True, global_max_slip: int = 0):
+                     write: str = None, show_coast: bool = True, subplots=None, show_cbar: bool = True, global_max_sub_slip: int = 0, global_max_slip: int = 0):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
 
@@ -419,7 +419,9 @@ class RsqSimEvent:
                 colour_dic[f_i] = colours
                 if max(colours) > max_slip:
                     max_slip = max(colours)
-        max_slip = global_max_slip if global_max_slip > 0 else max_slip
+        max_slip = global_max_sub_slip if global_max_sub_slip > 0 else max_slip
+
+        plots = []
 
         # Plot subduction interface
         subduction_list = []
@@ -430,6 +432,7 @@ class RsqSimEvent:
                 subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
                                                facecolors=colour_dic[f_i],
                                                cmap=subduction_cmap, vmin=0, vmax=max_slip)
+                plots.append(subduction_plot)
 
         max_slip = 0
         colour_dic = {}
@@ -451,6 +454,7 @@ class RsqSimEvent:
                 crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
                                             facecolors=colour_dic[f_i],
                                             cmap=crustal_cmap, vmin=0, vmax=max_slip)
+                plots.append(crustal_plot)
 
         if show_cbar:
             if subduction_list:
@@ -460,10 +464,8 @@ class RsqSimEvent:
                 crust_cbar = fig.colorbar(crustal_plot, ax=ax)
                 crust_cbar.set_label("Slip (m)")
 
-        if clip:
+        if show_coast:
             plot_coast(ax, clip_boundary=self.boundary)
-        else:
-            plot_coast(ax)
 
         ax.set_aspect("equal")
         if write is not None:
@@ -474,6 +476,8 @@ class RsqSimEvent:
                 plt.close(fig)
         if show:
             plt.show()
+
+        return plots
 
     def plot_slip_3d(self):
         pass
