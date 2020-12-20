@@ -3,7 +3,8 @@ from collections import abc, Counter, defaultdict
 import os
 
 from matplotlib import pyplot as plt
-from multiprocessing import Pool
+from multiprocessing import Queue, Process
+from multiprocessing.sharedctypes import RawArray
 from functools import partial
 import pandas as pd
 import numpy as np
@@ -25,21 +26,24 @@ extra_file_suffixes = (".dmuList", ".dsigmaList", ".dtauList", ".taupList")
 seconds_per_year = 31557600.0
 
 
-def get_mask(segment_dic, min_patches):
-    patch_numbers = list(segment_dic.keys())
+def get_mask(ev_ls, min_patches, faults_with_patches, event_list, patch_list, queue):
+    patches = np.asarray(patch_list)
+    events = np.asarray(event_list)
 
-    patches_on_fault = defaultdict(list)
-    for patch_number, segment_number in segment_dic.items():
-        patches_on_fault[segment_number].append(patch_number)
+    for index in ev_ls:
+        ev_indices = np.argwhere(events == index).flatten()
+        patch_numbers = patches[ev_indices]
+        patches_on_fault = defaultdict(list)
+        for i in patch_numbers:
+            patches_on_fault[faults_with_patches[i]].append(i)
 
-    mask = np.full(len(patch_numbers), True)
-    for fault in patches_on_fault.keys():
-        if len(patches_on_fault[fault]) < min_patches:
-            patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_fault[fault]])
-            mask[patch_on_fault_indices] = False
+        mask = np.full(len(patch_numbers), True)
+        for fault in patches_on_fault.keys():
+            if len(patches_on_fault[fault]) < min_patches:
+                patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_fault[fault]])
+                mask[patch_on_fault_indices] = False
 
-    return mask
-
+        queue.put( (index, ev_indices, mask)  )
 
 class RsqSimCatalogue:
     def __init__(self):
@@ -328,9 +332,29 @@ class RsqSimCatalogue:
                                                            fault_model=fault_model, min_patches=min_patches,
                                                            event_id=index)
                 out_events.append(event_i)
-
         else:
-            def collect_events(mask, index, ev_indices):
+            # Using shared data between processes
+            event_list = np.ctypeslib.as_ctypes(self.event_list)
+            raw_event_list = RawArray(event_list._type_, event_list)
+
+            patch_list = np.ctypeslib.as_ctypes(self.patch_list)
+            raw_patch_list = RawArray(event_list._type_, patch_list)
+
+            queue = Queue() # queue to handle processed events
+
+            # much faster to serialize when dealing with numbers instead of objects
+            faults_with_patches = {patch_num: seg.segment_number for (patch_num, seg) in fault_model.faults_with_patches.items()}
+
+            ev_chunks = np.array_split(np.array(ev_ls), child_processes) # break events into equal sized chunks for each child process
+            processes = []
+            for i in range(child_processes):
+                p = Process(target=get_mask, args=(ev_chunks[i], min_patches, faults_with_patches, raw_event_list, raw_patch_list, queue))
+                p.start()
+                processes.append(p)
+
+            num_events = len(ev_ls)
+            while len(out_events) < num_events:
+                index, ev_indices, mask = queue.get()
                 patch_numbers = self.patch_list[ev_indices]
                 patch_slip = self.patch_slip[ev_indices]
                 patch_time = self.patch_time_list[ev_indices]
@@ -340,14 +364,8 @@ class RsqSimCatalogue:
                                                         fault_model, mask, event_id=index)
                 out_events.append(event)
 
-            with Pool(processes=child_processes) as pool:
-                for index in ev_ls:
-                    ev_indices = np.argwhere(self.event_list == index).flatten()
-                    patch_numbers = self.patch_list[ev_indices]
-                    patch_dic = { i: fault_model.patch_dic[i].segment.segment_number for i in patch_numbers }
-                    callback = partial(collect_events, index=index, ev_indices=ev_indices)
-                    res = pool.apply_async(get_mask, (patch_dic, min_patches), callback=callback)
-
+            for p in processes:
+                p.join()
 
         return out_events
 
@@ -457,7 +475,8 @@ class RsqSimEvent:
         event.patch_numbers = patch_numbers[mask]
         event.patch_slip = patch_slip[mask]
         event.patch_time = patch_time[mask]
-        event.patches = [fault_model.patch_dic[i] for i in event.patch_numbers]
+        patch_dic = fault_model.patch_dic
+        event.patches = [patch_dic[i] for i in event.patch_numbers]
         event.faults = list(set([a.segment for a in event.patches]))
         return event
 
