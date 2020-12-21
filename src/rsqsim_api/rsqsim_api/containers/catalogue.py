@@ -325,8 +325,9 @@ class RsqSimCatalogue:
                 patch_numbers = self.patch_list[ev_indices]
                 patch_slip = self.patch_slip[ev_indices]
                 patch_time_list = self.patch_time_list[ev_indices]
-                event_i = RsqSimEvent.from_earthquake_list(df.t0[index], df.m0[index], df.mw[index], df.x[index],
-                                                           df.y[index], df.z[index], df.area[index], df.dt[index],
+                event_values = df.loc[index].values
+                event_i = RsqSimEvent.from_earthquake_list(event_values[0], event_values[1], event_values[2], event_values[3],
+                                                           event_values[4], event_values[5], event_values[6], event_values[7],
                                                            patch_numbers=patch_numbers,
                                                            patch_slip=patch_slip,
                                                            patch_time=patch_time_list,
@@ -359,8 +360,9 @@ class RsqSimCatalogue:
                 patch_numbers = self.patch_list[ev_indices]
                 patch_slip = self.patch_slip[ev_indices]
                 patch_time = self.patch_time_list[ev_indices]
-                event = RsqSimEvent.from_multiprocessing(df.t0[index], df.m0[index], df.mw[index], df.x[index],
-                                                        df.y[index], df.z[index], df.area[index], df.dt[index],
+                event_values = df.loc[index].values
+                event_i = RsqSimEvent.from_earthquake_list(event_values[0], event_values[1], event_values[2], event_values[3],
+                                                           event_values[4], event_values[5], event_values[6], event_values[7],
                                                         patch_numbers, patch_slip, patch_time,
                                                         fault_model, mask, event_id=index)
                 out_events.append(event)
