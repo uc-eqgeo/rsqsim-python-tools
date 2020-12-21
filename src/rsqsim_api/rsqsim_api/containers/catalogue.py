@@ -40,8 +40,9 @@ def get_mask(ev_ls, min_patches, faults_with_patches, event_list, patch_list, qu
 
         mask = np.full(len(patch_numbers), True)
         for fault in patches_on_fault.keys():
-            if len(patches_on_fault[fault]) < min_patches:
-                patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_fault[fault]])
+            patches_on_this_fault = patches_on_fault[fault]
+            if len(patches_on_this_fault) < min_patches:
+                patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_this_fault])
                 mask[patch_on_fault_indices] = False
 
         queue.put( (index, ev_indices, mask)  )
@@ -319,15 +320,15 @@ class RsqSimCatalogue:
         out_events = []
         min_patches = 50
         df = self.catalogue_df
+        at = df.at
         if child_processes == 0:
             for index in ev_ls:
                 ev_indices = np.argwhere(self.event_list == index).flatten()
                 patch_numbers = self.patch_list[ev_indices]
                 patch_slip = self.patch_slip[ev_indices]
                 patch_time_list = self.patch_time_list[ev_indices]
-                event_values = df.loc[index].values
-                event_i = RsqSimEvent.from_earthquake_list(event_values[0], event_values[1], event_values[2], event_values[3],
-                                                           event_values[4], event_values[5], event_values[6], event_values[7],
+                event_i = RsqSimEvent.from_earthquake_list(at[index, 't0'], at[index, 'm0'], at[index, 'mw'], at[index, 'x'],
+                                                           at[index, 'y'], at[index, 'z'], at[index, 'area'], at[index, 'dt'],
                                                            patch_numbers=patch_numbers,
                                                            patch_slip=patch_slip,
                                                            patch_time=patch_time_list,
@@ -360,12 +361,11 @@ class RsqSimCatalogue:
                 patch_numbers = self.patch_list[ev_indices]
                 patch_slip = self.patch_slip[ev_indices]
                 patch_time = self.patch_time_list[ev_indices]
-                event_values = df.loc[index].values
-                event_i = RsqSimEvent.from_earthquake_list(event_values[0], event_values[1], event_values[2], event_values[3],
-                                                           event_values[4], event_values[5], event_values[6], event_values[7],
+                event_i = RsqSimEvent.from_earthquake_list(at[index, 't0'], at[index, 'm0'], at[index, 'mw'], at[index, 'x'],
+                                                           at[index, 'y'], at[index, 'z'], at[index, 'area'], at[index, 'dt'],
                                                         patch_numbers, patch_slip, patch_time,
                                                         fault_model, mask, event_id=index)
-                out_events.append(event)
+                out_events.append(event_i)
 
             for p in processes:
                 p.join()
