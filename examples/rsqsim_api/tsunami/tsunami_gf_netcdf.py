@@ -1,7 +1,9 @@
 import numpy as np
 from rsqsim_api.tsunami.tsunami_multiprocessing import multiprocess_gf_to_hdf
 from rsqsim_api.containers.fault import RsqSimMultiFault
-
+"""
+Calculate and store greens functions for vertical displacements, from eveery patch on a fault model
+"""
 
 if __name__ == "__main__":
     faults = RsqSimMultiFault.read_fault_file_bruce("../../../data/bruce_m7/bruce_faults.in",

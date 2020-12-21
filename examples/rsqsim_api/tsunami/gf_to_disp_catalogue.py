@@ -2,7 +2,10 @@ from rsqsim_api.containers.catalogue import RsqSimCatalogue
 from rsqsim_api.containers.fault import RsqSimMultiFault
 from rsqsim_api.tsunami.gf_netcdf import create_lookup_dict, sea_surface_displacements_multi
 import os
-
+"""
+Script to create and store (in NetCDF format) sea-surface displacement arrays
+from a catalogue of events and a tsunami greens functions database
+"""
 if __name__ == "__main__":
     run_dir = os.path.dirname(__file__)
 
