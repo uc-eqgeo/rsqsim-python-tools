@@ -227,8 +227,7 @@ class RsqSimMultiFault:
             with mp.Pool(processes=num_processes) as pool:
                 results = pool.starmap(RsqSimSegment.from_pandas, [arg_ls for arg_ls in mp_arg_ls])
 
-            result_dic = {fault_i.segment_number: fault_i for fault_i in list(results)}
-            segment_ls = [result_dic[i] for i in fault_num_set]
+            segment_ls = list(results)
         else:
             segment_ls = []
             for fault_num, fault_name in zip(fault_num_set, fault_names_unique):

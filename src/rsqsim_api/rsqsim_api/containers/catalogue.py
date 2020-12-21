@@ -11,6 +11,7 @@ from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, cat
 from rsqsim_api.io.write_utils import write_catalogue_dataframe_and_arrays
 from rsqsim_api.visualisation.utilities import plot_coast
 from rsqsim_api.containers.bruce_shaw_utilities import bruce_subduction
+from rsqsim_api.containers.tsunami import SeaSurfaceDisplacements
 
 fint = Union[int, float]
 sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
@@ -393,9 +394,25 @@ class RsqSimEvent:
         event.faults = list(set([fault_model.patch_dic[a].segment for a in event.patch_numbers]))
         return event
 
+    def plot_slip_and_tsunami(self, tsunami: SeaSurfaceDisplacements, write: str = None, show: bool = True):
+        fig, ax = plt.subplots(1, 2, sharey="row", figsize=(6, 3))
+        combined_boundary = combine_boundaries(self.boundary, tsunami.data_bounds)
+        self.plot_slip_2d(show=False, subplots=(fig, ax[0]), bounds=combined_boundary, hide_axes_labels=True)
+        tsunami.plot_ssd(show=False, subplots=(fig, ax[1]), bounds=combined_boundary, hide_axes_labels=True)
+        fig.suptitle("Event {:d} (Mw {:.1f})".format(self.event_id, self.mw))
+        if write is not None:
+            fig.savefig(write, dpi=300)
+            if show:
+                plt.show()
+            else:
+                plt.close(fig)
+        if show:
+            plt.show()
+
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
-                     write: str = None, show_coast: bool = True, subplots=None, show_cbar: bool = True, global_max_sub_slip: int = 0, global_max_slip: int = 0):
-        # TODO: Plot coast (and major rivers?)
+                     write: str = None, show_coast: bool = True, subplots=None, show_cbar: bool = True,
+                     global_max_sub_slip: int = 0, global_max_slip: int = 0, hide_axes_labels: bool = False,
+                     bounds: list = None):
         assert self.patches is not None, "Need to populate object with patches!"
 
         if subplots is not None:
@@ -403,7 +420,12 @@ class RsqSimEvent:
         else:
             fig, ax = plt.subplots()
 
-        # Find maximum slip for subduction interface
+        if bounds is not None:
+            bounds_ls = list(bounds)
+            assert len(bounds_ls) == 4
+        else:
+            bounds_ls = self.boundary
+
 
         # Find maximum slip to scale colourbar
         max_slip = 0
@@ -458,16 +480,25 @@ class RsqSimEvent:
 
         if show_cbar:
             if subduction_list:
-                sub_cbar = fig.colorbar(subduction_plot, ax=ax)
+                sub_cbar = fig.colorbar(subduction_plot, location="left", ax=[ax], fraction=0.046, pad=0.04)
+
                 sub_cbar.set_label("Subduction slip (m)")
-            if crustal_plot is not None:
-                crust_cbar = fig.colorbar(crustal_plot, ax=ax)
-                crust_cbar.set_label("Slip (m)")
+            # if crustal_plot is not None:
+                # crust_cbar = fig.colorbar(crustal_plot, ax=ax, fraction=0.046, pad=0.04)
+                # crust_cbar.set_label("Slip (m)")
 
         if show_coast:
-            plot_coast(ax, clip_boundary=self.boundary)
+            plot_coast(ax, clip_boundary=bounds_ls)
+
+        ax.set_xlim(bounds_ls[0], bounds_ls[2])
+        ax.set_ylim(bounds_ls[1], bounds_ls[3])
 
         ax.set_aspect("equal")
+        if hide_axes_labels:
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
+            ax.set_xticks([])
+            ax.set_yticks([])
         if write is not None:
             fig.savefig(write, dpi=300)
             if show:
@@ -513,3 +544,10 @@ def read_bruce_if_necessary(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/r
         bruce_faults, catalogue = read_bruce(run_dir=run_dir, fault_file=fault_file, names_file=names_file,
                                              catalogue_file=catalogue_file)
         return bruce_faults, catalogue
+
+
+def combine_boundaries(bounds1: list, bounds2: list):
+    assert len(bounds1) == len(bounds2)
+    min_bounds = [min([a, b]) for a, b in zip(bounds1, bounds2)]
+    max_bounds = [max([a, b]) for a, b in zip(bounds1, bounds2)]
+    return min_bounds[:2] + max_bounds[2:]

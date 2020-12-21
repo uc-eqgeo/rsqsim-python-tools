@@ -1,8 +1,10 @@
 import numpy as np
 from typing import Iterable, Union
 from netCDF4 import Dataset
+import matplotlib.pyplot as plt
 from rsqsim_api.io.array_operations import write_gmt_grd, write_tiff
 import os
+from rsqsim_api.visualisation.utilities import plot_coast
 
 
 class SeaSurfaceDisplacements:
@@ -12,6 +14,7 @@ class SeaSurfaceDisplacements:
         self.x_range = np.array(x_range, dtype=np.float32)
         self.y_range = np.array(y_range, dtype=np.float32)
         self.disps = np.array(disps, dtype=np.float32)
+        self._data_bounds = None
         print(event_number, np.max(disps))
 
     @classmethod
@@ -21,11 +24,74 @@ class SeaSurfaceDisplacements:
             x_range, y_range, disp_ls = events_from_ssd_netcdf(event_id, dset, get_xy=True)
         return cls(event_id, x_range, y_range, disp_ls[0])
 
+    @property
+    def data_bounds(self):
+        if self._data_bounds is None:
+            self.get_data_bounds()
+        return self._data_bounds
+
+    def get_data_bounds(self):
+        y_where, x_where = np.where(np.abs(self.disps) >= 0.005)
+        x_min, x_max = [self.x_range[x_where].min(), self.x_range[x_where].max()]
+        y_min, y_max = [self.y_range[y_where].min(), self.y_range[y_where].max()]
+        self._data_bounds = [x_min, y_min, x_max, y_max]
+
+
+
+
+
     def to_grid(self, grid_name: str):
         write_gmt_grd(self.x_range, self.y_range, self.disps, grid_name)
 
     def to_tiff(self, tiff_name: str, epsg: int = 2193):
         write_tiff(tiff_name, self.x_range, self.y_range, self.disps, epsg=epsg)
+
+    def plot_ssd(self, cmap="RdBu_r", show: bool = True, write: str = None, show_coast: bool = True,
+                 subplots: tuple = None, show_cbar: bool = True, global_max_ssd: int = 10, bounds: Iterable = None,
+                 hide_axes_labels: bool = False):
+        if subplots is not None:
+            fig, ax = subplots
+        else:
+            fig, ax = plt.subplots()
+
+        if bounds is not None:
+            bounds_list = list(bounds)
+            assert len(bounds_list) == 4
+        else:
+            bounds_list = self.data_bounds
+
+        cscale = np.nanmax(self.disps)
+        if cscale > global_max_ssd:
+            cscale = global_max_ssd
+        plots = []
+
+        plot = ax.pcolormesh(self.x_range, self.y_range, self.disps, cmap=cmap, vmin=-1 * cscale,
+                             vmax=cscale, shading="auto")
+        ax.set_aspect("equal")
+        ax.set_xlim(bounds_list[0], bounds_list[2])
+        ax.set_ylim(bounds_list[1], bounds_list[3])
+        if show_coast:
+            plot_coast(ax, clip_boundary=bounds_list)
+        if show_cbar:
+            cbar = fig.colorbar(plot, ax=ax, fraction=0.046, pad=0.04)
+            cbar.set_label("Uplift (m)")
+
+        if hide_axes_labels:
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+        if write is not None:
+            fig.savefig(write, dpi=300)
+            if show:
+                plt.show()
+            else:
+                plt.close(fig)
+        if show:
+            plt.show()
+
+        return plots
 
 
 class MultiEventSeaSurface:
