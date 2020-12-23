@@ -7,6 +7,7 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 from matplotlib.cm import ScalarMappable
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import math
+import numpy as np
 import os
 
 
@@ -27,9 +28,9 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     """
 
     # get all unique values
-    event_list = dict.fromkeys(catalogue.event_list.tolist())
+    event_list = np.unique(catalogue.event_list)
     # get RsqSimEvent objects
-    events = catalogue.events_by_number(list(event_list), fault_model)
+    events = catalogue.events_by_number(event_list.tolist(), fault_model)
 
     fig = plt.figure()
 
@@ -46,7 +47,7 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     timestamps = []
     for i, e in enumerate(events):
         plots = e.plot_slip_2d(
-            show=False, show_coast=False, subplots=(fig, coast_ax), show_cbar=False, global_max_slip=global_max_slip, global_max_sub_slip=global_max_sub_slip)
+            subplots=(fig, coast_ax), global_max_slip=global_max_slip, global_max_sub_slip=global_max_sub_slip)
         for p in plots:
             p.set_visible(False)
         years = math.floor(e.t0 / 3.154e7)

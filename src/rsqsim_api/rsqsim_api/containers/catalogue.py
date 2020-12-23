@@ -1,8 +1,12 @@
 from typing import Union, Iterable
-from collections import abc, Counter
+from collections import abc, Counter, defaultdict
 import os
 
 from matplotlib import pyplot as plt
+from multiprocessing import Queue, Process
+from multiprocessing.sharedctypes import RawArray
+from functools import partial
+import operator
 import pandas as pd
 import numpy as np
 
@@ -22,6 +26,26 @@ extra_file_suffixes = (".dmuList", ".dsigmaList", ".dtauList", ".taupList")
 
 seconds_per_year = 31557600.0
 
+
+def get_mask(ev_ls, min_patches, faults_with_patches, event_list, patch_list, queue):
+    patches = np.asarray(patch_list)
+    events = np.asarray(event_list)
+
+    for index in ev_ls:
+        ev_indices = np.argwhere(events == index).flatten()
+        patch_numbers = patches[ev_indices]
+        patches_on_fault = defaultdict(list)
+        for i in patch_numbers:
+            patches_on_fault[faults_with_patches[i]].append(i)
+
+        mask = np.full(len(patch_numbers), True)
+        for fault in patches_on_fault.keys():
+            patches_on_this_fault = patches_on_fault[fault]
+            if len(patches_on_this_fault) < min_patches:
+                patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_this_fault])
+                mask[patch_on_fault_indices] = False
+
+        queue.put( (index, ev_indices, mask)  )
 
 class RsqSimCatalogue:
     def __init__(self):
@@ -285,25 +309,67 @@ class RsqSimCatalogue:
     def filter_by_bounding_box(self):
         pass
 
-    def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault):
+    def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault, child_processes: int = 0):
         if isinstance(event_number, (int, np.int)):
             ev_ls = [event_number]
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
             ev_ls = list(event_number)
             assert all([isinstance(a, (int, np.int)) for a in ev_ls])
+
         out_events = []
-        for index in ev_ls:
-            ev_indices = np.argwhere(self.event_list == index).flatten()
-            df = self.catalogue_df
-            event_i = RsqSimEvent.from_earthquake_list(df.t0[index], df.m0[index], df.mw[index], df.x[index],
-                                                       df.y[index], df.z[index], df.area[index], df.dt[index],
-                                                       patch_numbers=self.patch_list[ev_indices],
-                                                       patch_slip=self.patch_slip[ev_indices],
-                                                       patch_time=self.patch_time_list[ev_indices],
-                                                       fault_model=fault_model, min_patches=50,
-                                                       event_id=index)
-            out_events.append(event_i)
+        min_patches = 50
+        df = self.catalogue_df
+        at = df.at
+        if child_processes == 0:
+            for index in ev_ls:
+                ev_indices = np.argwhere(self.event_list == index).flatten()
+                patch_numbers = self.patch_list[ev_indices]
+                patch_slip = self.patch_slip[ev_indices]
+                patch_time_list = self.patch_time_list[ev_indices]
+                event_i = RsqSimEvent.from_earthquake_list(at[index, 't0'], at[index, 'm0'], at[index, 'mw'], at[index, 'x'],
+                                                           at[index, 'y'], at[index, 'z'], at[index, 'area'], at[index, 'dt'],
+                                                           patch_numbers=patch_numbers,
+                                                           patch_slip=patch_slip,
+                                                           patch_time=patch_time_list,
+                                                           fault_model=fault_model, min_patches=min_patches,
+                                                           event_id=index)
+                out_events.append(event_i)
+        else:
+            # Using shared data between processes
+            event_list = np.ctypeslib.as_ctypes(self.event_list)
+            raw_event_list = RawArray(event_list._type_, event_list)
+
+            patch_list = np.ctypeslib.as_ctypes(self.patch_list)
+            raw_patch_list = RawArray(event_list._type_, patch_list)
+
+            queue = Queue() # queue to handle processed events
+
+            # much faster to serialize when dealing with numbers instead of objects
+            faults_with_patches = {patch_num: seg.segment_number for (patch_num, seg) in fault_model.faults_with_patches.items()}
+
+            ev_chunks = np.array_split(np.array(ev_ls), child_processes) # break events into equal sized chunks for each child process
+            processes = []
+            for i in range(child_processes):
+                p = Process(target=get_mask, args=(ev_chunks[i], min_patches, faults_with_patches, raw_event_list, raw_patch_list, queue))
+                p.start()
+                processes.append(p)
+
+            num_events = len(ev_ls)
+            while len(out_events) < num_events:
+                index, ev_indices, mask = queue.get()
+                patch_numbers = self.patch_list[ev_indices]
+                patch_slip = self.patch_slip[ev_indices]
+                patch_time = self.patch_time_list[ev_indices]
+                event_i = RsqSimEvent.from_earthquake_list(at[index, 't0'], at[index, 'm0'], at[index, 'mw'], at[index, 'x'],
+                                                           at[index, 'y'], at[index, 'z'], at[index, 'area'], at[index, 'dt'],
+                                                        patch_numbers, patch_slip, patch_time,
+                                                        fault_model, mask, event_id=index)
+                out_events.append(event_i)
+
+            for p in processes:
+                p.join()
+
         return out_events
 
 
@@ -374,31 +440,61 @@ class RsqSimEvent:
                              patch_time: Union[list, np.ndarray, tuple],
                              fault_model: RsqSimMultiFault, filter_single_patches: bool = True,
                              min_patches: int = 10, min_slip: Union[float, int] = 1, event_id: int = None):
-        event = cls.from_catalogue_array(t0, m0, mw, x, y, z, area, dt, event_id=event_id)
-        faults = list(set([fault_model.patch_dic[a].segment for a in patch_numbers]))
-        patch_faults = [fault_model.patch_dic[a].segment for a in patch_numbers]
-        indices_to_delete = []
-        for fault in faults:
-            if patch_faults.count(fault) < min_patches:
-                patches_on_fault = np.array([a for a in patch_numbers if fault_model.patch_dic[a].segment == fault])
-                patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_fault])
-                # if patch_slip[patch_on_fault_indices].max() < min_slip:
-                indices_to_delete += list(patch_on_fault_indices)
-        indices_to_delete_array = np.array(indices_to_delete)
-        if indices_to_delete:
-            patch_numbers = np.delete(patch_numbers, indices_to_delete_array)
-            patch_slip = np.delete(patch_slip, indices_to_delete_array)
-            patch_time = np.delete(patch_time, indices_to_delete_array)
+        event = cls.from_catalogue_array(
+            t0, m0, mw, x, y, z, area, dt, event_id=event_id)
 
-        event.patch_numbers = np.array(patch_numbers)
-        event.patch_slip = np.array(patch_slip)
-        event.patch_time = np.array(patch_time)
-        event.patches = [fault_model.patch_dic[i] for i in event.patch_numbers]
-        event.faults = list(set([fault_model.patch_dic[a].segment for a in event.patch_numbers]))
+        faults_with_patches = fault_model.faults_with_patches
+        patches_on_fault = defaultdict(list)
+        for i in patch_numbers:
+            patches_on_fault[faults_with_patches[i]].append(i)
+
+        mask = np.full(len(patch_numbers), True)
+        for fault in patches_on_fault.keys():
+            patches_on_this_fault = patches_on_fault[fault]
+            if len(patches_on_this_fault) < min_patches:
+                patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_this_fault])
+                mask[patch_on_fault_indices] = False
+
+        event.patch_numbers = patch_numbers[mask]
+        event.patch_slip = patch_slip[mask]
+        event.patch_time = patch_time[mask]
+
+        if event.patch_numbers.size > 0:
+            patchnum_lookup = operator.itemgetter(*(event.patch_numbers))
+            event.patches = list(patchnum_lookup(fault_model.patch_dic))
+            event.faults = list(set(patchnum_lookup(fault_model.faults_with_patches)))
+        else:
+            event.patches = []
+            event.faults = []
+
         return event
 
+    @classmethod
+    def from_multiprocessing(cls, t0: float, m0: float, mw: float, x: float,
+                             y: float, z: float, area: float, dt: float,
+                             patch_numbers: Union[list, np.ndarray, tuple],
+                             patch_slip: Union[list, np.ndarray, tuple],
+                             patch_time: Union[list, np.ndarray, tuple],
+                             fault_model: RsqSimMultiFault, mask: list, event_id: int = None):
+        event = cls.from_catalogue_array(
+            t0, m0, mw, x, y, z, area, dt, event_id=event_id)
+        event.patch_numbers = patch_numbers[mask]
+        event.patch_slip = patch_slip[mask]
+        event.patch_time = patch_time[mask]
+
+        if event.patch_numbers.size > 0:
+            patchnum_lookup = operator.itemgetter(*(event.patch_numbers))
+            event.patches = list(patchnum_lookup(fault_model.patch_dic))
+            event.faults = list(set(patchnum_lookup(fault_model.faults_with_patches)))
+        else:
+            event.patches = []
+            event.faults = []
+
+        return event
+
+
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
-                     write: str = None, show_coast: bool = True, subplots=None, show_cbar: bool = True, global_max_sub_slip: int = 0, global_max_slip: int = 0):
+                     write: str = None, subplots = None, global_max_sub_slip: int = 0, global_max_slip: int = 0):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
 
@@ -460,7 +556,7 @@ class RsqSimEvent:
                                             cmap=crustal_cmap, vmin=0, vmax=max_slip)
                 plots.append(crustal_plot)
 
-        if show_cbar:
+        if subplots is None:
             if subduction_list:
                 sub_cbar = fig.colorbar(subduction_plot, ax=ax)
                 sub_cbar.set_label("Subduction slip (m)")
@@ -468,17 +564,18 @@ class RsqSimEvent:
                 crust_cbar = fig.colorbar(crustal_plot, ax=ax)
                 crust_cbar.set_label("Slip (m)")
 
-        if show_coast:
+        if subplots is None:
             plot_coast(ax, clip_boundary=self.boundary)
+            ax.set_aspect("equal")
 
-        ax.set_aspect("equal")
         if write is not None:
             fig.savefig(write, dpi=300)
             if show:
                 plt.show()
             else:
                 plt.close(fig)
-        if show:
+
+        if show and subplots is None:
             plt.show()
 
         return plots
