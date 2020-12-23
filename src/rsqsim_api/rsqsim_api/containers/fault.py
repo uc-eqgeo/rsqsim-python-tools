@@ -6,6 +6,8 @@ import fnmatch
 
 import numpy as np
 import pandas as pd
+import math
+from numba import njit
 from pyproj import Transformer
 from shapely.geometry import Polygon
 from tde.tde import calc_tri_displacements
@@ -16,6 +18,23 @@ from rsqsim_api.visualisation.utilities import plot_coast
 
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
+
+@njit
+def norm_3d(a):
+    """
+    Calculates the 2-norm of a 3-dimensional vector.
+    """
+    return math.sqrt(np.sum(a**2))
+
+@njit
+def cross_3d(a, b):
+    """
+    Calculates cross product of two 3-dimensional vectors.
+    """
+    x = ((a[1] * b[2]) - (a[2] * b[1]))
+    y = ((a[2] * b[0]) - (a[0] * b[2]))
+    z = ((a[0] * b[1]) - (a[1] * b[0]))
+    return np.array([x, y, z])
 
 
 def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float] = 1):
@@ -187,34 +206,26 @@ class RsqSimMultiFault:
     @classmethod
     def read_fault_file_bruce(cls, main_fault_file: str, name_file: str, transform_from_utm: bool = False):
         assert all([os.path.exists(fname) for fname in (main_fault_file, name_file)])
-        fault_names_messy = np.genfromtxt(name_file, dtype="U50")
-        fault_names = []
-        for name in fault_names_messy[:, 0]:
-            fault_names.append("".join([char for char in name if char.isalnum()]))
+        fault_names = pd.read_csv(name_file, header=None, squeeze=True, sep='\s+', usecols=[0])
+        fault_names.replace('\W', '', inplace=True, regex=True)
 
         # Prepare info (types and headers) about columns
-        column_dtypes = [float] * 11 + [int] + ["U50"]
         column_names = ["x1", "y1", "z1", "x2", "y2", "z2", "x3", "y3", "z3", "rake",
                         "slip_rate", "fault_num", "bruce_name"]
 
         # Read in data
-        data = np.genfromtxt(main_fault_file, dtype=column_dtypes, names=column_names).T
-        all_fault_df = pd.DataFrame(data)
+        all_fault_df = pd.read_csv(main_fault_file, sep='\s+', header=None, comment='#', names=column_names, usecols=range(len(column_names)))
 
-        fault_names_set = set(fault_names)
-        fault_num_set = set(data["fault_num"])
-        fault_names_unique = []
-        for name in fault_names:
-            if name not in fault_names_unique:
-                fault_names_unique.append(name)
+        fault_names_unique = dict.fromkeys(fault_names).keys()
+        fault_num_unique = dict.fromkeys(all_fault_df.fault_num).keys()
 
-        assert len(fault_names_set) == len(fault_num_set)
+        assert len(fault_names_unique) == len(fault_num_unique)
 
         # Populate faults with triangular patches
         patch_start = 0
         segment_ls = []
 
-        for fault_num, fault_name in zip(fault_num_set, fault_names_unique):
+        for fault_num, fault_name in zip(fault_num_unique, fault_names_unique):
             fault_data = all_fault_df[all_fault_df.fault_num == fault_num]
 
             num_triangles = len(fault_data)
@@ -791,12 +802,12 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         super(RsqSimTriangularPatch, self).__init__(segment=segment, patch_number=patch_number,
                                                     dip_slip=dip_slip, strike_slip=strike_slip)
         self.vertices = vertices
-        self._normal_vector = self.calculate_normal_vector()
-        self._down_dip_vector = self.calculate_down_dip_vector()
-        self._dip = self.calculate_dip()
-        self._along_strike_vector = self.calculate_along_strike_vector()
-        self._centre = self.calculate_centre()
-        self._area = self.calculate_area()
+        self._normal_vector = RsqSimTriangularPatch.calculate_normal_vector(self.vertices)
+        self._down_dip_vector = RsqSimTriangularPatch.calculate_down_dip_vector(self.normal_vector)
+        self._dip = RsqSimTriangularPatch.calculate_dip(self.down_dip_vector)
+        self._along_strike_vector = RsqSimTriangularPatch.calculate_along_strike_vector(self.normal_vector, self.down_dip_vector)
+        self._centre = RsqSimTriangularPatch.calculate_centre(self.vertices)
+        self._area = RsqSimTriangularPatch.calculate_area(self.vertices)
 
     @RsqSimGenericPatch.vertices.setter
     def vertices(self, vertices: Union[list, np.ndarray, tuple]):
@@ -816,15 +827,17 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
 
         self._vertices = vertices[:3, :]
 
-    def calculate_normal_vector(self):
-        a = self.vertices[1] - self.vertices[0]
-        b = self.vertices[1] - self.vertices[2]
-        cross_a_b = np.cross(a, b)
+    @staticmethod
+    @njit
+    def calculate_normal_vector(vertices):
+        a = vertices[1] - vertices[0]
+        b = vertices[1] - vertices[2]
+        cross_a_b = cross_3d(a, b)
         # Ensure that normal always points up, normalize to give unit vector
         if cross_a_b[-1] < 0:
-            unit_cross = -1 * cross_a_b / np.linalg.norm(cross_a_b)
+            unit_cross = -1 * cross_a_b / norm_3d(cross_a_b)
         else:
-            unit_cross = cross_a_b / np.linalg.norm(cross_a_b)
+            unit_cross = cross_a_b / norm_3d(cross_a_b)
         return unit_cross
 
     @property
@@ -835,19 +848,29 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
     def down_dip_vector(self):
         return self._down_dip_vector
 
-    def calculate_down_dip_vector(self):
-        dx, dy, dz = self.normal_vector
-        dd_vec = np.array([dx, dy, -1 / dz])
-        return dd_vec / np.linalg.norm(dd_vec)
+    @staticmethod
+    @njit
+    def calculate_down_dip_vector(normal_vector):
+        dx, dy, dz = normal_vector
+        if dz == 0:
+            return np.array([0., 0., np.nan])
+        else:
+            dd_vec = np.array([dx, dy, -1 / dz])
+            return dd_vec / norm_3d(dd_vec)
 
     @property
     def dip(self):
         return self._dip
 
-    def calculate_dip(self):
-        horizontal = np.linalg.norm(self.down_dip_vector[:-1])
-        vertical = -1 * self.down_dip_vector[-1]
-        return np.degrees(np.arctan(vertical / horizontal))
+    @staticmethod
+    @njit
+    def calculate_dip(down_dip_vector):
+        if np.isnan(down_dip_vector[-1]):
+            return np.nan
+        else:
+            horizontal = norm_3d(down_dip_vector[:-1])
+            vertical = -1 * down_dip_vector[-1]
+            return np.degrees(np.arctan(vertical / horizontal))
 
     @property
     def along_strike_vector(self):
@@ -861,24 +884,33 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         else:
             return None
 
-    def calculate_along_strike_vector(self):
-        return np.cross(self.normal_vector, self.down_dip_vector)
+    @staticmethod
+    @njit
+    def calculate_along_strike_vector(normal_vector, down_dip_vector):
+        return cross_3d(normal_vector, down_dip_vector)
 
     @property
     def centre(self):
         return self._centre
 
-    def calculate_centre(self):
-        return np.mean(self.vertices, axis=0)
+    @staticmethod
+    @njit
+    def calculate_centre(vertices):
+        # np.mean(vertices, axis=0) does not have compile support
+        return np.sum(vertices, axis=0) / len(vertices)
 
     @property
     def area(self):
         return self._area
 
-    def calculate_area(self):
-        a = self.vertices[1] - self.vertices[0]
-        b = self.vertices[1] - self.vertices[2]
-        area = 0.5 * np.linalg.norm(np.cross(a, b))
+    @staticmethod
+    @njit
+    def calculate_area(vertices):
+        a = vertices[1] - vertices[0]
+        b = vertices[1] - vertices[2]
+        cross_a_b = cross_3d(a, b)
+        norm = norm_3d(cross_a_b)
+        area = 0.5 * norm
         return area
 
     def slip3d_to_ss_ds(self, x1_slip: Union[float, int], x2_slip: Union[float, int], x3_slip: Union[float, int]):
