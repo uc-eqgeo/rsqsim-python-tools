@@ -19,14 +19,14 @@ from rsqsim_api.visualisation.utilities import plot_coast
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
 
-@njit
+@njit(cache=True)
 def norm_3d(a):
     """
     Calculates the 2-norm of a 3-dimensional vector.
     """
     return math.sqrt(np.sum(a**2))
 
-@njit
+@njit(cache=True)
 def cross_3d(a, b):
     """
     Calculates cross product of two 3-dimensional vectors.
@@ -828,7 +828,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         self._vertices = vertices[:3, :]
 
     @staticmethod
-    @njit
+    @njit(cache=True)
     def calculate_normal_vector(vertices):
         a = vertices[1] - vertices[0]
         b = vertices[1] - vertices[2]
@@ -849,7 +849,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         return self._down_dip_vector
 
     @staticmethod
-    @njit
+    @njit(cache=True)
     def calculate_down_dip_vector(normal_vector):
         dx, dy, dz = normal_vector
         if dz == 0:
@@ -863,7 +863,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         return self._dip
 
     @staticmethod
-    @njit
+    @njit(cache=True)
     def calculate_dip(down_dip_vector):
         if np.isnan(down_dip_vector[-1]):
             return np.nan
@@ -885,7 +885,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
             return None
 
     @staticmethod
-    @njit
+    @njit(cache=True)
     def calculate_along_strike_vector(normal_vector, down_dip_vector):
         return cross_3d(normal_vector, down_dip_vector)
 
@@ -894,7 +894,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         return self._centre
 
     @staticmethod
-    @njit
+    @njit(cache=True)
     def calculate_centre(vertices):
         # np.mean(vertices, axis=0) does not have compile support
         return np.sum(vertices, axis=0) / len(vertices)
@@ -904,7 +904,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         return self._area
 
     @staticmethod
-    @njit
+    @njit(cache=True)
     def calculate_area(vertices):
         a = vertices[1] - vertices[0]
         b = vertices[1] - vertices[2]
