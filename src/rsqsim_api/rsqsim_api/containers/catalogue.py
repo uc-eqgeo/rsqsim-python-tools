@@ -313,6 +313,23 @@ class RsqSimCatalogue:
     def filter_by_bounding_box(self):
         pass
 
+
+    def filter_by_patch_numbers(self, patch_numbers):
+        patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
+        event_numbers = self.event_list[patch_indices]
+        if event_numbers.size:
+            trimmed_df = self.catalogue_df.loc[np.unique(event_numbers)]
+            filtered_cat = self.from_dataframe(trimmed_df)
+            filtered_cat.event_list = event_numbers
+            filtered_cat.patch_list = self.patch_list[patch_indices]
+            filtered_cat.patch_slip = self.patch_slip[patch_indices]
+            filtered_cat.patch_time_list = self.patch_time_list[patch_indices]
+            return filtered_cat
+        else:
+            print("No events found!")
+            return
+
+
     def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault, child_processes: int = 0):
         if isinstance(event_number, (int, np.int)):
             ev_ls = [event_number]
