@@ -31,18 +31,22 @@ def get_mask(ev_ls, min_patches, faults_with_patches, event_list, patch_list, qu
     patches = np.asarray(patch_list)
     events = np.asarray(event_list)
 
+    unique_events, unique_event_indices = np.unique(events, return_index=True)
+    unique_dic = {unique_events[i]: (unique_event_indices[i], unique_event_indices[i+1]) for i in range(len(unique_events)-1)}
+    unique_dic[unique_events[-1]] = (unique_event_indices[-1], len(events))
     for index in ev_ls:
-        ev_indices = np.argwhere(events == index).flatten()
+        ev_range = unique_dic[index]
+        ev_indices = np.arange(ev_range[0], ev_range[1])
+
         patch_numbers = patches[ev_indices]
         patches_on_fault = defaultdict(list)
-        for i in patch_numbers:
-            patches_on_fault[faults_with_patches[i]].append(i)
+        [ patches_on_fault[faults_with_patches[i]].append(i) for i in patch_numbers ]
 
         mask = np.full(len(patch_numbers), True)
         for fault in patches_on_fault.keys():
             patches_on_this_fault = patches_on_fault[fault]
             if len(patches_on_this_fault) < min_patches:
-                patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_this_fault])
+                patch_on_fault_indices = np.searchsorted(patch_numbers, patches_on_this_fault)
                 mask[patch_on_fault_indices] = False
 
         queue.put( (index, ev_indices, mask)  )
@@ -319,11 +323,13 @@ class RsqSimCatalogue:
 
         out_events = []
         min_patches = 50
-        df = self.catalogue_df
-        at = df.at
+
+        cat_dict = self.catalogue_df.to_dict(orient='index')
+
         unique_events, unique_event_indices = np.unique(self.event_list, return_index=True)
         unique_dic = {unique_events[i]: (unique_event_indices[i], unique_event_indices[i+1]) for i in range(len(unique_events)-1)}
         unique_dic[unique_events[-1]] = (unique_event_indices[-1], len(self.event_list))
+
         if child_processes == 0:
             for index in ev_ls:
                 ev_range = unique_dic[index]
@@ -331,8 +337,9 @@ class RsqSimCatalogue:
                 patch_numbers = self.patch_list[ev_indices]
                 patch_slip = self.patch_slip[ev_indices]
                 patch_time_list = self.patch_time_list[ev_indices]
-                event_i = RsqSimEvent.from_earthquake_list(at[index, 't0'], at[index, 'm0'], at[index, 'mw'], at[index, 'x'],
-                                                           at[index, 'y'], at[index, 'z'], at[index, 'area'], at[index, 'dt'],
+                ev_data = cat_dict[index]
+                event_i = RsqSimEvent.from_earthquake_list(ev_data['t0'], ev_data['m0'], ev_data['mw'], ev_data['x'],
+                                                           ev_data['y'], ev_data['z'], ev_data['area'], ev_data['dt'],
                                                            patch_numbers=patch_numbers,
                                                            patch_slip=patch_slip,
                                                            patch_time=patch_time_list,
@@ -365,11 +372,12 @@ class RsqSimCatalogue:
                 patch_numbers = self.patch_list[ev_indices]
                 patch_slip = self.patch_slip[ev_indices]
                 patch_time = self.patch_time_list[ev_indices]
-                event_i = RsqSimEvent.from_earthquake_list(at[index, 't0'], at[index, 'm0'], at[index, 'mw'], at[index, 'x'],
-                                                           at[index, 'y'], at[index, 'z'], at[index, 'area'], at[index, 'dt'],
-                                                        patch_numbers, patch_slip, patch_time,
-                                                        fault_model, mask, event_id=index)
-                out_events.append(event_i)
+                ev_data = cat_dict[index]
+                event_i = RsqSimEvent.from_multiprocessing(ev_data['t0'], ev_data['m0'], ev_data['mw'], ev_data['x'],
+                                                           ev_data['y'], ev_data['z'], ev_data['area'], ev_data['dt'],
+                                                           patch_numbers, patch_slip, patch_time,
+                                                           fault_model, mask, event_id=index)
+                out_events.append(index)
 
             for p in processes:
                 p.join()
