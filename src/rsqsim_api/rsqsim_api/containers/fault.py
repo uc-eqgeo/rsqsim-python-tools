@@ -204,20 +204,23 @@ class RsqSimMultiFault:
         return multi_fault
 
     @classmethod
-    def read_fault_file_bruce(cls, main_fault_file: str, name_file: str, transform_from_utm: bool = False):
+    def read_fault_file_bruce(cls, main_fault_file: str, name_file: str, transform_from_utm: bool = False, from_pickle: bool = False):
         assert all([os.path.exists(fname) for fname in (main_fault_file, name_file)])
         fault_names = pd.read_csv(name_file, header=None, squeeze=True, sep='\s+', usecols=[0])
-        fault_names.replace('\W', '', inplace=True, regex=True)
 
-        # Prepare info (types and headers) about columns
-        column_names = ["x1", "y1", "z1", "x2", "y2", "z2", "x3", "y3", "z3", "rake",
-                        "slip_rate", "fault_num", "bruce_name"]
+        if from_pickle:
+            all_fault_df = pd.read_pickle(main_fault_file)
+        else:
+            # Prepare info (types and headers) about columns
+            column_names = ["x1", "y1", "z1", "x2", "y2", "z2", "x3", "y3", "z3", "rake",
+                            "slip_rate", "fault_num", "bruce_name"]
 
-        # Read in data
-        all_fault_df = pd.read_csv(main_fault_file, sep='\s+', header=None, comment='#', names=column_names, usecols=range(len(column_names)))
+            # Read in data
+            all_fault_df = pd.read_csv(main_fault_file, sep='\s+', header=None, comment='#', names=column_names, usecols=range(len(column_names)))
 
+        fault_numbers = all_fault_df.fault_num.to_numpy()
         fault_names_unique = dict.fromkeys(fault_names).keys()
-        fault_num_unique = dict.fromkeys(all_fault_df.fault_num).keys()
+        fault_num_unique = dict.fromkeys(fault_numbers).keys()
 
         assert len(fault_names_unique) == len(fault_num_unique)
 
@@ -226,19 +229,38 @@ class RsqSimMultiFault:
         segment_ls = []
 
         for fault_num, fault_name in zip(fault_num_unique, fault_names_unique):
-            fault_data = all_fault_df[all_fault_df.fault_num == fault_num]
+            mask = fault_numbers == fault_num
+            fault_data = all_fault_df[mask]
+            fault_name_stripped = fault_name.lstrip("'[")
 
             num_triangles = len(fault_data)
             patch_numbers = np.arange(patch_start, patch_start + num_triangles)
 
-            fault_i = RsqSimSegment.from_pandas(fault_data, fault_num, patch_numbers, fault_name,
-                                                transform_from_utm=transform_from_utm)
+            if from_pickle:
+                fault_i = RsqSimSegment.from_pickle(fault_data, fault_num, patch_numbers, fault_name_stripped)
+            else:
+                fault_i = RsqSimSegment.from_pandas(fault_data, fault_num, patch_numbers, fault_name_stripped,
+                                                    transform_from_utm=transform_from_utm)
+
             segment_ls.append(fault_i)
             patch_start += num_triangles
 
         multi_fault = cls(segment_ls)
 
         return multi_fault
+
+    def pickle_model(self, file: str):
+        column_names = ["vertices", "normal_vector", "down_dip_vector", "dip", "along_strike_vector",
+                        "centre", "area", "dip_slip", "strike_slip", "fault_num"]
+
+        patches = self.patch_dic.values()
+        patch_data = []
+        for patch in patches:
+            patch_data.append([patch.vertices, patch.normal_vector, patch.down_dip_vector, patch.dip,
+                               patch.along_strike_vector, patch.centre, patch.area, patch.dip_slip, patch.strike_slip,
+                               patch.segment.segment_number])
+        df = pd.DataFrame(patch_data, columns=column_names)
+        df.to_pickle(file)
 
     @classmethod
     def read_cfm_directory(cls, directory: str = None, files: Union[str, list, tuple] = None, shapefile=None):
@@ -540,6 +562,7 @@ class RsqSimSegment:
             assert "rake" in dataframe.columns, "Cannot read rake"
             assert all([a is None for a in (dip_slip, strike_slip)]), "Either read_rake or specify ds and ss, not both!"
             rake = dataframe.rake.to_numpy()
+            rake_dic = {r: (np.cos(np.radians(r)) * normalize_slip, np.sin(np.radians(r)) * normalize_slip) for r in np.unique(rake)}
             assert len(rake) == len(triangles_nztm)
         else:
             rake = np.zeros((len(triangles_nztm),))
@@ -548,15 +571,39 @@ class RsqSimSegment:
         for i, (patch_num, triangle) in enumerate(zip(patch_numbers, triangles_nztm)):
             triangle3 = triangle.reshape(3, 3)
             if read_rake:
-                strike_slip = np.cos(np.radians(rake[i])) * normalize_slip
-                dip_slip = np.sin(np.radians(rake[i])) * normalize_slip
+                strike_slip = rake_dic[rake[i]][0]
+                dip_slip = rake_dic[rake[i]][1]
             patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
                                           strike_slip=strike_slip,
                                           dip_slip=dip_slip)
             triangle_ls.append(patch)
 
         fault.patch_outlines = triangle_ls
-        fault.patch_numbers = np.array([patch.patch_number for patch in triangle_ls])
+        fault.patch_numbers = patch_numbers
+        fault.patch_dic = {p_num: patch for p_num, patch in zip(fault.patch_numbers, fault.patch_outlines)}
+
+        return fault
+
+    @classmethod
+    def from_pickle(cls, dataframe: pd.DataFrame, segment_number: int,
+                    patch_numbers: Union[list, tuple, set, np.ndarray], fault_name: str = None):
+        patches = dataframe.to_numpy()
+
+        # Create empty segment object
+        fault = cls(patch_type="triangle", segment_number=segment_number, fault_name=fault_name)
+
+        triangle_ls = []
+        # Populate segment object
+        for i, patch_num in enumerate(patch_numbers):
+            patch_data = patches[i]
+            patch = RsqSimTriangularPatch(fault, vertices=patch_data[0], patch_number=patch_num,
+                                          strike_slip=patch_data[8],
+                                          dip_slip=patch_data[7],
+                                          patch_data=patch_data[1:7])
+            triangle_ls.append(patch)
+
+        fault.patch_outlines = triangle_ls
+        fault.patch_numbers = patch_numbers
         fault.patch_dic = {p_num: patch for p_num, patch in zip(fault.patch_numbers, fault.patch_outlines)}
 
         return fault
@@ -797,17 +844,25 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
     """
 
     def __init__(self, segment: RsqSimSegment, vertices: Union[list, np.ndarray, tuple], patch_number: int = 0,
-                 dip_slip: float = None, strike_slip: float = None):
+                 dip_slip: float = None, strike_slip: float = None, patch_data: Union[list, np.ndarray, tuple] = None):
 
         super(RsqSimTriangularPatch, self).__init__(segment=segment, patch_number=patch_number,
                                                     dip_slip=dip_slip, strike_slip=strike_slip)
         self.vertices = vertices
-        self._normal_vector = RsqSimTriangularPatch.calculate_normal_vector(self.vertices)
-        self._down_dip_vector = RsqSimTriangularPatch.calculate_down_dip_vector(self.normal_vector)
-        self._dip = RsqSimTriangularPatch.calculate_dip(self.down_dip_vector)
-        self._along_strike_vector = RsqSimTriangularPatch.calculate_along_strike_vector(self.normal_vector, self.down_dip_vector)
-        self._centre = RsqSimTriangularPatch.calculate_centre(self.vertices)
-        self._area = RsqSimTriangularPatch.calculate_area(self.vertices)
+        if patch_data is not None:
+            self._normal_vector = patch_data[0]
+            self._down_dip_vector = patch_data[1]
+            self._dip = patch_data[2]
+            self._along_strike_vector = patch_data[3]
+            self._centre = patch_data[4]
+            self._area = patch_data[5]
+        else:
+            self._normal_vector = RsqSimTriangularPatch.calculate_normal_vector(self.vertices)
+            self._down_dip_vector = RsqSimTriangularPatch.calculate_down_dip_vector(self.normal_vector)
+            self._dip = RsqSimTriangularPatch.calculate_dip(self.down_dip_vector)
+            self._along_strike_vector = RsqSimTriangularPatch.calculate_along_strike_vector(self.normal_vector, self.down_dip_vector)
+            self._centre = RsqSimTriangularPatch.calculate_centre(self.vertices)
+            self._area = RsqSimTriangularPatch.calculate_area(self.vertices)
 
     @RsqSimGenericPatch.vertices.setter
     def vertices(self, vertices: Union[list, np.ndarray, tuple]):
