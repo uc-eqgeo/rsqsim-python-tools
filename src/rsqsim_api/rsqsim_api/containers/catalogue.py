@@ -321,9 +321,13 @@ class RsqSimCatalogue:
         min_patches = 50
         df = self.catalogue_df
         at = df.at
+        unique_events, unique_event_indices = np.unique(self.event_list, return_index=True)
+        unique_dic = {unique_events[i]: (unique_event_indices[i], unique_event_indices[i+1]) for i in range(len(unique_events)-1)}
+        unique_dic[unique_events[-1]] = (unique_event_indices[-1], len(self.event_list))
         if child_processes == 0:
             for index in ev_ls:
-                ev_indices = np.argwhere(self.event_list == index).flatten()
+                ev_range = unique_dic[index]
+                ev_indices = np.arange(ev_range[0], ev_range[1])
                 patch_numbers = self.patch_list[ev_indices]
                 patch_slip = self.patch_slip[ev_indices]
                 patch_time_list = self.patch_time_list[ev_indices]
@@ -445,14 +449,13 @@ class RsqSimEvent:
 
         faults_with_patches = fault_model.faults_with_patches
         patches_on_fault = defaultdict(list)
-        for i in patch_numbers:
-            patches_on_fault[faults_with_patches[i]].append(i)
+        [ patches_on_fault[faults_with_patches[i]].append(i) for i in patch_numbers ]
 
         mask = np.full(len(patch_numbers), True)
         for fault in patches_on_fault.keys():
             patches_on_this_fault = patches_on_fault[fault]
             if len(patches_on_this_fault) < min_patches:
-                patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_this_fault])
+                patch_on_fault_indices = np.searchsorted(patch_numbers, patches_on_this_fault)
                 mask[patch_on_fault_indices] = False
 
         event.patch_numbers = patch_numbers[mask]
