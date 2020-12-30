@@ -326,6 +326,7 @@ class RsqSimCatalogue:
 
         cat_dict = self.catalogue_df.to_dict(orient='index')
 
+        # Stores the first and last index for each event
         unique_events, unique_event_indices = np.unique(self.event_list, return_index=True)
         unique_dic = {unique_events[i]: (unique_event_indices[i], unique_event_indices[i+1]) for i in range(len(unique_events)-1)}
         unique_dic[unique_events[-1]] = (unique_event_indices[-1], len(self.event_list))
@@ -463,6 +464,7 @@ class RsqSimEvent:
         for fault in patches_on_fault.keys():
             patches_on_this_fault = patches_on_fault[fault]
             if len(patches_on_this_fault) < min_patches:
+                # Finds the indices of values in patches_on_this_fault in patch_numbers
                 patch_on_fault_indices = np.searchsorted(patch_numbers, patches_on_this_fault)
                 mask[patch_on_fault_indices] = False
 
