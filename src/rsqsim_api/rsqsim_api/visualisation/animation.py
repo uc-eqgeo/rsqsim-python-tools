@@ -13,7 +13,8 @@ import os
 
 def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma",
                     crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40,
-                    step_size: int = 5, interval: int = 50, write: str = None, fps: int = 20, file_format: str = "gif"):
+                    step_size: int = 5, interval: int = 50, write: str = None, fps: int = 20, file_format: str = "gif",
+                    figsize: tuple = (6.4, 4.8)):
     """Shows an animation of a sequence of earthquake events over time
 
     Args:
@@ -28,6 +29,7 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
         write (str): Write animation to file with given filename.
         fps (int): Frames per second.
         file_format (str): File extension for animation. Accepted values: gif, mp4, mov, avi.
+        figsize (float, float): Width, height in inches.
     """
     assert file_format in ("gif", "mov", "avi", "mp4")
 
@@ -36,7 +38,7 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     # get RsqSimEvent objects
     events = catalogue.events_by_number(event_list.tolist(), fault_model)
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=figsize)
 
     # plot map
     coast_ax = fig.add_subplot(111, label="coast")
