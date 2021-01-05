@@ -27,6 +27,7 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
         interval (int): Time (ms) between each frame
         write (str): Write animation to .gif with given filename.
         fps (int): Frames per second for .gif
+        hillshading_intensity (float): Intensity of hillshading, value between 0-1.
     """
 
     # get all unique values
