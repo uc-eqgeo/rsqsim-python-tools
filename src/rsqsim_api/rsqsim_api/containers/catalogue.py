@@ -13,7 +13,7 @@ import numpy as np
 from rsqsim_api.containers.fault import RsqSimMultiFault, RsqSimSegment
 from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, catalogue_columns, read_csv_and_array
 from rsqsim_api.io.write_utils import write_catalogue_dataframe_and_arrays
-from rsqsim_api.visualisation.utilities import plot_coast
+from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade
 from rsqsim_api.containers.bruce_shaw_utilities import bruce_subduction
 
 fint = Union[int, float]
@@ -507,7 +507,8 @@ class RsqSimEvent:
 
 
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
-                     write: str = None, subplots = None, global_max_sub_slip: int = 0, global_max_slip: int = 0):
+                     write: str = None, subplots = None, global_max_sub_slip: int = 0, global_max_slip: int = 0,
+                     hillshading_intensity: float = 0.0):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
 
@@ -577,9 +578,18 @@ class RsqSimEvent:
                 crust_cbar = fig.colorbar(crustal_plot, ax=ax)
                 crust_cbar.set_label("Slip (m)")
 
-        if subplots is None:
-            plot_coast(ax, clip_boundary=self.boundary)
+            if hillshading_intensity > 0:
+                plot_coast(ax, clip_boundary=self.boundary, colors="0.0")
+                x_lim = ax.get_xlim()
+                y_lim = ax.get_ylim()
+                plot_hillshade(ax, hillshading_intensity)
+                ax.set_xlim(x_lim)
+                ax.set_ylim(y_lim)
+            else:
+                plot_coast(ax, clip_boundary=self.boundary)
+
             ax.set_aspect("equal")
+
 
         if write is not None:
             fig.savefig(write, dpi=300)

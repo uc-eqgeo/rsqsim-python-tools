@@ -15,3 +15,4 @@ bruce_faults = RsqSimMultiFault.read_fault_file_bruce(os.path.join(run_dir, "../
 filtered_cat = catalogue.filter_whole_catalogue(
     min_t0=1000*3.154e7, max_t0=2000*3.154e7)  # 1000 years
 AnimateSequence(filtered_cat, bruce_faults, write="demo")
+AnimateSequence(filtered_cat, bruce_faults, write="demoHillshade", hillshading_intensity=1.0)
