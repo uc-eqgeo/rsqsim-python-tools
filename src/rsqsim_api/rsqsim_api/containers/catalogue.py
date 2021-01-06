@@ -5,8 +5,11 @@ import os
 from matplotlib import pyplot as plt
 from multiprocessing import Queue, Process
 from multiprocessing.sharedctypes import RawArray
-from functools import partial
+from matplotlib.animation import FuncAnimation
+from matplotlib.widgets import Slider
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import operator
+import math
 import pandas as pd
 import numpy as np
 
@@ -592,6 +595,77 @@ class RsqSimEvent:
             plt.show()
 
         return plots
+
+    def plot_slip_evolution(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
+                            write: str = None, figsize: tuple = (6.4, 4.8)):
+        fig, ax = plt.subplots()
+        plot_coast(ax, clip_boundary=self.boundary)
+        ax.set_aspect("equal")
+
+        colour_dic = {}
+        timestamps = defaultdict(set)
+        subduction_max_slip = 0
+        crustal_max_slip = 0
+        subduction_list = []
+        for f_i, fault in enumerate(self.faults):
+            colours = np.zeros(fault.patch_numbers.shape)
+            times = np.zeros(fault.patch_numbers.shape)
+
+            for local_id, patch_id in enumerate(fault.patch_numbers):
+                if patch_id in self.patch_numbers:
+                    slip_index = np.searchsorted(self.patch_numbers, patch_id)
+                    times[local_id] = np.rint(self.patch_time[slip_index])
+                    colours[local_id] = self.patch_slip[slip_index]
+                    timestamps[times[local_id]].add(f_i)
+
+            colour_dic[f_i] = (colours, times)
+            if fault.name in bruce_subduction:
+                subduction_list.append(fault.name)
+                if max(colours) > subduction_max_slip:
+                    subduction_max_slip = max(colours)
+            else:
+                if max(colours) > crustal_max_slip:
+                    crustal_max_slip = max(colours)
+
+        plots = {}
+        for f_i, fault in enumerate(self.faults):
+            init_colours = np.zeros(fault.patch_numbers.shape)
+            if fault.name in bruce_subduction:
+                plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                    facecolors=init_colours,
+                                    cmap=subduction_cmap, vmin=0, vmax=subduction_max_slip)
+                plots[f_i] = (plot, init_colours)
+
+        for f_i, fault in enumerate(self.faults):
+            init_colours = np.zeros(fault.patch_numbers.shape)
+            if fault.name not in bruce_subduction:
+                plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                    facecolors=init_colours,
+                                    cmap=crustal_cmap, vmin=0, vmax=crustal_max_slip)
+                plots[f_i] = (plot, init_colours)
+
+        ax_divider = make_axes_locatable(ax)
+        ax_time = ax_divider.append_axes("bottom", size="3%", pad=0.5)
+        time_slider = Slider(ax_time, 'Seconds', math.floor(self.t0) - 1, math.floor(self.t0) + math.ceil(self.dt) + 1,
+                             valinit=self.t0 - 1, valstep=1)
+
+        def update_plot(num):
+            time = time_slider.valmin + num
+            time_slider.set_val(time)
+
+            if time in timestamps:
+                for f_i in timestamps[time]:
+                    plot, curr_colors = plots[f_i]
+                    fault_times = colour_dic[f_i][1]
+                    filter_time_indices = np.argwhere(fault_times == time).flatten()
+                    curr_colors[filter_time_indices] = colour_dic[f_i][0][filter_time_indices]
+                    plot.update({'array': curr_colors})
+
+            fig.canvas.draw_idle()
+
+        frames = int(time_slider.valmax - time_slider.valmin) + 1
+        animation = FuncAnimation(fig, update_plot, interval=50, frames=frames)
+        plt.show()
 
     def plot_slip_3d(self):
         pass
