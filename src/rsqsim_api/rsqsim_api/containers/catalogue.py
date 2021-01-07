@@ -5,7 +5,7 @@ import os
 from matplotlib import pyplot as plt
 from multiprocessing import Queue, Process
 from multiprocessing.sharedctypes import RawArray
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 from matplotlib.widgets import Slider
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import operator
@@ -597,7 +597,8 @@ class RsqSimEvent:
         return plots
 
     def plot_slip_evolution(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
-                            write: str = None, step_size: int = 1, figsize: tuple = (6.4, 4.8)):
+                            step_size: int = 1, write: str = None, fps: int = 20, file_format: str = "gif",
+                            figsize: tuple = (6.4, 4.8)):
         fig, ax = plt.subplots()
         plot_coast(ax, clip_boundary=self.boundary)
         ax.set_aspect("equal")
@@ -689,7 +690,12 @@ class RsqSimEvent:
 
         frames = int((time_slider.valmax - time_slider.valmin) / step_size) + 1
         animation = FuncAnimation(fig, update_plot, interval=50, frames=frames)
-        plt.show()
+
+        if write is not None:
+            writer = PillowWriter(fps=fps) if file_format == "gif" else FFMpegWriter(fps=fps)
+            animation.save(f"{write}.{file_format}", writer)
+        else:
+            plt.show()
 
     def plot_slip_3d(self):
         pass
