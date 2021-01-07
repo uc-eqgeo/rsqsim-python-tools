@@ -628,26 +628,44 @@ class RsqSimEvent:
                     crustal_max_slip = max(colours)
 
         plots = {}
+        subduction_plot = None
         for f_i, fault in enumerate(self.faults):
             init_colours = np.zeros(fault.patch_numbers.shape)
             if fault.name in bruce_subduction:
-                plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
                                     facecolors=init_colours,
                                     cmap=subduction_cmap, vmin=0, vmax=subduction_max_slip)
-                plots[f_i] = (plot, init_colours)
+                plots[f_i] = (subduction_plot, init_colours)
 
+        crustal_plot = None
         for f_i, fault in enumerate(self.faults):
             init_colours = np.zeros(fault.patch_numbers.shape)
             if fault.name not in bruce_subduction:
-                plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
                                     facecolors=init_colours,
                                     cmap=crustal_cmap, vmin=0, vmax=crustal_max_slip)
-                plots[f_i] = (plot, init_colours)
+                plots[f_i] = (crustal_plot, init_colours)
+
 
         ax_divider = make_axes_locatable(ax)
         ax_time = ax_divider.append_axes("bottom", size="3%", pad=0.5)
         time_slider = Slider(ax_time, 'Seconds', math.floor(self.t0) - 1, math.floor(self.t0) + math.ceil(self.dt) + 1,
                              valinit=self.t0 - 1, valstep=1)
+
+        # Build colorbars
+        padding = 0.25
+        if subduction_list:
+            sub_ax = ax_divider.append_axes("right", size="5%", pad=padding)
+            sub_cbar = fig.colorbar(
+                subduction_plot, cax=sub_ax)
+            sub_cbar.set_label("Subduction slip (m)")
+            padding += 0.25
+
+        if crustal_plot is not None:
+            crust_ax = ax_divider.append_axes("right", size="5%", pad=padding)
+            crust_cbar = fig.colorbar(
+                crustal_plot, cax=crust_ax)
+            crust_cbar.set_label("Slip (m)")
 
         def update_plot(num):
             time = time_slider.valmin + num
