@@ -12,4 +12,4 @@ bruce_faults = RsqSimMultiFault.read_fault_file_bruce(os.path.join(run_dir, "../
     transform_from_utm=True)
 
 m9 = catalogue.events_by_number(588, bruce_faults)[0]
-m9.plot_slip_evolution()
+m9.plot_slip_evolution(step_size = 5)

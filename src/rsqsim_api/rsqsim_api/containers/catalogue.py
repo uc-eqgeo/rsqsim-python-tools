@@ -597,7 +597,7 @@ class RsqSimEvent:
         return plots
 
     def plot_slip_evolution(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
-                            write: str = None, figsize: tuple = (6.4, 4.8)):
+                            write: str = None, step_size: int = 1, figsize: tuple = (6.4, 4.8)):
         fig, ax = plt.subplots()
         plot_coast(ax, clip_boundary=self.boundary)
         ax.set_aspect("equal")
@@ -614,7 +614,7 @@ class RsqSimEvent:
             for local_id, patch_id in enumerate(fault.patch_numbers):
                 if patch_id in self.patch_numbers:
                     slip_index = np.searchsorted(self.patch_numbers, patch_id)
-                    times[local_id] = np.rint(self.patch_time[slip_index])
+                    times[local_id] = step_size * np.rint((self.patch_time[slip_index] - self.t0) / step_size)
                     colours[local_id] = self.patch_slip[slip_index]
                     timestamps[times[local_id]].add(f_i)
 
@@ -649,8 +649,8 @@ class RsqSimEvent:
 
         ax_divider = make_axes_locatable(ax)
         ax_time = ax_divider.append_axes("bottom", size="3%", pad=0.5)
-        time_slider = Slider(ax_time, 'Seconds', math.floor(self.t0) - 1, math.floor(self.t0) + math.ceil(self.dt) + 1,
-                             valinit=self.t0 - 1, valstep=1)
+        time_slider = Slider(ax_time, 'Time (s)', 0, step_size * round(self.dt / step_size) + step_size,
+                             valinit=0, valstep=step_size)
 
         # Build colorbars
         padding = 0.25
@@ -668,20 +668,26 @@ class RsqSimEvent:
             crust_cbar.set_label("Slip (m)")
 
         def update_plot(num):
-            time = time_slider.valmin + num
+            time = time_slider.valmin + num * step_size
             time_slider.set_val(time)
 
             if time in timestamps:
                 for f_i in timestamps[time]:
-                    plot, curr_colors = plots[f_i]
+                    plot, curr_colours = plots[f_i]
                     fault_times = colour_dic[f_i][1]
                     filter_time_indices = np.argwhere(fault_times == time).flatten()
-                    curr_colors[filter_time_indices] = colour_dic[f_i][0][filter_time_indices]
-                    plot.update({'array': curr_colors})
+                    curr_colours[filter_time_indices] = colour_dic[f_i][0][filter_time_indices]
+                    plot.update({'array': curr_colours})
+            elif time == time_slider.valmax:
+                for f_i, fault in enumerate(self.faults):
+                    plot, curr_colours = plots[f_i]
+                    init_colors = np.zeros(fault.patch_numbers.shape)
+                    curr_colours[:] = init_colors[:]
+                    plot.update({'array': curr_colours})
 
             fig.canvas.draw_idle()
 
-        frames = int(time_slider.valmax - time_slider.valmin) + 1
+        frames = int((time_slider.valmax - time_slider.valmin) / step_size) + 1
         animation = FuncAnimation(fig, update_plot, interval=50, frames=frames)
         plt.show()
 
