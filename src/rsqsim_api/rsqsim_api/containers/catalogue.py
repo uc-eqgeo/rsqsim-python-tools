@@ -9,7 +9,6 @@ from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 from matplotlib.widgets import Slider
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import operator
-import math
 import pandas as pd
 import numpy as np
 
@@ -599,7 +598,11 @@ class RsqSimEvent:
     def plot_slip_evolution(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
                             step_size: int = 1, write: str = None, fps: int = 20, file_format: str = "gif",
                             figsize: tuple = (6.4, 4.8)):
+
+        assert file_format in ("gif", "mov", "avi", "mp4")
+
         fig, ax = plt.subplots()
+        fig.set_size_inches(figsize)
         plot_coast(ax, clip_boundary=self.boundary)
         ax.set_aspect("equal")
 
