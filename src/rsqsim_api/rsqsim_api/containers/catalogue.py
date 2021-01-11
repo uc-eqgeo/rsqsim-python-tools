@@ -378,7 +378,7 @@ class RsqSimCatalogue:
                                                            ev_data['y'], ev_data['z'], ev_data['area'], ev_data['dt'],
                                                            patch_numbers, patch_slip, patch_time,
                                                            fault_model, mask, event_id=index)
-                out_events.append(index)
+                out_events.append(event_i)
 
             for p in processes:
                 p.join()
