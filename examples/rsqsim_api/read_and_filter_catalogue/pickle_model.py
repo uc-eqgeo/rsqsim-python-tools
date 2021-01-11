@@ -1,5 +1,4 @@
 import os
-import pprofile
 
 from rsqsim_api.containers.fault import RsqSimMultiFault
 from rsqsim_api.containers.catalogue import RsqSimCatalogue
