@@ -507,7 +507,7 @@ class RsqSimEvent:
 
 
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
-                     write: str = None, subplots = None, global_max_sub_slip: int = 0, global_max_slip: int = 0,
+                     write: str = None, subplots=None, global_max_sub_slip: int = 0, global_max_slip: int = 0,
                      hillshading_intensity: float = 0.0):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
