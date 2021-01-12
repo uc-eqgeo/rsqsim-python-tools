@@ -3,12 +3,15 @@ from rsqsim_api.containers.fault import RsqSimMultiFault
 from rsqsim_api.visualisation.utilities import plot_coast
 from matplotlib import pyplot as plt
 from matplotlib.widgets import Slider
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, PillowWriter
 from matplotlib.cm import ScalarMappable
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+import math
+import numpy as np
 import os
 
 
-def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", global_max_slip: int = 10, step_size: int = 1e8, interval: int = 100):
+def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40, step_size: int = 5, interval: int = 50, write: str = None, fps: int = 20):
     """Shows an animation of a sequence of earthquake events over time
 
     Args:
@@ -17,85 +20,132 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
         subduction_cmap (str): Colourmap for subduction colorbar
         crustal_cmap (str): Colourmap for crustal_cmap colorbar
         global_max_slip (int): Max slip to use for the colorscale
+        global_max_sub_slip (int): Max subduction slip to use for the colorscale
         step_size (int): Step size to advance every interval
-        interval (int): How long each frame lasts
+        interval (int): Time (ms) between each frame
+        write (str): Write animation to .gif with given filename.
+        fps (int): Frames per second for .gif
     """
 
     # get all unique values
-    event_list = dict.fromkeys(catalogue.event_list.tolist())
+    event_list = np.unique(catalogue.event_list)
     # get RsqSimEvent objects
-    events = catalogue.events_by_number(list(event_list), fault_model)
-    axes = AxesSequence()
-    plt.subplots_adjust(left=0.25, bottom=0.25)
+    events = catalogue.events_by_number(event_list.tolist(), fault_model)
+
+    fig = plt.figure()
+
+    # plot map
+    coast_ax = fig.add_subplot(111, label="coast")
+    plot_coast(coast_ax)
+    coast_ax.set_aspect("equal")
+    coast_ax.patch.set_alpha(0)
+    coast_ax.get_xaxis().set_visible(False)
+    coast_ax.get_yaxis().set_visible(False)
+
     num_events = len(events)
-    for i, ax in zip(range(num_events), axes):
-        max_slips = events[i].plot_slip_2d(
-            show=False, clip=False, subplots=(axes.fig, ax), show_cbar=False, global_max_slip=global_max_slip)
-        axes.timestamps.append(round(events[i].t0, -8))
-        print("Plotting: " + str(i+1) + "/" + str(num_events))
+    all_plots = []
+    timestamps = []
+    for i, e in enumerate(events):
+        plots = e.plot_slip_2d(
+            subplots=(fig, coast_ax), global_max_slip=global_max_slip, global_max_sub_slip=global_max_sub_slip)
+        for p in plots:
+            p.set_visible(False)
+        years = math.floor(e.t0 / 3.154e7)
+        all_plots.append(plots)
+        timestamps.append(step_size * round(years/step_size))
+        print("Plotting: " + str(i + 1) + "/" + str(num_events))
+
+    coast_ax_divider = make_axes_locatable(coast_ax)
 
     # Build colorbars
     sub_mappable = ScalarMappable(cmap=subduction_cmap)
-    sub_mappable.set_clim(vmin=0, vmax=global_max_slip)
+    sub_mappable.set_clim(vmin=0, vmax=global_max_sub_slip)
     crust_mappable = ScalarMappable(cmap=crustal_cmap)
     crust_mappable.set_clim(vmin=0, vmax=global_max_slip)
-    sub_cbar = plt.colorbar(sub_mappable, ax=axes.fig.axes, extend='max')
+    sub_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.25)
+    crust_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.5)
+    sub_cbar = fig.colorbar(
+        sub_mappable, cax=sub_ax, extend='max')
     sub_cbar.set_label("Subduction slip (m)")
-    crust_cbar = plt.colorbar(crust_mappable, ax=axes.fig.axes, extend='max')
+    crust_cbar = fig.colorbar(
+        crust_mappable, cax=crust_ax, extend='max')
     crust_cbar.set_label("Slip (m)")
-    axes.sub_mappable = sub_mappable
-    axes.crust_mappable = crust_mappable
 
     # Slider to represent time progression
-    axcolor = 'lightgoldenrodyellow'
-    axtime = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
+    axtime = coast_ax_divider.append_axes(
+        "bottom", size="3%", pad=0.5)
     time_slider = Slider(
-        axtime, 'Time', axes.timestamps[0], axes.timestamps[-1], valinit=axes.timestamps[0], valstep=step_size)
+        axtime, 'Year', timestamps[0] - step_size, timestamps[-1] + step_size, valinit=timestamps[0] - step_size, valstep=step_size)
+
+    axes = AxesSequence(fig, timestamps, all_plots, coast_ax)
 
     def update(val):
         time = time_slider.val
         axes.set_plot(time)
-        axes.fig.canvas.draw_idle()
+        if val == time_slider.valmax:
+            axes.stop()
+        fig.canvas.draw_idle()
 
     time_slider.on_changed(update)
 
     def update_plot(num):
-        val = (time_slider.val + step_size) % time_slider.valmax
+        val = time_slider.valmin + num * step_size
         time_slider.set_val(val)
 
-    animation = FuncAnimation(axes.fig, update_plot, interval=interval)
-    axes.show()
+    frames = int((time_slider.valmax - time_slider.valmin) / step_size) + 1
+    animation = FuncAnimation(fig, update_plot,
+                              interval=interval, frames=frames)
+
+    if write is not None:
+        writer = PillowWriter(fps=fps)
+        animation.save(f"{write}.gif", writer=writer)
+    else:
+        axes.show()
 
 
 class AxesSequence(object):
-    """Creates a series of axes in a figure where only one is displayed at any given time."""
+    """Controls a series of plots on the screen and when they are visible"""
 
-    def __init__(self):
-        self.fig = plt.figure()
-        self.axes = []
-        self.timestamps = []
-        self.sub_mappable = None
-        self.crust_mappable = None
-        self._i = 0  # Currently displayed axes index
-        self._n = 0  # Last created axes index
-
-    def __iter__(self):
-        while True:
-            yield self.new()
-
-    def new(self):
-        ax = self.fig.add_subplot(111, visible=False, label=self._n)
-        self._n += 1
-        self.axes.append(ax)
-        return ax
+    def __init__(self, fig, timestamps, plots, coast_ax):
+        self.fig = fig
+        self.timestamps = timestamps
+        self.plots = plots
+        self.coast_ax = coast_ax
+        self.on_screen = []  # earthquakes currently displayed
+        self._i = -1  # Currently displayed axes index
 
     def set_plot(self, val):
-        if val in self.timestamps:
-            i = self.timestamps.index(val)
-            self.axes[self._i].set_visible(False)
-            self.axes[i].set_visible(True)
-            self._i = i
+        # plot corresponding event
+        while self._i < len(self.timestamps) - 1 and val == self.timestamps[self._i + 1]:
+            self._i += 1
+            curr_plots = self.plots[self._i]
+            for p in curr_plots:
+                p.set_visible(True)
+            self.on_screen.append(curr_plots)
+
+        for i, p in enumerate(self.on_screen):
+            self.fade(p, i)
+
+    def fade(self, plot, index):
+        visible = True
+        for p in plot:
+            opacity = p.get_alpha()
+            if opacity / 2 <= 1e-2:
+                p.set_alpha(1)
+                visible = False
+                p.set_visible(False)
+            else:
+                p.set_alpha(opacity / 2)
+        if not visible:
+            self.on_screen.pop(index)
+
+    def stop(self):
+        for plot in self.on_screen:
+            for p in plot:
+                p.set_visible(False)
+                p.set_alpha(1)
+        self._i = -1
+        self.on_screen.clear()
 
     def show(self):
-        self.axes[0].set_visible(True)
         plt.show()
