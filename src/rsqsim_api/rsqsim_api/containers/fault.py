@@ -15,6 +15,7 @@ from triangular_faults.displacements import DisplacementArray
 from triangular_faults.utilities import read_ts_coords
 from matplotlib import pyplot as plt
 from rsqsim_api.visualisation.utilities import plot_coast
+from rsqsim_api.io.read_utils import read_dxf
 
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
@@ -452,7 +453,7 @@ class RsqSimSegment:
         if boundary_array is not None:
             assert isinstance(boundary_array, np.ndarray)
             assert boundary_array.ndim == 2  # 2D array
-            assert boundary_array.shape[0] == 3  # Three columns
+            assert boundary_array.shape[1] == 3  # Three columns
 
         self._boundary = boundary_array
 
@@ -557,6 +558,17 @@ class RsqSimSegment:
         _, _, tri = read_ts_coords(tsurface_file)
         fault = cls.from_triangles(tri)
         return fault
+
+    @classmethod
+    def from_dxf(cls, dxf_file: str, segment_number: int = 0,
+                 patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None,
+                 strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None):
+        triangles, boundary = read_dxf(dxf_file)
+        segment = cls.from_triangles(triangles, segment_number=segment_number, patch_numbers=patch_numbers,
+                                     fault_name=fault_name, strike_slip=strike_slip, dip_slip=dip_slip)
+        segment.boundary = boundary
+
+        return segment
 
     @classmethod
     def from_pandas(cls, dataframe: pd.DataFrame, segment_number: int,
