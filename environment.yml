@@ -20,3 +20,4 @@ dependencies:
     - src/rsqsim_api
     - src/tri_dislocations
     - src/triangular_faults
+    - ezdxf >= 0.14.2
