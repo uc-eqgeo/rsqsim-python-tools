@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import pandas as pd
+import ezdxf
 
 catalogue_columns = ["t0", "m0", "mw", "x", "y", "z", "area", "dt"]
 
@@ -144,3 +145,37 @@ def read_ts_coords(filename):
             vertex_i = vrtx[vrtx[:, 0] == trgl[k, l]][0]
             tri[k, i1:i2] = vertex_i[1:]
     return vrtx, trgl, tri
+
+
+def read_dxf(dxf_file: str):
+    """
+    Reads mesh and boundary from dxf file exported from move. Returns boundary (as array) and triangles
+    """
+    assert os.path.exists(dxf_file)
+    dxf = ezdxf.readfile(dxf_file)
+    msp = dxf.modelspace()
+    dxftypes = [e.dxftype() for e in msp]
+    assert all([a in dxftypes for a in ("3DFACE", "POLYLINE")]), "{}: Expected triangles and boundary".format(dxf_file)
+    if dxftypes.count("POLYLINE") > 1:
+        raise ValueError("{}: Too many boundaries lines...".format(dxf_file))
+
+
+    triangle_ls = []
+    boundary_array = None
+    for entity in msp:
+        if entity.dxftype() == "3DFACE":
+            triangle = np.array([vertex.xyz for vertex in entity])
+            unique_triangle = np.unique(triangle, axis=0).reshape((9,))
+            triangle_ls.append(unique_triangle)
+
+        elif entity.dxftype() == "POLYLINE":
+            boundary_ls = []
+            for point in entity.points():
+                boundary_ls.append(point.xyz)
+            boundary_array = np.array(boundary_ls)
+
+    triangle_array = np.array(triangle_ls)
+
+    return triangle_array, boundary_array
+
+
