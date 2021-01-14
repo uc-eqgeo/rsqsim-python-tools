@@ -5,7 +5,9 @@ import os
 from matplotlib import pyplot as plt
 from multiprocessing import Queue, Process
 from multiprocessing.sharedctypes import RawArray
-from functools import partial
+from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
+from matplotlib.widgets import Slider
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import operator
 import pandas as pd
 import numpy as np
@@ -592,6 +594,111 @@ class RsqSimEvent:
             plt.show()
 
         return plots
+
+    def plot_slip_evolution(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
+                            step_size: int = 1, write: str = None, fps: int = 20, file_format: str = "gif",
+                            figsize: tuple = (6.4, 4.8)):
+
+        assert file_format in ("gif", "mov", "avi", "mp4")
+
+        fig, ax = plt.subplots()
+        fig.set_size_inches(figsize)
+        plot_coast(ax, clip_boundary=self.boundary)
+        ax.set_aspect("equal")
+
+        colour_dic = {}
+        timestamps = defaultdict(set)
+        subduction_max_slip = 0
+        crustal_max_slip = 0
+        subduction_list = []
+        for f_i, fault in enumerate(self.faults):
+            colours = np.zeros(fault.patch_numbers.shape)
+            times = np.zeros(fault.patch_numbers.shape)
+
+            for local_id, patch_id in enumerate(fault.patch_numbers):
+                if patch_id in self.patch_numbers:
+                    slip_index = np.searchsorted(self.patch_numbers, patch_id)
+                    times[local_id] = step_size * np.rint((self.patch_time[slip_index] - self.t0) / step_size)
+                    colours[local_id] = self.patch_slip[slip_index]
+                    timestamps[times[local_id]].add(f_i)
+
+            colour_dic[f_i] = (colours, times)
+            if fault.name in bruce_subduction:
+                subduction_list.append(fault.name)
+                if max(colours) > subduction_max_slip:
+                    subduction_max_slip = max(colours)
+            else:
+                if max(colours) > crustal_max_slip:
+                    crustal_max_slip = max(colours)
+
+        plots = {}
+        subduction_plot = None
+        for f_i, fault in enumerate(self.faults):
+            init_colours = np.zeros(fault.patch_numbers.shape)
+            if fault.name in bruce_subduction:
+                subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                    facecolors=init_colours,
+                                    cmap=subduction_cmap, vmin=0, vmax=subduction_max_slip)
+                plots[f_i] = (subduction_plot, init_colours)
+
+        crustal_plot = None
+        for f_i, fault in enumerate(self.faults):
+            init_colours = np.zeros(fault.patch_numbers.shape)
+            if fault.name not in bruce_subduction:
+                crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                    facecolors=init_colours,
+                                    cmap=crustal_cmap, vmin=0, vmax=crustal_max_slip)
+                plots[f_i] = (crustal_plot, init_colours)
+
+
+        ax_divider = make_axes_locatable(ax)
+        ax_time = ax_divider.append_axes("bottom", size="3%", pad=0.5)
+        time_slider = Slider(ax_time, 'Time (s)', 0, step_size * round(self.dt / step_size) + step_size,
+                             valinit=0, valstep=step_size)
+
+        # Build colorbars
+        padding = 0.25
+        if subduction_list:
+            sub_ax = ax_divider.append_axes("right", size="5%", pad=padding)
+            sub_cbar = fig.colorbar(
+                subduction_plot, cax=sub_ax)
+            sub_cbar.set_label("Subduction slip (m)")
+            padding += 0.25
+
+        if crustal_plot is not None:
+            crust_ax = ax_divider.append_axes("right", size="5%", pad=padding)
+            crust_cbar = fig.colorbar(
+                crustal_plot, cax=crust_ax)
+            crust_cbar.set_label("Slip (m)")
+
+        def update_plot(num):
+            time = time_slider.valmin + num * step_size
+            time_slider.set_val(time)
+
+            if time in timestamps:
+                for f_i in timestamps[time]:
+                    plot, curr_colours = plots[f_i]
+                    fault_times = colour_dic[f_i][1]
+                    filter_time_indices = np.argwhere(fault_times == time).flatten()
+                    curr_colours[filter_time_indices] = colour_dic[f_i][0][filter_time_indices]
+                    plot.update({'array': curr_colours})
+            elif time == time_slider.valmax:
+                for f_i, fault in enumerate(self.faults):
+                    plot, curr_colours = plots[f_i]
+                    init_colors = np.zeros(fault.patch_numbers.shape)
+                    curr_colours[:] = init_colors[:]
+                    plot.update({'array': curr_colours})
+
+            fig.canvas.draw_idle()
+
+        frames = int((time_slider.valmax - time_slider.valmin) / step_size) + 1
+        animation = FuncAnimation(fig, update_plot, interval=50, frames=frames)
+
+        if write is not None:
+            writer = PillowWriter(fps=fps) if file_format == "gif" else FFMpegWriter(fps=fps)
+            animation.save(f"{write}.{file_format}", writer)
+        else:
+            plt.show()
 
     def plot_slip_3d(self):
         pass
