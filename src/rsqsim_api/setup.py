@@ -6,5 +6,5 @@ setup(name='rsqsim-api',
       author='Andy Howell and several others hopefully',
       author_email='a.howell@gns.cri.nz',
       packages=find_packages(),
-      package_data={'rsqsim_api': ['visualisation/data/coastline/*']},
+      package_data={'rsqsim_api': ['visualisation/data/*', 'visualisation/data/*/*']},
       )

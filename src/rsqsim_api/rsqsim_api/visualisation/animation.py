@@ -1,6 +1,6 @@
 from rsqsim_api.containers.catalogue import RsqSimCatalogue
 from rsqsim_api.containers.fault import RsqSimMultiFault
-from rsqsim_api.visualisation.utilities import plot_coast
+from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade
 from matplotlib import pyplot as plt
 from matplotlib.widgets import Slider
 from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
@@ -14,7 +14,7 @@ import os
 def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma",
                     crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40,
                     step_size: int = 5, interval: int = 50, write: str = None, fps: int = 20, file_format: str = "gif",
-                    figsize: tuple = (6.4, 4.8)):
+                    figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0):
     """Shows an animation of a sequence of earthquake events over time
 
     Args:
@@ -30,6 +30,7 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
         fps (int): Frames per second.
         file_format (str): File extension for animation. Accepted values: gif, mp4, mov, avi.
         figsize (float, float): Width, height in inches.
+        hillshading_intensity (float): Intensity of hillshading, value between 0-1.
     """
     assert file_format in ("gif", "mov", "avi", "mp4")
 
@@ -42,7 +43,10 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
 
     # plot map
     coast_ax = fig.add_subplot(111, label="coast")
-    plot_coast(coast_ax)
+    if hillshading_intensity > 0:
+        plot_coast(coast_ax, colors="0.0")
+    else:
+        plot_coast(coast_ax)
     coast_ax.set_aspect("equal")
     coast_ax.patch.set_alpha(0)
     coast_ax.get_xaxis().set_visible(False)
@@ -60,6 +64,13 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
         all_plots.append(plots)
         timestamps.append(step_size * round(years/step_size))
         print("Plotting: " + str(i + 1) + "/" + str(num_events))
+
+    if hillshading_intensity > 0:
+        x_lim = coast_ax.get_xlim()
+        y_lim = coast_ax.get_ylim()
+        plot_hillshade(coast_ax, hillshading_intensity)
+        coast_ax.set_xlim(x_lim)
+        coast_ax.set_ylim(y_lim)
 
     coast_ax_divider = make_axes_locatable(coast_ax)
 
