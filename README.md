@@ -1,12 +1,22 @@
 # rnc2
+
 Python code for RNC2 earthquakes theme
 
 *Andy Howell, Oct 2020*
 
-# Install
-The repository comprises example scripts that rely on three separate modules:
-   1. tri_dislocations, for calculation of displacements.
-   2. triangular_faults, a utility module to make use of tri_dislocations in the NZ context.
-   3. rsqsim_api, which is designed to work with outputs from RSQSim.
+## Prerequisites
+
+Installation instructions for Anaconda can be found here: <https://www.anaconda.com/products/individual#Downloads>
+
+## Installation
+
+   1. Open Anaconda Prompt
+   2. Run `cd {PATH_TO_REPO}`
+   3. Run `conda env create`
+   4. Run `conda activate rnc2`
+
+## Running Jupyter Notebooks
    
-At this stage, it is recommended that these modules are installed separately, because tri_dislocations especially can be slightly tricky 
+   1. Make sure the correct environment is actiated (rnc2).
+   2. Run `jupyter notebook` from Anaconda prompt or Anaconda navigator
+ 
