@@ -4,14 +4,14 @@ import numpy as np
 import pandas as pd
 from rsqsim_api.containers.fault import RsqSimTriangularPatch, RsqSimSegment, RsqSimMultiFault
 test_vertices = np.array([[0., 0., 0.],
-                          [0., 1., 0.],
+                          [1., 1., 0.],
                           [0., 1., -1]])
 
 fault_names = pd.Series(["test"])
 
 column_names = ["x1", "y1", "z1", "x2", "y2", "z2", "x3", "y3", "z3", "rake",
                 "slip_rate", "fault_num", "bruce_name"]
-faults_in = pd.DataFrame([[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, -1.0, 0, 0, 0, 0]], columns=column_names)
+faults_in = pd.DataFrame([[0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, -1.0, 180.0, 0, 0, 0]], columns=column_names)
 
 
 class TestMultiFault(unittest.TestCase):
@@ -36,7 +36,7 @@ class TestMultiFault(unittest.TestCase):
         self.assertDictEqual(self.multifault.name_dic, {'test': self.multifault.faults[0]})
 
     def test_return_bounds(self):
-        np.testing.assert_array_equal(self.multifault.bounds, np.array([0, 0, 0, 1]))
+        np.testing.assert_array_equal(self.multifault.bounds, np.array([0, 0, 1, 1]))
 
     def test_return_patch_dic(self):
         self.assertIsInstance(self.multifault.patch_dic[0], RsqSimTriangularPatch)
@@ -60,7 +60,7 @@ class TestSegment(unittest.TestCase):
         np.testing.assert_array_equal(np.sort(self.fault.vertices.flat), np.sort(test_vertices.flat))
 
     def test_return_bounds(self):
-        np.testing.assert_array_equal(self.fault.bounds, np.array([0, 0, 0, 1]))
+        np.testing.assert_array_equal(self.fault.bounds, np.array([0, 0, 1, 1]))
 
     def test_return_patch_outlines(self):
         patch_outlines = self.fault.patch_outlines
@@ -86,6 +86,18 @@ class TestSegment(unittest.TestCase):
     def test_return_triangles(self):
         np.testing.assert_array_equal(self.fault.triangles, [[0, 2, 1]])
 
+    def test_dip_slip(self):
+        patch = self.fault.patch_dic[0]
+        np.testing.assert_almost_equal(patch.dip_slip, 0)
+
+    def test_strike_slip(self):
+        patch = self.fault.patch_dic[0]
+        np.testing.assert_almost_equal(patch.strike_slip, -1)
+
+    def test_total_slip(self):
+        patch = self.fault.patch_dic[0]
+        np.testing.assert_almost_equal(patch.total_slip, 1)
+
     def test_find_triangles_from_vertex_index(self):
         triangle_index = self.fault.find_triangles_from_vertex_index(0)
         self.assertTrue(len(triangle_index) == 1)
@@ -105,19 +117,22 @@ class TestTriangularPatch(unittest.TestCase):
         np.testing.assert_array_almost_equal(self.triangle.vertices, test_vertices)
 
     def test_normal_vector(self):
-        np.testing.assert_array_almost_equal(self.triangle.normal_vector, np.array([1., 0., 0.]))
+        np.testing.assert_array_almost_equal(self.triangle.normal_vector, np.array([-0.57735, 0.57735, 0.57735]))
 
     def test_down_dip_vector(self):
-        np.testing.assert_array_almost_equal(self.triangle.down_dip_vector, np.array([0.,  0., np.nan]))
+        np.testing.assert_array_almost_equal(self.triangle.down_dip_vector, np.array([-0.301511, 0.301511, -0.904534]))
 
     def test_dip_magnitude(self):
-        np.testing.assert_almost_equal(self.triangle.dip, np.nan)
+        np.testing.assert_almost_equal(self.triangle.dip, 64.7605981)
 
     def test_along_strike_vector(self):
-        np.testing.assert_array_almost_equal(self.triangle.along_strike_vector, np.array([np.nan, np.nan, 0]))
+        np.testing.assert_array_almost_equal(self.triangle.along_strike_vector, np.array([-0.696311, -0.696311, 0.]))
 
     def test_centre(self):
-        np.testing.assert_array_almost_equal(self.triangle.centre, np.array([0, 0.6666667, -0.3333333]))
+        np.testing.assert_array_almost_equal(self.triangle.centre, np.array([0.333333, 0.6666667, -0.3333333]))
 
     def test_area(self):
-        np.testing.assert_almost_equal(self.triangle.area, 0.5)
+        np.testing.assert_almost_equal(self.triangle.area, 0.8660254)
+
+    def test_strike(self):
+        self.assertEqual(self.triangle.strike, 225.0)
