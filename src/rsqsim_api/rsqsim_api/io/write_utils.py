@@ -34,71 +34,92 @@ def write_catalogue_dataframe_and_arrays(prefix: str, catalogue, directory: str 
         np.save(file, array)
 
 
-def fit_plane_to_points(points: np.ndarray):
+def create_quad_mesh_from_fault(points: np.ndarray, edges: np.ndarray, triangles: np.ndarray, resolution: float=5000.0,
+                                num_search_tris: int=10, fit_plane_epsilon: float=1.0e-5, cutoff_rotation_vecmag: float=0.98,
+                                is_plane_epsilon: float=1.0):
     """
-    Finds best-fit plane through a set of points.
-    A least-squares solution is used to find the solution to z = a*x + b*y + c.
-    If the fault is nearly vertical, the solution is computed as x = a*y + b*z + c.
-    The plane normal is then computed and the plane may be computed as:
-    A*(x-x0) +B*(y-y0) + C*(z-z0) = 0, where (x0, y0, z0) is the plane_origin,
-    and (A, B, C) is the plane normal.
-    Returned values are:
-                plane_normal:  Normal vector to plane (A, B, C)
-                plane_origin:  Point on plane that may be considered as the plane origin
+    Create a quad mesh, given triangular mesh information.
+    Returned values are all in the fault_mesh_info dictionary:
+        plane_normal: Normal vector for best-fit plane through original points
+        plane_origin: Reference point for best-fit plane through original points
+        rotation_matrix: Rotation matrix based on plane_normal
+        points_local: Original points transformed to local coordinates
+        edges_local: Original edges transformed to local coordinates
+        fault_is_plane: Boolean determining whether fault is a plane within given tolerance
+        quad_edges: Dictionary containing the 4 edges composing the mesh boundary
+        mesh_points_local: The generated mesh points (structured mesh) in local fault coordinates
+        num_horiz_points: The number of mesh points in the horizontal direction
+        num_vert_points: The number of mesh points in the vertical direction
+        mesh_points_global: The generated mesh points (structured mesh) in global coordinates
     """
-    # Number of points and mean of points.
-    num_points = points.shape[0]
-    points_mean = np.mean(points, axis=0)
-    plane_origin = np.zeros(3, np.float64)
-    inds = [0,1,2]
-    c0 = np.array([0.0, 0.0, 5000.0], dtype=np.float64)
-    c1 = np.array([5000.0, 0.0, 0.0], dtype=np.float64)
-    plane_points = np.zeros((3,3), dtype=np.float64)
+    # Get coordinate transformation information.
+    (plane_normal, plane_origin) = fit_plane_to_points(points, eps=fit_plane_epsilon)
+    rotation_matrix = get_fault_rotation_matrix(plane_normal, cutoff_vecmag=cutoff_rotation_vecmag)
 
-    # Form inversion arrays and compute least-squares solution.
-    # First try assuming plane is not vertical.
-    a = np.ones((num_points, 3), dtype=np.float64)
-    a[:,0] = points[:,0]
-    a[:,1] = points[:,1]
-    b = points[:,2]
-    (sol, resid, rank, single_vals) = np.linalg.lstsq(a, b, rcond=None)
+    # Get local coordinates.
+    (points_local, edges_local, fault_is_plane) = fault_global_to_local(points, edges, rotation_matrix, plane_origin,
+                                                                        plane_epsilon=is_plane_epsilon)
 
-    # If not full rank, fault is probably nearly vertical.
-    if (rank < 3):
-        a = np.ones((num_points, 3), dtype=np.float64)
-        a[:,0] = points[:,1]
-        a[:,1] = points[:,2]
-        b = points[:,0]
-        (sol, resid, rank, single_vals) = np.linalg.lstsq(a, b, rcond=None)
-        inds = [1,2,0]
+    # Get edges of boundary and create a grid in local coordinates.
+    quad_edges = get_quad_mesh_edges(edges_local)
+    (mesh_points_local,
+     num_horiz_points, num_vert_points) = create_local_grid(points_local, quad_edges, triangles, fault_is_plane,
+                                                            resolution=resolution, num_search_tris=num_search_tris)
 
-    # Compute plane origin using solution.
-    plane_origin[inds[0]] = points_mean[inds[0]]
-    plane_origin[inds[1]] = points_mean[inds[1]]
-    plane_origin[inds[2]] = sol[0]*plane_origin[inds[0]] + sol[1]*plane_origin[inds[1]] + sol[2]
+    # Convert to global coordinates.
+    (mesh_points_global, edges_global) = fault_local_to_global(mesh_points_local, edges_local, rotation_matrix, plane_origin)
 
-    # Compute coordinates corresponding to c0 and c1.
-    c2 = sol[0]*c0 + sol[1]*c1 + sol[2]
-    plane_points[:,inds[0]] = c0
-    plane_points[:,inds[1]] = c1
-    plane_points[:,inds[2]] = c2
+    # Create dictionary of results.
+    fault_mesh_info = {'plane_normal': plane_normal,
+                       'plane_origin': plane_origin,
+                       'rotation_matrix': rotation_matrix,
+                       'points_local': points_local,
+                       'edges_local': edges_local,
+                       'fault_is_plane': fault_is_plane,
+                       'quad_edges': quad_edges,
+                       'mesh_points_local': mesh_points_local,
+                       'num_horiz_points': num_horiz_points,
+                       'num_vert_points': num_vert_points,
+                       'mesh_points_global': mesh_points_global}
+
+    return fault_mesh_info
+
     
-    # Compute normal vector, normalize it, and make sure it is directed upward (unless vertical).
-    v1 = plane_points[1,:] - plane_points[0,:]
-    v2 = plane_points[2,:] - plane_points[0,:]
-    plane_normal = rsqsim_api.containers.fault.cross_3d(v1, v2)
-    plane_normal /= rsqsim_api.containers.fault.norm_3d(plane_normal)
-    if plane_normal[-1] < 0.0:
+def fit_plane_to_points(points: np.ndarray, eps: float=1.0e-5):
+    """
+    Find best-fit plane through a set of points, after first insuring the plane goes through
+    the mean (centroid) of all the points in the array. This is probably better than my
+    initial method, since the SVD is only over a 3x3 array (rather than the num_pointsxnum_points
+    array). 
+    Returned values are:
+        plane_normal:  Normal vector to plane (A, B, C)
+        plane_origin:  Point on plane that may be considered as the plane origin
+    """
+    # Compute plane origin and subract it from the points array.
+    plane_origin = np.mean(points, axis=0)
+    x = points - plane_origin
+
+    # Dot product to yield a 3x3 array.
+    moment = np.dot(x.T, x)
+
+    # Extract single values from SVD computation to get normal.
+    plane_normal = np.linalg.svd(moment)[0][:,-1]
+    small = np.where(np.abs(plane_normal) < eps)
+    plane_normal[small] = 0.0
+    plane_normal /= np.linalg.norm(plane_normal)
+    if (plane_normal[-1] < 0.0):
         plane_normal *= -1.0
 
     return (plane_normal, plane_origin)
-    
-    
+
+
 def get_fault_rotation_matrix(plane_normal: np.ndarray, cutoff_vecmag: float = 0.98):
     """
     Compute rotation matrix, given the normal to the plane. If the normal is nearly
     vertical an alternate reference direction is used to compute the two tangential
     directions.
+    Returned values are:
+        rotation_matrix: 3x3 rotation matrix with columns (tan_dir1, tan_dir2, plane_normal).
     """
     # Reference directions to try are z=1 (vertical) and y=1 (north).
     ref_dir1 = np.array([0.0, 0.0, 1.0], dtype=np.float64)
@@ -111,7 +132,9 @@ def get_fault_rotation_matrix(plane_normal: np.ndarray, cutoff_vecmag: float = 0
         
     # Get two tangential directions in plane.
     tan_dir1 = rsqsim_api.containers.fault.cross_3d(ref_dir, plane_normal)
+    tan_dir1 /= np.linalg.norm(tan_dir1)
     tan_dir2 = rsqsim_api.containers.fault.cross_3d(plane_normal, tan_dir1)
+    tan_dir2 /= np.linalg.norm(tan_dir2)
 
     # Form rotation matrix.
     rotation_matrix = np.column_stack((tan_dir1, tan_dir2, plane_normal))
@@ -119,15 +142,15 @@ def get_fault_rotation_matrix(plane_normal: np.ndarray, cutoff_vecmag: float = 0
     return rotation_matrix
     
     
-def fault_global_to_local(points: np.ndarray, edges: np.ndarray,
-                          rotation_matrix: np.ndarray, plane_origin: np.ndarray, plane_epsilon: float = 1.0):
+def fault_global_to_local(points: np.ndarray, edges: np.ndarray, rotation_matrix: np.ndarray,
+                          plane_origin: np.ndarray, plane_epsilon: float = 1.0):
     """
-    Convert global fault surface coordinates to local coordinates,
-    referenced to given origin.
+    Convert global fault surface coordinates to local coordinates, referenced to given origin.
+    If plane z-values are below epsilon value, surface is assumed to be a plane.
     Returned values are:
-    points_local: Point coordinates referenced to origin and rotated to local orientation.
-    edges_local: Edge coordinates referenced to origin and rotated to local orientation.
-    fault_is_plane: Boolean variable that is true if the fault is planar within the given tolerance.
+        points_local: Point coordinates referenced to origin and rotated to local orientation.
+        edges_local: Edge coordinates referenced to origin and rotated to local orientation.
+        fault_is_plane: Boolean variable that is true if the fault is planar within the given tolerance.
     """
     # Rotate referenced coordinates.
     points_local = np.dot(points - plane_origin, rotation_matrix.transpose())
@@ -147,8 +170,8 @@ def fault_local_to_global(points: np.ndarray, edges: np.ndarray,
     """
     Convert local fault surface coordinates to global coordinates.
     Returned values are:
-    points_global: Point coordinates rotated to global orientation and with origin added back in.
-    edges_global: Edge coordinates rotated to global orientation and with origin added back in.
+        points_global: Point coordinates rotated to global orientation and with origin added back in.
+        edges_global: Edge coordinates rotated to global orientation and with origin added back in.
     """
     # Rotate coordinates and add reference point back in.
     points_global = np.dot(points, rotation_matrix) + plane_origin
@@ -163,7 +186,7 @@ def get_quad_mesh_edges(edges: np.ndarray, corner_separation: float=3000.0):
     Note that all coordinates are assumed to be fault-local coordinates.
     Uses dot products of line segments with the next segment to determine 4 smallest dot products.
     In the future, we will use the corner_separation parameter to work around 'chopped-off' corners.
-    Returned values are contained in a dictionary:
+    Returned values are contained in the edge_sides dictionary:
         left_edge: Coordinates of edge corresponding to leftmost edge
         right_edge: Coordinates of edge corresponding to rightmost edge
         bottom_edge: Coordinates of edge corresponding to bottommost edge
@@ -224,13 +247,13 @@ def get_edge(edges: np.ndarray, ind1: int, ind2: int, ind_min: int, ind_max: int
     """
     Extract edge from edges array, given the indices to use.
     Returned value:
-    edge:  Edge coordinates, sorted according to the given sorting index
+        edge:  Edge coordinates, sorted according to the given sorting index
     """
     i1 = min(ind1, ind2)
     i2 = max(ind1, ind2)
     edge = edges[i1:i2+1,:]
     if (i1 == ind_min and i2 == ind_max):
-        edge = np.concatenate((edges[0:i1+1,:], edges[i2:-2,:]), axis=0)
+        edge = np.concatenate((edges[0:i1+1,:], edges[i2:-1,:]), axis=0)
         
     sort_inds = np.argsort(edge[:, sort_ind])
     edge = edge[sort_inds,:]
@@ -243,6 +266,10 @@ def create_local_grid(points: np.ndarray, edge_sides: dict, triangles: np.ndarra
     """
     Create a grid of points in local coordinates. If the fault is a plane, z-coordinate is
     always zero. Otherwise, points are interpolated from the enclosing triangle vertices.
+    Returned values are:
+        mesh_points: The computed mesh points in the local coordinate system
+        num_horiz_points: The number of points in the horzontal direction
+        num_vert_points: The number of points in the vertical direction
     """
 
     # Edge coordinates.
@@ -289,6 +316,7 @@ def create_local_grid(points: np.ndarray, edge_sides: dict, triangles: np.ndarra
 
     # Create 2D mesh.
     mesh_points = np.zeros((num_vert_points, num_horiz_points, 3), dtype=np.float64)
+
     # We need to do this for points on the boundary, which might fall outside a mesh triangle.
     if not(fault_is_plane):
         z = np.zeros((num_vert_points, num_horiz_points), dtype=np.float64)
@@ -323,7 +351,9 @@ def create_local_grid(points: np.ndarray, edge_sides: dict, triangles: np.ndarra
 
 def create_cells_from_dims(num_verts_x: int, num_verts_y: int):
     """
-    Create cell connectivity array given the vertical and horizontal dimensions.
+    Create simple quad cell connectivity array given the vertical and horizontal dimensions.
+    Returned values are:
+        cell_array: A num_cellsx4 array describing vertices composing each cell
     """
     num_cells_x = num_verts_x - 1
     num_cells_y = num_verts_y - 1
@@ -347,6 +377,9 @@ def tri_interpolate_zcoords(points: np.ndarray, triangles: np.ndarray, mesh_poin
                             is_mesh_edge: np.ndarray, num_search_tris: int=10):
     """
     Interpolate z-coordinates to a set of 2D points using 3D point coordinates and a triangular mesh.
+    If point is along a mesh boundary, the boundary values are used instead.
+    Returned values are:
+        z: The interpolated z-values
     """
     # Get triangle centroid coordinates and create KD-tree.
     tri_coords = points[triangles,:]
@@ -368,6 +401,8 @@ def tri_interpolate_zcoords(points: np.ndarray, triangles: np.ndarray, mesh_poin
 def project_2d_coords(tri_coords: np.ndarray, coord: np.ndarray, tree: scipy.spatial.ckdtree.cKDTree, num_search_tris: int=10):
     """
     Project z-coordinate for triangle coordinates.
+    Returned values are:
+        projected_coords[2]: The z-value interpolated from values at triangle vertices
     """
     # Find nearest triangles, then loop over them.
     (distances, ix) = tree.query(coord, k=num_search_tris)
@@ -390,6 +425,9 @@ def find_projected_coords(tri_coord, point):
     """
     Find whether a point projects within a triangle, and if so compute the
     projected coordinates.
+    Returned values are:
+        in_tri: Boolean indicating whether the point is contained in the triangle
+        projected_coords: The (x,y,z) coordinates of the point inferred from the triangle values
     """
     x_point = point[0]
     y_point = point[1]
@@ -426,6 +464,8 @@ def get_mesh_boundary(triangles):
     """
     Find outer boundary of a triangulated mesh, assuming no holes.
     Boundary is determined based purely on connectivity.
+    Returned values are:
+        vert_inds: The indices of the vertices composing the mesh boundary, ordered to be continuous
     """
     # Create edges and sort each vertices on each edge.
     edge0 = triangles[:,0:2]
