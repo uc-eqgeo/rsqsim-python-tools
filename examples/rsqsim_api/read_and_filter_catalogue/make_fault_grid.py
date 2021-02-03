@@ -77,3 +77,34 @@ mesh_quad_local2 = meshio.Mesh(fault_mesh_info2['mesh_points_local'], quads2)
 out_quad_local2 = "Wellington_Hutt_valley_1_quad_local.vtk"
 meshio.write(out_quad_local2, mesh_quad_local2, file_format="vtk", binary=False)
 
+# Read in White Island fault segment.
+fault3 = eq_fault_geom.faultmeshio.tsurf.tsurf(white_island_tsurf)
+points3 = fault3.mesh.points
+triangles3 = fault3.mesh.cells_dict['triangle']
+edge_inds3 = rwu.get_mesh_boundary(triangles3)
+edges3 = points3[edge_inds3,:]
+
+# Generate mesh.
+fault_mesh_info3 = rwu.create_quad_mesh_from_fault(points3, edges3, triangles3, resolution=resolution)
+
+triangles3 = [("triangle", triangles3)]
+
+# Write VTK files in local and global coordinates.
+mesh_tri_global3 = meshio.Mesh(points3, triangles3)
+out_tri_global3 = "White_Island_North_2_tri_global.vtk"
+meshio.write(out_tri_global3, mesh_tri_global3, file_format="vtk", binary=False)
+
+mesh_tri_local3 = meshio.Mesh(fault_mesh_info3['points_local'], triangles3)
+out_tri_local3 = "White_Island_North_2_tri_local.vtk"
+meshio.write(out_tri_local3, mesh_tri_local3, file_format="vtk", binary=False)
+
+quad_cells3 = rwu.create_cells_from_dims(fault_mesh_info3['num_horiz_points'], fault_mesh_info3['num_vert_points'])
+quads3 = [("quad", quad_cells3)]
+
+mesh_quad_global3 = meshio.Mesh(fault_mesh_info3['mesh_points_global'], quads3)
+out_quad_global3 = "White_Island_North_2_quad_global.vtk"
+meshio.write(out_quad_global3, mesh_quad_global3, file_format="vtk", binary=False)
+
+mesh_quad_local3 = meshio.Mesh(fault_mesh_info3['mesh_points_local'], quads3)
+out_quad_local3 = "White_Island_North_2_quad_local.vtk"
+meshio.write(out_quad_local3, mesh_quad_local3, file_format="vtk", binary=False)
