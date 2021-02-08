@@ -25,7 +25,7 @@ rng = np.random.default_rng()
 y = 1000.0*rng.random(num_points, dtype=np.float64) - 500.0
 z = 1000.0*rng.random(num_points, dtype=np.float64) - 500.0
 x = (-b*y - d)/a
-points2 = np.column_stack((x,y,z))
+points2 = np.column_stack((x, y, z))
 (plane_normal2, plane_origin2) = fit_plane_to_points(points2)
 
 print(plane_normal2, plane_origin2)

@@ -5,7 +5,7 @@ import rsqsim_api.io.write_utils as rwu
 
 import meshio
 
-import eq_fault_geom.faultmeshio.tsurf
+from eq_fault_geom.faultmeshio import tsurf
 
 # Locate files relative to script.
 run_dir = os.path.dirname(__file__)
@@ -20,7 +20,7 @@ edges1 = fault1.boundary
 triangles1 = fault1.triangles
 
 # Generate mesh.
-resolution = 3000.0
+resolution = 500.0
 fault_mesh_info1 = rwu.create_quad_mesh_from_fault(points1, edges1, triangles1, resolution=resolution)
 
 triangles1 = [("triangle", triangles1)]
@@ -46,7 +46,7 @@ out_quad_local1 = "Jordan_quad_local.vtk"
 meshio.write(out_quad_local1, mesh_quad_local1, file_format="vtk", binary=False)
 
 # Read in Wellington fault segment.
-fault2 = eq_fault_geom.faultmeshio.tsurf.tsurf(wellington_tsurf)
+fault2 = tsurf(wellington_tsurf)
 points2 = fault2.mesh.points
 triangles2 = fault2.mesh.cells_dict['triangle']
 edge_inds2 = rwu.get_mesh_boundary(triangles2)
@@ -78,7 +78,7 @@ out_quad_local2 = "Wellington_Hutt_valley_1_quad_local.vtk"
 meshio.write(out_quad_local2, mesh_quad_local2, file_format="vtk", binary=False)
 
 # Read in White Island fault segment.
-fault3 = eq_fault_geom.faultmeshio.tsurf.tsurf(white_island_tsurf)
+fault3 = tsurf(white_island_tsurf)
 points3 = fault3.mesh.points
 triangles3 = fault3.mesh.cells_dict['triangle']
 edge_inds3 = rwu.get_mesh_boundary(triangles3)
