@@ -337,6 +337,15 @@ class RsqSimMultiFault:
         assert isinstance(search_string, str)
         return [name for name in self.names if fnmatch.fnmatch(name, search_string.lower())]
 
+    def find_closest_patches(self, x, y):
+        """
+        Finds the closest patches to specified coordinates.
+        """
+        sq_dist = [(fault, vertex, (x-vertex[0])**2 + (y-vertex[1])**2) for fault in self.faults for vertex in fault.vertices]
+        closest_fault, closest_point, min_dist = min(sq_dist, key = lambda t: t[2])
+        patches = [patch.patch_number for patch in closest_fault.patch_outlines if np.equal(closest_point, patch.vertices).all(axis=1).any()]
+        return patches
+
 
 class RsqSimSegment:
     def __init__(self, segment_number: int, patch_type: str = "triangle", fault_name: str = None):
