@@ -130,17 +130,18 @@ class tsurf(object):
                 self.AXIS_UNIT = self.default_AXIS_UNIT
 
             # Read points and cells
-            if not next(infile).startswith('TFACE'):
-                raise IOError('Only "TFACE" format TSurf files are supported')
+            # if not next(infile).startswith('TFACE'):
+            #     raise IOError('Only "TFACE" format TSurf files are supported')
             points, cellArray = [], []
             for line in infile:
                 line = line.strip().split()
-                if line[0] == 'VRTX':
-                    points.append([float(item) for item in line[2:]])
+                if line[0] in ['VRTX', 'PVRTX']:
+                    points.append([float(item) for item in line[2:5]])
                 elif line[0] == 'TRGL':
                     cellArray.append([int(item)-1 for item in line[1:]])
         self.x, self.y, self.z = zip(*points)
         points = numpy.array(points, dtype=numpy.float64)
+        print(len(points))
         cellArray = numpy.array(cellArray, dtype=numpy.int)
         cells = [("triangle", cellArray)]
         self.mesh = meshio.Mesh(points, cells)
@@ -150,8 +151,7 @@ class tsurf(object):
         triangle_numbers = self.mesh.cells[0].data
         vertex_dic = {i:vertex for i, vertex in enumerate(self.mesh.points)}
         triangle_array = numpy.array([numpy.hstack([vertex_dic[i] for i in triangle]) for triangle in triangle_numbers])
-        return np.unique(triangle_array, axis=0)
-
+        return numpy.unique(triangle_array, axis=0)
 
 
 
@@ -223,3 +223,4 @@ class tsurf(object):
             for a, b, c in self.mesh.cells[0].data:
                 outfile.write('TRGL {} {} {}\n'.format(a+1, b+1, c+1))
             outfile.write('END\n')
+
