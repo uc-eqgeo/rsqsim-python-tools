@@ -1,5 +1,5 @@
 from rsqsim_api.containers.catalogue import RsqSimCatalogue
-from rsqsim_api.containers.fault import RsqSimMultiFault
+from rsqsim_api.fault.fault import RsqSimMultiFault
 from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade
 from matplotlib import pyplot as plt
 from matplotlib.widgets import Slider
@@ -8,7 +8,6 @@ from matplotlib.cm import ScalarMappable
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import math
 import numpy as np
-import os
 
 
 def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma",

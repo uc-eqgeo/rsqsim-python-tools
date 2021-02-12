@@ -1,6 +1,6 @@
 import numpy as np
 from rsqsim_api.tsunami.tsunami_multiprocessing import multiprocess_gf_to_hdf
-from rsqsim_api.containers.fault import RsqSimMultiFault
+from rsqsim_api.fault.multifault import RsqSimMultiFault
 
 
 if __name__ == "__main__":

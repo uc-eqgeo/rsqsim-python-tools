@@ -1,7 +1,6 @@
 import os
 
-from rsqsim_api.containers.fault import RsqSimMultiFault
-from rsqsim_api.containers.catalogue import RsqSimCatalogue
+from rsqsim_api.fault.fault import RsqSimMultiFault
 
 run_dir = os.path.dirname(__file__)
 

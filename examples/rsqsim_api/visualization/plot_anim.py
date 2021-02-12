@@ -1,5 +1,5 @@
-from rsqsim_api.containers.catalogue import RsqSimCatalogue
-from rsqsim_api.containers.fault import RsqSimMultiFault
+from rsqsim_api.catalogue.catalogue import RsqSimCatalogue
+from rsqsim_api.fault.multifault import RsqSimMultiFault
 from rsqsim_api.visualisation.animation import AnimateSequence
 import os
 

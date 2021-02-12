@@ -1,5 +1,5 @@
 import os
-from rsqsim_api.containers.fault import RsqSimSegment
+from rsqsim_api.fault.segment import RsqSimSegment
 
 # Locate DXF file relative to script
 run_dir = os.path.dirname(__file__)

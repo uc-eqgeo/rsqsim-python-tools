@@ -1,11 +1,9 @@
 import numpy as np
 import scipy.spatial
-import pandas as pd
 import shapely as shp
-import math
 import os
 
-import rsqsim_api.containers.fault
+import rsqsim_api.fault.fault
 
 
 def write_catalogue_dataframe_and_arrays(prefix: str, catalogue, directory: str = None,
@@ -131,9 +129,9 @@ def get_fault_rotation_matrix(plane_normal: np.ndarray, cutoff_vecmag: float = 0
         ref_dir = ref_dir2
         
     # Get two tangential directions in plane.
-    tan_dir1 = rsqsim_api.containers.fault.cross_3d(ref_dir, plane_normal)
+    tan_dir1 = rsqsim_api.fault.fault.cross_3d(ref_dir, plane_normal)
     tan_dir1 /= np.linalg.norm(tan_dir1)
-    tan_dir2 = rsqsim_api.containers.fault.cross_3d(plane_normal, tan_dir1)
+    tan_dir2 = rsqsim_api.fault.fault.cross_3d(plane_normal, tan_dir1)
     tan_dir2 /= np.linalg.norm(tan_dir2)
 
     # Form rotation matrix.

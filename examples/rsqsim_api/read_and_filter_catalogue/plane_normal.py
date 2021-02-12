@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from rsqsim_api.containers.fault import RsqSimSegment
+from rsqsim_api.fault.segment import RsqSimSegment
 from rsqsim_api.io.write_utils import fit_plane_to_points
 
 # Locate DXF file relative to script

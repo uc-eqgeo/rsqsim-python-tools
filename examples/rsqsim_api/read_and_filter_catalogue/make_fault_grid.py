@@ -1,6 +1,4 @@
 import os
-import numpy as np
-from rsqsim_api.containers.fault import RsqSimSegment
 import rsqsim_api.io.write_utils as rwu
 
 import meshio
