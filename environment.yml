@@ -16,6 +16,7 @@ dependencies:
   - h5py >= 2.10.0
   - pytables >= 3.6.1
   - ffmpeg >= 4.3.1
+  - xlrd >= 2.0.1
   - pip
   - pip:
     - src/rsqsim_api
