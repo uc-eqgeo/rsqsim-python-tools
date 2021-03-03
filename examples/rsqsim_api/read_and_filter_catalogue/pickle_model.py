@@ -1,6 +1,6 @@
 import os
 
-from rsqsim_api.fault.fault import RsqSimMultiFault
+from rsqsim_api.fault.multifault import RsqSimMultiFault
 
 run_dir = os.path.dirname(__file__)
 
