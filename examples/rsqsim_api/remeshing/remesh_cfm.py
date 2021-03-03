@@ -2,26 +2,36 @@ from rsqsim_api.io.tsurf import tsurf
 import os
 import glob
 
-in_directory = "../../../data/cfm/cfm_0_3_tsurf"
-out_directory = "../../../data/cfm/cfm_0_3_stl"
+# in_directory = "../../../data/cfm/cfm_0_3_tsurf"
+in_directory = "../../../data/cfm/cfm_0_3_stl"
+out_directory = "../../../data/cfm/cfm_0_3_remeshed_stl"
 
-cubit_commands = ("""cubit.cmd('import stl "{}" feature_angle 135.00 merge ')\n"""
-                  "cubit.cmd('delete mesh surface 1 propagate')\n"
-                  "cubit.cmd('surface 1  scheme trimesh geometry approximation angle 15 minimum size 800 ')\n"
-                  "cubit.cmd('Trimesher surface gradation 1.3')\n"
-                  "cubit.cmd('Trimesher geometry sizing on')\n"
-                  "cubit.cmd('surface 1 size 1000')\n"
-                  "cubit.cmd('mesh surface 1 ')\n"
-                  """cubit.cmd('export stl "{}" surface 1 mesh  overwrite ')\n"""
-                  "cubit.cmd('delete Volume 1')\n")
 
-def journal_instructions(in_file, out_file, jou_file):
-    filled_commands = cubit_commands.format(in_file, out_file)
+def journal_command(in_file, out_file, number):
+    cubit_commands = "".join(["""cubit.cmd('import stl "{}" feature_angle 135.00 merge ')\n""".format(in_file),
+                              "cubit.cmd('delete mesh surface {:d} propagate')\n".format(number),
+                              "cubit.cmd('surface {:d}  scheme trimesh geometry approximation angle 15 minimum size 800 ')\n".format(number),
+                              "cubit.cmd('Trimesher surface gradation 1.3')\n",
+                              "cubit.cmd('Trimesher geometry sizing on')\n",
+                              "cubit.cmd('surface {:d} size 1000')\n".format(number),
+                              "cubit.cmd('mesh surface {:d} ')\n".format(number),
+                              """cubit.cmd('export stl "{}" surface {:d} mesh  overwrite ')\n""".format(out_file, number),
+                              "cubit.cmd('delete Surface {:d}')\n".format(number)])
+    return cubit_commands
+
+
+def journal_instructions(in_file_list, jou_file):
     with open(jou_file, "w") as journal:
         journal.write("#!python\n")
-        for command in filled_commands:
-            journal.write(command)
+        for i, in_file in enumerate(in_file_list):
+            out_name = get_out_file_name(in_file, out_directory)
+            journal.write(journal_command(in_file, out_name, i + 1))
         journal.write("exit()\n")
+
+
+def get_out_file_name(in_file, out_dir: str):
+    basename = os.path.basename(in_file)
+    return os.path.join(out_dir, basename)
 
 
 
@@ -41,3 +51,6 @@ def journal_instructions(in_file, out_file, jou_file):
 
 
 
+if __name__=="__main__":
+    in_files = list(glob.glob(os.path.join(in_directory, "*.stl")))
+    journal_instructions(in_files, "multi_test.jou")

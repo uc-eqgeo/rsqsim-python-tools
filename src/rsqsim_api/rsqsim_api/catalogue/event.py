@@ -241,6 +241,8 @@ class RsqSimEvent:
         fig.set_size_inches(figsize)
         plot_coast(ax, clip_boundary=self.boundary)
         ax.set_aspect("equal")
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
 
         colour_dic = {}
         timestamps = defaultdict(set)
