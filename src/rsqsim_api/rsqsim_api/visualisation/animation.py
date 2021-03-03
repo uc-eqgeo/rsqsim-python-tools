@@ -1,5 +1,5 @@
-from rsqsim_api.containers.catalogue import RsqSimCatalogue
-from rsqsim_api.containers.fault import RsqSimMultiFault
+from rsqsim_api.catalogue.catalogue import RsqSimCatalogue
+from rsqsim_api.fault.multifault import RsqSimMultiFault
 from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade
 from matplotlib import pyplot as plt
 from matplotlib.widgets import Slider
@@ -8,13 +8,12 @@ from matplotlib.cm import ScalarMappable
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import math
 import numpy as np
-import os
 
 
 def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma",
                     crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40,
                     step_size: int = 5, interval: int = 50, write: str = None, fps: int = 20, file_format: str = "gif",
-                    figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0):
+                    figsize: tuple = (9.6, 7.2), hillshading_intensity: float = 0.0):
     """Shows an animation of a sequence of earthquake events over time
 
     Args:

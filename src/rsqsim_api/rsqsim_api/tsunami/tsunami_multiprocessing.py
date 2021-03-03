@@ -1,4 +1,4 @@
-from rsqsim_api.containers.fault import RsqSimMultiFault, RsqSimSegment
+from rsqsim_api.fault.multifault import RsqSimMultiFault, RsqSimSegment
 import multiprocessing as mp
 from typing import Union
 import h5py

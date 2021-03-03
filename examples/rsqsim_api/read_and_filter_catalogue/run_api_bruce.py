@@ -1,7 +1,7 @@
 import os
 
-from rsqsim_api.containers.fault import RsqSimMultiFault
-from rsqsim_api.containers.catalogue import RsqSimCatalogue
+from rsqsim_api.fault.multifault import RsqSimMultiFault
+from rsqsim_api.catalogue.catalogue import RsqSimCatalogue
 
 run_dir = "../../../data/bruce_m7"
 
