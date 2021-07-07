@@ -2,7 +2,8 @@ name: rnc2
 channels:
   - conda-forge
 dependencies:
-  - python=3.7
+  - python=3.8
+  - pyproj=3.0.1
   - numpy >= 1.18.1
   - numba >= 0.51.2
   - geopandas >= 0.6.1
