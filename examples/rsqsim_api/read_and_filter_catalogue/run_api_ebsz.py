@@ -1,9 +1,7 @@
 import os
 
-import pandas as pd
-
-from rsqsim_api.containers.fault import RsqSimMultiFault
-from rsqsim_api.containers.catalogue import RsqSimCatalogue
+from rsqsim_api.fault.multifault import RsqSimMultiFault
+from rsqsim_api.catalogue.catalogue import RsqSimCatalogue
 
 run_dir = "/data/examples_EBSZmodel/esc1"
 

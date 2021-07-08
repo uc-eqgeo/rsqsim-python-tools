@@ -1,4 +1,4 @@
-from rsqsim_api.containers.fault import read_bruce
+from rsqsim_api.fault.multifault import read_bruce
 from matplotlib import pyplot as plt
 import fnmatch
 

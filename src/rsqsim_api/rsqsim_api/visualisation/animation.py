@@ -1,16 +1,19 @@
-from rsqsim_api.containers.catalogue import RsqSimCatalogue
-from rsqsim_api.containers.fault import RsqSimMultiFault
-from rsqsim_api.visualisation.utilities import plot_coast
+from rsqsim_api.catalogue.catalogue import RsqSimCatalogue
+from rsqsim_api.fault.multifault import RsqSimMultiFault
+from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade
 from matplotlib import pyplot as plt
 from matplotlib.widgets import Slider
-from matplotlib.animation import FuncAnimation, PillowWriter
+from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 from matplotlib.cm import ScalarMappable
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import math
-import os
+import numpy as np
 
 
-def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40, step_size: int = 5, interval: int = 50, write: str = None, fps: int = 20):
+def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma",
+                    crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40,
+                    step_size: int = 5, interval: int = 50, write: str = None, fps: int = 20, file_format: str = "gif",
+                    figsize: tuple = (9.6, 7.2), hillshading_intensity: float = 0.0):
     """Shows an animation of a sequence of earthquake events over time
 
     Args:
@@ -22,20 +25,27 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
         global_max_sub_slip (int): Max subduction slip to use for the colorscale
         step_size (int): Step size to advance every interval
         interval (int): Time (ms) between each frame
-        write (str): Write animation to .gif with given filename.
-        fps (int): Frames per second for .gif
+        write (str): Write animation to file with given filename.
+        fps (int): Frames per second.
+        file_format (str): File extension for animation. Accepted values: gif, mp4, mov, avi.
+        figsize (float, float): Width, height in inches.
+        hillshading_intensity (float): Intensity of hillshading, value between 0-1.
     """
+    assert file_format in ("gif", "mov", "avi", "mp4")
 
     # get all unique values
-    event_list = dict.fromkeys(catalogue.event_list.tolist())
+    event_list = np.unique(catalogue.event_list)
     # get RsqSimEvent objects
-    events = catalogue.events_by_number(list(event_list), fault_model)
+    events = catalogue.events_by_number(event_list.tolist(), fault_model)
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=figsize)
 
     # plot map
     coast_ax = fig.add_subplot(111, label="coast")
-    plot_coast(coast_ax)
+    if hillshading_intensity > 0:
+        plot_coast(coast_ax, colors="0.0")
+    else:
+        plot_coast(coast_ax)
     coast_ax.set_aspect("equal")
     coast_ax.patch.set_alpha(0)
     coast_ax.get_xaxis().set_visible(False)
@@ -46,13 +56,20 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     timestamps = []
     for i, e in enumerate(events):
         plots = e.plot_slip_2d(
-            show=False, show_coast=False, subplots=(fig, coast_ax), show_cbar=False, global_max_slip=global_max_slip, global_max_sub_slip=global_max_sub_slip)
+            subplots=(fig, coast_ax), global_max_slip=global_max_slip, global_max_sub_slip=global_max_sub_slip)
         for p in plots:
             p.set_visible(False)
         years = math.floor(e.t0 / 3.154e7)
         all_plots.append(plots)
         timestamps.append(step_size * round(years/step_size))
         print("Plotting: " + str(i + 1) + "/" + str(num_events))
+
+    if hillshading_intensity > 0:
+        x_lim = coast_ax.get_xlim()
+        y_lim = coast_ax.get_ylim()
+        plot_hillshade(coast_ax, hillshading_intensity)
+        coast_ax.set_xlim(x_lim)
+        coast_ax.set_ylim(y_lim)
 
     coast_ax_divider = make_axes_locatable(coast_ax)
 
@@ -96,8 +113,8 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
                               interval=interval, frames=frames)
 
     if write is not None:
-        writer = PillowWriter(fps=fps)
-        animation.save(f"{write}.gif", writer=writer)
+        writer = PillowWriter(fps=fps) if file_format == "gif" else FFMpegWriter(fps=fps)
+        animation.save(f"{write}.{file_format}", writer)
     else:
         axes.show()
 
