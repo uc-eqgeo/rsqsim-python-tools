@@ -11,7 +11,9 @@ from rsqsim_api.fault.multifault import RsqSimMultiFault, RsqSimSegment
 from rsqsim_api.catalogue.event import RsqSimEvent
 from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, catalogue_columns, read_csv_and_array
 from rsqsim_api.io.write_utils import write_catalogue_dataframe_and_arrays
-
+from rsqsim_api.visualisation.utilities import plot_coast
+from rsqsim_api.containers.bruce_shaw_utilities import bruce_subduction
+from rsqsim_api.containers.tsunami import SeaSurfaceDisplacements
 
 fint = Union[int, float]
 sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
@@ -242,16 +244,12 @@ class RsqSimCatalogue:
             index_array = np.zeros(trimmed_event_ls.shape, dtype=np.int)
             for new_i, old_i in enumerate(unique_indices):
                 index_array[np.where(trimmed_event_ls == old_i)] = new_i
-            print(index_array)
         else:
             index_array = trimmed_event_ls
 
         rcat = self.from_dataframe_and_arrays(trimmed_df, event_list=index_array, patch_list=trimmed_patch_ls,
                                               patch_slip=trimmed_patch_slip, patch_time_list=trimmed_patch_time)
         return rcat
-
-
-
 
     def filter_by_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],
                         minimum_patches_per_fault: int = None):
@@ -264,6 +262,7 @@ class RsqSimCatalogue:
             assert isinstance(minimum_patches_per_fault, int)
             assert minimum_patches_per_fault > 0
 
+        # Collect all fault numbers
         all_patches = []
         for fault in fault_ls:
             all_patches += list(fault.patch_dic.keys())
@@ -272,7 +271,7 @@ class RsqSimCatalogue:
         patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
         selected_events = self.event_list[patch_indices]
         selected_patches = self.patch_list[patch_indices]
-        if selected_events:
+        if selected_events.size > 0:
             if minimum_patches_per_fault is not None:
                 events_gt_min = []
                 for fault in fault_ls:
@@ -288,11 +287,10 @@ class RsqSimCatalogue:
 
             else:
                 event_numbers = selected_events
-                event_indices = patch_indices
-            trimmed_df = self.catalogue_df.iloc[event_numbers]
-
+                event_indices = np.where(np.in1d(self.event_list, event_numbers))[0]
+            trimmed_df = self.catalogue_df.loc[np.unique(event_numbers)]
             filtered_cat = self.from_dataframe(trimmed_df)
-            filtered_cat.event_list = event_numbers
+            filtered_cat.event_list = self.event_list[event_indices]
             filtered_cat.patch_list = self.patch_list[event_indices]
             filtered_cat.patch_slip = self.patch_slip[event_indices]
             filtered_cat.patch_time_list = self.patch_time_list[event_indices]
@@ -400,6 +398,165 @@ class RsqSimCatalogue:
         return out_events
 
 
+class RsqSimEvent:
+    def __init__(self):
+        # Event ID
+        self.event_id = None
+        # Origin time
+        self.t0 = None
+        # Seismic moment and mw
+        self.m0 = None
+        self.mw = None
+        # Hypocentre location
+        self.x, self.y, self.z = (None,) * 3
+        # Rupture area
+        self.area = None
+        # Rupture duration
+        self.dt = None
+
+        # Parameters for slip distributions
+        self.patches = None
+        self.patch_slip = None
+        self.faults = None
+        self.patch_time = None
+        self.patch_numbers = None
+
+    @property
+    def num_faults(self):
+        return len(self.faults)
+
+    @property
+    def boundary(self):
+        x1 = min([min(fault.vertices[:, 0]) for fault in self.faults])
+        y1 = min([min(fault.vertices[:, 1]) for fault in self.faults])
+        x2 = max([max(fault.vertices[:, 0]) for fault in self.faults])
+        y2 = max([max(fault.vertices[:, 1]) for fault in self.faults])
+        return [x1, y1, x2, y2]
+
+    @classmethod
+    def from_catalogue_array(cls, t0: float, m0: float, mw: float, x: float,
+                             y: float, z: float, area: float, dt: float, event_id: int = None):
+        """
+
+        :param t0:
+        :param m0:
+        :param mw:
+        :param x:
+        :param y:
+        :param z:
+        :param area:
+        :param dt:
+        :param event_id:
+        :return:
+        """
+
+        event = cls()
+        event.t0, event.m0, event.mw, event.x, event.y, event.z = [t0, m0, mw, x, y, z]
+        event.area, event.dt = [area, dt]
+        event.event_id = event_id
+
+        return event
+
+    @classmethod
+    def from_earthquake_list(cls, t0: float, m0: float, mw: float, x: float,
+                             y: float, z: float, area: float, dt: float,
+                             patch_numbers: Union[list, np.ndarray, tuple],
+                             patch_slip: Union[list, np.ndarray, tuple],
+                             patch_time: Union[list, np.ndarray, tuple],
+                             fault_model: RsqSimMultiFault, filter_single_patches: bool = True,
+                             min_patches: int = 10, min_slip: Union[float, int] = 1, event_id: int = None):
+        # TODO fix this: currently, doesn't count faults with < min patches but filter_by_fault still includes them
+        event = cls.from_catalogue_array(t0, m0, mw, x, y, z, area, dt, event_id=event_id)
+        faults = list(set([fault_model.patch_dic[a].segment for a in patch_numbers]))
+        patch_faults = [fault_model.patch_dic[a].segment for a in patch_numbers]
+        indices_to_delete = []
+        for fault in faults:
+            if patch_faults.count(fault) < min_patches:
+                patches_on_fault = np.array([a for a in patch_numbers if fault_model.patch_dic[a].segment == fault])
+                patch_on_fault_indices = np.array([np.argwhere(patch_numbers == i)[0][0] for i in patches_on_fault])
+                indices_to_delete += list(patch_on_fault_indices)
+        indices_to_delete_array = np.array(indices_to_delete)
+        if indices_to_delete:
+            patch_numbers = np.delete(patch_numbers, indices_to_delete_array)
+            patch_slip = np.delete(patch_slip, indices_to_delete_array)
+            patch_time = np.delete(patch_time, indices_to_delete_array)
+
+        event.patch_numbers = np.array(patch_numbers)
+        event.patch_slip = np.array(patch_slip)
+        event.patch_time = np.array(patch_time)
+        event.patches = [fault_model.patch_dic[i] for i in event.patch_numbers]
+        event.faults = list(set([fault_model.patch_dic[a].segment for a in event.patch_numbers]))
+        return event
+
+    def plot_slip_and_tsunami(self, tsunami: SeaSurfaceDisplacements, write: str = None, show: bool = True):
+        fig, ax = plt.subplots(1, 2, sharey="row", figsize=(6, 3))
+        combined_boundary = combine_boundaries(self.boundary, tsunami.data_bounds)
+        self.plot_slip_2d(show=False, subplots=(fig, ax[0]), bounds=combined_boundary, hide_axes_labels=True)
+        tsunami.plot_ssd(show=False, subplots=(fig, ax[1]), bounds=combined_boundary, hide_axes_labels=True)
+        fig.suptitle("Event {:d} (Mw {:.1f})".format(self.event_id, self.mw))
+        if write is not None:
+            fig.savefig(write, dpi=300)
+            if show:
+                plt.show()
+            else:
+                plt.close(fig)
+        if show:
+            plt.show()
+
+    def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
+                     write: str = None, show_coast: bool = True, subplots=None, show_cbar: bool = True,
+                     global_max_sub_slip: int = 0, global_max_slip: int = 0, hide_axes_labels: bool = False,
+                     bounds: list = None):
+        assert self.patches is not None, "Need to populate object with patches!"
+
+        if subplots is not None:
+            fig, ax = subplots
+        else:
+            fig, ax = plt.subplots()
+
+        if bounds is not None:
+            bounds_ls = list(bounds)
+            assert len(bounds_ls) == 4
+        else:
+            bounds_ls = self.boundary
+
+            # Find maximum slip to scale colourbar
+        if show_cbar:
+            if subduction_list:
+                sub_cbar = fig.colorbar(subduction_plot, location="left", ax=[ax], fraction=0.046, pad=0.04)
+
+                sub_cbar.set_label("Subduction slip (m)")
+            # if crustal_plot is not None:
+                # crust_cbar = fig.colorbar(crustal_plot, ax=ax, fraction=0.046, pad=0.04)
+                # crust_cbar.set_label("Slip (m)")
+
+        if show_coast:
+            plot_coast(ax, clip_boundary=bounds_ls)
+
+        ax.set_xlim(bounds_ls[0], bounds_ls[2])
+        ax.set_ylim(bounds_ls[1], bounds_ls[3])
+
+        ax.set_aspect("equal")
+        if hide_axes_labels:
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
+            ax.set_xticks([])
+            ax.set_yticks([])
+        if write is not None:
+            fig.savefig(write, dpi=300)
+            if show:
+                plt.show()
+            else:
+                plt.close(fig)
+        if show:
+            plt.show()
+
+        return plots
+
+    def plot_slip_3d(self):
+        pass
+
+
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/bruce/rundir4627",
                fault_file: str = "zfault_Deepen.in", names_file: str = "znames_Deepen.in",
                catalogue_file: str = "eqs..out"):
@@ -430,3 +587,10 @@ def read_bruce_if_necessary(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/r
         bruce_faults, catalogue = read_bruce(run_dir=run_dir, fault_file=fault_file, names_file=names_file,
                                              catalogue_file=catalogue_file)
         return bruce_faults, catalogue
+
+
+def combine_boundaries(bounds1: list, bounds2: list):
+    assert len(bounds1) == len(bounds2)
+    min_bounds = [min([a, b]) for a, b in zip(bounds1, bounds2)]
+    max_bounds = [max([a, b]) for a, b in zip(bounds1, bounds2)]
+    return min_bounds[:2] + max_bounds[2:]
