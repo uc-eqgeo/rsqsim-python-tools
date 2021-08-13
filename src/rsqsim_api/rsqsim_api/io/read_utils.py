@@ -1,4 +1,6 @@
 import os
+
+import meshio
 import numpy as np
 import pandas as pd
 import ezdxf
@@ -177,5 +179,17 @@ def read_dxf(dxf_file: str):
     triangle_array = np.array(triangle_ls)
 
     return triangle_array, boundary_array
+
+
+def read_stl(stl_file: str):
+    assert os.path.exists(stl_file)
+
+    mesh = meshio.read(stl_file)
+
+    assert "triangle" in mesh.cells_dict.keys()
+    triangles = mesh.cells_dict["triangle"]
+    point_dict = {i: point for i, point in enumerate(mesh.points)}
+    mesh_as_array = np.array([np.hstack([point_dict[vertex] for vertex in tri]) for tri in triangles])
+    return mesh_as_array
 
 
