@@ -13,8 +13,7 @@ from rsqsim_api.catalogue.event import RsqSimEvent
 from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, catalogue_columns, read_csv_and_array
 from rsqsim_api.io.write_utils import write_catalogue_dataframe_and_arrays
 from rsqsim_api.visualisation.utilities import plot_coast
-from rsqsim_api.containers.bruce_shaw_utilities import bruce_subduction
-from rsqsim_api.containers.tsunami import SeaSurfaceDisplacements
+from rsqsim_api.tsunami.tsunami import SeaSurfaceDisplacements
 
 fint = Union[int, float]
 sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),

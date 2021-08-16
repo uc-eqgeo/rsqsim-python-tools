@@ -1,4 +1,4 @@
-from rsqsim_api.containers.catalogue import read_bruce
+from rsqsim_api.catalogue.catalogue import read_bruce
 import os
 import shutil
 

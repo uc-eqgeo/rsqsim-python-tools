@@ -1,4 +1,4 @@
-from rsqsim_api.containers.catalogue import RsqSimCatalogue
+from rsqsim_api.catalogue.catalogue import RsqSimCatalogue
 from rsqsim_api.fault.multifault import RsqSimMultiFault
 import os
 import numpy as np
