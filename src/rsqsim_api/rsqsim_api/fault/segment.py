@@ -10,7 +10,7 @@ from triangular_faults.displacements import DisplacementArray
 from matplotlib import pyplot as plt
 from pyproj import Transformer
 
-from rsqsim_api.io.read_utils import read_dxf
+from rsqsim_api.io.read_utils import read_dxf, read_stl
 from rsqsim_api.io.tsurf import tsurf
 from rsqsim_api.fault.patch import RsqSimTriangularPatch, RsqSimGenericPatch
 
@@ -325,6 +325,17 @@ class RsqSimSegment:
         fault.patch_dic = {p_num: patch for p_num, patch in zip(fault.patch_numbers, fault.patch_outlines)}
 
         return fault
+
+    @classmethod
+    def from_stl(cls, stl_file: str, segment_number: int = 0,
+                 patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None,
+                 strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None):
+
+        triangles = read_stl(stl_file)
+        return cls.from_triangles(triangles, segment_number=segment_number, patch_numbers=patch_numbers,
+                                  fault_name=fault_name, strike_slip=strike_slip, dip_slip=dip_slip)
+
+
 
     def collect_greens_function(self, sites_x: Union[list, tuple, np.ndarray], sites_y: Union[list, tuple, np.ndarray],
                                 sites_z: Union[list, tuple, np.ndarray] = None, strike_slip: Union[int, float] = 1,
