@@ -103,7 +103,7 @@ class RsqSimMultiFault:
         # Read first 10 lines of file
 
     @classmethod
-    def from_fault_file_keith(cls, fault_file: str, verbose: bool = False):
+    def read_fault_file_keith(cls, fault_file: str, verbose: bool = False):
         """
         Read in an RSQSim fault file written according to Keith Richards-Dinger's convention.
         :param fault_file: Path to fault file

@@ -2,16 +2,27 @@ from matplotlib import pyplot as plt
 import geopandas as gpd
 import pathlib
 import numpy as np
-from shapely.geometry import Polygon, MultiPolygon
+from shapely.geometry import Polygon, MultiPolygon, box
 from typing import Union
 from rsqsim_api.io.array_operations import read_tiff
 from matplotlib.colors import LightSource, LinearSegmentedColormap
 from matplotlib import pyplot as plt
 
+import rioxarray
+
 coast_shp_fine_name = "data/coastline/nz-coastlines-and-islands-polygons-topo-150k.shp"
 coast_shp_coarse_name = "data/coastline/nz-coastlines-and-islands-polygons-topo-1500k.shp"
 coast_shp_fine = pathlib.Path(__file__).parent / coast_shp_fine_name
 coast_shp_coarse = pathlib.Path(__file__).parent / coast_shp_coarse_name
+
+roads = pathlib.Path(__file__).parent / "data/other_lines/state_highways.shp"
+lakes = pathlib.Path(__file__).parent / "data/other_lines/nz-lake-polygons-topo-1250k.shp"
+rivers = pathlib.Path(__file__).parent / "data/other_lines/nz-major-rivers.shp"
+regions = pathlib.Path(__file__).parent / "data/other_lines/nz-major-rivers.shp"
+
+niwa = ""
+
+
 min_x1 = 800000
 min_y1 = 4000000
 max_x2 = 2200000
@@ -69,6 +80,52 @@ def clip_coast(x1: Union[int, float], y1: Union[int, float], x2: Union[int, floa
 
     return polygon_geoseries
 
+def plot_gis_lines(gis_file: Union[str, pathlib.Path], ax: plt.Axes, color: str, linewidth: int = 0.3, clip_bounds: list = None,
+                   linestyle: str = "-"):
+    data = gpd.read_file(gis_file)
+    if clip_bounds is not None:
+        clipping_poly = box(*clip_bounds)
+        clipped_data = gpd.clip(data, clipping_poly)
+    else:
+        clipped_data = data
+
+    clipped_data.plot(color=color, ax=ax, linewidth=linewidth, linestyle=linestyle)
+
+def plot_gis_polygons(gis_file: Union[str, pathlib.Path], ax: plt.Axes, edgecolor: str, linewidth: int = 0.3, clip_bounds: list = None,
+                      linestyle: str = "-", facecolor="none"):
+    data = gpd.read_file(gis_file)
+    if clip_bounds is not None:
+        clipping_poly = box(*clip_bounds)
+        clipped_data = gpd.clip(data, clipping_poly)
+    else:
+        clipped_data = data
+
+    clipped_data.plot(edgecolor=edgecolor, ax=ax, linewidth=linewidth, linestyle=linestyle, facecolor=facecolor)
+
+
+def plot_highway_lines(ax: plt.Axes, color: str = "r", linewidth: int = 1., clip_bounds: list = None,
+                  linestyle: str = "-"):
+    plot_gis_lines(roads, ax=ax, color=color, linewidth=linewidth, clip_bounds=clip_bounds, linestyle=linestyle)
+
+
+def plot_river_lines(ax: plt.Axes, color: str = "b", linewidth: int = 0.3, clip_bounds: list = None,
+                linestyle: str = "-"):
+    plot_gis_lines(rivers, ax=ax, color=color, linewidth=linewidth, clip_bounds=clip_bounds, linestyle=linestyle)
+
+
+def plot_boundary_polygons(ax: plt.Axes, edgecolor: str = "k", linewidth: int = 0.3, clip_bounds: list = None,
+                 linestyle: str = "--", facecolor: str = "none"):
+    plot_gis_polygons(regions, ax=ax, edgecolor=edgecolor, linewidth=linewidth, clip_bounds=clip_bounds,
+                      linestyle=linestyle, facecolor=facecolor)
+
+
+def plot_lake_polygons(ax: plt.Axes, edgecolor: str = "b", linewidth: int = 0.3, clip_bounds: list = None,
+                 linestyle: str = "-", facecolor: str = "b"):
+    plot_gis_polygons(lakes, ax=ax, edgecolor=edgecolor, linewidth=linewidth, clip_bounds=clip_bounds,
+                      linestyle=linestyle, facecolor=facecolor)
+
+
+
 
 def plot_coast(ax: plt.Axes, clip_boundary: list = None, colors: str = "0.5", linewidth: int = 0.3,
                trim_polygons=True):
@@ -102,3 +159,24 @@ def plot_hillshade(ax, alpha: float = 0.3, vertical_exaggeration: float = 0.01, 
     ls = LightSource(azdeg=315, altdeg=45)
     ax.imshow(ls.shade(z, blend_mode="overlay", cmap=terrain, vmin=vmin, vmax=vmax, vert_exag=vertical_exaggeration),
               extent=[min(x), max(x), min(y), max(y)], alpha=alpha)
+
+
+def plot_hillshade_niwa(ax, alpha: float = 0.3, vertical_exaggeration: float = 0.01, clip_bounds: list = None,
+                        cmap: LinearSegmentedColormap = None, vmin: float = -10000., vmax: float = 10000):
+    hillshade_name = "data/bathymetry/niwa_nztm.tif"
+    hillshade = pathlib.Path(__file__).parent / hillshade_name
+    xds = rioxarray.open_rasterio(hillshade)
+    clipped = xds.rio.clip_box(*clip_bounds)
+    xds.close()
+    z = np.array(clipped.data)
+    z = np.nan_to_num(z)[0]
+    x = clipped.x
+    y = clipped.y
+    if cmap is not None:
+        terrain = cmap
+    else:
+        terrain = plt.cm.gist_earth
+    ls = LightSource(azdeg=315, altdeg=45)
+    ax.imshow(ls.shade(z, blend_mode="overlay", cmap=terrain, vmin=vmin, vmax=vmax, vert_exag=vertical_exaggeration),
+              extent=[min(x), max(x), min(y), max(y)], alpha=alpha)
+    clipped.close()

@@ -7,6 +7,7 @@ from multiprocessing.sharedctypes import RawArray
 import pandas as pd
 import numpy as np
 
+
 from rsqsim_api.fault.multifault import RsqSimMultiFault, RsqSimSegment
 from rsqsim_api.catalogue.event import RsqSimEvent
 from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, catalogue_columns, read_csv_and_array
@@ -147,7 +148,7 @@ class RsqSimCatalogue:
 
         # Read in catalogue to dataframe and initiate class instance
         rcat = cls.from_catalogue_file(catalogue_file)
-        rcat.patch_list = read_binary(standard_list_files[0], format="i")
+        rcat.patch_list = read_binary(standard_list_files[0], format="i") - 1
         # indices start from 1, change so that it is zero instead
         rcat.event_list = read_binary(standard_list_files[1], format="i") - 1
         rcat.patch_slip, rcat.patch_time_list = [read_binary(fname, format="d") for fname in standard_list_files[2:]]
@@ -250,6 +251,40 @@ class RsqSimCatalogue:
                                               patch_slip=trimmed_patch_slip, patch_time_list=trimmed_patch_time)
         return rcat
 
+    def filter_by_events(self, event_number: Union[int, np.int, Iterable[np.int]], reset_index: bool = False):
+        if isinstance(event_number, (int, np.int)):
+            ev_ls = [event_number]
+        else:
+            assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
+            ev_ls = list(event_number)
+            assert all([isinstance(a, (int, np.int)) for a in ev_ls])
+        trimmed_df = self.catalogue_df.loc[ev_ls]
+        event_indices = np.where(np.in1d(self.event_list, np.array(trimmed_df.index)))[0]
+        trimmed_event_ls = self.event_list[event_indices]
+        trimmed_patch_ls = self.patch_list[event_indices]
+        trimmed_patch_slip = self.patch_slip[event_indices]
+        trimmed_patch_time = self.patch_time_list[event_indices]
+
+        if reset_index:
+            trimmed_df.reset_index(inplace=True, drop=True)
+            unique_indices = np.unique(trimmed_event_ls)
+            index_array = np.zeros(trimmed_event_ls.shape, dtype=np.int)
+            for new_i, old_i in enumerate(unique_indices):
+                index_array[np.where(trimmed_event_ls == old_i)] = new_i
+            print(index_array)
+        else:
+            index_array = trimmed_event_ls
+
+        rcat = self.from_dataframe_and_arrays(trimmed_df, event_list=index_array, patch_list=trimmed_patch_ls,
+                                              patch_slip=trimmed_patch_slip, patch_time_list=trimmed_patch_time)
+        return rcat
+
+    def drop_few_patches(self, fault_model: RsqSimMultiFault, min_patches: int = 3):
+        event_list = self.events_by_number(self.catalogue_df.index, fault_model, min_patches=min_patches)
+        new_ids = [ev.event_id for ev in event_list if len(ev.patches) >= min_patches]
+        print(len(event_list), new_ids)
+
+        return self.filter_by_events(new_ids)
 
 
 
@@ -272,7 +307,7 @@ class RsqSimCatalogue:
         patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
         selected_events = self.event_list[patch_indices]
         selected_patches = self.patch_list[patch_indices]
-        if selected_events:
+        if selected_events.size > 0:
             if minimum_patches_per_fault is not None:
                 events_gt_min = []
                 for fault in fault_ls:
@@ -287,12 +322,12 @@ class RsqSimCatalogue:
                 event_indices = np.where(np.in1d(self.event_list, event_numbers))[0]
 
             else:
-                event_numbers = selected_events
-                event_indices = patch_indices
-            trimmed_df = self.catalogue_df.iloc[event_numbers]
+                event_numbers = np.unique(selected_events)
+                event_indices = np.where(np.in1d(self.event_list, event_numbers))[0]
+            trimmed_df = self.catalogue_df.loc[event_numbers]
 
             filtered_cat = self.from_dataframe(trimmed_df)
-            filtered_cat.event_list = event_numbers
+            filtered_cat.event_list = self.event_list[event_indices]
             filtered_cat.patch_list = self.patch_list[event_indices]
             filtered_cat.patch_slip = self.patch_slip[event_indices]
             filtered_cat.patch_time_list = self.patch_time_list[event_indices]
@@ -310,7 +345,6 @@ class RsqSimCatalogue:
     def filter_by_bounding_box(self):
         pass
 
-
     def filter_by_patch_numbers(self, patch_numbers):
         patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
         event_numbers = self.event_list[patch_indices]
@@ -326,8 +360,8 @@ class RsqSimCatalogue:
             print("No events found!")
             return
 
-
-    def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault, child_processes: int = 0):
+    def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault,
+                         child_processes: int = 0, min_patches: int = 1):
         if isinstance(event_number, (int, np.int)):
             ev_ls = [event_number]
         else:
@@ -336,7 +370,6 @@ class RsqSimCatalogue:
             assert all([isinstance(a, (int, np.int)) for a in ev_ls])
 
         out_events = []
-        min_patches = 50
 
         cat_dict = self.catalogue_df.to_dict(orient='index')
 

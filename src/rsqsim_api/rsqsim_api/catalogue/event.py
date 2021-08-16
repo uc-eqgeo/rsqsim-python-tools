@@ -7,9 +7,10 @@ from matplotlib.widgets import Slider
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import operator
 import numpy as np
+from shapely.geometry import box
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault
-from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade
+from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade, plot_hillshade_niwa, plot_lake_polygons, plot_river_lines, plot_highway_lines, plot_boundary_polygons
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
 
 
@@ -68,7 +69,7 @@ class RsqSimEvent:
         event = cls()
         event.t0, event.m0, event.mw, event.x, event.y, event.z = [t0, m0, mw, x, y, z]
         event.area, event.dt = [area, dt]
-        event.event_id = None
+        event.event_id = event_id
 
         return event
 
@@ -133,14 +134,70 @@ class RsqSimEvent:
         return event
 
 
+    def plot_background(self, figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0, bounds: tuple = None,
+                        plot_rivers: bool = True, plot_lakes: bool = True, hillshade_fine: bool = False,
+                        plot_highways: bool = True, plot_boundaries: bool = False, subplots=None):
+
+        if subplots is not None:
+            fig, ax = subplots
+        else:
+            fig, ax = plt.subplots()
+            fig.set_size_inches(figsize)
+
+        if bounds is not None:
+            plot_bounds = list(bounds)
+        else:
+            plot_bounds = self.boundary
+
+        if hillshading_intensity > 0:
+            plot_coast(ax, clip_boundary=plot_bounds, colors="0.0")
+            x_lim = ax.get_xlim()
+            y_lim = ax.get_ylim()
+            plot_hillshade_niwa(ax, hillshading_intensity, clip_bounds=plot_bounds)
+            ax.set_xlim(x_lim)
+            ax.set_ylim(y_lim)
+        else:
+            plot_coast(ax, clip_boundary=plot_bounds)
+
+        if plot_lakes:
+            plot_lake_polygons(ax=ax, clip_bounds=plot_bounds)
+
+        if plot_rivers:
+            plot_river_lines(ax, clip_bounds=plot_bounds)
+
+        if plot_highways:
+            plot_highway_lines(ax, clip_bounds=plot_bounds)
+
+        if plot_boundaries:
+            plot_boundary_polygons(ax, clip_bounds=plot_bounds)
+
+        ax.set_aspect("equal")
+        x_lim = (bounds[0], bounds[2])
+        y_lim = (bounds[1], bounds[3])
+        ax.set_xlim(x_lim)
+        ax.set_ylim(y_lim)
+
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+        return fig, ax
+
+
+
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
                      write: str = None, subplots = None, global_max_sub_slip: int = 0, global_max_slip: int = 0,
-                     figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0):
+                     figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0, bounds: tuple = None,
+                     plot_rivers: bool = True, plot_lakes: bool = True,
+                     plot_highways: bool = True, plot_boundaries: bool = False, create_background: bool = False):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
 
         if subplots is not None:
             fig, ax = subplots
+        elif create_background:
+            fig, ax = self.plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
+                                           bounds=bounds, plot_rivers=plot_rivers, plot_lakes=plot_lakes,
+                                           plot_highways=plot_highways, plot_boundaries=plot_boundaries)
         else:
             fig, ax = plt.subplots()
             fig.set_size_inches(figsize)
@@ -205,18 +262,6 @@ class RsqSimEvent:
             if crustal_plot is not None:
                 crust_cbar = fig.colorbar(crustal_plot, ax=ax)
                 crust_cbar.set_label("Slip (m)")
-
-            if hillshading_intensity > 0:
-                plot_coast(ax, clip_boundary=self.boundary, colors="0.0")
-                x_lim = ax.get_xlim()
-                y_lim = ax.get_ylim()
-                plot_hillshade(ax, hillshading_intensity)
-                ax.set_xlim(x_lim)
-                ax.set_ylim(y_lim)
-            else:
-                plot_coast(ax, clip_boundary=self.boundary)
-
-            ax.set_aspect("equal")
 
 
         if write is not None:
@@ -338,8 +383,10 @@ class RsqSimEvent:
         else:
             plt.show()
 
-    def plot_slip_3d(self):
+    def discretize_openquake(self):
+        # Find faults
         pass
+
 
 
 

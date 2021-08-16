@@ -13,7 +13,7 @@ import numpy as np
 def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma",
                     crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40,
                     step_size: int = 5, interval: int = 50, write: str = None, fps: int = 20, file_format: str = "gif",
-                    figsize: tuple = (9.6, 7.2), hillshading_intensity: float = 0.0):
+                    figsize: tuple = (9.6, 7.2), hillshading_intensity: float = 0.0, bounds: tuple = None):
     """Shows an animation of a sequence of earthquake events over time
 
     Args:
@@ -56,7 +56,8 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     timestamps = []
     for i, e in enumerate(events):
         plots = e.plot_slip_2d(
-            subplots=(fig, coast_ax), global_max_slip=global_max_slip, global_max_sub_slip=global_max_sub_slip)
+            subplots=(fig, coast_ax), global_max_slip=global_max_slip, global_max_sub_slip=global_max_sub_slip,
+            bounds=bounds)
         for p in plots:
             p.set_visible(False)
         years = math.floor(e.t0 / 3.154e7)
