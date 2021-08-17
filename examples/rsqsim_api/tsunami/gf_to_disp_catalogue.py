@@ -1,5 +1,5 @@
-from rsqsim_api.containers.catalogue import RsqSimCatalogue
-from rsqsim_api.containers.fault import RsqSimMultiFault
+from rsqsim_api.catalogue.catalogue import RsqSimCatalogue
+from rsqsim_api.fault.multifault import RsqSimMultiFault
 from rsqsim_api.tsunami.gf_netcdf import create_lookup_dict, sea_surface_displacements_multi
 import os
 """

@@ -1,7 +1,7 @@
 import unittest
 import os
 import pandas as pd
-from rsqsim_api.containers.catalogue import RsqSimCatalogue
+from rsqsim_api.catalogue.catalogue import RsqSimCatalogue
 
 
 class TestReadCatalogue(unittest.TestCase):

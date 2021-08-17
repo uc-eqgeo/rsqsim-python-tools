@@ -1,19 +1,24 @@
-from rsqsim_api.containers.catalogue import read_bruce
-import os
+from rsqsim_api.fault.multifault import RsqSimMultiFault
 import shutil
+from rsqsim_api.catalogue.catalogue import RsqSimCatalogue
+import os
 
-if not all([a in globals() for a in ("bruce_faults", "catalogue")]):
-    bruce_faults, catalogue = read_bruce()
+run_dir = os.path.dirname(__file__)
 
-if not all([a in globals() for a in ("m75plus", "m75_events")]):
-    m75plus = catalogue.filter_df(min_mw=8, max_mw=10)
-    m75_events = catalogue.events_by_number(m75plus.index, bruce_faults)
+bruce_faults = RsqSimMultiFault.read_fault_file_bruce(os.path.join(run_dir, "../../../data/bruce_m7/bruce_faults.in"),
+                                                      os.path.join(run_dir, "../../../data/bruce_m7/bruce_names.in"),
+                                                      transform_from_utm=True)
+catalogue = RsqSimCatalogue.from_csv_and_arrays(os.path.join(run_dir, "../../../data/bruce_m7/bruce_m7_10kyr"))
+
+m75plus = catalogue.filter_df(min_mw=8)
+m75_events = catalogue.events_by_number(m75plus.index, bruce_faults, min_patches=50)
 
 multifault = [ev for ev in m75_events if ev.num_faults > 1]
 
 if os.path.exists("multifault_images"):
     shutil.rmtree("multifault_images")
-    os.mkdir("multifault_images")
+
+os.mkdir("multifault_images")
 
 for i, ev in enumerate(multifault[:100]):
     fname = "multifault_images/mf{:d}.png".format(i)

@@ -122,7 +122,7 @@ def kermadec_slip_rate(dist: float, modelled_value: float = 0.):
         return convergence(dist) * coupling(dist)
 
 
-stl_file = os.path.join(data_dir, "hik_kerm_10km_trimmed.stl")
+stl_file = os.path.join(data_dir, "hik_kerm_5km_trimmed.stl")
 fault = RsqSimSegment.from_stl(stl_file)
 
 slip_deficit_file = os.path.join(data_dir, "trench_creep_hik_slipdeficit.txt")

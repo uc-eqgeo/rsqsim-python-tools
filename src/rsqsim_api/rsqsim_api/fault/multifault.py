@@ -311,7 +311,7 @@ class RsqSimMultiFault:
 
 
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/bruce/rundir4627",
-               fault_file: str = "zfault_Deepen.in", names_file: str = "znames_Deepen.in"):
+               fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in"):
     fault_full = os.path.join(run_dir, fault_file)
     names_full = os.path.join(run_dir, names_file)
 

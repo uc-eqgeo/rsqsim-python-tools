@@ -172,8 +172,8 @@ class RsqSimEvent:
             plot_boundary_polygons(ax, clip_bounds=plot_bounds)
 
         ax.set_aspect("equal")
-        x_lim = (bounds[0], bounds[2])
-        y_lim = (bounds[1], bounds[3])
+        x_lim = (plot_bounds[0], plot_bounds[2])
+        y_lim = (plot_bounds[1], plot_bounds[3])
         ax.set_xlim(x_lim)
         ax.set_ylim(y_lim)
 
@@ -188,7 +188,8 @@ class RsqSimEvent:
                      write: str = None, subplots = None, global_max_sub_slip: int = 0, global_max_slip: int = 0,
                      figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0, bounds: tuple = None,
                      plot_rivers: bool = True, plot_lakes: bool = True,
-                     plot_highways: bool = True, plot_boundaries: bool = False, create_background: bool = False):
+                     plot_highways: bool = True, plot_boundaries: bool = False, create_background: bool = False,
+                     coast_only: bool = True):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
 
@@ -198,6 +199,12 @@ class RsqSimEvent:
             fig, ax = self.plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
                                            bounds=bounds, plot_rivers=plot_rivers, plot_lakes=plot_lakes,
                                            plot_highways=plot_highways, plot_boundaries=plot_boundaries)
+        elif coast_only:
+            fig, ax = self.plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
+                                           bounds=bounds, plot_rivers=False, plot_lakes=False, plot_highways=False,
+                                           plot_boundaries=False)
+
+
         else:
             fig, ax = plt.subplots()
             fig.set_size_inches(figsize)

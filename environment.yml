@@ -18,6 +18,8 @@ dependencies:
   - pytables >= 3.6.1
   - ffmpeg >= 4.3.1
   - pip
+  - git >= 2.21.1
+  - git-lfs >= 2.13.3
   - pip:
     - src/rsqsim_api
     - src/tri_dislocations
