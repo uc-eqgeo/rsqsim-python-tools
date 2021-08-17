@@ -5,7 +5,7 @@ from rsqsim_api.io.write_utils import fit_plane_to_points
 
 # Locate DXF file relative to script
 run_dir = os.path.dirname(__file__)
-jordan_dxf = os.path.join(run_dir, "../../../data/cfm_dxf/Jordan.dxf")
+jordan_dxf = os.path.join(run_dir, "../../../../data/cfm_dxf/Jordan.dxf")
 
 # Read in DXF file
 fault1 = RsqSimSegment.from_dxf(jordan_dxf)

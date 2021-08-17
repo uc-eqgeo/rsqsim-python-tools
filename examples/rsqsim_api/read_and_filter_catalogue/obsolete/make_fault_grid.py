@@ -7,9 +7,9 @@ from eq_fault_geom.faultmeshio import tsurf
 
 # Locate files relative to script.
 run_dir = os.path.dirname(__file__)
-jordan_dxf = os.path.join(run_dir, "../../../data/cfm_dxf/Jordan.dxf")
-wellington_tsurf = os.path.join(run_dir, "../../../data/cfm_tsurf/Wellington_Hutt_Valley_1.ts")
-white_island_tsurf = os.path.join(run_dir, "../../../data/cfm_tsurf/White_Island_North_2_.ts")
+jordan_dxf = os.path.join(run_dir, "../../../../data/cfm_dxf/Jordan.dxf")
+wellington_tsurf = os.path.join(run_dir, "../../../../data/cfm_tsurf/Wellington_Hutt_Valley_1.ts")
+white_island_tsurf = os.path.join(run_dir, "../../../../data/cfm_tsurf/White_Island_North_2_.ts")
 cff_resample_tsurf = os.path.join(run_dir, "../../../data/cfm_tsurf/CFF2_resample.ts")
 cff_tsurf = os.path.join(run_dir, "../../../data/cfm_tsurf/CFF_2.ts")
 

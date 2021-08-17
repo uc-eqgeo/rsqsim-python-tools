@@ -3,8 +3,6 @@ from shapely.geometry import LineString
 import os
 
 
-
-
 def make_journal_file(line: LineString, outfile, default_z = 0., depth=5.e4):
     out_str = ""
     for coord in list(line.coords):
@@ -17,6 +15,7 @@ def make_journal_file(line: LineString, outfile, default_z = 0., depth=5.e4):
     out_str += f"cubit.cmd('sweep surface 1 vector 0 0 -1 distance {depth:.2f}')\n"
     with open(outfile, "w") as out_id:
         out_id.write(out_str)
+
 
 def make_journal_file_commands(line: LineString, outfile, outmesh: str, default_z = 0., depth=5.e4):
     out_str = ""
@@ -34,7 +33,7 @@ def make_journal_file_commands(line: LineString, outfile, outmesh: str, default_
     out_str += f"trimesher geometry sizing on\n"
 
     out_str += f"mesh surface {surface_numbers}\n"
-    out_str += f"""export stl "{outmesh}" overwrite\n"""
+    out_str += f"""export stl "{outmesh}" mesh overwrite\n"""
     out_str += f"""exit()\n"""
 
     with open(outfile, "w") as out_id:
