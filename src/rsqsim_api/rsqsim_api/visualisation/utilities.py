@@ -147,11 +147,16 @@ def plot_coast(ax: plt.Axes, clip_boundary: list = None, colors: str = "0.5", li
 
 
 def plot_hillshade(ax, alpha: float = 0.3, vertical_exaggeration: float = 0.01, cmap: LinearSegmentedColormap = None,
-                   vmin: float = -10000., vmax: float = 10000):
+                   vmin: float = -10000., vmax: float = 10000, clip_bounds: list = None):
     hillshade_name = "data/bathymetry/niwa_combined_10000.tif"
     hillshade = pathlib.Path(__file__).parent / hillshade_name
-    x, y, z = read_tiff(hillshade)
-    z = np.nan_to_num(z)
+    xds = rioxarray.open_rasterio(hillshade)
+    clipped = xds.rio.clip_box(*clip_bounds)
+    xds.close()
+    z = np.array(clipped.data)
+    z = np.nan_to_num(z)[0]
+    x = clipped.x
+    y = clipped.y
     if cmap is not None:
         terrain = cmap
     else:
@@ -159,6 +164,7 @@ def plot_hillshade(ax, alpha: float = 0.3, vertical_exaggeration: float = 0.01, 
     ls = LightSource(azdeg=315, altdeg=45)
     ax.imshow(ls.shade(z, blend_mode="overlay", cmap=terrain, vmin=vmin, vmax=vmax, vert_exag=vertical_exaggeration),
               extent=[min(x), max(x), min(y), max(y)], alpha=alpha)
+    clipped.close()
 
 
 def plot_hillshade_niwa(ax, alpha: float = 0.3, vertical_exaggeration: float = 0.01, clip_bounds: list = None,
@@ -175,7 +181,7 @@ def plot_hillshade_niwa(ax, alpha: float = 0.3, vertical_exaggeration: float = 0
     if cmap is not None:
         terrain = cmap
     else:
-        terrain = plt.cm.gist_earth
+        terrain = plt.cm.terrain
     ls = LightSource(azdeg=315, altdeg=45)
     ax.imshow(ls.shade(z, blend_mode="overlay", cmap=terrain, vmin=vmin, vmax=vmax, vert_exag=vertical_exaggeration),
               extent=[min(x), max(x), min(y), max(y)], alpha=alpha)

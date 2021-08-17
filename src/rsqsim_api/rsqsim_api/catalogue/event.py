@@ -1,7 +1,9 @@
 from typing import Union
 from collections import defaultdict
+import pickle
 
 from matplotlib import pyplot as plt
+from matplotlib import cm, colors
 from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 from matplotlib.widgets import Slider
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -136,7 +138,8 @@ class RsqSimEvent:
 
     def plot_background(self, figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0, bounds: tuple = None,
                         plot_rivers: bool = True, plot_lakes: bool = True, hillshade_fine: bool = False,
-                        plot_highways: bool = True, plot_boundaries: bool = False, subplots=None):
+                        plot_highways: bool = True, plot_boundaries: bool = False, subplots=None,
+                        pickle_name: str = None, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain):
 
         if subplots is not None:
             fig, ax = subplots
@@ -153,7 +156,10 @@ class RsqSimEvent:
             plot_coast(ax, clip_boundary=plot_bounds, colors="0.0")
             x_lim = ax.get_xlim()
             y_lim = ax.get_ylim()
-            plot_hillshade_niwa(ax, hillshading_intensity, clip_bounds=plot_bounds)
+            if hillshade_fine:
+                plot_hillshade_niwa(ax, hillshading_intensity, clip_bounds=plot_bounds, cmap=hillshade_cmap)
+            else:
+                plot_hillshade(ax, hillshading_intensity, clip_bounds=plot_bounds, cmap=hillshade_cmap)
             ax.set_xlim(x_lim)
             ax.set_ylim(y_lim)
         else:
@@ -180,29 +186,39 @@ class RsqSimEvent:
         ax.set_xticks([])
         ax.set_yticks([])
 
+        if pickle_name is not None:
+            with open(pickle_name, "wb") as pfile:
+                pickle.dump((fig, ax), pfile)
+
         return fig, ax
-
-
 
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
                      write: str = None, subplots = None, global_max_sub_slip: int = 0, global_max_slip: int = 0,
                      figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0, bounds: tuple = None,
                      plot_rivers: bool = True, plot_lakes: bool = True,
                      plot_highways: bool = True, plot_boundaries: bool = False, create_background: bool = False,
-                     coast_only: bool = True):
+                     coast_only: bool = True, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
 
         if subplots is not None:
-            fig, ax = subplots
+            if isinstance(subplots, str):
+                # Assume pickled figure
+                with open(subplots, "rb") as pfile:
+                    loaded_subplots = pickle.load(pfile)
+                fig, ax = loaded_subplots
+            else:
+                # Assume matplotlib objects
+                fig, ax = subplots
         elif create_background:
             fig, ax = self.plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
                                            bounds=bounds, plot_rivers=plot_rivers, plot_lakes=plot_lakes,
-                                           plot_highways=plot_highways, plot_boundaries=plot_boundaries)
+                                           plot_highways=plot_highways, plot_boundaries=plot_boundaries,
+                                           hillshade_cmap=hillshade_cmap)
         elif coast_only:
             fig, ax = self.plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
                                            bounds=bounds, plot_rivers=False, plot_lakes=False, plot_highways=False,
-                                           plot_boundaries=False)
+                                           plot_boundaries=False, hillshade_cmap=hillshade_cmap)
 
 
         else:
@@ -387,7 +403,8 @@ class RsqSimEvent:
         if write is not None:
             writer = PillowWriter(fps=fps) if file_format == "gif" else FFMpegWriter(fps=fps)
             animation.save(f"{write}.{file_format}", writer)
-        else:
+
+        if show:
             plt.show()
 
     def discretize_openquake(self):
