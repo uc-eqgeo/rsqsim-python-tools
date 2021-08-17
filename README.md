@@ -26,7 +26,7 @@ Installation instructions for Anaconda can be found here: <https://www.anaconda.
    
    ![image](https://user-images.githubusercontent.com/21334474/105001742-1c846e00-5a95-11eb-8323-1d53ef98941b.png)
    
-   4. Choose Notebook to run, e.g. `visualization/Visualisation.ipynb`
+   4. Choose Notebook to run, e.g. `visualization/plot_event588.ipynb`
    5. Run the whole notebook in a single step by clicking on the menu Cell -> Run All.
    
    ![image](https://user-images.githubusercontent.com/21334474/105001885-50f82a00-5a95-11eb-98a2-bca7760c656a.png)
