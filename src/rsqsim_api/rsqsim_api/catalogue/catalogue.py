@@ -3,7 +3,7 @@ from collections import abc, Counter, defaultdict
 import os
 
 from multiprocessing import Queue, Process
-from multiprocessing.sharedctypes import RawArray
+from multiprocessing import sharedctypes
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
@@ -397,10 +397,10 @@ class RsqSimCatalogue:
         else:
             # Using shared data between processes
             event_list = np.ctypeslib.as_ctypes(self.event_list)
-            raw_event_list = RawArray(event_list._type_, event_list)
+            raw_event_list = sharedctypes.RawArray(event_list._type_, event_list)
 
             patch_list = np.ctypeslib.as_ctypes(self.patch_list)
-            raw_patch_list = RawArray(event_list._type_, patch_list)
+            raw_patch_list = sharedctypes.RawArray(event_list._type_, patch_list)
 
             queue = Queue() # queue to handle processed events
 
