@@ -11,4 +11,4 @@ bruce_faults = RsqSimMultiFault.read_fault_file_bruce(os.path.join(run_dir, "../
                                                       transform_from_utm=True)
 
 m9 = catalogue.events_by_number(588, bruce_faults)[0]
-m9.plot_slip_2d()
+m9.plot_slip_2d(plot_log_scale=True, log_min=1, coast_only=False, create_background=False, show=True)

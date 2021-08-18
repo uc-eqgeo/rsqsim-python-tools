@@ -17,6 +17,7 @@ dependencies:
   - h5py >= 2.10.0
   - pytables >= 3.6.1
   - ffmpeg >= 4.3.1
+  - rioxarray >= 0.5.0
   - pip
   - git >= 2.21.1
   - git-lfs >= 2.13.3
@@ -25,3 +26,4 @@ dependencies:
     - src/tri_dislocations
     - src/triangular_faults
     - ezdxf >= 0.14.2
+    - meshio >= 4.4.6
