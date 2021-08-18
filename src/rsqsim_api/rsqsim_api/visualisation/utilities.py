@@ -19,14 +19,15 @@ roads = pathlib.Path(__file__).parent / "data/other_lines/state_highways.shp"
 lakes = pathlib.Path(__file__).parent / "data/other_lines/nz-lake-polygons-topo-1250k.shp"
 rivers = pathlib.Path(__file__).parent / "data/other_lines/nz-major-rivers.shp"
 regions = pathlib.Path(__file__).parent / "data/other_lines/nz-major-rivers.shp"
+hk_boundary = pathlib.Path(__file__).parent / "data/faults/hk_clipping_area.gpkg"
 
 niwa = ""
 
 
 min_x1 = 800000
 min_y1 = 4000000
-max_x2 = 2200000
-max_y2 = 6400000
+max_x2 = 3200000
+max_y2 = 7500000
 
 
 def clip_coast_with_trim(x1: Union[int, float], y1: Union[int, float], x2: Union[int, float], y2: Union[int, float]):
@@ -125,6 +126,12 @@ def plot_lake_polygons(ax: plt.Axes, edgecolor: str = "b", linewidth: int = 0.3,
                       linestyle=linestyle, facecolor=facecolor)
 
 
+def plot_hk_boundary(ax: plt.Axes, edgecolor: str = "r", linewidth: int = 0.1, clip_bounds: list = None,
+                     linestyle: str = "-", facecolor: str = "0.8"):
+    plot_gis_polygons(hk_boundary, ax=ax, edgecolor=edgecolor, linewidth=linewidth, clip_bounds=clip_bounds,
+                      linestyle=linestyle, facecolor=facecolor)
+
+
 
 
 def plot_coast(ax: plt.Axes, clip_boundary: list = None, colors: str = "0.5", linewidth: int = 0.3,
@@ -186,3 +193,7 @@ def plot_hillshade_niwa(ax, alpha: float = 0.3, vertical_exaggeration: float = 0
     ax.imshow(ls.shade(z, blend_mode="overlay", cmap=terrain, vmin=vmin, vmax=vmax, vert_exag=vertical_exaggeration),
               extent=[min(x), max(x), min(y), max(y)], alpha=alpha)
     clipped.close()
+
+
+
+

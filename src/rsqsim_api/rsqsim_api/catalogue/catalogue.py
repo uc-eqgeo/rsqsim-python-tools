@@ -178,6 +178,9 @@ class RsqSimCatalogue:
         assert prefix, "Empty prefix!"
         write_catalogue_dataframe_and_arrays(prefix, self, directory=directory, write_index=write_index)
 
+    def first_event(self, fault_model: RsqSimMultiFault):
+        return self.events_by_number(int(self.catalogue_df.index[0]), fault_model)[0]
+
     def filter_df(self, min_t0: fint = None, max_t0: fint = None, min_m0: fint = None,
                   max_m0: fint = None, min_mw: fint = None, max_mw: fint = None,
                   min_x: fint = None, max_x: fint = None, min_y: fint = None, max_y: fint = None,

@@ -12,7 +12,8 @@ import numpy as np
 from shapely.geometry import box
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault
-from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade, plot_hillshade_niwa, plot_lake_polygons, plot_river_lines, plot_highway_lines, plot_boundary_polygons
+from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade, plot_hillshade_niwa, plot_lake_polygons, \
+    plot_river_lines, plot_highway_lines, plot_boundary_polygons, plot_hk_boundary
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
 
 
@@ -139,7 +140,8 @@ class RsqSimEvent:
     def plot_background(self, figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0, bounds: tuple = None,
                         plot_rivers: bool = True, plot_lakes: bool = True, hillshade_fine: bool = False,
                         plot_highways: bool = True, plot_boundaries: bool = False, subplots=None,
-                        pickle_name: str = None, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain):
+                        pickle_name: str = None, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain,
+                        plot_hk: bool = False):
 
         if subplots is not None:
             fig, ax = subplots
@@ -177,6 +179,9 @@ class RsqSimEvent:
         if plot_boundaries:
             plot_boundary_polygons(ax, clip_bounds=plot_bounds)
 
+        if plot_hk:
+            plot_hk_boundary(ax, clip_bounds=plot_bounds)
+
         ax.set_aspect("equal")
         x_lim = (plot_bounds[0], plot_bounds[2])
         y_lim = (plot_bounds[1], plot_bounds[3])
@@ -197,7 +202,9 @@ class RsqSimEvent:
                      figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0, bounds: tuple = None,
                      plot_rivers: bool = True, plot_lakes: bool = True,
                      plot_highways: bool = True, plot_boundaries: bool = False, create_background: bool = False,
-                     coast_only: bool = True, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain):
+                     coast_only: bool = True, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain,
+                     plot_log_scale: bool = False, log_cmap: str = "magma", log_min: float = 1.0,
+                     log_max: float = 100.):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
 
@@ -251,9 +258,14 @@ class RsqSimEvent:
         for f_i, fault in enumerate(self.faults):
             if fault.name in bruce_subduction:
                 subduction_list.append(fault.name)
-                subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
-                                               facecolors=colour_dic[f_i],
-                                               cmap=subduction_cmap, vmin=0, vmax=max_slip)
+                if plot_log_scale:
+                    subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                   facecolors=colour_dic[f_i],
+                                                   cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
+                else:
+                    subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                   facecolors=colour_dic[f_i],
+                                                   cmap=subduction_cmap, vmin=0, vmax=max_slip)
                 plots.append(subduction_plot)
 
         max_slip = 0
@@ -273,18 +285,31 @@ class RsqSimEvent:
         crustal_plot = None
         for f_i, fault in enumerate(self.faults):
             if fault.name not in bruce_subduction:
-                crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
-                                            facecolors=colour_dic[f_i],
-                                            cmap=crustal_cmap, vmin=0, vmax=max_slip)
+                if plot_log_scale:
+                    crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                   facecolors=colour_dic[f_i],
+                                                   cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
+                else:
+                    crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                facecolors=colour_dic[f_i],
+                                                cmap=crustal_cmap, vmin=0, vmax=max_slip)
                 plots.append(crustal_plot)
 
         if subplots is None:
-            if subduction_list:
-                sub_cbar = fig.colorbar(subduction_plot, ax=ax)
-                sub_cbar.set_label("Subduction slip (m)")
-            if crustal_plot is not None:
-                crust_cbar = fig.colorbar(crustal_plot, ax=ax)
-                crust_cbar.set_label("Slip (m)")
+            if plot_log_scale:
+                if subduction_list:
+                    sub_cbar = fig.colorbar(subduction_plot, ax=ax)
+                    sub_cbar.set_label("Slip (m)")
+                elif crustal_plot is not None:
+                    crust_cbar = fig.colorbar(crustal_plot, ax=ax)
+                    crust_cbar.set_label("Slip (m)")
+            else:
+                if subduction_list:
+                    sub_cbar = fig.colorbar(subduction_plot, ax=ax)
+                    sub_cbar.set_label("Subduction slip (m)")
+                if crustal_plot is not None:
+                    crust_cbar = fig.colorbar(crustal_plot, ax=ax)
+                    crust_cbar.set_label("Slip (m)")
 
 
         if write is not None:
