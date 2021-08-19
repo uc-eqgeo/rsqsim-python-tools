@@ -134,8 +134,10 @@ class RsqSimMultiFault:
             fault_data = data[data["fault_num"] == number]
             # Check that fault number has only one name associated with it
             associated_names = np.unique(fault_data["fault_name"])
+            associated_rakes = np.unique(fault_data["rake"])
 
             fault_name = associated_names[0] if associated_names.size > 0 else None
+            fault_rake = associated_rakes[0] if associated_rakes.size > 0 else None
 
             if len(associated_names) > 1:
                 print("More than one name provided for fault {:d}".format(number))
@@ -159,7 +161,7 @@ class RsqSimMultiFault:
 
             # Create fault object
             fault_i = RsqSimSegment.from_triangles(triangles=triangles, patch_numbers=patch_numbers,
-                                                   segment_number=number, fault_name=fault_name)
+                                                   segment_number=number, fault_name=fault_name, rake=fault_rake)
 
             segment_ls.append(fault_i)
             patch_start += num_triangles

@@ -15,7 +15,7 @@ from rsqsim_api.fault.multifault import RsqSimMultiFault
 from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade, plot_hillshade_niwa, plot_lake_polygons, \
     plot_river_lines, plot_highway_lines, plot_boundary_polygons, plot_hk_boundary
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
-
+from rsqsim_api.io.mesh_utils import array_to_mesh
 
 class RsqSimEvent:
     def __init__(self):
@@ -103,10 +103,13 @@ class RsqSimEvent:
         event.patch_slip = patch_slip[mask]
         event.patch_time = patch_time[mask]
 
-        if event.patch_numbers.size > 0:
+        if event.patch_numbers.size > 1:
             patchnum_lookup = operator.itemgetter(*(event.patch_numbers))
             event.patches = list(patchnum_lookup(fault_model.patch_dic))
             event.faults = list(set(patchnum_lookup(fault_model.faults_with_patches)))
+        elif event.patch_numbers.size == 1:
+            event.patches = [fault_model.patch_dic[event.patch_numbers[0]]]
+            event.faults = [fault_model.faults_with_patches[event.patch_numbers[0]]]
         else:
             event.patches = []
             event.faults = []
@@ -431,6 +434,43 @@ class RsqSimEvent:
 
         if show:
             plt.show()
+
+    def slip_dist_array(self, include_zeros: bool = True):
+        all_patches = []
+        for fault in self.faults:
+            for patch_id in fault.patch_numbers:
+                if patch_id in self.patch_numbers:
+                    patch = fault.patch_dic[patch_id]
+                    slip_index = np.searchsorted(self.patch_numbers, patch_id)
+                    time = self.patch_time[slip_index] - self.t0
+                    slip_mag = self.patch_slip[slip_index]
+                    patch_line = np.hstack([patch.vertices.flatten(), np.array([slip_mag, patch.rake, time])])
+                    all_patches.append(patch_line)
+                elif include_zeros:
+                    patch = fault.patch_dic[patch_id]
+                    patch_line = np.hstack([patch.vertices.flatten(), np.array([0., 0., 0.])])
+                    all_patches.append(patch_line)
+        return np.array(all_patches)
+
+    def slip_dist_to_mesh(self, include_zeros: bool = True):
+        slip_dist_array = self.slip_dist_array(include_zeros=include_zeros)
+        mesh = array_to_mesh(slip_dist_array[:, :9])
+        data_dic = {}
+        for label, index in zip(["slip", "rake", "time"], [9, 10, 11]):
+            data_dic[label] = slip_dist_array[:, index]
+        mesh.cell_data = data_dic
+
+        return mesh
+
+    def slip_dist_to_vtk(self, vtk_file: str, include_zeros: bool = True):
+        mesh = self.slip_dist_to_mesh(include_zeros=include_zeros)
+        mesh.write(vtk_file, file_format="vtk")
+
+    def slip_dist_to_txt(self, txt_file, include_zeros: bool = True):
+        slip_dist_array = self.slip_dist_array(include_zeros=include_zeros)
+        np.savetxt(txt_file, slip_dist_array, fmt="%.6f", delimiter=" ")
+
+
 
     def discretize_openquake(self):
         # Find faults
