@@ -195,7 +195,8 @@ class RsqSimSegment:
     @classmethod
     def from_triangles(cls, triangles: Union[np.ndarray, list, tuple], segment_number: int = 0,
                        patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None,
-                       strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None):
+                       strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None,
+                       rake: Union[int, float] = None):
         """
         Create a segment from triangle vertices and (if appropriate) populate it with strike-slip/dip-slip values
         :param segment_number:
@@ -223,7 +224,7 @@ class RsqSimSegment:
         for patch_num, triangle in zip(patch_numbers, triangle_array):
             triangle3 = triangle.reshape(3, 3)
             patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num, strike_slip=strike_slip,
-                                          dip_slip=dip_slip)
+                                          dip_slip=dip_slip, rake=rake)
             triangle_ls.append(patch)
 
         fault.patch_outlines = triangle_ls
@@ -293,7 +294,7 @@ class RsqSimSegment:
                 dip_slip = rake_dic[rake[i]][1]
             patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
                                           strike_slip=strike_slip,
-                                          dip_slip=dip_slip)
+                                          dip_slip=dip_slip, rake=rake[i])
             triangle_ls.append(patch)
 
         fault.patch_outlines = triangle_ls

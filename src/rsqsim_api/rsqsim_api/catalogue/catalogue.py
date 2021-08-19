@@ -181,6 +181,9 @@ class RsqSimCatalogue:
     def first_event(self, fault_model: RsqSimMultiFault):
         return self.events_by_number(int(self.catalogue_df.index[0]), fault_model)[0]
 
+    def first_n_events(self, number_of_events: int, fault_model: RsqSimMultiFault):
+        return self.events_by_number(list(self.catalogue_df.index[:number_of_events]), fault_model)
+
     def filter_df(self, min_t0: fint = None, max_t0: fint = None, min_m0: fint = None,
                   max_m0: fint = None, min_mw: fint = None, max_mw: fint = None,
                   min_x: fint = None, max_x: fint = None, min_y: fint = None, max_y: fint = None,
