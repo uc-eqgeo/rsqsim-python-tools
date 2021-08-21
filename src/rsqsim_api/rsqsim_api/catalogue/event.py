@@ -466,6 +466,10 @@ class RsqSimEvent:
         mesh = self.slip_dist_to_mesh(include_zeros=include_zeros)
         mesh.write(vtk_file, file_format="vtk")
 
+    def slip_dist_to_obj(self, obj_file: str, include_zeros: bool = True):
+        mesh = self.slip_dist_to_mesh(include_zeros=include_zeros)
+        mesh.write(obj_file, file_format="obj")
+
     def slip_dist_to_txt(self, txt_file, include_zeros: bool = True):
         slip_dist_array = self.slip_dist_array(include_zeros=include_zeros)
         np.savetxt(txt_file, slip_dist_array, fmt="%.6f", delimiter=" ")
