@@ -9,6 +9,7 @@ from tde.tde import calc_tri_displacements
 from triangular_faults.displacements import DisplacementArray
 from matplotlib import pyplot as plt
 from pyproj import Transformer
+import meshio
 
 from rsqsim_api.io.read_utils import read_dxf, read_stl
 from rsqsim_api.io.tsurf import tsurf
@@ -489,6 +490,13 @@ class RsqSimSegment:
 
     def plot_2d(self, ax: plt.Axes):
         ax.triplot(self.vertices[:, 0], self.vertices[:, 1], self.triangles)
+
+    def to_mesh(self):
+        return meshio.Mesh(points=self.vertices, cells=[("triangle", self.triangles)])
+
+    def to_stl(self, stl_name: str):
+        mesh = self.to_mesh()
+        mesh.write(stl_name, file_format="stl")
 
 
 class RsqSimFault:
