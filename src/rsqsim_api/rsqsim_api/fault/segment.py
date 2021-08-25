@@ -10,6 +10,8 @@ from triangular_faults.displacements import DisplacementArray
 from matplotlib import pyplot as plt
 from pyproj import Transformer
 import meshio
+from shapely.ops import linemerge, unary_union
+from shapely.geometry import LineString, MultiPolygon
 
 from rsqsim_api.io.read_utils import read_dxf, read_stl
 from rsqsim_api.io.tsurf import tsurf
@@ -483,10 +485,35 @@ class RsqSimSegment:
             self.build_laplacian_matrix()
         return self._laplacian
 
-    def find_top_patches(self, depth_tolerance: Union[float, int] = 100):
+    def find_top_vertex_indices(self, depth_tolerance: Union[float, int] = 100):
         top_vertex_depth = max(self.vertices[:, -1])
         shallow_indices = np.where(self.vertices[:, -1] >= top_vertex_depth - depth_tolerance)[0]
         return shallow_indices
+
+    def find_top_vertices(self, depth_tolerance: Union[float, int] = 100):
+        shallow_indices = self.find_top_vertex_indices(depth_tolerance)
+        return self.vertices[shallow_indices]
+
+    def find_top_edges(self, depth_tolerance: Union[float, int] = 100):
+        shallow_indices = self.find_top_vertex_indices(depth_tolerance)
+        top_edges = self.edge_lines[np.all(np.isin(self.edge_lines, shallow_indices), axis=1)]
+        return top_edges
+
+    @property
+    def trace(self):
+        top_edges = self.find_top_edges()
+        line_list = []
+        for edge in top_edges:
+            v1 = self.vertices[edge[0]]
+            v2 = self.vertices[edge[1]]
+            line = LineString([v1[:-1], v2[:-1]])
+            line_list.append(line)
+        return linemerge(line_list)
+
+    @property
+    def fault_outline(self):
+        multip = MultiPolygon(patch.as_polygon() for patch in self.patch_outlines)
+        return unary_union(list(multip))
 
     def plot_2d(self, ax: plt.Axes):
         ax.triplot(self.vertices[:, 0], self.vertices[:, 1], self.triangles)

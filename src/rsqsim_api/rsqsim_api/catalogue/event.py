@@ -144,7 +144,7 @@ class RsqSimEvent:
                         plot_rivers: bool = True, plot_lakes: bool = True, hillshade_fine: bool = False,
                         plot_highways: bool = True, plot_boundaries: bool = False, subplots=None,
                         pickle_name: str = None, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain,
-                        plot_hk: bool = False):
+                        plot_hk: bool = False, plot_fault_outlines: bool = True):
 
         if subplots is not None:
             fig, ax = subplots
@@ -207,7 +207,7 @@ class RsqSimEvent:
                      plot_highways: bool = True, plot_boundaries: bool = False, create_background: bool = False,
                      coast_only: bool = True, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain,
                      plot_log_scale: bool = False, log_cmap: str = "magma", log_min: float = 1.0,
-                     log_max: float = 100.):
+                     log_max: float = 100., plot_traces: bool = True, trace_colour: str = "pink"):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
 
@@ -298,7 +298,7 @@ class RsqSimEvent:
                                                 cmap=crustal_cmap, vmin=0, vmax=max_slip)
                 plots.append(crustal_plot)
 
-        if subplots is None:
+        if any([subplots is None, isinstance(subplots,str)]):
             if plot_log_scale:
                 if subduction_list:
                     sub_cbar = fig.colorbar(subduction_plot, ax=ax)
