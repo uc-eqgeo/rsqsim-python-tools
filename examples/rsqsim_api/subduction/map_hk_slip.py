@@ -7,6 +7,8 @@ import pandas as pd
 from pyproj import Transformer
 from rsqsim_api.fault.segment import RsqSimSegment
 
+from rsqsim_api.io.write_utils import array_to_mesh
+
 transformer = Transformer.from_crs(4326, 2193, always_xy=True)
 trans_inv = Transformer.from_crs(2193, 4326, always_xy=True)
 
@@ -79,7 +81,8 @@ def point_dist(point: Point):
 def point_dist_nztm(point: Point):
     return float(np.dot(along_overall, np.array([point.x, point.y])))
 
-east_cape_dist = point_dist(east_cape)
+
+east_cape_dist = point_dist(east_cape) + 5.e4
 start_0_2_dist = point_dist(start_0_2)
 end_0_2_dist = point_dist(end_0_2)
 start_0_5_dist = point_dist(start_0_5)
@@ -89,7 +92,7 @@ convergence_end_dist = point_dist(convergence_end)
 def coupling(dist: float):
     assert dist >= east_cape_dist
     if dist < start_0_2_dist:
-        return 0.2  # * (dist - east_cape_dist) / (start_0_2_dist - east_cape_dist)
+        return 0.2 * (dist - east_cape_dist) / (start_0_2_dist - east_cape_dist)
     elif dist < end_0_2_dist:
         return 0.2
 
@@ -123,7 +126,7 @@ def kermadec_slip_rate(dist: float, modelled_value: float = 0.):
 
 
 stl_file = os.path.join(data_dir, "hik_kerm_10km_trimmed.stl")
-fault = RsqSimSegment.from_stl(stl_file)
+fault = RsqSimSegment.from_stl(stl_file, fault_name="Subduction", segment_number=1)
 
 slip_deficit_file = os.path.join(data_dir, "trench_creep_hik_slipdeficit.txt")
 slip_deficit_df = pd.read_csv(slip_deficit_file, delim_whitespace=True)
@@ -148,15 +151,27 @@ for patch in fault.patch_outlines:
         sd_weights = np.exp(-1 * sd_distances[sd_distances < data_half_width] / (2 * gaussian_sigma))
         sd_values = sd_all_values[sd_distances < data_half_width]
         sd_average = np.average(sd_values, weights=sd_weights)
-        # if centre_dist > east_cape_dist:
-        #     sd_average = kermadec_slip_rate(float(centre_dist), modelled_value=sd_average)
+        if centre_dist > east_cape_dist:
+            sd_average = kermadec_slip_rate(float(centre_dist), modelled_value=sd_average)
     elif centre_dist > start_0_2_dist:
         # print(centre_wgs)
         sd_average = kermadec_slip_rate(float(centre_dist))
     else:
-        sd_average = 0.
+        if centre_dist > east_cape_dist:
+            sd_average = kermadec_slip_rate(float(centre_dist), modelled_value=0.)
+        else:
+            sd_average = 0.
 
     patch.dip_slip = sd_average
+
+
+
+
+mesh = array_to_mesh(fault.patch_triangle_rows)
+mesh.cell_data = {"dip_slip": fault.dip_slip}
+mesh.write("test.vtk", file_format="vtk")
+
+fault.to_rsqsim_fault_file("hik_creep.flt")
 
 
 

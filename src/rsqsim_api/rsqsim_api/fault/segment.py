@@ -13,7 +13,7 @@ from pyproj import Transformer
 from rsqsim_api.io.read_utils import read_dxf, read_stl
 from rsqsim_api.io.tsurf import tsurf
 from rsqsim_api.fault.patch import RsqSimTriangularPatch, RsqSimGenericPatch
-
+seconds_per_year = 31557600.0
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
 
@@ -105,6 +105,10 @@ class RsqSimSegment:
 
         self._patch_outlines = patches
         self._patch_vertices = [patch.vertices for patch in patches]
+
+    @property
+    def patch_triangle_rows(self):
+        return np.array([triangle.flatten() for triangle in self.patch_vertices])
 
     @property
     def vertices(self):
@@ -488,6 +492,25 @@ class RsqSimSegment:
 
     def plot_2d(self, ax: plt.Axes):
         ax.triplot(self.vertices[:, 0], self.vertices[:, 1], self.triangles)
+
+    @property
+    def dip_slip(self):
+        return np.array([patch.dip_slip for patch in self.patch_outlines])
+
+    def to_rsqsim_fault_file(self, flt_name):
+        tris = pd.DataFrame(self.patch_triangle_rows)
+        rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
+        tris.loc[:, 9] = rakes
+        slip_rates = pd.Series(self.dip_slip * 1.e-3 / seconds_per_year)
+        tris.loc[:, 10] = slip_rates
+        segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=np.int)
+        tris.loc[:, 11] = segment_num
+        seg_names = pd.Series([self.name for i in range(len(self.patch_numbers))])
+        tris.loc[:, 12] = seg_names
+
+        tris.to_csv(flt_name, index=False, header=False, sep="\t", encoding='ascii')
+
+
 
 
 class RsqSimFault:
