@@ -9,6 +9,7 @@ from tde.tde import calc_tri_displacements
 
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
+transformer_nztm2wgs = Transformer.from_crs(2193, 4326, always_xy=True)
 
 @njit(cache=True)
 def norm_3d(a):
@@ -151,6 +152,11 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
             print("Taking first 3 vertices...")
 
         self._vertices = vertices[:3, :]
+
+    @property
+    def vertices_lonlat(self):
+
+        return np.array(transformer_nztm2wgs.transform(*self.vertices.T)).T
 
     @staticmethod
     @njit(cache=True)

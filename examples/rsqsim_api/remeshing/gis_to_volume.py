@@ -17,7 +17,7 @@ def make_journal_file(line: LineString, outfile, default_z = 0., depth=5.e4):
         out_id.write(out_str)
 
 
-def make_journal_file_commands(line: LineString, outfile, outmesh: str, default_z = 0., depth=5.e4):
+def make_journal_file_commands(line: LineString, outfile, outmesh: str, default_z = 0., depth=2.e4):
     out_str = ""
     for coord in list(line.coords):
         print(coord)

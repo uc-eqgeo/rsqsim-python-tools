@@ -207,9 +207,15 @@ class RsqSimEvent:
                      plot_highways: bool = True, plot_boundaries: bool = False, create_background: bool = False,
                      coast_only: bool = True, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain,
                      plot_log_scale: bool = False, log_cmap: str = "magma", log_min: float = 1.0,
-                     log_max: float = 100., plot_traces: bool = True, trace_colour: str = "pink"):
+                     log_max: float = 100., plot_traces: bool = True, trace_colour: str = "pink",
+                     min_slip_percentile: float = None, min_slip_value: float = None, plot_zeros: bool = True):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
+
+        if all([min_slip_percentile is not None, min_slip_value is None]):
+            min_slip = np.percentile(self.patch_slip, min_slip_percentile)
+        else:
+            min_slip = min_slip_value
 
         if subplots is not None:
             if isinstance(subplots, str):
@@ -243,14 +249,23 @@ class RsqSimEvent:
         colour_dic = {}
         for f_i, fault in enumerate(self.faults):
             if fault.name in bruce_subduction:
-                colours = np.zeros(fault.patch_numbers.shape)
+                if plot_zeros:
+                    colours = np.zeros(fault.patch_numbers.shape)
+                else:
+                    colours = np.nan * np.ones(fault.patch_numbers.shape)
                 for local_id, patch_id in enumerate(fault.patch_numbers):
                     if patch_id in self.patch_numbers:
                         slip_index = np.argwhere(self.patch_numbers == patch_id)[0]
-                        colours[local_id] = self.patch_slip[slip_index]
+                        if min_slip is not None:
+                            if self.patch_slip[slip_index] >= min_slip:
+                                colours[local_id] = self.patch_slip[slip_index]
+                        else:
+                            if self.patch_slip[slip_index] > 0.:
+                                colours[local_id] = self.patch_slip[slip_index]
+
                 colour_dic[f_i] = colours
-                if max(colours) > max_slip:
-                    max_slip = max(colours)
+                if np.nanmax(colours) > max_slip:
+                    max_slip = np.nanmax(colours)
         max_slip = global_max_sub_slip if global_max_sub_slip > 0 else max_slip
 
         plots = []
@@ -268,21 +283,29 @@ class RsqSimEvent:
                 else:
                     subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
                                                    facecolors=colour_dic[f_i],
-                                                   cmap=subduction_cmap, vmin=0, vmax=max_slip)
+                                                   cmap=subduction_cmap, vmin=0., vmax=max_slip)
                 plots.append(subduction_plot)
 
         max_slip = 0
         colour_dic = {}
         for f_i, fault in enumerate(self.faults):
             if fault.name not in bruce_subduction:
-                colours = np.zeros(fault.patch_numbers.shape)
+                if plot_zeros:
+                    colours = np.zeros(fault.patch_numbers.shape)
+                else:
+                    colours = np.nan * np.ones(fault.patch_numbers.shape)
                 for local_id, patch_id in enumerate(fault.patch_numbers):
                     if patch_id in self.patch_numbers:
                         slip_index = np.argwhere(self.patch_numbers == patch_id)[0]
-                        colours[local_id] = self.patch_slip[slip_index]
+                        if min_slip is not None:
+                            if self.patch_slip[slip_index] >= min_slip:
+                                colours[local_id] = self.patch_slip[slip_index]
+                        else:
+                            if self.patch_slip[slip_index] > 0.:
+                                colours[local_id] = self.patch_slip[slip_index]
                 colour_dic[f_i] = colours
-                if max(colours) > max_slip:
-                    max_slip = max(colours)
+                if np.nanmax(colours) > max_slip:
+                    max_slip = np.nanmax(colours)
         max_slip = global_max_slip if global_max_slip > 0 else max_slip
 
         crustal_plot = None
@@ -295,7 +318,7 @@ class RsqSimEvent:
                 else:
                     crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
                                                 facecolors=colour_dic[f_i],
-                                                cmap=crustal_cmap, vmin=0, vmax=max_slip)
+                                                cmap=crustal_cmap, vmin=0., vmax=max_slip)
                 plots.append(crustal_plot)
 
         if any([subplots is None, isinstance(subplots,str)]):
@@ -435,25 +458,50 @@ class RsqSimEvent:
         if show:
             plt.show()
 
-    def slip_dist_array(self, include_zeros: bool = True):
+    def slip_dist_array(self, include_zeros: bool = True, min_slip_percentile: float = None,
+                        min_slip_value: float = None, nztm_to_lonlat: bool = False):
         all_patches = []
+        if all([min_slip_percentile is not None, min_slip_value is None]):
+            min_slip = np.percentile(self.patch_slip, min_slip_percentile)
+        else:
+            min_slip = min_slip_value
+
         for fault in self.faults:
             for patch_id in fault.patch_numbers:
                 if patch_id in self.patch_numbers:
                     patch = fault.patch_dic[patch_id]
+                    if nztm_to_lonlat:
+                        triangle_corners = patch.vertices_lonlat.flatten()
+                    else:
+                        triangle_corners = patch.vertices.flatten()
                     slip_index = np.searchsorted(self.patch_numbers, patch_id)
                     time = self.patch_time[slip_index] - self.t0
                     slip_mag = self.patch_slip[slip_index]
-                    patch_line = np.hstack([patch.vertices.flatten(), np.array([slip_mag, patch.rake, time])])
-                    all_patches.append(patch_line)
+                    if min_slip is not None:
+                        if slip_mag >= min_slip:
+                            patch_line = np.hstack([triangle_corners, np.array([slip_mag, patch.rake, time])])
+                            all_patches.append(patch_line)
+                        elif include_zeros:
+                            patch = fault.patch_dic[patch_id]
+                            patch_line = np.hstack([triangle_corners, np.array([0., 0., 0.])])
+                            all_patches.append(patch_line)
+                    else:
+                        patch_line = np.hstack([triangle_corners, np.array([slip_mag, patch.rake, time])])
+                        all_patches.append(patch_line)
                 elif include_zeros:
                     patch = fault.patch_dic[patch_id]
-                    patch_line = np.hstack([patch.vertices.flatten(), np.array([0., 0., 0.])])
+                    if nztm_to_lonlat:
+                        triangle_corners = patch.vertices_lonlat.flatten()
+                    else:
+                        triangle_corners = patch.vertices.flatten()
+                    patch_line = np.hstack([triangle_corners, np.array([0., 0., 0.])])
                     all_patches.append(patch_line)
         return np.array(all_patches)
 
-    def slip_dist_to_mesh(self, include_zeros: bool = True):
-        slip_dist_array = self.slip_dist_array(include_zeros=include_zeros)
+    def slip_dist_to_mesh(self, include_zeros: bool = True, min_slip_percentile: float = None,
+                          min_slip_value: float = None, nztm_to_lonlat: bool = False):
+        slip_dist_array = self.slip_dist_array(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
+                                               min_slip_value=min_slip_value)
         mesh = array_to_mesh(slip_dist_array[:, :9])
         data_dic = {}
         for label, index in zip(["slip", "rake", "time"], [9, 10, 11]):
@@ -462,17 +510,27 @@ class RsqSimEvent:
 
         return mesh
 
-    def slip_dist_to_vtk(self, vtk_file: str, include_zeros: bool = True):
-        mesh = self.slip_dist_to_mesh(include_zeros=include_zeros)
+    def slip_dist_to_vtk(self, vtk_file: str, include_zeros: bool = True, min_slip_percentile: float = None,
+                         min_slip_value: float = None):
+        mesh = self.slip_dist_to_mesh(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
+                                      min_slip_value=min_slip_value)
         mesh.write(vtk_file, file_format="vtk")
 
-    def slip_dist_to_obj(self, obj_file: str, include_zeros: bool = True):
-        mesh = self.slip_dist_to_mesh(include_zeros=include_zeros)
+    def slip_dist_to_obj(self, obj_file: str, include_zeros: bool = True, min_slip_percentile: float = None,
+                         min_slip_value: float = None):
+        mesh = self.slip_dist_to_mesh(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
+                                      min_slip_value=min_slip_value)
         mesh.write(obj_file, file_format="obj")
 
-    def slip_dist_to_txt(self, txt_file, include_zeros: bool = True):
-        slip_dist_array = self.slip_dist_array(include_zeros=include_zeros)
-        np.savetxt(txt_file, slip_dist_array, fmt="%.6f", delimiter=" ")
+    def slip_dist_to_txt(self, txt_file, include_zeros: bool = True, min_slip_percentile: float = None,
+                         min_slip_value: float = None, nztm_to_lonlat: bool = False):
+        if nztm_to_lonlat:
+            header="lon1 lat1 z1 lon2 lat2 z2 lon3 lat3 z3 slip_m rake_deg time_s"
+        else:
+            header = "x1 y1 z1 x2 y2 z2 x3 y3 z3 slip_m rake_deg time_s"
+        slip_dist_array = self.slip_dist_array(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
+                                               min_slip_value=min_slip_value, nztm_to_lonlat=nztm_to_lonlat)
+        np.savetxt(txt_file, slip_dist_array, fmt="%.6f", delimiter=" ", header=header)
 
 
 

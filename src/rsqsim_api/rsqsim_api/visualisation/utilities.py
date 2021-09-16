@@ -21,6 +21,7 @@ rivers = pathlib.Path(__file__).parent / "data/other_lines/nz-major-rivers.shp"
 regions = pathlib.Path(__file__).parent / "data/other_lines/nz-major-rivers.shp"
 hk_boundary = pathlib.Path(__file__).parent / "data/faults/hk_clipping_area.gpkg"
 
+
 niwa = ""
 
 
@@ -193,6 +194,8 @@ def plot_hillshade_niwa(ax, alpha: float = 0.3, vertical_exaggeration: float = 0
     ax.imshow(ls.shade(z, blend_mode="overlay", cmap=terrain, vmin=vmin, vmax=vmax, vert_exag=vertical_exaggeration),
               extent=[min(x), max(x), min(y), max(y)], alpha=alpha)
     clipped.close()
+
+
 
 
 

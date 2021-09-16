@@ -17,3 +17,5 @@ background = test_events[0].plot_background(bounds=data.total_bounds, plot_lakes
 for event in test_events:
     event.plot_slip_2d(bounds=data.total_bounds, write=f"plots/ev{event.event_id}.png", show=False,
                        subplots="temp.pkl")
+    event.slip_dist_to_txt(f"slip_dists/ev{event.event_id}_no_zeros.txt", nztm_to_lonlat=True, include_zeros=False)
+    event.slip_dist_to_txt(f"slip_dists/ev{event.event_id}_inc_zeros.txt", nztm_to_lonlat=True)
