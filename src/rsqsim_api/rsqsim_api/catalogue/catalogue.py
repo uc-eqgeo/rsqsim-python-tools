@@ -399,6 +399,7 @@ class RsqSimCatalogue:
                                                            patch_time=patch_time_list,
                                                            fault_model=fault_model, min_patches=min_patches,
                                                            event_id=index)
+
                 out_events.append(event_i)
         else:
             # Using shared data between processes

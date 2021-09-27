@@ -17,6 +17,7 @@ from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade, plot_
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
 from rsqsim_api.io.mesh_utils import array_to_mesh
 
+
 class RsqSimEvent:
     def __init__(self):
         # Event ID
@@ -184,6 +185,9 @@ class RsqSimEvent:
 
         if plot_hk:
             plot_hk_boundary(ax, clip_bounds=plot_bounds)
+
+        if plot_fault_outlines:
+            pass
 
         ax.set_aspect("equal")
         x_lim = (plot_bounds[0], plot_bounds[2])

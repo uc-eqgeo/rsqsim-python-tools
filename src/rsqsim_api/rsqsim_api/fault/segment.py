@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 
 from tde.tde import calc_tri_displacements
-from triangular_faults.displacements import DisplacementArray
 from matplotlib import pyplot as plt
 from pyproj import Transformer
 import meshio
@@ -19,6 +18,37 @@ from rsqsim_api.fault.patch import RsqSimTriangularPatch, RsqSimGenericPatch
 
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
+
+
+class DisplacementArray:
+    def __init__(self, x_array: np.ndarray, y_array: np.ndarray, z_array: np.ndarray = None,
+                 e_array: np.ndarray = None, n_array: np.ndarray = None, v_array: np.ndarray = None):
+        assert x_array.shape == y_array.shape, "X and Y arrays should be the same size"
+        assert x_array.ndim == 1, "Expecting 1D arrays"
+        assert not all([a is None for a in [e_array, n_array, v_array]]), "Read in at least one set of displacements"
+
+        self.x, self.y = x_array, y_array
+        if z_array is None:
+            self.z = np.zeros(self.x.shape)
+        else:
+            assert isinstance(z_array, np.ndarray)
+            assert z_array.shape == self.x.shape
+            self.z = z_array
+
+        if e_array is not None:
+            assert isinstance(e_array, np.ndarray)
+            assert e_array.shape == self.x.shape
+        self.e = e_array
+
+        if n_array is not None:
+            assert isinstance(n_array, np.ndarray)
+            assert n_array.shape == self.x.shape
+        self.n = n_array
+
+        if v_array is not None:
+            assert isinstance(v_array, np.ndarray)
+            assert v_array.shape == self.x.shape
+        self.v = v_array
 
 
 class RsqSimSegment:
@@ -525,6 +555,10 @@ class RsqSimSegment:
         mesh = self.to_mesh()
         mesh.write(stl_name, file_format="stl")
 
+    def to_vtk(self, vtk_name: str):
+        mesh = self.to_mesh()
+        mesh.write(vtk_name, file_format="vtk")
+
 
 class RsqSimFault:
     """
@@ -551,3 +585,5 @@ class RsqSimFault:
             assert isinstance(segments, Iterable), "Expected either one segment or a list of segments"
             assert all([isinstance(segment, RsqSimSegment) for segment in segments]), "Expected a list of segments"
             self._segments = list(segments)
+
+

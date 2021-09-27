@@ -305,6 +305,10 @@ class RsqSimMultiFault:
         if show:
             fig.show()
 
+    def plot_fault_outlines(self, ax: plt.Axes, edgecolor: str = "r", linewidth: int = 0.1, clip_bounds: list = None,
+                            linestyle: str = "-", facecolor: str = "0.8"):
+        pass
+
     def search_name(self, search_string: str):
         """
         Search fault names using wildcard string
