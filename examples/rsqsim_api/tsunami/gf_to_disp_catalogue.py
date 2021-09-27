@@ -10,11 +10,12 @@ if __name__ == "__main__":
     run_dir = os.path.dirname(__file__)
 
     catalogue = RsqSimCatalogue.from_csv_and_arrays(
-        os.path.join(run_dir, "../../../data/bruce_m7/bruce_m7_10kyr"))
-    bruce_faults = RsqSimMultiFault.read_fault_file_bruce(os.path.join(run_dir, "../../../data/bruce_m7/bruce_faults.in"),
+        os.path.join(run_dir, "../../../data/shaw_m7/bruce_m7_10kyr"))
+    bruce_faults = RsqSimMultiFault.read_fault_file_bruce(os.path.join(run_dir,
+                                                                       "../../../data/shaw_m7/bruce_faults.in"),
                                                           os.path.join(run_dir,
-                                                                       "../../../data/bruce_m7/bruce_fault_names.in"),
-                                                          transform_from_utm=True, multiprocessing=True)
+                                                                       "../../../data/shaw_m7/bruce_fault_names.in"),
+                                                          transform_from_utm=True)
 
     events = catalogue.events_by_number(catalogue.catalogue_df.index, bruce_faults)
 

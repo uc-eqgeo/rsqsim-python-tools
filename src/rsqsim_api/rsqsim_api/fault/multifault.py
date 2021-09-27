@@ -348,7 +348,7 @@ class RsqSimMultiFault:
         self._outlines = outline_gpd
 
 
-def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/bruce/rundir4627",
+def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw/rundir4627",
                fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in"):
     fault_full = os.path.join(run_dir, fault_file)
     names_full = os.path.join(run_dir, names_file)

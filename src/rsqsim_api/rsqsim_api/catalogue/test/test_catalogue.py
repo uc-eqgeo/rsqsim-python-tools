@@ -27,7 +27,7 @@ class TestReadCatalogue(unittest.TestCase):
 
     def test_from_csv_and_arrays(self):
         catalogue = self.catalogue.from_csv_and_arrays(
-            os.path.join(os.path.dirname(__file__), 'data/bruce_m7/bruce_m7_10kyr'))
+            os.path.join(os.path.dirname(__file__), 'data/shaw_m7/bruce_m7_10kyr'))
         self.assertIsNotNone(catalogue.catalogue_df)
         self.assertIsNotNone(catalogue.event_list)
         self.assertIsNotNone(catalogue.patch_list)
@@ -36,11 +36,11 @@ class TestReadCatalogue(unittest.TestCase):
 
     def test_filter_whole_catalogue(self):
         catalogue = self.catalogue.from_csv_and_arrays(
-            os.path.join(os.path.dirname(__file__), 'data/bruce_m7/bruce_m7_10kyr'))
+            os.path.join(os.path.dirname(__file__), 'data/shaw_m7/bruce_m7_10kyr'))
         newCatalogue = catalogue.filter_whole_catalogue(max_dt=15)
         self.assertTrue(all(newCatalogue.catalogue_df.dt) < 15)
 
     def test_filter_by_fault(self):
         catalogue = self.catalogue.from_csv_and_arrays(
-            os.path.join(os.path.dirname(__file__), 'data/bruce_m7/bruce_m7_10kyr'))
+            os.path.join(os.path.dirname(__file__), 'data/shaw_m7/bruce_m7_10kyr'))
         newCatalogue = catalogue.filter_by_fault()

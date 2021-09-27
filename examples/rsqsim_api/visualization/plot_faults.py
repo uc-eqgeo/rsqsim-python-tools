@@ -6,8 +6,8 @@ import os
 
 run_dir = os.path.dirname(__file__)
 
-bruce_faults = RsqSimMultiFault.read_fault_file_bruce(os.path.join(run_dir, "../../../data/bruce_m7/bruce_faults.in"),
-                                                      os.path.join(run_dir, "../../../data/bruce_m7/bruce_names.in"),
+bruce_faults = RsqSimMultiFault.read_fault_file_bruce(os.path.join(run_dir, "../../../data/shaw_m7/bruce_faults.in"),
+                                                      os.path.join(run_dir, "../../../data/shaw_m7/bruce_names.in"),
                                                       transform_from_utm=True)
 
 hik = [name for name in bruce_faults.names if fnmatch.fnmatch(name, "hik*")]
