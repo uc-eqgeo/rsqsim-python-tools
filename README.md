@@ -2,7 +2,9 @@
 
 Python code for RNC2 earthquakes theme
 
-*Andy Howell, Oct 2020*
+*Bruce Shaw and Andy Howell, Oct 2021*
+If you use this code, please cite: [Shaw, et al, 2021] "An Earthquake Simulator for New Zealand"
+
 
 ## Prerequisites
 
