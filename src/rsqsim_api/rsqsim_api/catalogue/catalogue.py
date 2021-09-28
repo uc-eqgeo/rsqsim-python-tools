@@ -399,6 +399,7 @@ class RsqSimCatalogue:
                                                            patch_time=patch_time_list,
                                                            fault_model=fault_model, min_patches=min_patches,
                                                            event_id=index)
+
                 out_events.append(event_i)
         else:
             # Using shared data between processes
@@ -439,7 +440,7 @@ class RsqSimCatalogue:
         return out_events
 
 
-def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/bruce/rundir4627",
+def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw/rundir4627",
                fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in",
                catalogue_file: str = "eqs..out"):
     fault_full = os.path.join(run_dir, fault_file)
@@ -460,7 +461,7 @@ def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/bruc
     return bruce_faults, catalogue
 
 
-def read_bruce_if_necessary(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/bruce/rundir4627",
+def read_bruce_if_necessary(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw/rundir4627",
                             fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in",
                             catalogue_file: str = "eqs..out", default_faults: str = "bruce_faults",
                             default_cat: str = "catalogue"):

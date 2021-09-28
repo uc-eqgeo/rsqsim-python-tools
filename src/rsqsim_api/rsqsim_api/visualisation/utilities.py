@@ -21,6 +21,7 @@ rivers = pathlib.Path(__file__).parent / "data/other_lines/nz-major-rivers.shp"
 regions = pathlib.Path(__file__).parent / "data/other_lines/nz-major-rivers.shp"
 hk_boundary = pathlib.Path(__file__).parent / "data/faults/hk_clipping_area.gpkg"
 
+
 niwa = ""
 
 
@@ -134,6 +135,8 @@ def plot_hk_boundary(ax: plt.Axes, edgecolor: str = "r", linewidth: int = 0.1, c
 
 
 
+
+
 def plot_coast(ax: plt.Axes, clip_boundary: list = None, colors: str = "0.5", linewidth: int = 0.3,
                trim_polygons=True):
     if clip_boundary is None:
@@ -193,6 +196,8 @@ def plot_hillshade_niwa(ax, alpha: float = 0.3, vertical_exaggeration: float = 0
     ax.imshow(ls.shade(z, blend_mode="overlay", cmap=terrain, vmin=vmin, vmax=vmax, vert_exag=vertical_exaggeration),
               extent=[min(x), max(x), min(y), max(y)], alpha=alpha)
     clipped.close()
+
+
 
 
 

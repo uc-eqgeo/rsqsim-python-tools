@@ -36,6 +36,7 @@ The citation would look something like:
 
 Styron, R., 2019, tri_dislocations_python, *Zenodo*, https://github.com/cossatot/tri_dislocations_python, DOI: 10.5281/zenodo.3368513
 
+Refactored slightly by Andy Howell (October 2021) to utilise Numba on some functions and to make install compatible with `rsqsim-api` repository.
 ## Usage
 
 ### Installation

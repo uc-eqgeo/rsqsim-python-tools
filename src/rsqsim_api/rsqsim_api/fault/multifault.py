@@ -6,6 +6,7 @@ import fnmatch
 
 import numpy as np
 import pandas as pd
+import geopandas as gpd
 from matplotlib import pyplot as plt
 
 from rsqsim_api.visualisation.utilities import plot_coast
@@ -33,11 +34,14 @@ def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float]
 
 
 class RsqSimMultiFault:
-    def __init__(self, faults: Union[list, tuple, set]):
+    def __init__(self, faults: Union[list, tuple, set], crs: int = 2193):
         self._faults = None
         self.faults = faults
         self._names = None
         self._name_dic = None
+        self._crs = crs
+        self._traces = None
+        self._outlines = None
         self.patch_dic = {}
         for fault in self.faults:
             if self.patch_dic is not None:
@@ -90,6 +94,10 @@ class RsqSimMultiFault:
 
         return np.array([x0, y0, x1, y1])
 
+    @property
+    def crs(self):
+        return self._crs
+
     @classmethod
     def read_fault_file(cls, fault_file: str, verbose: bool = False):
         """
@@ -103,7 +111,7 @@ class RsqSimMultiFault:
         # Read first 10 lines of file
 
     @classmethod
-    def read_fault_file_keith(cls, fault_file: str, verbose: bool = False):
+    def read_fault_file_keith(cls, fault_file: str, verbose: bool = False, crs: int = 2193):
         """
         Read in an RSQSim fault file written according to Keith Richards-Dinger's convention.
         :param fault_file: Path to fault file
@@ -166,12 +174,13 @@ class RsqSimMultiFault:
             segment_ls.append(fault_i)
             patch_start += num_triangles
 
-        multi_fault = cls(segment_ls)
+        multi_fault = cls(segment_ls, crs=crs)
 
         return multi_fault
 
     @classmethod
-    def read_fault_file_bruce(cls, main_fault_file: str, name_file: str, transform_from_utm: bool = False, from_pickle: bool = False):
+    def read_fault_file_bruce(cls, main_fault_file: str, name_file: str, transform_from_utm: bool = False,
+                              from_pickle: bool = False, crs: int = 2193):
         assert all([os.path.exists(fname) for fname in (main_fault_file, name_file)])
         fault_names = pd.read_csv(name_file, header=None, squeeze=True, sep='\s+', usecols=[0])
 
@@ -183,7 +192,8 @@ class RsqSimMultiFault:
                             "slip_rate", "fault_num", "bruce_name"]
 
             # Read in data
-            all_fault_df = pd.read_csv(main_fault_file, sep='\s+', header=None, comment='#', names=column_names, usecols=range(len(column_names)))
+            all_fault_df = pd.read_csv(main_fault_file, sep='\s+', header=None, comment='#', names=column_names,
+                                       usecols=range(len(column_names)))
 
         fault_numbers = all_fault_df.fault_num.to_numpy()
         fault_names_unique = dict.fromkeys(fault_names).keys()
@@ -212,7 +222,7 @@ class RsqSimMultiFault:
             segment_ls.append(fault_i)
             patch_start += num_triangles
 
-        multi_fault = cls(segment_ls)
+        multi_fault = cls(segment_ls, crs=crs)
 
         return multi_fault
 
@@ -295,6 +305,10 @@ class RsqSimMultiFault:
         if show:
             fig.show()
 
+    def plot_fault_outlines(self, ax: plt.Axes, edgecolor: str = "r", linewidth: int = 0.1, clip_bounds: list = None,
+                            linestyle: str = "-", facecolor: str = "0.8"):
+        pass
+
     def search_name(self, search_string: str):
         """
         Search fault names using wildcard string
@@ -311,8 +325,30 @@ class RsqSimMultiFault:
         patches = [patch.patch_number for patch in closest_fault.patch_outlines if np.equal(closest_point, patch.vertices).all(axis=1).any()]
         return patches
 
+    @property
+    def traces(self):
+        if self._traces is None:
+            self.get_traces()
+        return self._traces
 
-def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/bruce/rundir4627",
+    def get_traces(self):
+        traces = [fault.trace for fault in self.faults]
+        trace_gpd = gpd.GeoDataFrame({"fault": self.names}, geometry=traces, crs=self.crs)
+        self._traces = trace_gpd
+
+    @property
+    def outlines(self):
+        if self._outlines is None:
+            self.get_outlines()
+        return self._outlines
+
+    def get_outlines(self):
+        outlines = [fault.fault_outline for fault in self.faults]
+        outline_gpd = gpd.GeoDataFrame({"fault": self.names}, geometry=outlines, crs=self.crs)
+        self._outlines = outline_gpd
+
+
+def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw/rundir4627",
                fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in"):
     fault_full = os.path.join(run_dir, fault_file)
     names_full = os.path.join(run_dir, names_file)

@@ -6,10 +6,11 @@ import numpy as np
 import pandas as pd
 
 from tde.tde import calc_tri_displacements
-from triangular_faults.displacements import DisplacementArray
 from matplotlib import pyplot as plt
 from pyproj import Transformer
 import meshio
+from shapely.ops import linemerge, unary_union
+from shapely.geometry import LineString, MultiPolygon
 
 from rsqsim_api.io.read_utils import read_dxf, read_stl
 from rsqsim_api.io.tsurf import tsurf
@@ -17,6 +18,37 @@ from rsqsim_api.fault.patch import RsqSimTriangularPatch, RsqSimGenericPatch
 
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
+
+
+class DisplacementArray:
+    def __init__(self, x_array: np.ndarray, y_array: np.ndarray, z_array: np.ndarray = None,
+                 e_array: np.ndarray = None, n_array: np.ndarray = None, v_array: np.ndarray = None):
+        assert x_array.shape == y_array.shape, "X and Y arrays should be the same size"
+        assert x_array.ndim == 1, "Expecting 1D arrays"
+        assert not all([a is None for a in [e_array, n_array, v_array]]), "Read in at least one set of displacements"
+
+        self.x, self.y = x_array, y_array
+        if z_array is None:
+            self.z = np.zeros(self.x.shape)
+        else:
+            assert isinstance(z_array, np.ndarray)
+            assert z_array.shape == self.x.shape
+            self.z = z_array
+
+        if e_array is not None:
+            assert isinstance(e_array, np.ndarray)
+            assert e_array.shape == self.x.shape
+        self.e = e_array
+
+        if n_array is not None:
+            assert isinstance(n_array, np.ndarray)
+            assert n_array.shape == self.x.shape
+        self.n = n_array
+
+        if v_array is not None:
+            assert isinstance(v_array, np.ndarray)
+            assert v_array.shape == self.x.shape
+        self.v = v_array
 
 
 class RsqSimSegment:
@@ -483,10 +515,35 @@ class RsqSimSegment:
             self.build_laplacian_matrix()
         return self._laplacian
 
-    def find_top_patches(self, depth_tolerance: Union[float, int] = 100):
+    def find_top_vertex_indices(self, depth_tolerance: Union[float, int] = 100):
         top_vertex_depth = max(self.vertices[:, -1])
         shallow_indices = np.where(self.vertices[:, -1] >= top_vertex_depth - depth_tolerance)[0]
         return shallow_indices
+
+    def find_top_vertices(self, depth_tolerance: Union[float, int] = 100):
+        shallow_indices = self.find_top_vertex_indices(depth_tolerance)
+        return self.vertices[shallow_indices]
+
+    def find_top_edges(self, depth_tolerance: Union[float, int] = 100):
+        shallow_indices = self.find_top_vertex_indices(depth_tolerance)
+        top_edges = self.edge_lines[np.all(np.isin(self.edge_lines, shallow_indices), axis=1)]
+        return top_edges
+
+    @property
+    def trace(self):
+        top_edges = self.find_top_edges()
+        line_list = []
+        for edge in top_edges:
+            v1 = self.vertices[edge[0]]
+            v2 = self.vertices[edge[1]]
+            line = LineString([v1[:-1], v2[:-1]])
+            line_list.append(line)
+        return linemerge(line_list)
+
+    @property
+    def fault_outline(self):
+        multip = MultiPolygon(patch.as_polygon() for patch in self.patch_outlines)
+        return unary_union(list(multip))
 
     def plot_2d(self, ax: plt.Axes):
         ax.triplot(self.vertices[:, 0], self.vertices[:, 1], self.triangles)
@@ -497,6 +554,10 @@ class RsqSimSegment:
     def to_stl(self, stl_name: str):
         mesh = self.to_mesh()
         mesh.write(stl_name, file_format="stl")
+
+    def to_vtk(self, vtk_name: str):
+        mesh = self.to_mesh()
+        mesh.write(vtk_name, file_format="vtk")
 
 
 class RsqSimFault:
@@ -524,3 +585,5 @@ class RsqSimFault:
             assert isinstance(segments, Iterable), "Expected either one segment or a list of segments"
             assert all([isinstance(segment, RsqSimSegment) for segment in segments]), "Expected a list of segments"
             self._segments = list(segments)
+
+
