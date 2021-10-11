@@ -5,13 +5,17 @@ Python code for RNC2 earthquakes theme
 *Bruce Shaw and Andy Howell, October 2021*
 
 If you use this code, please cite: 
-[Shaw, et al, 2021] "An Earthquake Simulator for New Zealand"
+[Shaw, et al, 2021] "An Earthquake Simulator for New Zealand", **Bulletin of the Seismological Society of America**, 2021. DOI: ???
 
 ## Repository contents
 
-This repository consists of python tools designed for analysis of synthetic earthquake catalogues derived from the earthquake simulator RSQSim ([Richards-Dinger and Dieterich, 2012](https://pubs.geoscienceworld.org/ssa/srl/article/83/6/983/315277/RSQSim-Earthquake-Simulator)). In `examples/shaw2021`, you can find the script used to create the figures published in [Shaw, et al, 2021] (`readCatNZ.py`). Note that this script is written for a very specific machine setup; `shaw2021figures.py` in the same directory
+This repository consists of python tools designed for analysis of synthetic earthquake catalogues derived from the earthquake simulator RSQSim ([Richards-Dinger and Dieterich, 2012](https://pubs.geoscienceworld.org/ssa/srl/article/83/6/983/315277/RSQSim-Earthquake-Simulator)). 
 
-These tools are a work in progress and the authors accept no liability for any bugs in the code. However, if you do find bugs, please get in touch and we will endeavour to fix them :). 
+In `examples/shaw2021`, you can find the script used to create the figures published in [Shaw, et al, 2021] (`readCatNZ.py`). Note that this script is written for a very specific machine setup; `shaw2021figures.py` in the same directory allows plotting of some figures in a more widely usable environment, but remains a work in progress.
+
+`src/rsqsim_api` is a python module that primarily contains code for filtering the NZ catalogue and plotting slip distributions. It is easiest to install this module using Anaconda (see below). Examples of how to use this code, in Jupyter Notebook format, can be found in `data/examples/rsqsim_api'. Note that at this stage (October 2021), plotting tools are designed to be used primarily with NZ data and use NZTM projection.
+
+DISCLAIMER: These tools are a work in progress and the authors accept no liability for any bugs in the code. However, if you do find bugs, please get in touch and we will endeavour to fix them :). 
 
 
 ## Prerequisites
@@ -29,7 +33,7 @@ Installation instructions for Anaconda can be found here: <https://www.anaconda.
    
 ## Integration of the catalogue
 
-V1.0 of a sysnthetic earthquake catalogue for New Zealand can be found at <INSERT LINK HERE>. From that Zenodo repository, download and unzip 
+V1.0 of a synthetic earthquake catalogue for New Zealand can be found at <INSERT LINK HERE>. Download the files from that Zenodo repository into `data/shaw2021` and all of the example Jupyter notebooks should work.
 
 
 ## Running Jupyter Notebooks
