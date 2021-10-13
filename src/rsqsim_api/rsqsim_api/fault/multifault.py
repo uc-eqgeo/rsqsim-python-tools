@@ -346,14 +346,3 @@ class RsqSimMultiFault:
         outlines = [fault.fault_outline for fault in self.faults]
         outline_gpd = gpd.GeoDataFrame({"fault": self.names}, geometry=outlines, crs=self.crs)
         self._outlines = outline_gpd
-
-
-def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw/rundir4627",
-               fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in"):
-    fault_full = os.path.join(run_dir, fault_file)
-    names_full = os.path.join(run_dir, names_file)
-
-    bruce_faults = RsqSimMultiFault.read_fault_file_bruce(fault_full,
-                                                          names_full,
-                                                          transform_from_utm=True)
-    return bruce_faults

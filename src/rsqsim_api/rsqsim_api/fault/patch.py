@@ -297,3 +297,21 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         vert_disp = np.array(gf["z"])
         vert_grid = vert_disp.reshape(grid_shape[1:])
         return vert_grid
+
+    def calculate_3d_greens_functions(self, x_array: np.ndarray, y_array: np.ndarray, z_array: np.ndarray = None,
+                                      poisson_ratio: float = 0.25):
+        assert all([isinstance(a, np.ndarray) for a in [x_array, y_array]])
+        assert x_array.shape == y_array.shape
+        assert x_array.ndim == 1
+        if z_array is None:
+            z_array = np.zeros(x_array.shape)
+        else:
+            assert z_array.shape == x_array.shape
+
+        assert all([a is not None for a in (self.dip_slip, self.strike_slip)])
+
+        xv, yv, zv = [self.vertices.T[i] for i in range(3)]
+        gf = calc_tri_displacements(x_array, y_array, z_array, xv, yv, -1. * zv,
+                                    poisson_ratio, self.strike_slip, 0., self.dip_slip)
+
+        return gf
