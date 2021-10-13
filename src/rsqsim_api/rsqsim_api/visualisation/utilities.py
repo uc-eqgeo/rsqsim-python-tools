@@ -156,6 +156,7 @@ def plot_hk_boundary(ax: plt.Axes, edgecolor: str = "r", linewidth: int = 0.1, c
 
 def plot_coast(ax: plt.Axes, clip_boundary: list = None, edgecolor: str = "0.5", facecolor: str = "none", linewidth: int = 0.3,
                trim_polygons=True, wgs: bool = False):
+
     if clip_boundary is None:
         if wgs:
             x1, y1, x2, y2 = [min_x1_wgs, min_y1_wgs, max_x2_wgs, max_y2_wgs]

@@ -2,7 +2,23 @@
 
 Python code for RNC2 earthquakes theme
 
-*Andy Howell, Oct 2020*
+*Bruce Shaw and Andy Howell, October 2021*
+
+*(with earlier assistance from Samantha Woon).*
+
+If you use this code, please cite: 
+[Shaw, et al, 2021] "An Earthquake Simulator for New Zealand", **Bulletin of the Seismological Society of America**, 2021. DOI: ???
+
+## Repository contents
+
+This repository consists of python tools designed for analysis of synthetic earthquake catalogues derived from the earthquake simulator RSQSim ([Richards-Dinger and Dieterich, 2012](https://pubs.geoscienceworld.org/ssa/srl/article/83/6/983/315277/RSQSim-Earthquake-Simulator)). 
+
+In `examples/shaw2021`, you can find the script used to create the figures published in [Shaw, et al, 2021] (`readCatNZ.py`). Note that this script is written for a very specific machine setup; `shaw2021figures.py` in the same directory allows plotting of some figures in a more widely usable environment, but remains a work in progress.
+
+`src/rsqsim_api` is a python module that primarily contains code for filtering the NZ catalogue and plotting slip distributions. It is easiest to install this module using Anaconda (see below). Examples of how to use this code, in Jupyter Notebook format, can be found in `data/examples/rsqsim_api`. Note that at this stage (October 2021), plotting tools are designed to be used primarily with NZ data and use NZTM projection.
+
+DISCLAIMER: These tools are a work in progress and the authors accept no liability for any bugs in the code. However, if you do find bugs, please get in touch and we will endeavour to fix them :). 
+
 
 ## Prerequisites
 
@@ -16,6 +32,10 @@ Installation instructions for Anaconda can be found here: <https://www.anaconda.
    4. Run `conda activate rnc2`
    
    ![image](https://user-images.githubusercontent.com/21334474/104807917-68da6e80-5847-11eb-8904-07e4da4f2b1d.png)
+   
+## Integration of the catalogue
+
+V1.0 of a synthetic earthquake catalogue for New Zealand can be found at ???<INSERT LINK HERE>. Download the files from that Zenodo repository into `data/shaw2021` and all of the example Jupyter notebooks should work.
 
 
 ## Running Jupyter Notebooks
@@ -26,8 +46,14 @@ Installation instructions for Anaconda can be found here: <https://www.anaconda.
    
    ![image](https://user-images.githubusercontent.com/21334474/105001742-1c846e00-5a95-11eb-8323-1d53ef98941b.png)
    
-   4. Choose Notebook to run, e.g. `visualization/plot_event588.ipynb`
+   4. Choose Notebook to run, e.g. `visualization/plot_event.ipynb`
    5. Run the whole notebook in a single step by clicking on the menu Cell -> Run All.
    
    ![image](https://user-images.githubusercontent.com/21334474/105001885-50f82a00-5a95-11eb-98a2-bca7760c656a.png)
+   
+ ## References
+   
+   
+  
+
 
