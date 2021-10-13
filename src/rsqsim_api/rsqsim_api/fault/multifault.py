@@ -271,7 +271,7 @@ class RsqSimMultiFault:
             ts_no_path = os.path.basename(ts_file)
             ts_name = ts_no_path.split(".ts")[0]
 
-    def plot_faults_2d(self, fault_list: Iterable = None, show: bool = True, write: str = None):
+    def plot_faults_2d(self, fault_list: Iterable = None, show: bool = False, write: str = None):
         if fault_list is not None:
             assert isinstance(fault_list, Iterable)
             assert any([fault.lower() in self.names for fault in fault_list])
@@ -353,7 +353,13 @@ def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw
     fault_full = os.path.join(run_dir, fault_file)
     names_full = os.path.join(run_dir, names_file)
 
-    bruce_faults = RsqSimMultiFault.read_fault_file_bruce(fault_full,
-                                                          names_full,
-                                                          transform_from_utm=True)
-    return bruce_faults
+    @property
+    def outlines(self):
+        if self._outlines is None:
+            self.get_outlines()
+        return self._outlines
+
+    def get_outlines(self):
+        outlines = [fault.fault_outline for fault in self.faults]
+        outline_gpd = gpd.GeoDataFrame({"fault": self.names}, geometry=outlines, crs=self.crs)
+        self._outlines = outline_gpd

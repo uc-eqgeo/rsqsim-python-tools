@@ -341,6 +341,8 @@ class RsqSimEvent:
                     crust_cbar = fig.colorbar(crustal_plot, ax=ax)
                     crust_cbar.set_label("Slip (m)")
 
+        plot_coast(ax=ax)
+
 
         if write is not None:
             fig.savefig(write, dpi=300)
