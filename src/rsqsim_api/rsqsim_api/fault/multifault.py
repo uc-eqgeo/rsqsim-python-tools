@@ -271,7 +271,7 @@ class RsqSimMultiFault:
             ts_no_path = os.path.basename(ts_file)
             ts_name = ts_no_path.split(".ts")[0]
 
-    def plot_faults_2d(self, fault_list: Iterable = None, show: bool = True, write: str = None):
+    def plot_faults_2d(self, fault_list: Iterable = None, show: bool = False, write: str = None):
         if fault_list is not None:
             assert isinstance(fault_list, Iterable)
             assert any([fault.lower() in self.names for fault in fault_list])
