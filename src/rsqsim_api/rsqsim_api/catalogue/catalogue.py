@@ -1,4 +1,4 @@
-from typing import Union, Iterable
+from typing import Union, Iterable, List
 from collections import abc, Counter, defaultdict
 import os
 
@@ -6,6 +6,7 @@ from multiprocessing import Queue, Process
 from multiprocessing import sharedctypes
 import pandas as pd
 import numpy as np
+import pyproj
 from matplotlib import pyplot as plt
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault, RsqSimSegment
@@ -18,7 +19,7 @@ from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
 
 fint = Union[int, float]
 sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
-                   "x": (0, 1.e8), "y": (0, 1.e8), "z": (-1.e6, 0),
+                   "x": (-180., 1.e8), "y": (-90., 1.e8), "z": (-1.e6, 0),
                    "area": (0, 1.e12), "dt": (0, 1200)}
 
 list_file_suffixes = (".pList", ".eList", ".dList", ".tList")
@@ -125,23 +126,33 @@ class RsqSimCatalogue:
         self._patch_slip = data_list
 
     @classmethod
-    def from_dataframe(cls, dataframe: pd.DataFrame):
+    def from_dataframe(cls, dataframe: pd.DataFrame, reproject: List = None):
         rsqsim_cat = cls()
+        if reproject is not None:
+            assert isinstance(reproject, (tuple, list))
+            assert len(reproject) == 2
+            in_epsg, out_epsg = reproject
+            transformer = pyproj.Transformer.from_crs(in_epsg, out_epsg, always_xy=True)
+            new_x, new_y = transformer.transform(dataframe["x"], dataframe["y"])
+            dataframe["x"] = new_x
+            dataframe["y"] = new_y
         rsqsim_cat.catalogue_df = dataframe
         return rsqsim_cat
 
     @classmethod
-    def from_catalogue_file(cls, filename: str):
+    def from_catalogue_file(cls, filename: str, reproject: List = None):
         assert os.path.exists(filename)
         catalogue_df = read_earthquake_catalogue(filename)
-        rsqsim_cat = cls.from_dataframe(catalogue_df)
+        rsqsim_cat = cls.from_dataframe(catalogue_df, reproject=reproject)
         return rsqsim_cat
 
     @classmethod
     def from_catalogue_file_and_lists(cls, catalogue_file: str, list_file_directory: str,
-                                      list_file_prefix: str, read_extra_lists: bool = False):
+                                      list_file_prefix: str, read_extra_lists: bool = False, reproject: List = None):
         assert os.path.exists(catalogue_file)
         assert os.path.exists(list_file_directory)
+
+
         standard_list_files = [os.path.join(list_file_directory, list_file_prefix + suffix)
                                for suffix in list_file_suffixes]
         for fname, suffix in zip(standard_list_files, list_file_suffixes):
@@ -149,7 +160,7 @@ class RsqSimCatalogue:
                 raise FileNotFoundError("{} file required to populate event slip distributions".format(suffix))
 
         # Read in catalogue to dataframe and initiate class instance
-        rcat = cls.from_catalogue_file(catalogue_file)
+        rcat = cls.from_catalogue_file(catalogue_file, reproject=reproject)
         rcat.patch_list = read_binary(standard_list_files[0], format="i") - 1
         # indices start from 1, change so that it is zero instead
         rcat.event_list = read_binary(standard_list_files[1], format="i") - 1
