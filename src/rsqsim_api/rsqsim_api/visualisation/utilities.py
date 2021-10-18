@@ -7,6 +7,7 @@ from typing import Union
 from rsqsim_api.io.array_operations import read_tiff
 from matplotlib.colors import LightSource, LinearSegmentedColormap
 from matplotlib import pyplot as plt
+import matplotlib.ticker as plticker
 
 import rioxarray
 
@@ -234,6 +235,44 @@ def plot_hillshade_niwa(ax, alpha: float = 0.3, vertical_exaggeration: float = 0
     ax.imshow(ls.shade(z, blend_mode="overlay", cmap=terrain, vmin=vmin, vmax=vmax, vert_exag=vertical_exaggeration),
               extent=[min(x), max(x), min(y), max(y)], alpha=alpha)
     clipped.close()
+
+
+def format_label_text_wgs(ax: plt.Axes, xspacing: int = 5, yspacing: int = 5, y_only: bool = False):
+    """
+    Plots latlon labels for plots in wgs, like in Shaw et al., 2021
+    """
+
+
+    locx = plticker.MultipleLocator(base=xspacing)  # this locator puts ticks at regular intervals
+    locy = plticker.MultipleLocator(base=yspacing)  # this locator puts ticks at regular intervals
+
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+
+    ax.yaxis.set_major_locator(locy)
+
+    if not y_only:
+        ax.xaxis.set_major_locator(locx)
+        xlocs = ax.xaxis.get_ticklocs()
+        ax.xaxis.set_ticks(xlocs)
+        xlabels = ax.xaxis.get_ticklabels()
+        for label, loc in zip(xlabels, xlocs):
+            if loc <= 180.:
+                label.set_text("+" + f"{int(loc)}" + "$^\\circ$")
+            else:
+                new_value = loc - 360
+                label.set_text(f"{int(new_value)}$^\\circ$")
+        ax.xaxis.set_ticklabels(xlabels)
+
+    ylocs = ax.yaxis.get_ticklocs()
+    ax.yaxis.set_ticks(ylocs)
+    ylabels = ax.yaxis.get_ticklabels()
+    for label, loc in zip(ylabels, ylocs):
+        label.set_text(f"{int(loc)}" + "$^\\circ$")
+    ax.yaxis.set_ticklabels(ylabels)
+
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
 
 
 
