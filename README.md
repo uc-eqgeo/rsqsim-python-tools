@@ -1,10 +1,10 @@
-# rnc2
+# rsqsim-python-tools
 
 Python code for RNC2 earthquakes theme
 
-*Bruce Shaw and Andy Howell, October 2021*
+*Andy Howell and Bruce Shaw, October 2021*
 
-*(with earlier assistance from Samantha Woon).*
+*(with earlier assistance from Samantha Woon and Charles Williams).*
 
 If you use this code, please cite: 
 [Shaw, et al, 2021] "An Earthquake Simulator for New Zealand", **Bulletin of the Seismological Society of America**, 2021. DOI: ???
@@ -13,9 +13,9 @@ If you use this code, please cite:
 
 This repository consists of python tools designed for analysis of synthetic earthquake catalogues derived from the earthquake simulator RSQSim ([Richards-Dinger and Dieterich, 2012](https://pubs.geoscienceworld.org/ssa/srl/article/83/6/983/315277/RSQSim-Earthquake-Simulator)). 
 
-In `examples/shaw2021`, you can find the script used to create the figures published in [Shaw, et al, 2021] (`readCatNZ.py`). Note that this script is written for a very specific machine setup; `shaw2021figures.py` in the same directory allows plotting of some figures in a more widely usable environment, but remains a work in progress.
+In `examples/shaw2021`, you can find jupyter notebooks used to create some of the figures published in [Shaw, et al, 2021]. Notebooks to allow reproduction of the other figures remain a work in progress.
 
-`src/rsqsim_api` is a python module that primarily contains code for filtering the NZ catalogue and plotting slip distributions. It is easiest to install this module using Anaconda (see below). Examples of how to use this code, in Jupyter Notebook format, can be found in `data/examples/rsqsim_api`. Note that at this stage (October 2021), plotting tools are designed to be used primarily with NZ data and use NZTM projection.
+`src/rsqsim_api` is a python module that primarily contains code for filtering the NZ catalogue and plotting slip distributions.  Examples of how to use this code, in Jupyter Notebook format, can be found in `data/examples/rsqsim_api`. Note that at this stage (October 2021), plotting tools are designed to be used primarily with NZ data and use NZTM projection.
 
 DISCLAIMER: These tools are a work in progress and the authors accept no liability for any bugs in the code. However, if you do find bugs, please get in touch and we will endeavour to fix them :). 
 
@@ -52,7 +52,7 @@ V1.0 of a synthetic earthquake catalogue for New Zealand can be found at ???<INS
    ![image](https://user-images.githubusercontent.com/21334474/105001885-50f82a00-5a95-11eb-98a2-bca7760c656a.png)
    
  ## References
-   
+   ???
    
   
 
