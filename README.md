@@ -46,7 +46,7 @@ V1.0 of a synthetic earthquake catalogue for New Zealand can be found at ???<INS
    
    ![image](https://user-images.githubusercontent.com/21334474/105001742-1c846e00-5a95-11eb-8323-1d53ef98941b.png)
    
-   4. Choose Notebook to run, e.g. `visualization/plot_event.ipynb`
+   4. Choose Notebook to run, e.g. `visualization/plot_event1837093.ipynb`
    5. Run the whole notebook in a single step by clicking on the menu Cell -> Run All.
    
    ![image](https://user-images.githubusercontent.com/21334474/105001885-50f82a00-5a95-11eb-98a2-bca7760c656a.png)
