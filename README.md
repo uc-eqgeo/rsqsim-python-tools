@@ -1,6 +1,6 @@
 # rsqsim-python-tools
 
-Python code for RNC2 earthquakes theme
+Python code for analysis of RSQSim outputs.
 
 *Andy Howell and Bruce Shaw, October 2021*
 
