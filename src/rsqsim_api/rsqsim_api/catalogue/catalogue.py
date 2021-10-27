@@ -1,21 +1,25 @@
-from typing import Union, Iterable
+from typing import Union, Iterable, List
 from collections import abc, Counter, defaultdict
 import os
 
 from multiprocessing import Queue, Process
-from multiprocessing.sharedctypes import RawArray
+from multiprocessing import sharedctypes
 import pandas as pd
 import numpy as np
+import pyproj
+from matplotlib import pyplot as plt
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault, RsqSimSegment
 from rsqsim_api.catalogue.event import RsqSimEvent
 from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, catalogue_columns, read_csv_and_array
 from rsqsim_api.io.write_utils import write_catalogue_dataframe_and_arrays
-
+from rsqsim_api.tsunami.tsunami import SeaSurfaceDisplacements
+from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade, plot_hillshade_niwa, plot_lake_polygons, plot_river_lines, plot_highway_lines, plot_boundary_polygons
+from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
 
 fint = Union[int, float]
 sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
-                   "x": (0, 1.e8), "y": (0, 1.e8), "z": (-1.e6, 0),
+                   "x": (-180., 1.e8), "y": (-90., 1.e8), "z": (-1.e6, 0),
                    "area": (0, 1.e12), "dt": (0, 1200)}
 
 list_file_suffixes = (".pList", ".eList", ".dList", ".tList")
@@ -122,23 +126,33 @@ class RsqSimCatalogue:
         self._patch_slip = data_list
 
     @classmethod
-    def from_dataframe(cls, dataframe: pd.DataFrame):
+    def from_dataframe(cls, dataframe: pd.DataFrame, reproject: List = None):
         rsqsim_cat = cls()
+        if reproject is not None:
+            assert isinstance(reproject, (tuple, list))
+            assert len(reproject) == 2
+            in_epsg, out_epsg = reproject
+            transformer = pyproj.Transformer.from_crs(in_epsg, out_epsg, always_xy=True)
+            new_x, new_y = transformer.transform(dataframe["x"], dataframe["y"])
+            dataframe["x"] = new_x
+            dataframe["y"] = new_y
         rsqsim_cat.catalogue_df = dataframe
         return rsqsim_cat
 
     @classmethod
-    def from_catalogue_file(cls, filename: str):
+    def from_catalogue_file(cls, filename: str, reproject: List = None):
         assert os.path.exists(filename)
         catalogue_df = read_earthquake_catalogue(filename)
-        rsqsim_cat = cls.from_dataframe(catalogue_df)
+        rsqsim_cat = cls.from_dataframe(catalogue_df, reproject=reproject)
         return rsqsim_cat
 
     @classmethod
     def from_catalogue_file_and_lists(cls, catalogue_file: str, list_file_directory: str,
-                                      list_file_prefix: str, read_extra_lists: bool = False):
+                                      list_file_prefix: str, read_extra_lists: bool = False, reproject: List = None):
         assert os.path.exists(catalogue_file)
         assert os.path.exists(list_file_directory)
+
+
         standard_list_files = [os.path.join(list_file_directory, list_file_prefix + suffix)
                                for suffix in list_file_suffixes]
         for fname, suffix in zip(standard_list_files, list_file_suffixes):
@@ -146,8 +160,8 @@ class RsqSimCatalogue:
                 raise FileNotFoundError("{} file required to populate event slip distributions".format(suffix))
 
         # Read in catalogue to dataframe and initiate class instance
-        rcat = cls.from_catalogue_file(catalogue_file)
-        rcat.patch_list = read_binary(standard_list_files[0], format="i")
+        rcat = cls.from_catalogue_file(catalogue_file, reproject=reproject)
+        rcat.patch_list = read_binary(standard_list_files[0], format="i") - 1
         # indices start from 1, change so that it is zero instead
         rcat.event_list = read_binary(standard_list_files[1], format="i") - 1
         rcat.patch_slip, rcat.patch_time_list = [read_binary(fname, format="d") for fname in standard_list_files[2:]]
@@ -174,6 +188,12 @@ class RsqSimCatalogue:
     def write_csv_and_arrays(self, prefix: str, directory: str = None, write_index: bool = True):
         assert prefix, "Empty prefix!"
         write_catalogue_dataframe_and_arrays(prefix, self, directory=directory, write_index=write_index)
+
+    def first_event(self, fault_model: RsqSimMultiFault):
+        return self.events_by_number(int(self.catalogue_df.index[0]), fault_model)[0]
+
+    def first_n_events(self, number_of_events: int, fault_model: RsqSimMultiFault):
+        return self.events_by_number(list(self.catalogue_df.index[:number_of_events]), fault_model)
 
     def filter_df(self, min_t0: fint = None, max_t0: fint = None, min_m0: fint = None,
                   max_m0: fint = None, min_mw: fint = None, max_mw: fint = None,
@@ -242,6 +262,33 @@ class RsqSimCatalogue:
             index_array = np.zeros(trimmed_event_ls.shape, dtype=np.int)
             for new_i, old_i in enumerate(unique_indices):
                 index_array[np.where(trimmed_event_ls == old_i)] = new_i
+        else:
+            index_array = trimmed_event_ls
+
+        rcat = self.from_dataframe_and_arrays(trimmed_df, event_list=index_array, patch_list=trimmed_patch_ls,
+                                              patch_slip=trimmed_patch_slip, patch_time_list=trimmed_patch_time)
+        return rcat
+
+    def filter_by_events(self, event_number: Union[int, np.int, Iterable[np.int]], reset_index: bool = False):
+        if isinstance(event_number, (int, np.int)):
+            ev_ls = [event_number]
+        else:
+            assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
+            ev_ls = list(event_number)
+            assert all([isinstance(a, (int, np.int)) for a in ev_ls])
+        trimmed_df = self.catalogue_df.loc[ev_ls]
+        event_indices = np.where(np.in1d(self.event_list, np.array(trimmed_df.index)))[0]
+        trimmed_event_ls = self.event_list[event_indices]
+        trimmed_patch_ls = self.patch_list[event_indices]
+        trimmed_patch_slip = self.patch_slip[event_indices]
+        trimmed_patch_time = self.patch_time_list[event_indices]
+
+        if reset_index:
+            trimmed_df.reset_index(inplace=True, drop=True)
+            unique_indices = np.unique(trimmed_event_ls)
+            index_array = np.zeros(trimmed_event_ls.shape, dtype=np.int)
+            for new_i, old_i in enumerate(unique_indices):
+                index_array[np.where(trimmed_event_ls == old_i)] = new_i
             print(index_array)
         else:
             index_array = trimmed_event_ls
@@ -250,8 +297,12 @@ class RsqSimCatalogue:
                                               patch_slip=trimmed_patch_slip, patch_time_list=trimmed_patch_time)
         return rcat
 
+    def drop_few_patches(self, fault_model: RsqSimMultiFault, min_patches: int = 3):
+        event_list = self.events_by_number(self.catalogue_df.index, fault_model, min_patches=min_patches)
+        new_ids = [ev.event_id for ev in event_list if len(ev.patches) >= min_patches]
+        print(len(event_list), new_ids)
 
-
+        return self.filter_by_events(new_ids)
 
     def filter_by_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],
                         minimum_patches_per_fault: int = None):
@@ -264,6 +315,7 @@ class RsqSimCatalogue:
             assert isinstance(minimum_patches_per_fault, int)
             assert minimum_patches_per_fault > 0
 
+        # Collect all fault numbers
         all_patches = []
         for fault in fault_ls:
             all_patches += list(fault.patch_dic.keys())
@@ -272,7 +324,7 @@ class RsqSimCatalogue:
         patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
         selected_events = self.event_list[patch_indices]
         selected_patches = self.patch_list[patch_indices]
-        if selected_events:
+        if selected_events.size > 0:
             if minimum_patches_per_fault is not None:
                 events_gt_min = []
                 for fault in fault_ls:
@@ -287,12 +339,12 @@ class RsqSimCatalogue:
                 event_indices = np.where(np.in1d(self.event_list, event_numbers))[0]
 
             else:
-                event_numbers = selected_events
-                event_indices = patch_indices
-            trimmed_df = self.catalogue_df.iloc[event_numbers]
+                event_numbers = np.unique(selected_events)
+                event_indices = np.where(np.in1d(self.event_list, event_numbers))[0]
+            trimmed_df = self.catalogue_df.loc[event_numbers]
 
             filtered_cat = self.from_dataframe(trimmed_df)
-            filtered_cat.event_list = event_numbers
+            filtered_cat.event_list = self.event_list[event_indices]
             filtered_cat.patch_list = self.patch_list[event_indices]
             filtered_cat.patch_slip = self.patch_slip[event_indices]
             filtered_cat.patch_time_list = self.patch_time_list[event_indices]
@@ -310,7 +362,6 @@ class RsqSimCatalogue:
     def filter_by_bounding_box(self):
         pass
 
-
     def filter_by_patch_numbers(self, patch_numbers):
         patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
         event_numbers = self.event_list[patch_indices]
@@ -326,8 +377,8 @@ class RsqSimCatalogue:
             print("No events found!")
             return
 
-
-    def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault, child_processes: int = 0):
+    def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault,
+                         child_processes: int = 0, min_patches: int = 1):
         if isinstance(event_number, (int, np.int)):
             ev_ls = [event_number]
         else:
@@ -336,7 +387,6 @@ class RsqSimCatalogue:
             assert all([isinstance(a, (int, np.int)) for a in ev_ls])
 
         out_events = []
-        min_patches = 50
 
         cat_dict = self.catalogue_df.to_dict(orient='index')
 
@@ -360,14 +410,15 @@ class RsqSimCatalogue:
                                                            patch_time=patch_time_list,
                                                            fault_model=fault_model, min_patches=min_patches,
                                                            event_id=index)
+
                 out_events.append(event_i)
         else:
             # Using shared data between processes
             event_list = np.ctypeslib.as_ctypes(self.event_list)
-            raw_event_list = RawArray(event_list._type_, event_list)
+            raw_event_list = sharedctypes.RawArray(event_list._type_, event_list)
 
             patch_list = np.ctypeslib.as_ctypes(self.patch_list)
-            raw_patch_list = RawArray(event_list._type_, patch_list)
+            raw_patch_list = sharedctypes.RawArray(event_list._type_, patch_list)
 
             queue = Queue() # queue to handle processed events
 
@@ -400,8 +451,8 @@ class RsqSimCatalogue:
         return out_events
 
 
-def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/bruce/rundir4627",
-               fault_file: str = "zfault_Deepen.in", names_file: str = "znames_Deepen.in",
+def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw/rundir4627",
+               fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in",
                catalogue_file: str = "eqs..out"):
     fault_full = os.path.join(run_dir, fault_file)
     names_full = os.path.join(run_dir, names_file)
@@ -421,8 +472,8 @@ def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/bruc
     return bruce_faults, catalogue
 
 
-def read_bruce_if_necessary(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/bruce/rundir4627",
-                            fault_file: str = "zfault_Deepen.in", names_file: str = "znames_Deepen.in",
+def read_bruce_if_necessary(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw/rundir4627",
+                            fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in",
                             catalogue_file: str = "eqs..out", default_faults: str = "bruce_faults",
                             default_cat: str = "catalogue"):
     print(globals())
@@ -430,3 +481,10 @@ def read_bruce_if_necessary(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/r
         bruce_faults, catalogue = read_bruce(run_dir=run_dir, fault_file=fault_file, names_file=names_file,
                                              catalogue_file=catalogue_file)
         return bruce_faults, catalogue
+
+
+def combine_boundaries(bounds1: list, bounds2: list):
+    assert len(bounds1) == len(bounds2)
+    min_bounds = [min([a, b]) for a, b in zip(bounds1, bounds2)]
+    max_bounds = [max([a, b]) for a, b in zip(bounds1, bounds2)]
+    return min_bounds[:2] + max_bounds[2:]

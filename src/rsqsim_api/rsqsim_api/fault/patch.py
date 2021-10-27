@@ -9,6 +9,7 @@ from tde.tde import calc_tri_displacements
 
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
+transformer_nztm2wgs = Transformer.from_crs(2193, 4326, always_xy=True)
 
 @njit(cache=True)
 def norm_3d(a):
@@ -46,16 +47,18 @@ def normalize_bearing(bearing: Union[float, int]):
 
 class RsqSimGenericPatch:
     def __init__(self, segment, patch_number: int = 0,
-                 dip_slip: float = None, strike_slip: float = None):
+                 dip_slip: float = None, strike_slip: float = None, rake: float = None):
         self._patch_number = None
         self._vertices = None
         self._dip_slip = None
         self._strike_slip = None
+        self._rake = None
 
         self.segment = segment
         self.patch_number = patch_number
         self.dip_slip = dip_slip
         self.strike_slip = strike_slip
+        self.rake = rake
 
     # Patch number is zero if not specified
     @property
@@ -86,6 +89,17 @@ class RsqSimGenericPatch:
         self._strike_slip = slip
 
     @property
+    def rake(self):
+        return self._rake
+
+    @rake.setter
+    def rake(self, rake_i: float):
+        if rake_i is not None:
+            self._rake = normalize_bearing(rake_i)
+        else:
+            self._rake = None
+
+    @property
     def vertices(self):
         return self._vertices
 
@@ -100,10 +114,11 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
     """
 
     def __init__(self, segment, vertices: Union[list, np.ndarray, tuple], patch_number: int = 0,
-                 dip_slip: float = None, strike_slip: float = None, patch_data: Union[list, np.ndarray, tuple] = None):
+                 dip_slip: float = None, strike_slip: float = None, patch_data: Union[list, np.ndarray, tuple] = None,
+                 rake: float = None):
 
         super(RsqSimTriangularPatch, self).__init__(segment=segment, patch_number=patch_number,
-                                                    dip_slip=dip_slip, strike_slip=strike_slip)
+                                                    dip_slip=dip_slip, strike_slip=strike_slip, rake=rake)
         self.vertices = vertices
         if patch_data is not None:
             self._normal_vector = patch_data[0]
@@ -137,6 +152,11 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
             print("Taking first 3 vertices...")
 
         self._vertices = vertices[:3, :]
+
+    @property
+    def vertices_lonlat(self):
+
+        return np.array(transformer_nztm2wgs.transform(*self.vertices.T)).T
 
     @staticmethod
     @njit(cache=True)
@@ -277,3 +297,21 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         vert_disp = np.array(gf["z"])
         vert_grid = vert_disp.reshape(grid_shape[1:])
         return vert_grid
+
+    def calculate_3d_greens_functions(self, x_array: np.ndarray, y_array: np.ndarray, z_array: np.ndarray = None,
+                                      poisson_ratio: float = 0.25):
+        assert all([isinstance(a, np.ndarray) for a in [x_array, y_array]])
+        assert x_array.shape == y_array.shape
+        assert x_array.ndim == 1
+        if z_array is None:
+            z_array = np.zeros(x_array.shape)
+        else:
+            assert z_array.shape == x_array.shape
+
+        assert all([a is not None for a in (self.dip_slip, self.strike_slip)])
+
+        xv, yv, zv = [self.vertices.T[i] for i in range(3)]
+        gf = calc_tri_displacements(x_array, y_array, z_array, xv, yv, -1. * zv,
+                                    poisson_ratio, self.strike_slip, 0., self.dip_slip)
+
+        return gf

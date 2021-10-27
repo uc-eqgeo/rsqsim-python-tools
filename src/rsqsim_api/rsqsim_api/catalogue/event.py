@@ -1,16 +1,21 @@
 from typing import Union
 from collections import defaultdict
+import pickle
 
 from matplotlib import pyplot as plt
+from matplotlib import cm, colors
 from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 from matplotlib.widgets import Slider
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import operator
 import numpy as np
+from shapely.geometry import box
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault
-from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade
+from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade, plot_hillshade_niwa, plot_lake_polygons, \
+    plot_river_lines, plot_highway_lines, plot_boundary_polygons, plot_hk_boundary
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
+from rsqsim_api.io.mesh_utils import array_to_mesh
 
 
 class RsqSimEvent:
@@ -68,7 +73,7 @@ class RsqSimEvent:
         event = cls()
         event.t0, event.m0, event.mw, event.x, event.y, event.z = [t0, m0, mw, x, y, z]
         event.area, event.dt = [area, dt]
-        event.event_id = None
+        event.event_id = event_id
 
         return event
 
@@ -99,10 +104,13 @@ class RsqSimEvent:
         event.patch_slip = patch_slip[mask]
         event.patch_time = patch_time[mask]
 
-        if event.patch_numbers.size > 0:
+        if event.patch_numbers.size > 1:
             patchnum_lookup = operator.itemgetter(*(event.patch_numbers))
             event.patches = list(patchnum_lookup(fault_model.patch_dic))
             event.faults = list(set(patchnum_lookup(fault_model.faults_with_patches)))
+        elif event.patch_numbers.size == 1:
+            event.patches = [fault_model.patch_dic[event.patch_numbers[0]]]
+            event.faults = [fault_model.faults_with_patches[event.patch_numbers[0]]]
         else:
             event.patches = []
             event.faults = []
@@ -133,14 +141,106 @@ class RsqSimEvent:
         return event
 
 
-    def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
-                     write: str = None, subplots = None, global_max_sub_slip: int = 0, global_max_slip: int = 0,
-                     figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0):
-        # TODO: Plot coast (and major rivers?)
-        assert self.patches is not None, "Need to populate object with patches!"
+    def plot_background(self, figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0, bounds: tuple = None,
+                        plot_rivers: bool = True, plot_lakes: bool = True, hillshade_fine: bool = False,
+                        plot_highways: bool = True, plot_boundaries: bool = False, subplots=None,
+                        pickle_name: str = None, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain,
+                        plot_hk: bool = False, plot_fault_outlines: bool = True):
 
         if subplots is not None:
             fig, ax = subplots
+        else:
+            fig, ax = plt.subplots()
+            fig.set_size_inches(figsize)
+
+        if bounds is not None:
+            plot_bounds = list(bounds)
+        else:
+            plot_bounds = self.boundary
+
+        if hillshading_intensity > 0:
+            plot_coast(ax, clip_boundary=plot_bounds, colors="0.0")
+            x_lim = ax.get_xlim()
+            y_lim = ax.get_ylim()
+            if hillshade_fine:
+                plot_hillshade_niwa(ax, hillshading_intensity, clip_bounds=plot_bounds, cmap=hillshade_cmap)
+            else:
+                plot_hillshade(ax, hillshading_intensity, clip_bounds=plot_bounds, cmap=hillshade_cmap)
+            ax.set_xlim(x_lim)
+            ax.set_ylim(y_lim)
+        else:
+            plot_coast(ax, clip_boundary=plot_bounds)
+
+        if plot_lakes:
+            plot_lake_polygons(ax=ax, clip_bounds=plot_bounds)
+
+        if plot_rivers:
+            plot_river_lines(ax, clip_bounds=plot_bounds)
+
+        if plot_highways:
+            plot_highway_lines(ax, clip_bounds=plot_bounds)
+
+        if plot_boundaries:
+            plot_boundary_polygons(ax, clip_bounds=plot_bounds)
+
+        if plot_hk:
+            plot_hk_boundary(ax, clip_bounds=plot_bounds)
+
+        if plot_fault_outlines:
+            pass
+
+        ax.set_aspect("equal")
+        x_lim = (plot_bounds[0], plot_bounds[2])
+        y_lim = (plot_bounds[1], plot_bounds[3])
+        ax.set_xlim(x_lim)
+        ax.set_ylim(y_lim)
+
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+        if pickle_name is not None:
+            with open(pickle_name, "wb") as pfile:
+                pickle.dump((fig, ax), pfile)
+
+        return fig, ax
+
+    def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
+                     write: str = None, subplots = None, global_max_sub_slip: int = 0, global_max_slip: int = 0,
+                     figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0, bounds: tuple = None,
+                     plot_rivers: bool = True, plot_lakes: bool = True,
+                     plot_highways: bool = True, plot_boundaries: bool = False, create_background: bool = False,
+                     coast_only: bool = True, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain,
+                     plot_log_scale: bool = False, log_cmap: str = "magma", log_min: float = 1.0,
+                     log_max: float = 100., plot_traces: bool = True, trace_colour: str = "pink",
+                     min_slip_percentile: float = None, min_slip_value: float = None, plot_zeros: bool = True):
+        # TODO: Plot coast (and major rivers?)
+        assert self.patches is not None, "Need to populate object with patches!"
+
+        if all([min_slip_percentile is not None, min_slip_value is None]):
+            min_slip = np.percentile(self.patch_slip, min_slip_percentile)
+        else:
+            min_slip = min_slip_value
+
+        if subplots is not None:
+            if isinstance(subplots, str):
+                # Assume pickled figure
+                with open(subplots, "rb") as pfile:
+                    loaded_subplots = pickle.load(pfile)
+                fig, ax = loaded_subplots
+            else:
+                # Assume matplotlib objects
+                fig, ax = subplots
+        elif create_background:
+            fig, ax = self.plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
+                                           bounds=bounds, plot_rivers=plot_rivers, plot_lakes=plot_lakes,
+                                           plot_highways=plot_highways, plot_boundaries=plot_boundaries,
+                                           hillshade_cmap=hillshade_cmap)
+        elif coast_only:
+            fig, ax = self.plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
+                                           bounds=bounds, plot_rivers=False, plot_lakes=False, plot_highways=False,
+                                           plot_boundaries=False, hillshade_cmap=hillshade_cmap)
+
+
         else:
             fig, ax = plt.subplots()
             fig.set_size_inches(figsize)
@@ -153,14 +253,23 @@ class RsqSimEvent:
         colour_dic = {}
         for f_i, fault in enumerate(self.faults):
             if fault.name in bruce_subduction:
-                colours = np.zeros(fault.patch_numbers.shape)
+                if plot_zeros:
+                    colours = np.zeros(fault.patch_numbers.shape)
+                else:
+                    colours = np.nan * np.ones(fault.patch_numbers.shape)
                 for local_id, patch_id in enumerate(fault.patch_numbers):
                     if patch_id in self.patch_numbers:
                         slip_index = np.argwhere(self.patch_numbers == patch_id)[0]
-                        colours[local_id] = self.patch_slip[slip_index]
+                        if min_slip is not None:
+                            if self.patch_slip[slip_index] >= min_slip:
+                                colours[local_id] = self.patch_slip[slip_index]
+                        else:
+                            if self.patch_slip[slip_index] > 0.:
+                                colours[local_id] = self.patch_slip[slip_index]
+
                 colour_dic[f_i] = colours
-                if max(colours) > max_slip:
-                    max_slip = max(colours)
+                if np.nanmax(colours) > max_slip:
+                    max_slip = np.nanmax(colours)
         max_slip = global_max_sub_slip if global_max_sub_slip > 0 else max_slip
 
         plots = []
@@ -171,52 +280,68 @@ class RsqSimEvent:
         for f_i, fault in enumerate(self.faults):
             if fault.name in bruce_subduction:
                 subduction_list.append(fault.name)
-                subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
-                                               facecolors=colour_dic[f_i],
-                                               cmap=subduction_cmap, vmin=0, vmax=max_slip)
+                if plot_log_scale:
+                    subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                   facecolors=colour_dic[f_i],
+                                                   cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
+                else:
+                    subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                   facecolors=colour_dic[f_i],
+                                                   cmap=subduction_cmap, vmin=0., vmax=max_slip)
                 plots.append(subduction_plot)
 
         max_slip = 0
         colour_dic = {}
         for f_i, fault in enumerate(self.faults):
             if fault.name not in bruce_subduction:
-                colours = np.zeros(fault.patch_numbers.shape)
+                if plot_zeros:
+                    colours = np.zeros(fault.patch_numbers.shape)
+                else:
+                    colours = np.nan * np.ones(fault.patch_numbers.shape)
                 for local_id, patch_id in enumerate(fault.patch_numbers):
                     if patch_id in self.patch_numbers:
                         slip_index = np.argwhere(self.patch_numbers == patch_id)[0]
-                        colours[local_id] = self.patch_slip[slip_index]
+                        if min_slip is not None:
+                            if self.patch_slip[slip_index] >= min_slip:
+                                colours[local_id] = self.patch_slip[slip_index]
+                        else:
+                            if self.patch_slip[slip_index] > 0.:
+                                colours[local_id] = self.patch_slip[slip_index]
                 colour_dic[f_i] = colours
-                if max(colours) > max_slip:
-                    max_slip = max(colours)
+                if np.nanmax(colours) > max_slip:
+                    max_slip = np.nanmax(colours)
         max_slip = global_max_slip if global_max_slip > 0 else max_slip
 
         crustal_plot = None
         for f_i, fault in enumerate(self.faults):
             if fault.name not in bruce_subduction:
-                crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
-                                            facecolors=colour_dic[f_i],
-                                            cmap=crustal_cmap, vmin=0, vmax=max_slip)
+                if plot_log_scale:
+                    crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                   facecolors=colour_dic[f_i],
+                                                   cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
+                else:
+                    crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                facecolors=colour_dic[f_i],
+                                                cmap=crustal_cmap, vmin=0., vmax=max_slip)
                 plots.append(crustal_plot)
 
-        if subplots is None:
-            if subduction_list:
-                sub_cbar = fig.colorbar(subduction_plot, ax=ax)
-                sub_cbar.set_label("Subduction slip (m)")
-            if crustal_plot is not None:
-                crust_cbar = fig.colorbar(crustal_plot, ax=ax)
-                crust_cbar.set_label("Slip (m)")
-
-            if hillshading_intensity > 0:
-                plot_coast(ax, clip_boundary=self.boundary, colors="0.0")
-                x_lim = ax.get_xlim()
-                y_lim = ax.get_ylim()
-                plot_hillshade(ax, hillshading_intensity)
-                ax.set_xlim(x_lim)
-                ax.set_ylim(y_lim)
+        if any([subplots is None, isinstance(subplots,str)]):
+            if plot_log_scale:
+                if subduction_list:
+                    sub_cbar = fig.colorbar(subduction_plot, ax=ax)
+                    sub_cbar.set_label("Slip (m)")
+                elif crustal_plot is not None:
+                    crust_cbar = fig.colorbar(crustal_plot, ax=ax)
+                    crust_cbar.set_label("Slip (m)")
             else:
-                plot_coast(ax, clip_boundary=self.boundary)
+                if subduction_list:
+                    sub_cbar = fig.colorbar(subduction_plot, ax=ax)
+                    sub_cbar.set_label("Subduction slip (m)")
+                if crustal_plot is not None:
+                    crust_cbar = fig.colorbar(crustal_plot, ax=ax)
+                    crust_cbar.set_label("Slip (m)")
 
-            ax.set_aspect("equal")
+        plot_coast(ax=ax)
 
 
         if write is not None:
@@ -335,11 +460,90 @@ class RsqSimEvent:
         if write is not None:
             writer = PillowWriter(fps=fps) if file_format == "gif" else FFMpegWriter(fps=fps)
             animation.save(f"{write}.{file_format}", writer)
-        else:
+
+        if show:
             plt.show()
 
-    def plot_slip_3d(self):
+    def slip_dist_array(self, include_zeros: bool = True, min_slip_percentile: float = None,
+                        min_slip_value: float = None, nztm_to_lonlat: bool = False):
+        all_patches = []
+        if all([min_slip_percentile is not None, min_slip_value is None]):
+            min_slip = np.percentile(self.patch_slip, min_slip_percentile)
+        else:
+            min_slip = min_slip_value
+
+        for fault in self.faults:
+            for patch_id in fault.patch_numbers:
+                if patch_id in self.patch_numbers:
+                    patch = fault.patch_dic[patch_id]
+                    if nztm_to_lonlat:
+                        triangle_corners = patch.vertices_lonlat.flatten()
+                    else:
+                        triangle_corners = patch.vertices.flatten()
+                    slip_index = np.searchsorted(self.patch_numbers, patch_id)
+                    time = self.patch_time[slip_index] - self.t0
+                    slip_mag = self.patch_slip[slip_index]
+                    if min_slip is not None:
+                        if slip_mag >= min_slip:
+                            patch_line = np.hstack([triangle_corners, np.array([slip_mag, patch.rake, time])])
+                            all_patches.append(patch_line)
+                        elif include_zeros:
+                            patch = fault.patch_dic[patch_id]
+                            patch_line = np.hstack([triangle_corners, np.array([0., 0., 0.])])
+                            all_patches.append(patch_line)
+                    else:
+                        patch_line = np.hstack([triangle_corners, np.array([slip_mag, patch.rake, time])])
+                        all_patches.append(patch_line)
+                elif include_zeros:
+                    patch = fault.patch_dic[patch_id]
+                    if nztm_to_lonlat:
+                        triangle_corners = patch.vertices_lonlat.flatten()
+                    else:
+                        triangle_corners = patch.vertices.flatten()
+                    patch_line = np.hstack([triangle_corners, np.array([0., 0., 0.])])
+                    all_patches.append(patch_line)
+        return np.array(all_patches)
+
+    def slip_dist_to_mesh(self, include_zeros: bool = True, min_slip_percentile: float = None,
+                          min_slip_value: float = None, nztm_to_lonlat: bool = False):
+        slip_dist_array = self.slip_dist_array(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
+                                               min_slip_value=min_slip_value)
+        mesh = array_to_mesh(slip_dist_array[:, :9])
+        data_dic = {}
+        for label, index in zip(["slip", "rake", "time"], [9, 10, 11]):
+            data_dic[label] = slip_dist_array[:, index]
+        mesh.cell_data = data_dic
+
+        return mesh
+
+    def slip_dist_to_vtk(self, vtk_file: str, include_zeros: bool = True, min_slip_percentile: float = None,
+                         min_slip_value: float = None):
+        mesh = self.slip_dist_to_mesh(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
+                                      min_slip_value=min_slip_value)
+        mesh.write(vtk_file, file_format="vtk")
+
+    def slip_dist_to_obj(self, obj_file: str, include_zeros: bool = True, min_slip_percentile: float = None,
+                         min_slip_value: float = None):
+        mesh = self.slip_dist_to_mesh(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
+                                      min_slip_value=min_slip_value)
+        mesh.write(obj_file, file_format="obj")
+
+    def slip_dist_to_txt(self, txt_file, include_zeros: bool = True, min_slip_percentile: float = None,
+                         min_slip_value: float = None, nztm_to_lonlat: bool = False):
+        if nztm_to_lonlat:
+            header="lon1 lat1 z1 lon2 lat2 z2 lon3 lat3 z3 slip_m rake_deg time_s"
+        else:
+            header = "x1 y1 z1 x2 y2 z2 x3 y3 z3 slip_m rake_deg time_s"
+        slip_dist_array = self.slip_dist_array(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
+                                               min_slip_value=min_slip_value, nztm_to_lonlat=nztm_to_lonlat)
+        np.savetxt(txt_file, slip_dist_array, fmt="%.6f", delimiter=" ", header=header)
+
+
+
+    def discretize_openquake(self):
+        # Find faults
         pass
+
 
 
 
