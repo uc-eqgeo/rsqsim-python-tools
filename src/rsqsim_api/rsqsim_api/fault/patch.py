@@ -1,4 +1,7 @@
-from typing import Union, List
+from typing import Union
+
+import xml.etree.ElementTree as ElemTree
+from xml.dom import minidom
 
 import numpy as np
 import math
@@ -10,6 +13,12 @@ from tde.tde import calc_tri_displacements
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
 transformer_nztm2wgs = Transformer.from_crs(2193, 4326, always_xy=True)
+transformer_wgs2nztm = Transformer.from_crs(4326, 2193, always_xy=True)
+
+anticlockwise90 = np.array([[0., -1., 0.],
+                            [1., 0., 0.],
+                            [0., 0., 1.]])
+
 
 @njit(cache=True)
 def norm_3d(a):
@@ -17,6 +26,7 @@ def norm_3d(a):
     Calculates the 2-norm of a 3-dimensional vector.
     """
     return math.sqrt(np.sum(a**2))
+
 
 @njit(cache=True)
 def cross_3d(a, b):
@@ -39,6 +49,9 @@ def normalize_bearing(bearing: Union[float, int]):
     return bearing
 
 
+@njit(cache=True)
+def unit_vector(vec1: np.ndarray, vec2: np.ndarray):
+    return (vec2 - vec1) / norm_3d(vec2 - vec1)
 
 
 
@@ -315,3 +328,139 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
                                     poisson_ratio, self.strike_slip, 0., self.dip_slip)
 
         return gf
+
+class OpenQuakeRectangularPatch(RsqSimGenericPatch):
+    def __init__(self, segment, patch_number: int = 0,
+                 dip_slip: float = None, strike_slip: float = None, rake: float = None):
+        super(OpenQuakeRectangularPatch, self).__init__(segment, patch_number=patch_number, dip_slip=dip_slip,
+                                                        strike_slip=strike_slip, rake=rake)
+
+        self._top_left, self._top_right = (None,) * 2
+        self._bottom_left, self._bottom_right = (None,) * 2
+
+        self._along_strike_vector = None
+        self._down_dip_vector = None
+
+    @property
+    def top_left(self):
+        return self._top_left
+
+    @property
+    def top_right(self):
+        return self._top_right
+
+    @property
+    def bottom_left(self):
+        return self._bottom_left
+
+    @property
+    def bottom_right(self):
+        return self._bottom_right
+
+    @property
+    def along_strike_vector(self):
+        return unit_vector(self.top_left, self.top_right)
+
+    @property
+    def top_centre(self):
+        return 0.5 * (self.top_left + self.top_right)
+
+    @property
+    def bottom_centre(self):
+        return 0.5 * (self.bottom_left + self.bottom_right)
+
+    @property
+    def down_dip_vector(self):
+        return unit_vector(self.top_centre, self.bottom_centre)
+
+    @classmethod
+    def from_polygon(cls, polygon: Polygon, segment=None, patch_number: int = 0,
+                     dip_slip: float = None, strike_slip: float = None, rake: float = None,
+                     wgs_to_nztm: bool = False):
+        coords = np.array(polygon.exterior.coords)
+        assert coords.shape == (5, 3)
+        coords = coords[:-1]
+
+        top_depth = max(coords[:, -1])
+        bottom_depth = min(coords[:, -1])
+        top1, top2 = coords[coords[:, -1] == top_depth]
+        bot1, bot2 = coords[coords[:, -1] == bottom_depth]
+
+        if wgs_to_nztm:
+            top1 = np.array(transformer_wgs2nztm.transform(*top1))
+            top2 = np.array(transformer_wgs2nztm.transform(*top2))
+            bot1 = np.array(transformer_wgs2nztm.transform(*bot1))
+            bot2 = np.array(transformer_wgs2nztm.transform(*bot2))
+
+        patch = cls(segment, patch_number=patch_number, dip_slip=dip_slip,
+                    strike_slip=strike_slip, rake=rake)
+
+        # Check for vertical patch:
+        if any([np.array_equal(top1[:-1], a[:-1]) for a in [bot1, bot2]]):
+            patch._top_left = top1
+            patch._top_right = top2
+            patch._along_strike_vector = (top2 - top1) / np.linalg.norm(top2 - top1)
+            patch._down_dip_vector = np.array([0., 0., -1.])
+            if np.array_equal(top1[:-1], bot1[:-1]):
+                patch._bottom_left = bot1
+                patch._bottom_right = bot2
+            else:
+                patch._bottom_left = bot2
+                patch._bottom_right = bot1
+
+        else:
+            # Try one way round, if it doesn't work try the other way
+
+            cen_top = 0.5 * (top1 + top2)
+            cen_bot = 0.5 * (bot1 + bot2)
+
+            across_strike_vector = unit_vector(cen_top, np.array([cen_bot[0], cen_bot[1], cen_top[-1]]))
+            along_strike_vector = np.matmul(anticlockwise90, across_strike_vector)
+
+            if np.dot(along_strike_vector, unit_vector(top1, top2)) > 0:
+                patch._top_left = top1
+                patch._top_right = top2
+            else:
+                patch._top_left = top2
+                patch._top_right = top1
+
+            if np.dot(along_strike_vector, unit_vector(bot1, bot2)) > 0:
+                patch._bottom_left = bot1
+                patch._bottom_right = bot2
+            else:
+                patch._bottom_left = bot2
+                patch._bottom_right = bot1
+
+        return patch
+
+    def to_oq_xml(self):
+        plane_element = ElemTree.Element("planarSurface")
+
+        corner_list = ["topLeft", "topRight", "bottomLeft", "bottomRight"]
+        for label, corner in zip(corner_list, [self.top_left, self.top_right, self.bottom_left, self.bottom_right]):
+            depth_km = -1.e-3 * corner[-1]
+            lon, lat = transformer_nztm2wgs.transform(corner[0], corner[1])
+            element_i = ElemTree.Element(label, attrib={"depth": f"{depth_km:.4f}",
+                                                        "lat": f"{lat:.4f}",
+                                                        "lon": f"{lon:.4f}"
+                                                        })
+            plane_element.append(element_i)
+
+        return plane_element
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
