@@ -60,7 +60,7 @@ def unit_vector(vec1: np.ndarray, vec2: np.ndarray):
 
 class RsqSimGenericPatch:
     def __init__(self, segment, patch_number: int = 0,
-                 dip_slip: float = None, strike_slip: float = None, rake: float = None):
+                 dip_slip: float = None, strike_slip: float = None, rake: float = None, total_slip: float = None):
         self._patch_number = None
         self._vertices = None
         self._dip_slip = None
@@ -118,7 +118,9 @@ class RsqSimGenericPatch:
 
     @property
     def total_slip(self):
-        return np.linalg.norm(np.array([self.strike_slip, self.dip_slip]))
+        ss = self.strike_slip if self.strike_slip is not None else 0.
+        ds = self.dip_slip if self.dip_slip is not None else 0.
+        return np.linalg.norm(np.array([ss, ds]))
 
 
 class RsqSimTriangularPatch(RsqSimGenericPatch):
@@ -128,7 +130,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
 
     def __init__(self, segment, vertices: Union[list, np.ndarray, tuple], patch_number: int = 0,
                  dip_slip: float = None, strike_slip: float = None, patch_data: Union[list, np.ndarray, tuple] = None,
-                 rake: float = None):
+                 rake: float = None, total_slip: float = None):
 
         super(RsqSimTriangularPatch, self).__init__(segment=segment, patch_number=patch_number,
                                                     dip_slip=dip_slip, strike_slip=strike_slip, rake=rake)
@@ -147,6 +149,10 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
             self._along_strike_vector = RsqSimTriangularPatch.calculate_along_strike_vector(self.normal_vector, self.down_dip_vector)
             self._centre = RsqSimTriangularPatch.calculate_centre(self.vertices)
             self._area = RsqSimTriangularPatch.calculate_area(self.vertices)
+
+        if total_slip is not None:
+            self.strike_slip = total_slip * np.cos(np.radians(self.rake))
+            self.dip_slip = total_slip * np.sin(np.radians(self.rake))
 
     @RsqSimGenericPatch.vertices.setter
     def vertices(self, vertices: Union[list, np.ndarray, tuple]):
