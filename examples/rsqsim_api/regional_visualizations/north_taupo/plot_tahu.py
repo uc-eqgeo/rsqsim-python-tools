@@ -4,8 +4,8 @@ import geopandas as gpd
 from shapely.geometry import box
 from matplotlib import cm
 
-bruce_faults = RsqSimMultiFault.read_fault_file_bruce("../../../../data/shaw/rundir5091/zfault_Deepen.in",
-                                                      "../../../../data/shaw/rundir5091/znames_Deepen.in",
+bruce_faults = RsqSimMultiFault.read_fault_file_bruce("../../../../data/shaw2021/rundir5091/zfault_Deepen.in",
+                                                      "../../../../data/shaw2021/rundir5091/znames_Deepen.in",
                                                       transform_from_utm=True)
 tahu_cat = RsqSimCatalogue.from_csv_and_arrays("tahu_rohe")
 data = gpd.read_file("ngati_tahu.gpkg")

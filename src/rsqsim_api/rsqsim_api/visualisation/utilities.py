@@ -6,8 +6,10 @@ from shapely.geometry import Polygon, MultiPolygon, box
 from typing import Union
 from rsqsim_api.io.array_operations import read_tiff
 from matplotlib.colors import LightSource, LinearSegmentedColormap
+from matplotlib import cm, colors
 from matplotlib import pyplot as plt
 import matplotlib.ticker as plticker
+import pickle
 
 import rioxarray
 
@@ -275,7 +277,65 @@ def format_label_text_wgs(ax: plt.Axes, xspacing: int = 5, yspacing: int = 5, y_
     ax.set_ylim(*ylim)
 
 
+def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0, bounds: tuple = None,
+                    plot_rivers: bool = True, plot_lakes: bool = True, hillshade_fine: bool = False,
+                    plot_highways: bool = True, plot_boundaries: bool = False, subplots=None,
+                    pickle_name: str = None, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain,
+                    plot_hk: bool = False, plot_fault_outlines: bool = True):
 
+        if subplots is not None:
+            fig, ax = subplots
+        else:
+            fig, ax = plt.subplots()
+            fig.set_size_inches(figsize)
+
+        plot_bounds = list(bounds)
+
+        if hillshading_intensity > 0:
+            plot_coast(ax, clip_boundary=plot_bounds, colors="0.0")
+            x_lim = ax.get_xlim()
+            y_lim = ax.get_ylim()
+            if hillshade_fine:
+                plot_hillshade_niwa(ax, hillshading_intensity, clip_bounds=plot_bounds, cmap=hillshade_cmap)
+            else:
+                plot_hillshade(ax, hillshading_intensity, clip_bounds=plot_bounds, cmap=hillshade_cmap)
+            ax.set_xlim(x_lim)
+            ax.set_ylim(y_lim)
+        else:
+            plot_coast(ax, clip_boundary=plot_bounds)
+
+        if plot_lakes:
+            plot_lake_polygons(ax=ax, clip_bounds=plot_bounds)
+
+        if plot_rivers:
+            plot_river_lines(ax, clip_bounds=plot_bounds)
+
+        if plot_highways:
+            plot_highway_lines(ax, clip_bounds=plot_bounds)
+
+        if plot_boundaries:
+            plot_boundary_polygons(ax, clip_bounds=plot_bounds)
+
+        if plot_hk:
+            plot_hk_boundary(ax, clip_bounds=plot_bounds)
+
+        if plot_fault_outlines:
+            pass
+
+        ax.set_aspect("equal")
+        x_lim = (plot_bounds[0], plot_bounds[2])
+        y_lim = (plot_bounds[1], plot_bounds[3])
+        ax.set_xlim(x_lim)
+        ax.set_ylim(y_lim)
+
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+        if pickle_name is not None:
+            with open(pickle_name, "wb") as pfile:
+                pickle.dump((fig, ax), pfile)
+
+        return fig, ax
 
 
 

@@ -6,7 +6,7 @@ import os
 # Get directory where script is run
 script_dir = os.path.dirname(__file__)
 
-fault_dir = "../../../data/shaw/rundir5091"
+fault_dir = "../../../data/shaw2021/rundir5091"
 catalogue_dir = fault_dir
 
 seconds_per_year = 31557600.0
