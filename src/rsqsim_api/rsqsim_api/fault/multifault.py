@@ -111,7 +111,8 @@ class RsqSimMultiFault:
         # Read first 10 lines of file
 
     @classmethod
-    def read_fault_file_keith(cls, fault_file: str, verbose: bool = False, crs: int = 2193):
+    def read_fault_file_keith(cls, fault_file: str, verbose: bool = False, crs: int = 2193,
+                              read_slip_rate: bool = True):
         """
         Read in an RSQSim fault file written according to Keith Richards-Dinger's convention.
         :param fault_file: Path to fault file
@@ -143,6 +144,7 @@ class RsqSimMultiFault:
             # Check that fault number has only one name associated with it
             associated_names = np.unique(fault_data["fault_name"])
             associated_rakes = np.unique(fault_data["rake"])
+            associated_slip_rates = np.array(fault_data["slip_rate"])
 
             fault_name = associated_names[0] if associated_names.size > 0 else None
             fault_rake = associated_rakes[0] if associated_rakes.size > 0 else None
@@ -168,8 +170,13 @@ class RsqSimMultiFault:
                     print("{:d} points are closer than {:.2f} m together: duplicates?".format(num_closer, tolerance))
 
             # Create fault object
-            fault_i = RsqSimSegment.from_triangles(triangles=triangles, patch_numbers=patch_numbers,
-                                                   segment_number=number, fault_name=fault_name, rake=fault_rake)
+            if read_slip_rate:
+                fault_i = RsqSimSegment.from_triangles(triangles=triangles, patch_numbers=patch_numbers,
+                                                       segment_number=number, fault_name=fault_name, rake=fault_rake,
+                                                       total_slip=associated_slip_rates)
+            else:
+                fault_i = RsqSimSegment.from_triangles(triangles=triangles, patch_numbers=patch_numbers,
+                                                       segment_number=number, fault_name=fault_name, rake=fault_rake)
 
             segment_ls.append(fault_i)
             patch_start += num_triangles
@@ -308,6 +315,8 @@ class RsqSimMultiFault:
     def plot_fault_outlines(self, ax: plt.Axes, edgecolor: str = "r", linewidth: int = 0.1, clip_bounds: list = None,
                             linestyle: str = "-", facecolor: str = "0.8"):
         pass
+
+
 
     def search_name(self, search_string: str):
         """

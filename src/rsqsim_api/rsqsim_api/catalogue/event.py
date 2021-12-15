@@ -1,6 +1,9 @@
-from typing import Union
+from typing import Union, List
 from collections import defaultdict
 import pickle
+
+import xml.etree.ElementTree as ElemTree
+from xml.dom import minidom
 
 from matplotlib import pyplot as plt
 from matplotlib import cm, colors
@@ -9,12 +12,16 @@ from matplotlib.widgets import Slider
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import operator
 import numpy as np
-from shapely.geometry import box
+from shapely.geometry import Polygon
+from pyproj import Transformer
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault
 from rsqsim_api.visualisation.utilities import plot_coast, plot_background
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
 from rsqsim_api.io.mesh_utils import array_to_mesh
+from rsqsim_api.fault.patch import OpenQuakeRectangularPatch
+
+transformer_nztm2wgs = Transformer.from_crs(2193, 4326, always_xy=True)
 
 
 class RsqSimEvent:
@@ -479,6 +486,52 @@ class RsqSimEvent:
     def discretize_openquake(self):
         # Find faults
         pass
+
+
+class OpenQuakeMultiSquareRupture:
+    def __init__(self, tile_list: List[Polygon], probability: float, magnitude: float, rake: float,
+                 hypocentre: np.ndarray, event_id: int, name: str = "Subduction earthquake",
+                 tectonic_region: str = "subduction"):
+        self.patches = [OpenQuakeRectangularPatch.from_polygon(tile) for tile in tile_list]
+        self.prob = probability
+        self.magnitude = magnitude
+        self.rake = rake
+        self.hypocentre = hypocentre
+        self.inv_prob = 1. - probability
+
+        self.hyp_depth = -1.e-3 * hypocentre[-1]
+        self.hyp_lon, self.hyp_lat = transformer_nztm2wgs.transform(hypocentre[0], hypocentre[1])
+        self.event_id = event_id
+        self.name = name
+        self.tectonic_region = tectonic_region
+
+    def to_oq_xml(self, write: str = None):
+        source_element = ElemTree.Element("nonParametricSeismicSource",
+                                          attrib={"id": f"{self.event_id}",
+                                                  "name": f"event {self.event_id}",
+                                                  "tectonicRegion": self.tectonic_region})
+        multi_patch_elem = ElemTree.Element("multiPlanesRupture",
+                                            attrib={"probs_occur": f"{self.inv_prob:.4f} {self.prob:.4f}"})
+        mag_elem = ElemTree.Element("magnitude")
+        mag_elem.text = f"{self.magnitude:.2f}"
+
+        multi_patch_elem.append(mag_elem)
+        rake_elem = ElemTree.Element("rake")
+        rake_elem.text = f"{self.rake:.1f}"
+        multi_patch_elem.append(rake_elem)
+
+        hyp_element = ElemTree.Element("hypocenter", attrib={"depth": f"{self.hyp_depth:.3f}",
+                                                             "lat": f"{self.hyp_lat:.4f}",
+                                                             "lon": f"{self.hyp_lon:.4f}"})
+        multi_patch_elem.append(hyp_element)
+        for patch in self.patches:
+            multi_patch_elem.append(patch.to_oq_xml())
+
+        source_element.append(multi_patch_elem)
+
+        return source_element
+
+
 
 
 
