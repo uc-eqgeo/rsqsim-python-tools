@@ -35,7 +35,7 @@ Installation instructions for Anaconda can be found here: <https://www.anaconda.
    
 ## Integration of the catalogue
 
-V1.0 of a synthetic earthquake catalogue for New Zealand can be found at ???<INSERT LINK HERE>. Download the files from that Zenodo repository into `data/shaw2021` and all of the example Jupyter notebooks should work.
+V1.0 of a synthetic earthquake catalogue for New Zealand can be found at https://doi.org/10.5281/zenodo.5534462. Download the files from that Zenodo repository into `data/shaw2021` and all of the example Jupyter notebooks should work.
 
 
 ## Running Jupyter Notebooks
