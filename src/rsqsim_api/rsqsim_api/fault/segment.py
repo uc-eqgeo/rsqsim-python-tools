@@ -557,15 +557,18 @@ class RsqSimSegment:
     def plot_2d(self, ax: plt.Axes):
         ax.triplot(self.vertices[:, 0], self.vertices[:, 1], self.triangles)
 
-    def to_mesh(self):
-        return meshio.Mesh(points=self.vertices, cells=[("triangle", self.triangles)])
+    def to_mesh(self, write_slip: bool = False):
+        mesh = meshio.Mesh(points=self.vertices, cells=[("triangle", self.triangles)])
+        if write_slip:
+            mesh.cell_data["slip"] = np.array([patch.total_slip for patch in self.patch_outlines])
+        return mesh
 
     def to_stl(self, stl_name: str):
         mesh = self.to_mesh()
         mesh.write(stl_name, file_format="stl")
 
-    def to_vtk(self, vtk_name: str):
-        mesh = self.to_mesh()
+    def to_vtk(self, vtk_name: str, write_slip: bool = False):
+        mesh = self.to_mesh(write_slip=write_slip)
         mesh.write(vtk_name, file_format="vtk")
 
     @property

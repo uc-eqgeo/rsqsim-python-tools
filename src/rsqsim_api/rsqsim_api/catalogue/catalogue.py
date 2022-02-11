@@ -450,6 +450,12 @@ class RsqSimCatalogue:
 
         return out_events
 
+    def assign_accumulated_slip(self, fault_model: RsqSimMultiFault):
+        for patch_i in np.unique(self.patch_list):
+            matching = (self.patch_list == patch_i)
+            accumulated_slip = self.patch_slip[matching].sum()
+            fault_model.patch_dic[patch_i].
+
 
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627",
                fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in",
