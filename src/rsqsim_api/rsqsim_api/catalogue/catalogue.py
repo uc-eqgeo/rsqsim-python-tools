@@ -8,6 +8,8 @@ import pandas as pd
 import numpy as np
 import pyproj
 from matplotlib import pyplot as plt
+from shapely.geometry import Polygon
+import geopandas as gpd
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault, RsqSimSegment
 from rsqsim_api.catalogue.event import RsqSimEvent
@@ -195,6 +197,16 @@ class RsqSimCatalogue:
     def first_n_events(self, number_of_events: int, fault_model: RsqSimMultiFault):
         return self.events_by_number(list(self.catalogue_df.index[:number_of_events]), fault_model)
 
+    def all_events(self, fault_model: RsqSimMultiFault):
+        return self.events_by_number(list(self.catalogue_df.index), fault_model)
+
+    def event_outlines(self, fault_model: RsqSimMultiFault, event_numbers: Iterable = None):
+        if event_numbers is not None:
+            events = self.events_by_number(event_numbers, fault_model)
+        else:
+            events = self.all_events(fault_model)
+        return [event.exterior for event in events]
+
     def filter_df(self, min_t0: fint = None, max_t0: fint = None, min_m0: fint = None,
                   max_m0: fint = None, min_mw: fint = None, max_mw: fint = None,
                   min_x: fint = None, max_x: fint = None, min_y: fint = None, max_y: fint = None,
@@ -359,8 +371,9 @@ class RsqSimCatalogue:
     def find_multi_fault(self):
         pass
 
-    def filter_by_bounding_box(self):
+    def filter_by_region(self, region: Union[Polygon, gpd.GeoSeries], fault_model: RsqSimMultiFault, event_numbers: Iterable = None):
         pass
+
 
     def filter_by_patch_numbers(self, patch_numbers):
         patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]

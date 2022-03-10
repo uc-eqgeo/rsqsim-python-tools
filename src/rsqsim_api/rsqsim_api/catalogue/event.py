@@ -13,7 +13,9 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import operator
 import numpy as np
 from shapely.geometry import Polygon
+from shapely.ops import unary_union
 from pyproj import Transformer
+import geopandas as gpd
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault
 from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade, plot_hillshade_niwa, plot_lake_polygons, \
@@ -60,6 +62,10 @@ class RsqSimEvent:
         y2 = max([max(fault.vertices[:, 1]) for fault in self.faults])
         return [x1, y1, x2, y2]
 
+    @property
+    def exterior(self):
+        return unary_union([patch.as_polygon() for patch in self.patches])
+
     @classmethod
     def from_catalogue_array(cls, t0: float, m0: float, mw: float, x: float,
                              y: float, z: float, area: float, dt: float, event_id: int = None):
@@ -83,6 +89,10 @@ class RsqSimEvent:
         event.event_id = event_id
 
         return event
+
+    @property
+    def patch_outline_gs(self):
+        return gpd.GeoSeries([patch.as_polygon() for patch in self.patches], crs=2193)
 
     @classmethod
     def from_earthquake_list(cls, t0: float, m0: float, mw: float, x: float,
@@ -513,6 +523,7 @@ class RsqSimEvent:
 
     def slip_dist_to_mesh(self, include_zeros: bool = True, min_slip_percentile: float = None,
                           min_slip_value: float = None, nztm_to_lonlat: bool = False):
+
         slip_dist_array = self.slip_dist_array(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
                                                min_slip_value=min_slip_value)
         mesh = array_to_mesh(slip_dist_array[:, :9])
@@ -545,11 +556,28 @@ class RsqSimEvent:
                                                min_slip_value=min_slip_value, nztm_to_lonlat=nztm_to_lonlat)
         np.savetxt(txt_file, slip_dist_array, fmt="%.6f", delimiter=" ", header=header)
 
+    def discretize_openquake(self, tile_list: List[Polygon], probability: float, rake: float):
+        included_tiles = []
+
+        for tile in tile_list:
+            overlapping = tile.intersects(self.exterior)
+            if overlapping:
+                intersection = tile.intersection(self.exterior)
+                if intersection.area >= 0.5 * tile.area:
+                    included_tiles.append(tile)
+
+        out_gs = gpd.GeoSeries(included_tiles, crs=2193)
+        out_gs_wgs = out_gs.to_crs(epsg=4326)
+        if out_gs_wgs.size > 0:
+            oq_rup = OpenQuakeMultiSquareRupture(list(out_gs.geometry), magnitude=self.mw, rake=rake,
+                                                 hypocentre=np.array([self.x, self.y, self.z]),
+                                                 event_id=self.event_id, probability=probability)
+            return oq_rup
+
+        else:
+            return
 
 
-    def discretize_openquake(self):
-        # Find faults
-        pass
 
 
 class OpenQuakeMultiSquareRupture:
@@ -570,10 +598,10 @@ class OpenQuakeMultiSquareRupture:
         self.tectonic_region = tectonic_region
 
     def to_oq_xml(self, write: str = None):
-        source_element = ElemTree.Element("nonParametricSeismicSource",
-                                          attrib={"id": f"{self.event_id}",
-                                                  "name": f"event {self.event_id}",
-                                                  "tectonicRegion": self.tectonic_region})
+        source_element = ElemTree.Element("nrml",
+                                          attrib={"xmlns": "http://openquake.org/xmlns/nrml/0.4",
+                                                  "xmlns:gml": "http://www.opengis.net/gml"
+                                                  })
         multi_patch_elem = ElemTree.Element("multiPlanesRupture",
                                             attrib={"probs_occur": f"{self.inv_prob:.4f} {self.prob:.4f}"})
         mag_elem = ElemTree.Element("magnitude")
@@ -592,6 +620,18 @@ class OpenQuakeMultiSquareRupture:
             multi_patch_elem.append(patch.to_oq_xml())
 
         source_element.append(multi_patch_elem)
+
+        if write is not None:
+            assert isinstance(write, str)
+            if write[-4:] != ".xml":
+                write += ".xml"
+
+            elmstr = ElemTree.tostring(source_element, encoding="UTF-8", method="xml")
+            xml_dom = minidom.parseString(elmstr)
+            pretty_xml_str = xml_dom.toprettyxml(indent="  ", encoding="utf-8")
+            with open(write, "wb") as xml:
+                xml.write(pretty_xml_str)
+
 
         return source_element
 
