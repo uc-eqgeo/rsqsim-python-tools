@@ -10,7 +10,7 @@ import os
 script_dir = os.path.dirname(__file__)
 
 #
-fault_dir = "../../../data/shaw/rundir5091"
+fault_dir = "../../../data/shaw2021/rundir5091"
 catalogue_dir = "../../../data/shaw_m7"
 
 

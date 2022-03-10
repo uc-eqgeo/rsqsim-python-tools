@@ -15,7 +15,7 @@ from shapely.geometry import LineString, MultiPolygon
 from rsqsim_api.io.read_utils import read_dxf, read_stl
 from rsqsim_api.io.tsurf import tsurf
 from rsqsim_api.fault.patch import RsqSimTriangularPatch, RsqSimGenericPatch
-
+seconds_per_year = 31557600.0
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
 
@@ -140,6 +140,10 @@ class RsqSimSegment:
         self._patch_vertices = [patch.vertices for patch in patches]
 
     @property
+    def patch_triangle_rows(self):
+        return np.array([triangle.flatten() for triangle in self.patch_vertices])
+
+    @property
     def vertices(self):
         if self._vertices is None:
             self.get_unique_vertices()
@@ -229,7 +233,7 @@ class RsqSimSegment:
     def from_triangles(cls, triangles: Union[np.ndarray, list, tuple], segment_number: int = 0,
                        patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None,
                        strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None,
-                       rake: Union[int, float] = None):
+                       rake: Union[int, float] = None, total_slip: np.ndarray = None):
         """
         Create a segment from triangle vertices and (if appropriate) populate it with strike-slip/dip-slip values
         :param segment_number:
@@ -254,10 +258,15 @@ class RsqSimSegment:
         triangle_ls = []
 
         # Populate segment object
-        for patch_num, triangle in zip(patch_numbers, triangle_array):
+        for i, (patch_num, triangle) in enumerate(zip(patch_numbers, triangle_array)):
             triangle3 = triangle.reshape(3, 3)
-            patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num, strike_slip=strike_slip,
-                                          dip_slip=dip_slip, rake=rake)
+            if total_slip is not None:
+                patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num, strike_slip=strike_slip,
+                                              dip_slip=dip_slip, rake=rake, total_slip=total_slip[i])
+            else:
+                patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
+                                              strike_slip=strike_slip,
+                                              dip_slip=dip_slip, rake=rake)
             triangle_ls.append(patch)
 
         fault.patch_outlines = triangle_ls
@@ -548,16 +557,36 @@ class RsqSimSegment:
     def plot_2d(self, ax: plt.Axes):
         ax.triplot(self.vertices[:, 0], self.vertices[:, 1], self.triangles)
 
-    def to_mesh(self):
-        return meshio.Mesh(points=self.vertices, cells=[("triangle", self.triangles)])
+    def to_mesh(self, write_slip: bool = False):
+        mesh = meshio.Mesh(points=self.vertices, cells=[("triangle", self.triangles)])
+        if write_slip:
+            mesh.cell_data["slip"] = np.array([patch.total_slip for patch in self.patch_outlines])
+        return mesh
 
     def to_stl(self, stl_name: str):
         mesh = self.to_mesh()
         mesh.write(stl_name, file_format="stl")
 
-    def to_vtk(self, vtk_name: str):
-        mesh = self.to_mesh()
+    def to_vtk(self, vtk_name: str, write_slip: bool = False):
+        mesh = self.to_mesh(write_slip=write_slip)
         mesh.write(vtk_name, file_format="vtk")
+
+    @property
+    def dip_slip(self):
+        return np.array([patch.dip_slip for patch in self.patch_outlines])
+
+    def to_rsqsim_fault_file(self, flt_name):
+        tris = pd.DataFrame(self.patch_triangle_rows)
+        rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
+        tris.loc[:, 9] = rakes
+        slip_rates = pd.Series(self.dip_slip * 1.e-3 / seconds_per_year)
+        tris.loc[:, 10] = slip_rates
+        segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=np.int)
+        tris.loc[:, 11] = segment_num
+        seg_names = pd.Series([self.name for i in range(len(self.patch_numbers))])
+        tris.loc[:, 12] = seg_names
+
+        tris.to_csv(flt_name, index=False, header=False, sep="\t", encoding='ascii')
 
 
 class RsqSimFault:
