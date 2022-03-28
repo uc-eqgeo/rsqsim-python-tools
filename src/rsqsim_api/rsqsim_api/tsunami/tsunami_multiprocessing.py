@@ -173,6 +173,6 @@ def patch_greens_functions(in_queue: mp.Queue, x_sites: np.ndarray, y_sites: np.
 
             out_queue_dic[file_no].put((file_index, patch_number,
                                         patch.calculate_tsunami_greens_functions(x_sites, y_sites, z_sites, grid_shape,
-                                                                                 slip_magnitude=slip_magnitude)))
+                                                                                 )))
         else:
             break
