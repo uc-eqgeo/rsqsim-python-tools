@@ -184,14 +184,14 @@ class RsqSimEvent:
                 # Assume matplotlib objects
                 fig, ax = subplots
         elif create_background:
-            fig, ax = self.plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
-                                           bounds=bounds, plot_rivers=plot_rivers, plot_lakes=plot_lakes,
-                                           plot_highways=plot_highways, plot_boundaries=plot_boundaries,
-                                           hillshade_cmap=hillshade_cmap)
+            fig, ax = plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
+                                      bounds=bounds, plot_rivers=plot_rivers, plot_lakes=plot_lakes,
+                                      plot_highways=plot_highways, plot_boundaries=plot_boundaries,
+                                      hillshade_cmap=hillshade_cmap)
         elif coast_only:
-            fig, ax = self.plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
-                                           bounds=bounds, plot_rivers=False, plot_lakes=False, plot_highways=False,
-                                           plot_boundaries=False, hillshade_cmap=hillshade_cmap)
+            fig, ax = plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
+                                      bounds=bounds, plot_rivers=False, plot_lakes=False, plot_highways=False,
+                                      plot_boundaries=False, hillshade_cmap=hillshade_cmap)
 
 
         else:
@@ -293,6 +293,8 @@ class RsqSimEvent:
                 if crustal_plot is not None:
                     crust_cbar = fig.colorbar(crustal_plot, ax=ax)
                     crust_cbar.set_label("Slip (m)")
+
+
 
         plot_coast(ax=ax)
 

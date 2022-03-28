@@ -189,7 +189,12 @@ class RsqSimMultiFault:
     def read_fault_file_bruce(cls, main_fault_file: str, name_file: str, transform_from_utm: bool = False,
                               from_pickle: bool = False, crs: int = 2193):
         assert all([os.path.exists(fname) for fname in (main_fault_file, name_file)])
-        fault_names = pd.read_csv(name_file, header=None, squeeze=True, sep='\s+', usecols=[0])
+        with open(name_file) as fid:
+            names_strings = fid.readlines()
+            if names_strings[0].strip()[:3] == "[b'":
+                fault_names = [name.strip()[3:-2].strip().split(",")[0] for name in names_strings]
+            else:
+                fault_names = [name.strip() for name in names_strings]
 
         if from_pickle:
             all_fault_df = pd.read_pickle(main_fault_file)
@@ -202,10 +207,28 @@ class RsqSimMultiFault:
             all_fault_df = pd.read_csv(main_fault_file, sep='\s+', header=None, comment='#', names=column_names,
                                        usecols=range(len(column_names)))
 
+        all_fault_df["fault_name"] = fault_names
+
         fault_numbers = all_fault_df.fault_num.to_numpy()
         fault_names_unique = dict.fromkeys(fault_names).keys()
         fault_num_unique = dict.fromkeys(fault_numbers).keys()
 
+        if len(fault_names_unique) != len(fault_num_unique):
+            names_and_numbers = pd.DataFrame({"Name": fault_names, "Num":fault_numbers})
+            for name in fault_names_unique:
+                name_num_i = names_and_numbers[names_and_numbers.Name == name]
+                for i, fault_num in enumerate(name_num_i.Num.unique()):
+                    fault_num_df = name_num_i[name_num_i.Num == fault_num]
+                    new_names = fault_num_df.Name.astype(str) + " " + str(i)
+                    names_and_numbers.loc[new_names.index, "Name"] = new_names.values
+
+            acton = names_and_numbers.loc[(names_and_numbers.Name.str.contains("Acton")) & (names_and_numbers.Num == 120), "Num"]
+            all_fault_df.loc[acton.index, "fault_num"] = 9999
+            names_and_numbers.loc[acton.index, "Num"] = 9999
+
+            fault_names = list(names_and_numbers.Name)
+            fault_names_unique = dict.fromkeys(fault_names).keys()
+            fault_num_unique = dict.fromkeys(list(names_and_numbers.Num)).keys()
         assert len(fault_names_unique) == len(fault_num_unique)
 
         # Populate faults with triangular patches
@@ -215,7 +238,7 @@ class RsqSimMultiFault:
         for fault_num, fault_name in zip(fault_num_unique, fault_names_unique):
             mask = fault_numbers == fault_num
             fault_data = all_fault_df[mask]
-            fault_name_stripped = fault_name.lstrip("'[")
+            fault_name_stripped = fault_name.lstrip("'[").replace(" ","")
 
             num_triangles = len(fault_data)
             patch_numbers = np.arange(patch_start, patch_start + num_triangles)
@@ -314,6 +337,9 @@ class RsqSimMultiFault:
 
     def plot_fault_outlines(self, ax: plt.Axes, edgecolor: str = "r", linewidth: int = 0.1, clip_bounds: list = None,
                             linestyle: str = "-", facecolor: str = "0.8"):
+        pass
+
+    def plot_slip_distribution_2d(self):
         pass
 
 
