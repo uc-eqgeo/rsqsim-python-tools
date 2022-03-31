@@ -62,7 +62,9 @@ def sea_surface_displacements_multi(event_ls: list, lookup: dict, out_netcdf: st
     result_list = list(results)
     result_id_ls = [result[0] for result in result_list]
 
+    num_events = len(event_id_ls)
     for i, event_id in enumerate(event_id_ls):
+        print(f"{i}/{num_events}")
         event_index = result_id_ls.index(event_id)
         event_disp = result_list[event_index][1]
         out_dset["event_id"][i] = event_id
