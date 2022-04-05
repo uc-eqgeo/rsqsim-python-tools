@@ -7,7 +7,7 @@ dependencies:
   - numpy
   - numba
   - geopandas
-  - jupyter_client
+  - jupyter
   - matplotlib
   - netcdf4
   - ipython
