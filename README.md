@@ -7,7 +7,9 @@ Python code for analysis of RSQSim outputs.
 *(with earlier assistance from Samantha Woon and Charles Williams).*
 
 If you use this code, please cite: 
-[Shaw, et al, 2021] "An Earthquake Simulator for New Zealand", **Bulletin of the Seismological Society of America**, 2021. DOI: ???
+[Shaw, et al, 2021] "An Earthquake Simulator for New Zealand", **Bulletin of the Seismological Society of America**, 2021. DOI: 
+<https://doi.org/10.1785/0120210087>
+
 
 ## Repository contents
 
@@ -29,9 +31,8 @@ Installation instructions for Anaconda can be found here: <https://www.anaconda.
    1. Open Anaconda Prompt
    2. Run `cd {PATH_TO_REPO}`
    3. Run `conda env create`
-   4. Run `conda activate rnc2`
+   4. Run `conda activate rsqsim-python-tools`
    
-   ![image](https://user-images.githubusercontent.com/21334474/104807917-68da6e80-5847-11eb-8904-07e4da4f2b1d.png)
    
 ## Integration of the catalogue
 
@@ -40,7 +41,7 @@ V1.0 of a synthetic earthquake catalogue for New Zealand can be found at https:/
 
 ## Running Jupyter Notebooks
    
-   1. Make sure the correct environment is activated (rnc2).
+   1. Make sure the correct environment is activated (rsqsim-python-tools).
    2. Run `jupyter notebook`
    3. Navigate to `examples/rsqsim_api/`
    
