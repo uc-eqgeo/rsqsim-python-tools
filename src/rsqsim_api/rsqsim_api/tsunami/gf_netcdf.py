@@ -33,9 +33,13 @@ def sea_surface_displacements(input_tuple):
     event_id = event.event_id
     disp_shape = lookup[0].dset["ssd"][0].data.shape
     disp = np.zeros(disp_shape)
-    for slip, patch in zip(event.patch_slip, event.patches):
-        patch_gf = lookup[patch.patch_number]
-        disp += slip * patch_gf.dset["ssd"][patch_gf.dset_index]
+    try:
+        for slip, patch in zip(event.patch_slip, event.patches):
+            patch_gf = lookup[patch.patch_number]
+            disp += slip * patch_gf.dset["ssd"][patch_gf.dset_index]
+    except KeyError:
+        disp = np.ones(disp_shape) * np.nan
+
     return event_id, disp
 
 
