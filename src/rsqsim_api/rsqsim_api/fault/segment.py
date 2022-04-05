@@ -1,5 +1,5 @@
 import os
-from collections import Iterable
+from collections.abc import Iterable
 from typing import Union, List
 
 import numpy as np
