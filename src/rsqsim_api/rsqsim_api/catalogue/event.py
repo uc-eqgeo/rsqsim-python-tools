@@ -54,7 +54,7 @@ class RsqSimEvent:
         return len(self.faults)
 
     @property
-    def boundary(self):
+    def bounds(self):
         x1 = min([min(fault.vertices[:, 0]) for fault in self.faults])
         y1 = min([min(fault.vertices[:, 1]) for fault in self.faults])
         x2 = max([max(fault.vertices[:, 0]) for fault in self.faults])
@@ -168,6 +168,9 @@ class RsqSimEvent:
                      min_slip_percentile: float = None, min_slip_value: float = None, plot_zeros: bool = True):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
+
+        if all([bounds is None, self.bounds is not None]):
+            bounds = self.bounds
 
         if all([min_slip_percentile is not None, min_slip_value is None]):
             min_slip = np.percentile(self.patch_slip, min_slip_percentile)
@@ -319,7 +322,7 @@ class RsqSimEvent:
 
         fig, ax = plt.subplots()
         fig.set_size_inches(figsize)
-        plot_coast(ax, clip_boundary=self.boundary)
+        plot_coast(ax, clip_boundary=self.bounds)
         ax.set_aspect("equal")
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)

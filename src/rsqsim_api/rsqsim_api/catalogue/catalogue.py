@@ -1,6 +1,7 @@
 from typing import Union, Iterable, List
 from collections import abc, Counter, defaultdict
 import os
+import pickle
 
 from multiprocessing import Queue, Process
 from multiprocessing import sharedctypes
@@ -8,6 +9,7 @@ import pandas as pd
 import numpy as np
 import pyproj
 from matplotlib import pyplot as plt
+from matplotlib import cm, colors
 from shapely.geometry import Polygon
 import geopandas as gpd
 
@@ -16,7 +18,8 @@ from rsqsim_api.catalogue.event import RsqSimEvent
 from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, catalogue_columns, read_csv_and_array
 from rsqsim_api.io.write_utils import write_catalogue_dataframe_and_arrays
 from rsqsim_api.tsunami.tsunami import SeaSurfaceDisplacements
-from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade, plot_hillshade_niwa, plot_lake_polygons, plot_river_lines, plot_highway_lines, plot_boundary_polygons
+from rsqsim_api.visualisation.utilities import plot_coast, plot_background, plot_hillshade_niwa, plot_lake_polygons,\
+    plot_river_lines, plot_highway_lines, plot_boundary_polygons
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
 
 fint = Union[int, float]
@@ -35,7 +38,8 @@ def get_mask(ev_ls, min_patches, faults_with_patches, event_list, patch_list, qu
     events = np.asarray(event_list)
 
     unique_events, unique_event_indices = np.unique(events, return_index=True)
-    unique_dic = {unique_events[i]: (unique_event_indices[i], unique_event_indices[i+1]) for i in range(len(unique_events)-1)}
+    unique_dic = {unique_events[i]: (unique_event_indices[i], unique_event_indices[i + 1]) for i in
+                  range(len(unique_events) - 1)}
     unique_dic[unique_events[-1]] = (unique_event_indices[-1], len(events))
     for index in ev_ls:
         ev_range = unique_dic[index]
@@ -43,7 +47,7 @@ def get_mask(ev_ls, min_patches, faults_with_patches, event_list, patch_list, qu
 
         patch_numbers = patches[ev_indices]
         patches_on_fault = defaultdict(list)
-        [ patches_on_fault[faults_with_patches[i]].append(i) for i in patch_numbers ]
+        [patches_on_fault[faults_with_patches[i]].append(i) for i in patch_numbers]
 
         mask = np.full(len(patch_numbers), True)
         for fault in patches_on_fault.keys():
@@ -52,7 +56,8 @@ def get_mask(ev_ls, min_patches, faults_with_patches, event_list, patch_list, qu
                 patch_on_fault_indices = np.searchsorted(patch_numbers, patches_on_this_fault)
                 mask[patch_on_fault_indices] = False
 
-        queue.put( (index, ev_indices, mask)  )
+        queue.put((index, ev_indices, mask))
+
 
 class RsqSimCatalogue:
     def __init__(self):
@@ -62,6 +67,7 @@ class RsqSimCatalogue:
         self._patch_list = None
         self._patch_time_list = None
         self._patch_slip = None
+        self._accumulated_slip = None
         # Useful attributes
         self.t0, self.m0, self.mw = (None,) * 3
         self.x, self.y, self.z = (None,) * 3
@@ -127,6 +133,14 @@ class RsqSimCatalogue:
         self.check_list(data_list, data_type="d")
         self._patch_slip = data_list
 
+    @property
+    def accumulated_slip(self):
+        return self._accumulated_slip
+
+    @accumulated_slip.setter
+    def accumulated_slip(self, data_list: dict):
+        self._accumulated_slip = data_list
+
     @classmethod
     def from_dataframe(cls, dataframe: pd.DataFrame, reproject: List = None):
         rsqsim_cat = cls()
@@ -153,7 +167,6 @@ class RsqSimCatalogue:
                                       list_file_prefix: str, read_extra_lists: bool = False, reproject: List = None):
         assert os.path.exists(catalogue_file)
         assert os.path.exists(list_file_directory)
-
 
         standard_list_files = [os.path.join(list_file_directory, list_file_prefix + suffix)
                                for suffix in list_file_suffixes]
@@ -371,9 +384,9 @@ class RsqSimCatalogue:
     def find_multi_fault(self):
         pass
 
-    def filter_by_region(self, region: Union[Polygon, gpd.GeoSeries], fault_model: RsqSimMultiFault, event_numbers: Iterable = None):
+    def filter_by_region(self, region: Union[Polygon, gpd.GeoSeries], fault_model: RsqSimMultiFault,
+                         event_numbers: Iterable = None):
         pass
-
 
     def filter_by_patch_numbers(self, patch_numbers):
         patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
@@ -405,7 +418,8 @@ class RsqSimCatalogue:
 
         # Stores the first and last index for each event
         unique_events, unique_event_indices = np.unique(self.event_list, return_index=True)
-        unique_dic = {unique_events[i]: (unique_event_indices[i], unique_event_indices[i+1]) for i in range(len(unique_events)-1)}
+        unique_dic = {unique_events[i]: (unique_event_indices[i], unique_event_indices[i + 1]) for i in
+                      range(len(unique_events) - 1)}
         unique_dic[unique_events[-1]] = (unique_event_indices[-1], len(self.event_list))
 
         if child_processes == 0:
@@ -433,15 +447,18 @@ class RsqSimCatalogue:
             patch_list = np.ctypeslib.as_ctypes(self.patch_list)
             raw_patch_list = sharedctypes.RawArray(event_list._type_, patch_list)
 
-            queue = Queue() # queue to handle processed events
+            queue = Queue()  # queue to handle processed events
 
             # much faster to serialize when dealing with numbers instead of objects
-            faults_with_patches = {patch_num: seg.segment_number for (patch_num, seg) in fault_model.faults_with_patches.items()}
+            faults_with_patches = {patch_num: seg.segment_number for (patch_num, seg) in
+                                   fault_model.faults_with_patches.items()}
 
-            ev_chunks = np.array_split(np.array(ev_ls), child_processes) # break events into equal sized chunks for each child process
+            ev_chunks = np.array_split(np.array(ev_ls),
+                                       child_processes)  # break events into equal sized chunks for each child process
             processes = []
             for i in range(child_processes):
-                p = Process(target=get_mask, args=(ev_chunks[i], min_patches, faults_with_patches, raw_event_list, raw_patch_list, queue))
+                p = Process(target=get_mask, args=(
+                    ev_chunks[i], min_patches, faults_with_patches, raw_event_list, raw_patch_list, queue))
                 p.start()
                 processes.append(p)
 
@@ -463,11 +480,168 @@ class RsqSimCatalogue:
 
         return out_events
 
-    def assign_accumulated_slip(self, fault_model: RsqSimMultiFault):
+    def assign_accumulated_slip(self):
+        """
+        Create dict of patch numbers with slip accumulated over events in the catalogue.
+        """
+        self.accumulated_slip = {}
         for patch_i in np.unique(self.patch_list):
             matching = (self.patch_list == patch_i)
             accumulated_slip = self.patch_slip[matching].sum()
-            fault_model.patch_dic[patch_i].total_slip = accumulated_slip
+            self.accumulated_slip[patch_i] = accumulated_slip
+
+    def plot_accumulated_slip_2d(self, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma",
+                                 crustal_cmap: str = "viridis", show: bool = True,
+                                 write: str = None, subplots=None, global_max_sub_slip: int = 0,
+                                 global_max_slip: int = 0,
+                                 figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0, bounds: tuple = None,
+                                 plot_rivers: bool = True, plot_lakes: bool = True,
+                                 plot_highways: bool = True, plot_boundaries: bool = False,
+                                 create_background: bool = False,
+                                 coast_only: bool = True, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain,
+                                 plot_log_scale: bool = False, log_cmap: str = "magma", log_min: float = 1.0,
+                                 log_max: float = 100., plot_traces: bool = True, trace_colour: str = "pink",
+                                 min_slip_percentile: float = None, min_slip_value: float = None,
+                                 plot_zeros: bool = True):
+        # TO DO: Plot coast (and major rivers?)
+        assert self.accumulated_slip is not None, "Need accumulated slip to plot!"
+        if bounds is None and fault_model.bounds is not None:
+            bounds = fault_model.bounds
+
+        if all([min_slip_percentile is not None, min_slip_value is None]):
+            min_slip = np.percentile(self.patch_slip, min_slip_percentile)
+        else:
+            min_slip = min_slip_value
+
+        if subplots is not None:
+            if isinstance(subplots, str):
+                # Assume pickled figure
+                with open(subplots, "rb") as pfile:
+                    loaded_subplots = pickle.load(pfile)
+                fig, ax = loaded_subplots
+            else:
+                # Assume matplotlib objects
+                fig, ax = subplots
+        elif create_background:
+            fig, ax = plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
+                                      bounds=bounds, plot_rivers=plot_rivers, plot_lakes=plot_lakes,
+                                      plot_highways=plot_highways, plot_boundaries=plot_boundaries,
+                                      hillshade_cmap=hillshade_cmap)
+        elif coast_only:
+            fig, ax = plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
+                                      bounds=bounds, plot_rivers=False, plot_lakes=False, plot_highways=False,
+                                      plot_boundaries=False, hillshade_cmap=hillshade_cmap)
+        else:
+            fig, ax = plt.subplots()
+            fig.set_size_inches(figsize)
+
+        # Find maximum slip for subduction interface
+
+        # Find maximum slip to scale colourbar
+        max_slip = 0
+
+        colour_dic = {}
+        for f_i, fault in enumerate(fault_model.faults):
+            if fault.name in bruce_subduction:
+                if plot_zeros:
+                    colours = np.zeros(fault.patch_numbers.shape)
+                else:
+                    colours = np.nan * np.ones(fault.patch_numbers.shape)
+                for local_id, patch_id in enumerate(fault.patch_numbers):
+                    if patch_id in self.accumulated_slip.keys():
+                        if min_slip is not None:
+                            if self.accumulated_slip[patch_id] >= min_slip:
+                                colours[local_id] = self.accumulated_slip[patch_id]
+                        else:
+                            if self.accumulated_slip[patch_id] > 0.:
+                                colours[local_id] = self.accumulated_slip[patch_id]
+
+                colour_dic[f_i] = colours
+                if np.nanmax(colours) > max_slip:
+                    max_slip = np.nanmax(colours)
+        max_slip = global_max_sub_slip if global_max_sub_slip > 0 else max_slip
+
+        plots = []
+
+        # Plot subduction interface
+        subduction_list = []
+        subduction_plot = None
+        for f_i, fault in enumerate(fault_model.faults):
+            if fault.name in bruce_subduction:
+                subduction_list.append(fault.name)
+                if plot_log_scale:
+                    subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                   facecolors=colour_dic[f_i],
+                                                   cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
+                else:
+                    subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                   facecolors=colour_dic[f_i],
+                                                   cmap=subduction_cmap, vmin=0., vmax=max_slip)
+                plots.append(subduction_plot)
+
+        max_slip = 0
+        colour_dic = {}
+        for f_i, fault in enumerate(fault_model.faults):
+            if fault.name not in bruce_subduction:
+                if plot_zeros:
+                    colours = np.zeros(fault.patch_numbers.shape)
+                else:
+                    colours = np.nan * np.ones(fault.patch_numbers.shape)
+                for local_id, patch_id in enumerate(fault.patch_numbers):
+                    if patch_id in self.accumulated_slip.keys():
+                        if min_slip is not None:
+                            if self.accumulated_slip[patch_id] >= min_slip:
+                                colours[local_id] = self.accumulated_slip[patch_id]
+                        else:
+                            if self.accumulated_slip[patch_id] > 0.:
+                                colours[local_id] = self.accumulated_slip[patch_id]
+                colour_dic[f_i] = colours
+                if np.nanmax(colours) > max_slip:
+                    max_slip = np.nanmax(colours)
+        max_slip = global_max_slip if global_max_slip > 0 else max_slip
+
+        crustal_plot = None
+        for f_i, fault in enumerate(fault_model.faults):
+            if fault.name not in bruce_subduction:
+                if plot_log_scale:
+                    crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                facecolors=colour_dic[f_i],
+                                                cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
+                else:
+                    crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                facecolors=colour_dic[f_i],
+                                                cmap=crustal_cmap, vmin=0., vmax=max_slip)
+                plots.append(crustal_plot)
+
+        if any([subplots is None, isinstance(subplots, str)]):
+            if plot_log_scale:
+                if subduction_list:
+                    sub_cbar = fig.colorbar(subduction_plot, ax=ax)
+                    sub_cbar.set_label("Slip (m)")
+                elif crustal_plot is not None:
+                    crust_cbar = fig.colorbar(crustal_plot, ax=ax)
+                    crust_cbar.set_label("Slip (m)")
+            else:
+                if subduction_list:
+                    sub_cbar = fig.colorbar(subduction_plot, ax=ax)
+                    sub_cbar.set_label("Subduction slip (m)")
+                if crustal_plot is not None:
+                    crust_cbar = fig.colorbar(crustal_plot, ax=ax)
+                    crust_cbar.set_label("Slip (m)")
+
+        plot_coast(ax=ax)
+
+        if write is not None:
+            fig.savefig(write, dpi=300)
+            if show:
+                plt.show()
+            else:
+                plt.close(fig)
+
+        if show and subplots is None:
+            plt.show()
+
+        return plots
 
 
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627",
@@ -507,3 +681,5 @@ def combine_boundaries(bounds1: list, bounds2: list):
     min_bounds = [min([a, b]) for a, b in zip(bounds1, bounds2)]
     max_bounds = [max([a, b]) for a, b in zip(bounds1, bounds2)]
     return min_bounds[:2] + max_bounds[2:]
+
+
