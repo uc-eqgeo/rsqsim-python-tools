@@ -503,7 +503,7 @@ class RsqSimCatalogue:
                                  log_max: float = 100., plot_traces: bool = True, trace_colour: str = "pink",
                                  min_slip_percentile: float = None, min_slip_value: float = None,
                                  plot_zeros: bool = True):
-        # TO DO: Plot coast (and major rivers?)
+        # TODO: Plot coast (and major rivers?)
         assert self.accumulated_slip is not None, "Need accumulated slip to plot!"
         if bounds is None and fault_model.bounds is not None:
             bounds = fault_model.bounds
@@ -523,6 +523,7 @@ class RsqSimCatalogue:
                 # Assume matplotlib objects
                 fig, ax = subplots
         elif create_background:
+            #TODO: add this directory + file to repo data/other_lines/nz-lake-polygons-topo-1250k.shp
             fig, ax = plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
                                       bounds=bounds, plot_rivers=plot_rivers, plot_lakes=plot_lakes,
                                       plot_highways=plot_highways, plot_boundaries=plot_boundaries,
