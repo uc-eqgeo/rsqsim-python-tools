@@ -1,4 +1,4 @@
-from typing import Union, Iterable, List
+from typing import Union, Iterable, List, Dict, Any
 from collections import abc, Counter, defaultdict
 import os
 import pickle
@@ -68,6 +68,7 @@ class RsqSimCatalogue:
         self._patch_time_list = None
         self._patch_slip = None
         self._accumulated_slip = None
+        self._event_mean_slip = None
         # Useful attributes
         self.t0, self.m0, self.mw = (None,) * 3
         self.x, self.y, self.z = (None,) * 3
@@ -140,6 +141,14 @@ class RsqSimCatalogue:
     @accumulated_slip.setter
     def accumulated_slip(self, data_list: dict):
         self._accumulated_slip = data_list
+
+    @property
+    def event_mean_slip(self):
+        return self._event_mean_slip
+
+    @event_mean_slip.setter
+    def event_mean_slip(self, slip_list: dict):
+        self._event_mean_slip = slip_list
 
     @classmethod
     def from_dataframe(cls, dataframe: pd.DataFrame, reproject: List = None):
@@ -483,12 +492,26 @@ class RsqSimCatalogue:
     def assign_accumulated_slip(self):
         """
         Create dict of patch numbers with slip accumulated over events in the catalogue.
+        Note that this overwrites any other value which could have been assigned to accumulated slip.
         """
+        #TODO: is it appropriate to have both this method and the setter method above?
         self.accumulated_slip = {}
         for patch_i in np.unique(self.patch_list):
             matching = (self.patch_list == patch_i)
             accumulated_slip = self.patch_slip[matching].sum()
             self.accumulated_slip[patch_i] = accumulated_slip
+
+    def assign_event_mean_slip(self,fault_model: RsqSimMultiFault):
+        """
+        Create dict of event ids with associated mean slip on the patches which slip in them.
+        Note that this overwrites any other value which could have been assigned to mean slip.
+        """
+        self.event_mean_slip = {}
+        for event in self.all_events(fault_model):
+            event.find_mean_slip()
+            self.event_mean_slip[event.event_id] = event.mean_slip
+
+
 
     def plot_accumulated_slip_2d(self, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma",
                                  crustal_cmap: str = "viridis", show: bool = True,
@@ -644,6 +667,59 @@ class RsqSimCatalogue:
 
         return plots
 
+    def plot_GR(self):
+        """
+        Plot Gutenburg-Richter distribution for a given catalogue.
+        y-axis: log(annual frequency of events with M>Mw)
+        x axis: Mw
+        """
+        
+        mag_freq: dict[int, float | Any] = {}
+
+        for mag in range(3, 10):
+            filt_cat = self.filter_whole_catalogue(min_mw=mag)
+            nevents = len(filt_cat.event_list)
+            tot_time = (np.max(filt_cat.patch_time_list) - np.min(filt_cat.patch_time_list)) / seconds_per_year
+            freq = nevents / tot_time
+            mag_freq[mag] = freq
+        #convert to dataframe for plotting
+        mf_dict = pd.DataFrame.from_dict(mag_freq, orient='index', columns=['freq'])
+        mf_dict.reset_index(inplace=True)
+        mf_dict.rename(columns={"index": "mag"}, inplace=True)
+        #mf_dict["log_freq"] = np.log10(mf_dict["freq"])
+        #plot
+        ax=mf_dict.plot.scatter(x="mag", y="freq")
+        ax.set_yscale('log')
+        plt.xlabel("Mw")
+        plt.ylabel("# events with M>Mw per year")
+        plt.show()
+
+
+    def plot_mean_slip_vs_mag(self, fault_model: RsqSimMultiFault):
+        """
+        Plot the mean slip on each patch against the moment magnitude of the earthquake for each event in catalogue.
+        fault_model: RsqSimMultiFault
+        """
+        #check mean slip is assigned
+        assert self.event_mean_slip is not None
+
+        #create dictionary of magnitudes and mean slips
+        mag_mean_slip = {}
+        for event in self.all_events(fault_model):
+            mag = event.mw
+            mean_slip = self.event_mean_slip[event.event_id]
+            mag_mean_slip[mag] = mean_slip
+
+        #convert to data frame for easy plotting
+        slip_dict = pd.DataFrame.from_dict(mag_mean_slip, orient='index', columns=['Mean Slip'])
+        slip_dict.reset_index(inplace=True)
+        slip_dict.rename(columns={"index": "mag"}, inplace=True)
+
+        #plot
+        ax = slip_dict.plot.scatter(x="mag", y="Mean Slip")
+        plt.xlabel("Mw")
+        plt.ylabel("Mean Slip (m)")
+        plt.show()
 
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627",
                fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in",
