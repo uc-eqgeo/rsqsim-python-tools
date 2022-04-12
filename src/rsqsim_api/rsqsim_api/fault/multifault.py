@@ -193,6 +193,8 @@ class RsqSimMultiFault:
             names_strings = fid.readlines()
             if names_strings[0].strip()[:3] == "[b'":
                 fault_names = [name.strip()[3:-2].strip().split(",")[0] for name in names_strings]
+            if names_strings[0].strip()[:2] == "['":
+                fault_names = [name.strip()[2:-4].strip() for name in names_strings]
             else:
                 fault_names = [name.strip() for name in names_strings]
 
