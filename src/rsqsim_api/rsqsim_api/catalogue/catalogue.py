@@ -701,7 +701,8 @@ class RsqSimCatalogue:
         fault_model: RsqSimMultiFault
         """
         #check mean slip is assigned
-        assert self.event_mean_slip is not None
+        if self.event_mean_slip is None:
+            self.assign_event_mean_slip(fault_model)
 
         #create dictionary of magnitudes and mean slips
         mag_mean_slip = {}
