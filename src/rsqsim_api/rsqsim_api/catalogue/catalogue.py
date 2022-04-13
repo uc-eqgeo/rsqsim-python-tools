@@ -678,13 +678,19 @@ class RsqSimCatalogue:
         #find min magnitude of catalogue
         mws = np.array([ev.mw for ev in self.all_events(fault_model)])
         min_mag=np.floor(np.min(mws))
+        max_mag=np.ceil(np.max(mws))
 
-        for mag in range(int(min_mag), 10):
+        for mag in np.arange(min_mag, max_mag,0.5):
+
             filt_cat = self.filter_whole_catalogue(min_mw=mag)
-            nevents = len(filt_cat.all_events(fault_model))
-            times = np.array([ev.t0 for ev in filt_cat.all_events(fault_model)])
-            tot_time = (np.max(times) - np.min(times)) / seconds_per_year
-            freq = nevents / tot_time
+
+            if filt_cat.event_list.size != 0 :
+                nevents = len(filt_cat.all_events(fault_model))
+                times = np.array([ev.t0 for ev in filt_cat.all_events(fault_model)])
+                tot_time = (np.max(times) - np.min(times)) / seconds_per_year
+                freq = nevents / tot_time
+            else:
+                freq = 0
             mag_freq[mag] = freq
         #convert to dataframe for plotting
         mf_dict = pd.DataFrame.from_dict(mag_freq, orient='index', columns=['freq'])
@@ -704,11 +710,11 @@ class RsqSimCatalogue:
         """
         Plot the mean slip on each patch against the moment magnitude of the earthquake for each event in catalogue.
         fault_model: RsqSimMultiFault
+        magnitude: either m0 or mw
         """
         #check mean slip is assigned
         if self.event_mean_slip is None:
             self.assign_event_mean_slip(fault_model)
-
 
         #create dictionary of magnitudes and mean slips
         mag_mean_slip = {}
@@ -724,8 +730,30 @@ class RsqSimCatalogue:
 
         #plot
         ax = slip_dict.plot.scatter(x="mag", y="Mean Slip")
-        plt.xlabel("Mw")
+        plt.xlabel("M$_W$")
         plt.ylabel("Mean Slip (m)")
+        plt.show()
+
+    def plot_area_vs_mag(self,fault_model: RsqSimMultiFault):
+        """
+        Plot the area of each event against the seismic moment of the earthquake for each event in catalogue.
+        fault_model: RsqSimMultiFault
+        """
+        # create dictionary of magnitudes and areas
+        mag_area ={}
+        for event in self.all_events(fault_model):
+            mag = event.mw
+            mag_area[mag] = event.area
+
+        # convert to data frame for easy plotting
+        area_dict = pd.DataFrame.from_dict(mag_area, orient='index', columns=['Area'])
+        area_dict.reset_index(inplace=True)
+        area_dict.rename(columns={"index": "mag"}, inplace=True)
+
+        # plot
+        ax = area_dict.plot.scatter(x="mag", y="Area")
+        plt.xlabel("M$_W$")
+        plt.ylabel("Area (m$^2$)")
         plt.show()
 
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627",
