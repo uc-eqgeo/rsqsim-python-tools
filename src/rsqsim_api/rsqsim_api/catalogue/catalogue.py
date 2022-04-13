@@ -667,7 +667,7 @@ class RsqSimCatalogue:
 
         return plots
 
-    def plot_GR(self):
+    def plot_GR(self,fault_model: RsqSimMultiFault):
         """
         Plot Gutenburg-Richter distribution for a given catalogue.
         y-axis: log(annual frequency of events with M>Mw)
@@ -675,11 +675,15 @@ class RsqSimCatalogue:
         """
         
         mag_freq: dict[int, float | Any] = {}
+        #find min magnitude of catalogue
+        mws = np.array([ev.mw for ev in self.all_events(fault_model)])
+        min_mag=np.floor(np.min(mws))
 
-        for mag in range(3, 10):
+        for mag in range(int(min_mag), 10):
             filt_cat = self.filter_whole_catalogue(min_mw=mag)
-            nevents = len(filt_cat.event_list)
-            tot_time = (np.max(filt_cat.patch_time_list) - np.min(filt_cat.patch_time_list)) / seconds_per_year
+            nevents = len(filt_cat.all_events(fault_model))
+            times = np.array([ev.t0 for ev in filt_cat.all_events(fault_model)])
+            tot_time = (np.max(times) - np.min(times)) / seconds_per_year
             freq = nevents / tot_time
             mag_freq[mag] = freq
         #convert to dataframe for plotting
@@ -690,6 +694,7 @@ class RsqSimCatalogue:
         #plot
         ax=mf_dict.plot.scatter(x="mag", y="freq")
         ax.set_yscale('log')
+        ax.set_xticks(np.arange(min_mag,10,1))
         plt.xlabel("Mw")
         plt.ylabel("# events with M>Mw per year")
         plt.show()
@@ -703,6 +708,7 @@ class RsqSimCatalogue:
         #check mean slip is assigned
         if self.event_mean_slip is None:
             self.assign_event_mean_slip(fault_model)
+
 
         #create dictionary of magnitudes and mean slips
         mag_mean_slip = {}
