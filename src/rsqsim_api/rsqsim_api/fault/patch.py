@@ -123,6 +123,7 @@ class RsqSimGenericPatch:
         return np.linalg.norm(np.array([ss, ds]))
 
 
+
 class RsqSimTriangularPatch(RsqSimGenericPatch):
     """
     class to store information on an individual triangular patch of a fault

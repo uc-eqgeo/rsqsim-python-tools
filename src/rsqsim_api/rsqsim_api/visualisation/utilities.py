@@ -76,7 +76,7 @@ def clip_coast_with_trim(x1: Union[int, float], y1: Union[int, float], x2: Union
         if isinstance(item, Polygon):
             poly_ls.append(item)
         elif isinstance(item, MultiPolygon):
-            poly_ls += list(item)
+            poly_ls += list(item.geoms)
     polygon_geoseries = gpd.GeoSeries(poly_ls, crs=2193)
 
     return polygon_geoseries
@@ -113,7 +113,7 @@ def clip_coast(x1: Union[int, float], y1: Union[int, float], x2: Union[int, floa
         if isinstance(item, Polygon):
             poly_ls.append(item)
         elif isinstance(item, MultiPolygon):
-            poly_ls += list(item)
+            poly_ls += list(item.geoms)
     polygon_geoseries = gpd.GeoSeries(poly_ls, crs=2193)
 
     return polygon_geoseries

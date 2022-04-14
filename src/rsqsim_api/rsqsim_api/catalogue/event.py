@@ -48,13 +48,14 @@ class RsqSimEvent:
         self.faults = None
         self.patch_time = None
         self.patch_numbers = None
+        self.mean_slip = None
 
     @property
     def num_faults(self):
         return len(self.faults)
 
     @property
-    def boundary(self):
+    def bounds(self):
         x1 = min([min(fault.vertices[:, 0]) for fault in self.faults])
         y1 = min([min(fault.vertices[:, 1]) for fault in self.faults])
         x2 = max([max(fault.vertices[:, 0]) for fault in self.faults])
@@ -120,13 +121,16 @@ class RsqSimEvent:
         event.patch_slip = patch_slip[mask]
         event.patch_time = patch_time[mask]
 
+
         if event.patch_numbers.size > 1:
             patchnum_lookup = operator.itemgetter(*(event.patch_numbers))
             event.patches = list(patchnum_lookup(fault_model.patch_dic))
             event.faults = list(set(patchnum_lookup(fault_model.faults_with_patches)))
+
         elif event.patch_numbers.size == 1:
             event.patches = [fault_model.patch_dic[event.patch_numbers[0]]]
             event.faults = [fault_model.faults_with_patches[event.patch_numbers[0]]]
+
         else:
             event.patches = []
             event.faults = []
@@ -150,11 +154,20 @@ class RsqSimEvent:
             patchnum_lookup = operator.itemgetter(*(event.patch_numbers))
             event.patches = list(patchnum_lookup(fault_model.patch_dic))
             event.faults = list(set(patchnum_lookup(fault_model.faults_with_patches)))
+
         else:
             event.patches = []
             event.faults = []
 
         return event
+
+    def find_mean_slip(self):
+        if self.patches:
+            total_slip = np.sum(self.patch_slip)
+            npatches = len(self.patches)
+            if all([total_slip > 0., npatches > 0]):
+                self.mean_slip = total_slip/npatches
+
 
 
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
@@ -168,6 +181,9 @@ class RsqSimEvent:
                      min_slip_percentile: float = None, min_slip_value: float = None, plot_zeros: bool = True):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
+
+        if all([bounds is None, self.bounds is not None]):
+            bounds = self.bounds
 
         if all([min_slip_percentile is not None, min_slip_value is None]):
             min_slip = np.percentile(self.patch_slip, min_slip_percentile)
@@ -319,7 +335,7 @@ class RsqSimEvent:
 
         fig, ax = plt.subplots()
         fig.set_size_inches(figsize)
-        plot_coast(ax, clip_boundary=self.boundary)
+        plot_coast(ax, clip_boundary=self.bounds)
         ax.set_aspect("equal")
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)

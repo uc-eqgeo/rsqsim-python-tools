@@ -50,6 +50,9 @@ class RsqSimMultiFault:
         self.faults_with_patches = {patch_num: patch.segment for patch_num, patch in self.patch_dic.items()}
 
     def filter_faults_by_patch_numbers(self, patch_ls: Union[int, list, tuple, np.ndarray]):
+        """
+
+        """
         if isinstance(patch_ls, int):
             return self.patch_dic[patch_ls]
         else:
@@ -259,6 +262,7 @@ class RsqSimMultiFault:
         return multi_fault
 
     def pickle_model(self, file: str):
+
         column_names = ["vertices", "normal_vector", "down_dip_vector", "dip", "along_strike_vector",
                         "centre", "area", "dip_slip", "strike_slip", "fault_num"]
 
