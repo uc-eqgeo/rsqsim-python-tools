@@ -18,7 +18,7 @@ from rsqsim_api.catalogue.event import RsqSimEvent
 from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, catalogue_columns, read_csv_and_array
 from rsqsim_api.io.write_utils import write_catalogue_dataframe_and_arrays
 from rsqsim_api.tsunami.tsunami import SeaSurfaceDisplacements
-from rsqsim_api.visualisation.utilities import plot_coast, plot_background, plot_hillshade_niwa, plot_lake_polygons,\
+from rsqsim_api.visualisation.utilities import plot_coast, plot_background, plot_hillshade_niwa, plot_lake_polygons, \
     plot_river_lines, plot_highway_lines, plot_boundary_polygons
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
 
@@ -136,19 +136,13 @@ class RsqSimCatalogue:
 
     @property
     def accumulated_slip(self):
+        if self._accumulated_slip is None:
+            self.assign_accumulated_slip()
         return self._accumulated_slip
-
-    @accumulated_slip.setter
-    def accumulated_slip(self, data_list: dict):
-        self._accumulated_slip = data_list
 
     @property
     def event_mean_slip(self):
         return self._event_mean_slip
-
-    @event_mean_slip.setter
-    def event_mean_slip(self, slip_list: dict):
-        self._event_mean_slip = slip_list
 
     @classmethod
     def from_dataframe(cls, dataframe: pd.DataFrame, reproject: List = None):
@@ -494,24 +488,23 @@ class RsqSimCatalogue:
         Create dict of patch numbers with slip accumulated over events in the catalogue.
         Note that this overwrites any other value which could have been assigned to accumulated slip.
         """
-        #TODO: is it appropriate to have both this method and the setter method above?
-        self.accumulated_slip = {}
+        accumulated_slip = {}
         for patch_i in np.unique(self.patch_list):
             matching = (self.patch_list == patch_i)
-            accumulated_slip = self.patch_slip[matching].sum()
-            self.accumulated_slip[patch_i] = accumulated_slip
+            accumulated_slip_i = self.patch_slip[matching].sum()
+            accumulated_slip[patch_i] = accumulated_slip_i
+        self._accumulated_slip = accumulated_slip
 
-    def assign_event_mean_slip(self,fault_model: RsqSimMultiFault):
+    def assign_event_mean_slip(self, fault_model: RsqSimMultiFault):
         """
         Create dict of event ids with associated mean slip on the patches which slip in them.
         Note that this overwrites any other value which could have been assigned to mean slip.
         """
-        self.event_mean_slip = {}
+        event_mean_slip = {}
         for event in self.all_events(fault_model):
             event.find_mean_slip()
-            self.event_mean_slip[event.event_id] = event.mean_slip
-
-
+            event_mean_slip[event.event_id] = event.mean_slip
+        self._event_mean_slip = event_mean_slip
 
     def plot_accumulated_slip_2d(self, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma",
                                  crustal_cmap: str = "viridis", show: bool = True,
@@ -526,8 +519,7 @@ class RsqSimCatalogue:
                                  log_max: float = 100., plot_traces: bool = True, trace_colour: str = "pink",
                                  min_slip_percentile: float = None, min_slip_value: float = None,
                                  plot_zeros: bool = True):
-        # TODO: Plot coast (and major rivers?)
-        assert self.accumulated_slip is not None, "Need accumulated slip to plot!"
+
         if bounds is None and fault_model.bounds is not None:
             bounds = fault_model.bounds
 
@@ -546,7 +538,7 @@ class RsqSimCatalogue:
                 # Assume matplotlib objects
                 fig, ax = subplots
         elif create_background:
-            #TODO: add this directory + file to repo data/other_lines/nz-lake-polygons-topo-1250k.shp
+            # TODO: add this directory + file to repo data/other_lines/nz-lake-polygons-topo-1250k.shp
             fig, ax = plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
                                       bounds=bounds, plot_rivers=plot_rivers, plot_lakes=plot_lakes,
                                       plot_highways=plot_highways, plot_boundaries=plot_boundaries,
@@ -559,9 +551,7 @@ class RsqSimCatalogue:
             fig, ax = plt.subplots()
             fig.set_size_inches(figsize)
 
-        # Find maximum slip for subduction interface
-
-        # Find maximum slip to scale colourbar
+        # Find maximum slip on subduction interface
         max_slip = 0
 
         colour_dic = {}
@@ -667,24 +657,30 @@ class RsqSimCatalogue:
 
         return plots
 
-    def plot_GR(self,fault_model: RsqSimMultiFault):
+    def plot_gr(self, fault_model: RsqSimMultiFault, show: bool = True,
+                write: str = None):
         """
         Plot Gutenburg-Richter distribution for a given catalogue.
         y-axis: log(annual frequency of events with M>Mw)
         x axis: Mw
-        """
-        
-        mag_freq: dict[int, float | Any] = {}
-        #find min magnitude of catalogue
-        mws = np.array([ev.mw for ev in self.all_events(fault_model)])
-        min_mag=np.floor(np.min(mws))
-        max_mag=np.ceil(np.max(mws))
 
-        for mag in np.arange(min_mag, max_mag,0.5):
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault object
+        show : bool to indicate whether to display plot
+        write : file (if any) to write plot to
+        """
+        mag_freq: dict[int, float | Any] = {}
+        # find min magnitude of catalogue
+        mws = np.array([ev.mw for ev in self.all_events(fault_model)])
+        min_mag = np.floor(np.min(mws))
+        max_mag = np.ceil(np.max(mws))
+
+        for mag in np.arange(min_mag, max_mag, 0.5):
 
             filt_cat = self.filter_whole_catalogue(min_mw=mag)
 
-            if filt_cat.event_list.size != 0 :
+            if filt_cat.event_list.size != 0:
                 nevents = len(filt_cat.all_events(fault_model))
                 times = np.array([ev.t0 for ev in filt_cat.all_events(fault_model)])
                 tot_time = (np.max(times) - np.min(times)) / seconds_per_year
@@ -692,55 +688,77 @@ class RsqSimCatalogue:
             else:
                 freq = 0
             mag_freq[mag] = freq
-        #convert to dataframe for plotting
+        # convert to dataframe for plotting
         mf_dict = pd.DataFrame.from_dict(mag_freq, orient='index', columns=['freq'])
         mf_dict.reset_index(inplace=True)
         mf_dict.rename(columns={"index": "mag"}, inplace=True)
-        #mf_dict["log_freq"] = np.log10(mf_dict["freq"])
-        #plot
-        ax=mf_dict.plot.scatter(x="mag", y="freq")
+        # mf_dict["log_freq"] = np.log10(mf_dict["freq"])
+        # plot
+        ax = mf_dict.plot.scatter(x="mag", y="freq")
         ax.set_yscale('log')
-        ax.set_xticks(np.arange(min_mag,10,1))
+        ax.set_xticks(np.arange(min_mag, 10, 1))
         plt.xlabel("Mw")
         plt.ylabel("# events with M>Mw per year")
-        plt.show()
 
+        if write is not None:
+            plt.savefig(write, dpi=300)
+        if show:
+            plt.show()
+        else:
+            plt.close()
 
-    def plot_mean_slip_vs_mag(self, fault_model: RsqSimMultiFault):
+    def plot_mean_slip_vs_mag(self, fault_model: RsqSimMultiFault, show: bool = True,
+                              write: str = None):
         """
         Plot the mean slip on each patch against the moment magnitude of the earthquake for each event in catalogue.
-        fault_model: RsqSimMultiFault
-        magnitude: either m0 or mw
+
+        Parameters
+        -------
+        fault_model : RsqSimMultiFault object
+        show : bool to indicate whether to display plot
+        write : file (if any) to write plot to
         """
-        #check mean slip is assigned
+        # check mean slip is assigned
         if self.event_mean_slip is None:
             self.assign_event_mean_slip(fault_model)
 
-        #create dictionary of magnitudes and mean slips
+        # create dictionary of magnitudes and mean slips
         mag_mean_slip = {}
         for event in self.all_events(fault_model):
             mag = event.mw
             mean_slip = self.event_mean_slip[event.event_id]
             mag_mean_slip[mag] = mean_slip
 
-        #convert to data frame for easy plotting
+        # convert to data frame for easy plotting
         slip_dict = pd.DataFrame.from_dict(mag_mean_slip, orient='index', columns=['Mean Slip'])
         slip_dict.reset_index(inplace=True)
         slip_dict.rename(columns={"index": "mag"}, inplace=True)
 
-        #plot
+        # plot
         ax = slip_dict.plot.scatter(x="mag", y="Mean Slip")
         plt.xlabel("M$_W$")
         plt.ylabel("Mean Slip (m)")
-        plt.show()
+        if write is not None:
+            plt.savefig(write, dpi=300)
+        if show:
+            plt.show()
+        else:
+            plt.close()
 
-    def plot_area_vs_mag(self,fault_model: RsqSimMultiFault):
+    def plot_area_vs_mag(self, fault_model: RsqSimMultiFault, show: bool = True,
+                         write: str = None):
         """
         Plot the area of each event against the seismic moment of the earthquake for each event in catalogue.
-        fault_model: RsqSimMultiFault
+
+        Parameters
+        -------
+        fault_model : RsqSimMultiFault object
+        show : bool to indicate whether to display plot
+        write : file (if any) to write plot to
+
         """
         # create dictionary of magnitudes and areas
-        mag_area ={}
+        mag_area = {}
         for event in self.all_events(fault_model):
             mag = event.mw
             mag_area[mag] = event.area
@@ -754,7 +772,13 @@ class RsqSimCatalogue:
         ax = area_dict.plot.scatter(x="mag", y="Area")
         plt.xlabel("M$_W$")
         plt.ylabel("Area (m$^2$)")
-        plt.show()
+        if write is not None:
+            plt.savefig(write, dpi=300)
+        if show:
+            plt.show()
+        else:
+            plt.close()
+
 
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627",
                fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in",
@@ -793,5 +817,3 @@ def combine_boundaries(bounds1: list, bounds2: list):
     min_bounds = [min([a, b]) for a, b in zip(bounds1, bounds2)]
     max_bounds = [max([a, b]) for a, b in zip(bounds1, bounds2)]
     return min_bounds[:2] + max_bounds[2:]
-
-

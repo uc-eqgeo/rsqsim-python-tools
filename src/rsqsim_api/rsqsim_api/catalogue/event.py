@@ -163,9 +163,9 @@ class RsqSimEvent:
 
     def find_mean_slip(self):
         if self.patches:
-            total_slip=np.sum(self.patch_slip)
-            npatches=len(self.patches)
-            if all([total_slip > 0.,npatches>0]) :
+            total_slip = np.sum(self.patch_slip)
+            npatches = len(self.patches)
+            if all([total_slip > 0., npatches > 0]):
                 self.mean_slip = total_slip/npatches
 
 
