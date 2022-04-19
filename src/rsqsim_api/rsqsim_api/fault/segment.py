@@ -301,7 +301,7 @@ class RsqSimSegment:
     def from_pandas(cls, dataframe: pd.DataFrame, segment_number: int,
                     patch_numbers: Union[list, tuple, set, np.ndarray], fault_name: str = None,
                     strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None, read_rake: bool = True,
-                    normalize_slip: Union[float, int] = 1, transform_from_utm: bool = False):
+                    read_slip_rate: bool = True, transform_from_utm: bool = False):
 
         triangles = dataframe.iloc[:, :9].to_numpy()
         if transform_from_utm:
@@ -319,11 +319,18 @@ class RsqSimSegment:
 
         triangle_ls = []
 
+        if read_slip_rate:
+            assert "slip_rate" in dataframe.columns, "Cannot read slip rate"
+            slip_rate=dataframe.slip_rate.to_numpy()
+        else:
+            #set slip rate to 1 for calculating tsunami green functions
+            slip_rate = 1
+
         if read_rake:
             assert "rake" in dataframe.columns, "Cannot read rake"
             assert all([a is None for a in (dip_slip, strike_slip)]), "Either read_rake or specify ds and ss, not both!"
             rake = dataframe.rake.to_numpy()
-            rake_dic = {r: (np.cos(np.radians(r)) * normalize_slip, np.sin(np.radians(r)) * normalize_slip) for r in np.unique(rake)}
+            rake_dic = {r: (np.cos(np.radians(r)), np.sin(np.radians(r))) for r in np.unique(rake)}
             assert len(rake) == len(triangles_nztm)
         else:
             rake = np.zeros((len(triangles_nztm),))
@@ -332,11 +339,16 @@ class RsqSimSegment:
         for i, (patch_num, triangle) in enumerate(zip(patch_numbers, triangles_nztm)):
             triangle3 = triangle.reshape(3, 3)
             if read_rake:
-                strike_slip = rake_dic[rake[i]][0]
-                dip_slip = rake_dic[rake[i]][1]
+                if read_slip_rate:
+                    strike_slip = rake_dic[rake[i]][0]*slip_rate[i]
+                    dip_slip = rake_dic[rake[i]][1]*slip_rate[i]
+                else:
+                    strike_slip = rake_dic[rake[i]][0]
+                    dip_slip = rake_dic[rake[i]][1]
+
             patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
                                           strike_slip=strike_slip,
-                                          dip_slip=dip_slip, rake=rake[i])
+                                          dip_slip=dip_slip, total_slip=slip_rate[i], rake=rake[i])
             triangle_ls.append(patch)
 
         fault.patch_outlines = triangle_ls

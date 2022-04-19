@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 
 from rsqsim_api.visualisation.utilities import plot_coast
 from rsqsim_api.fault.segment import RsqSimSegment
+from rsqsim_api.io.mesh_utils import array_to_mesh
 
 
 def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float] = 1):
@@ -190,7 +191,7 @@ class RsqSimMultiFault:
 
     @classmethod
     def read_fault_file_bruce(cls, main_fault_file: str, name_file: str, transform_from_utm: bool = False,
-                              from_pickle: bool = False, crs: int = 2193):
+                              from_pickle: bool = False, crs: int = 2193, read_slip_rate: bool = True):
         assert all([os.path.exists(fname) for fname in (main_fault_file, name_file)])
         with open(name_file) as fid:
             names_strings = fid.readlines()
@@ -219,7 +220,7 @@ class RsqSimMultiFault:
         fault_num_unique = dict.fromkeys(fault_numbers).keys()
 
         if len(fault_names_unique) != len(fault_num_unique):
-            names_and_numbers = pd.DataFrame({"Name": fault_names, "Num":fault_numbers})
+            names_and_numbers = pd.DataFrame({"Name": fault_names, "Num": fault_numbers})
             for name in fault_names_unique:
                 name_num_i = names_and_numbers[names_and_numbers.Name == name]
                 for i, fault_num in enumerate(name_num_i.Num.unique()):
@@ -227,7 +228,8 @@ class RsqSimMultiFault:
                     new_names = fault_num_df.Name.astype(str) + " " + str(i)
                     names_and_numbers.loc[new_names.index, "Name"] = new_names.values
 
-            acton = names_and_numbers.loc[(names_and_numbers.Name.str.contains("Acton")) & (names_and_numbers.Num == 120), "Num"]
+            acton = names_and_numbers.loc[
+                (names_and_numbers.Name.str.contains("Acton")) & (names_and_numbers.Num == 120), "Num"]
             all_fault_df.loc[acton.index, "fault_num"] = 9999
             names_and_numbers.loc[acton.index, "Num"] = 9999
 
@@ -243,16 +245,18 @@ class RsqSimMultiFault:
         for fault_num, fault_name in zip(fault_num_unique, fault_names_unique):
             mask = fault_numbers == fault_num
             fault_data = all_fault_df[mask]
-            fault_name_stripped = fault_name.lstrip("'[").replace(" ","")
+            fault_name_stripped = fault_name.lstrip("'[").replace(" ", "")
 
             num_triangles = len(fault_data)
             patch_numbers = np.arange(patch_start, patch_start + num_triangles)
 
             if from_pickle:
+                assert read_slip_rate, "from pickle may not read sip rates correctly"
                 fault_i = RsqSimSegment.from_pickle(fault_data, fault_num, patch_numbers, fault_name_stripped)
             else:
                 fault_i = RsqSimSegment.from_pandas(fault_data, fault_num, patch_numbers, fault_name_stripped,
-                                                    transform_from_utm=transform_from_utm)
+                                                        transform_from_utm=transform_from_utm,
+                                                        read_slip_rate=read_slip_rate)
 
             segment_ls.append(fault_i)
             patch_start += num_triangles
@@ -348,7 +352,50 @@ class RsqSimMultiFault:
     def plot_slip_distribution_2d(self):
         pass
 
+    def slip_rate_array(self, include_zeros: bool = True,
+                        min_slip_rate: float = None, nztm_to_lonlat: bool = False):
+        all_patches = []
 
+        for fault in self.faults:
+            for patch_id in fault.patch_numbers:
+                patch = fault.patch_dic[patch_id]
+                if nztm_to_lonlat:
+                    triangle_corners = patch.vertices_lonlat.flatten()
+                else:
+                    triangle_corners = patch.vertices.flatten()
+                slip_rate = patch.total_slip
+                if min_slip_rate is not None:
+                    if slip_rate >= min_slip_rate:
+                        patch_line = np.hstack([triangle_corners, np.array([slip_rate, patch.rake])])
+                        all_patches.append(patch_line)
+                    elif include_zeros:
+                        patch_line = np.hstack([triangle_corners, np.array([0., 0.])])
+                        all_patches.append(patch_line)
+                else:
+                    patch_line = np.hstack([triangle_corners, np.array([slip_rate, patch.rake])])
+                    all_patches.append(patch_line)
+
+        return np.array(all_patches)
+
+    def slip_rate_to_mesh(self, include_zeros: bool = True,
+                          min_slip_rate: float = None, nztm_to_lonlat: bool = False):
+
+        slip_rate_array = self.slip_rate_array(include_zeros=include_zeros,
+                                               min_slip_rate=min_slip_rate, nztm_to_lonlat=nztm_to_lonlat)
+
+        mesh = array_to_mesh(slip_rate_array[:, :9])
+        data_dic = {}
+        for label, index in zip(["slip", "rake"], [9, 10]):
+            data_dic[label] = slip_rate_array[:, index]
+        mesh.cell_data = data_dic
+
+        return mesh
+
+    def slip_rate_to_vtk(self, vtk_file: str, include_zeros: bool = True,
+                         min_slip_rate: float = None, nztm_to_lonlat: bool = False):
+        mesh = self.slip_rate_to_mesh(include_zeros=include_zeros,
+                                      min_slip_rate=min_slip_rate, nztm_to_lonlat=nztm_to_lonlat)
+        mesh.write(vtk_file, file_format="vtk")
 
     def search_name(self, search_string: str):
         """
@@ -361,9 +408,11 @@ class RsqSimMultiFault:
         """
         Finds the closest patches to specified coordinates.
         """
-        sq_dist = [(fault, vertex, (x-vertex[0])**2 + (y-vertex[1])**2) for fault in self.faults for vertex in fault.vertices]
-        closest_fault, closest_point, min_dist = min(sq_dist, key = lambda t: t[2])
-        patches = [patch.patch_number for patch in closest_fault.patch_outlines if np.equal(closest_point, patch.vertices).all(axis=1).any()]
+        sq_dist = [(fault, vertex, (x - vertex[0]) ** 2 + (y - vertex[1]) ** 2) for fault in self.faults for vertex in
+                   fault.vertices]
+        closest_fault, closest_point, min_dist = min(sq_dist, key=lambda t: t[2])
+        patches = [patch.patch_number for patch in closest_fault.patch_outlines if
+                   np.equal(closest_point, patch.vertices).all(axis=1).any()]
         return patches
 
     @property
