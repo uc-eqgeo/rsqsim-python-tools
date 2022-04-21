@@ -658,7 +658,7 @@ class RsqSimCatalogue:
         return plots
 
     def plot_gr(self, fault_model: RsqSimMultiFault, show: bool = True,
-                write: str = None):
+                write: str = None, best_fit: bool = True):
         """
         Plot Gutenburg-Richter distribution for a given catalogue.
         y-axis: log(annual frequency of events with M>Mw)
@@ -669,12 +669,13 @@ class RsqSimCatalogue:
         fault_model : RsqSimMultiFault object
         show : bool to indicate whether to display plot
         write : file (if any) to write plot to
+        best_fit : whether to plot best fit linear trend w/b value
         """
         mag_freq: dict[int, float | Any] = {}
         # find min magnitude of catalogue
         mws = np.array([ev.mw for ev in self.all_events(fault_model)])
         min_mag = np.floor(np.min(mws))
-        max_mag = np.ceil(np.max(mws))
+        max_mag = np.max(mws)
 
         for mag in np.arange(min_mag, max_mag, 0.5):
 
@@ -692,9 +693,15 @@ class RsqSimCatalogue:
         mf_dict = pd.DataFrame.from_dict(mag_freq, orient='index', columns=['freq'])
         mf_dict.reset_index(inplace=True)
         mf_dict.rename(columns={"index": "mag"}, inplace=True)
-        # mf_dict["log_freq"] = np.log10(mf_dict["freq"])
+        mf_dict["log_freq"] = np.log10(mf_dict["freq"])
+
         # plot
         ax = mf_dict.plot.scatter(x="mag", y="freq")
+        if best_fit:
+            gr_fit=np.polyfit(mf_dict['mag'],mf_dict['log_freq'],1)
+            gr_trend=np.poly1d(gr_fit)
+            plt.plot(mf_dict["mag"],10**gr_trend(mf_dict["mag"]),'r--',label="b="+str(round(abs(gr_trend.c[0]),2)))
+            ax.legend()
         ax.set_yscale('log')
         ax.set_xticks(np.arange(min_mag, 10, 1))
         plt.xlabel("Mw")
@@ -708,7 +715,7 @@ class RsqSimCatalogue:
             plt.close()
 
     def plot_mean_slip_vs_mag(self, fault_model: RsqSimMultiFault, show: bool = True,
-                              write: str = None):
+                              write: str = None, plot_rel: bool = True):
         """
         Plot the mean slip on each patch against the moment magnitude of the earthquake for each event in catalogue.
 
@@ -717,6 +724,7 @@ class RsqSimCatalogue:
         fault_model : RsqSimMultiFault object
         show : bool to indicate whether to display plot
         write : file (if any) to write plot to
+        plot_rel : plot expected analytic relationship best on scaling laws
         """
         # check mean slip is assigned
         if self.event_mean_slip is None:
@@ -733,11 +741,19 @@ class RsqSimCatalogue:
         slip_dict = pd.DataFrame.from_dict(mag_mean_slip, orient='index', columns=['Mean Slip'])
         slip_dict.reset_index(inplace=True)
         slip_dict.rename(columns={"index": "mag"}, inplace=True)
-
+        slip_dict["log_slip"] = np.log10(slip_dict["Mean Slip"])
         # plot
-        ax = slip_dict.plot.scatter(x="mag", y="Mean Slip")
+        ax = slip_dict.plot.scatter(x="mag", y="log_slip")
+        if plot_rel:
+            trend_func=np.polyfit(slip_dict["mag"],slip_dict["log_slip"],1)
+            trend_fit=np.poly1d(trend_func)
+            plt.plot(slip_dict["mag"],trend_fit(slip_dict["mag"]),"r--",label="y = {}".format(trend_fit))
+            offset=(1./3.)*(slip_dict["mag"][0])-slip_dict["log_slip"][0]
+            plt.plot(slip_dict["mag"],(1./3.)*(slip_dict["mag"])-offset
+                     ,"b--",label="y = 1/3 x - {:.2f}".format(offset))
+            plt.legend()
         plt.xlabel("M$_W$")
-        plt.ylabel("Mean Slip (m)")
+        plt.ylabel("log$_1$$_0$ (Mean Slip (m))")
         if write is not None:
             plt.savefig(write, dpi=300)
         if show:
@@ -746,15 +762,17 @@ class RsqSimCatalogue:
             plt.close()
 
     def plot_area_vs_mag(self, fault_model: RsqSimMultiFault, show: bool = True,
-                         write: str = None):
+                         write: str = None, plot_rel: bool = True):
         """
         Plot the area of each event against the seismic moment of the earthquake for each event in catalogue.
 
         Parameters
         -------
+
         fault_model : RsqSimMultiFault object
         show : bool to indicate whether to display plot
         write : file (if any) to write plot to
+        plot_rel : plot best fit logarithmic trend
 
         """
         # create dictionary of magnitudes and areas
@@ -767,11 +785,17 @@ class RsqSimCatalogue:
         area_dict = pd.DataFrame.from_dict(mag_area, orient='index', columns=['Area'])
         area_dict.reset_index(inplace=True)
         area_dict.rename(columns={"index": "mag"}, inplace=True)
-
+        area_dict["log_area"] = np.log10(area_dict["Area"])
         # plot
-        ax = area_dict.plot.scatter(x="mag", y="Area")
+        ax = area_dict.plot.scatter(x="mag", y="log_area")
+        if plot_rel:
+            log_fit=np.polyfit(area_dict["mag"],area_dict["log_area"],1)
+            log_func=np.poly1d(log_fit)
+            plt.plot(area_dict["mag"], log_func(area_dict["mag"]), 'r--',
+                     label="y = {}".format(log_func))
+            plt.legend()
         plt.xlabel("M$_W$")
-        plt.ylabel("Area (m$^2$)")
+        plt.ylabel("log$_1$$_0$ (Area (m$^2$))")
         if write is not None:
             plt.savefig(write, dpi=300)
         if show:
