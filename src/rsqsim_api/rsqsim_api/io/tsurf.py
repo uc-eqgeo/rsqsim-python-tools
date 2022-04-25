@@ -192,7 +192,7 @@ class tsurf(object):
                     try:
                         value = ' '.join(repr(item) for item in value)
                     except TypeError:
-                        value = repr(item)
+                        value = repr(value)
                 if key == 'name':
                     outfile.write('{}:{}\n'.format(key, value))
                 else:
