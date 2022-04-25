@@ -209,7 +209,7 @@ class tsurf(object):
                     try:
                         value = ' '.join(repr(item) for item in value)
                     except TypeError:
-                        value = repr(item)
+                        value = repr(value)
                 outfile.write('{} {}\n'.format(key, value))
             outfile.write('END_ORIGINAL_COORDINATE_SYSTEM\n')
 
