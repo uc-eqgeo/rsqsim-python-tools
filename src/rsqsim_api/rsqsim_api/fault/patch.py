@@ -165,7 +165,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         assert vertex_array.ndim == 2, "2D array expected"
         # Check that at least 3 vertices supplied
         assert vertex_array.shape[0] >= 3, "At least 3 vertices (rows in array) expected"
-        assert vertex_array.shape[1] == 3, "Three coordinates (x,y,z expected for each vertex"
+        assert vertex_array.shape[1] == 3, "Three coordinates (x,y,z) expected for each vertex"
 
         if vertex_array.shape[0] > 4:
             print("{}, patch {:d}: more patches than expected".format(self.segment.name, self.patch_number))
@@ -273,11 +273,17 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
 
     def horizontal_sv_to_ds_ss(self, slipvec, magnitude: Union[float, int] = 1):
         """
-        Program to perform the 'inverse' of slipvec.
-        Arguments: strike, dip azimuth of slip vector (all degrees)
-        Returns rake (degrees)
+        Function to perform the 'inverse' of slipvec.
+        Requires strike and dip of patch to be set (degrees)
+        Returns strike perpendicular & strike parallel components of rake vector and rake (degrees)
+
+        Parameters
+        ----------
+        slipvec :  azimuth of slip vector (degrees)
+        magnitude : magnitude of slip vector (results are normalised)
         """
-        assert isinstance(slipvec, ())
+        #assert isinstance(slipvec, ())
+        # angle is the angle between the horizontal azimuth of the slip vector and the strike
         angle = self.strike - slipvec
         if angle < -180.:
             angle = 360. + angle
@@ -292,12 +298,40 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
             strike_par = 0
         else:
             strike_par = np.cos(np.radians(angle))
-            strike_perp = np.cos(np.radians(angle)) / np.cos(np.radians(self.dip))
+            strike_perp = np.sin(np.radians(angle)) / np.cos(np.radians(self.dip))
             normalizer = magnitude / np.linalg.norm(np.array([strike_par, strike_perp]))
             strike_par *= normalizer
             strike_perp *= normalizer
+            rake = np.rad2deg(np.arctan2(strike_perp,strike_par))
 
-        return strike_perp, strike_par
+        return strike_perp, strike_par, rake
+
+    def rake_from_stress_tensor(self, sigma1: np.ndarray):
+        """
+        Calculate rake for motion in direction of shear stress resolved on to fault patch. Assumes sigma2=sigma3=0.
+        Parameters
+        ----------
+        sigma1 : maximum principle stress as vector (might need to change this to include multiple principle stresses and/or different ways of writing the principal stresses) 
+        
+        """
+
+        assert len(sigma1) == 3
+
+        assert all([ a is not None for a in (self.along_strike_vector,self.normal_vector)])
+
+        if norm_3d(self.normal_vector == 1.) :
+            unit_norm=self.normal_vector
+        else:
+            unit_norm=self.normal_vector/norm_3d(self.normal_vector)
+
+        normalStress=np.dot(sigma1,unit_norm)*unit_norm
+        shearStress=sigma1 - normalStress
+
+        self.rake = np.rad2deg(np.arccos(np.dot(shearStress,self.along_strike_vector)/(norm_3d(shearStress)*norm_3d(self.along_strike_vector))))
+
+
+
+
 
     def as_polygon(self):
         return Polygon(self.vertices)

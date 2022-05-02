@@ -345,9 +345,48 @@ class RsqSimMultiFault:
         if show:
             fig.show()
 
-    def plot_fault_outlines(self, ax: plt.Axes, edgecolor: str = "r", linewidth: int = 0.1, clip_bounds: list = None,
+    def plot_fault_traces(self, fault_list: Iterable = None, ax: plt.Axes = None, edgecolor: str = "r", linewidth: int = 0.1, clip_bounds: list = None,
                             linestyle: str = "-", facecolor: str = "0.8"):
-        pass
+        # TODO: fix projection issue which means fault traces aren't plotted on correct scale
+        if fault_list is not None:
+            assert isinstance(fault_list, Iterable)
+            assert any([fault.lower() in self.names for fault in fault_list])
+            valid_names = []
+            for fault_name in fault_list:
+                if fault_name not in self.names:
+                    print("Fault not found: {}".format(fault_name))
+                else:
+                    valid_names.append(fault_name)
+            assert valid_names, "No valid fault names supplied"
+        else:
+            valid_names = self.names
+
+        # Find boundary
+        valid_faults = [self.name_dic[name] for name in valid_names]
+        x1 = min([min(fault.vertices[:, 0]) for fault in valid_faults])*0.99
+        y1 = min([min(fault.vertices[:, 1]) for fault in valid_faults])*0.99
+        x2 = max([max(fault.vertices[:, 0]) for fault in valid_faults])*1.01
+        y2 =max([max(fault.vertices[:, 1]) for fault in valid_faults])*1.01
+
+        boundary = [x1, y1, x2, y2]
+        print(boundary)
+        if ax is None:
+            fig, ax = plt.subplots()
+        else:
+            assert isinstance(ax,plt.Axes)
+        # plot traces
+        for fault in valid_faults:
+            faultArr=np.array(fault.trace.coords)
+            ax.plot(faultArr[:,0],faultArr[:,1],"r")
+            print(np.array(fault.trace.coords))
+        x1,y1,x2,y2=plot_coast(ax, clip_boundary=boundary)
+
+        ax.set_xlim(x1,x2)
+        ax.set_ylim(y1,y2)
+        ax.set_aspect("equal")
+
+        return ax
+
 
     def plot_slip_distribution_2d(self):
         pass
