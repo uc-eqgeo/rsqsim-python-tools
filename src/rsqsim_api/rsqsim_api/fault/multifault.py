@@ -58,8 +58,7 @@ class RsqSimMultiFault:
             return self.patch_dic[patch_ls]
         else:
             assert isinstance(patch_ls, (tuple, list, np.ndarray))
-            assert patch_ls
-            assert all([isinstance(x, int) for x in patch_ls])
+            assert all([isinstance(x, Union[int,np.int) for x in patch_ls])
             fault_ls = list(set([self.patch_dic[patch_number].segment for patch_number in patch_ls]))
             return RsqSimMultiFault(fault_ls)
 
