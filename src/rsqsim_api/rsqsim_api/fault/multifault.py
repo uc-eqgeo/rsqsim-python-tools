@@ -50,15 +50,18 @@ class RsqSimMultiFault:
 
         self.faults_with_patches = {patch_num: patch.segment for patch_num, patch in self.patch_dic.items()}
 
-    def filter_faults_by_patch_numbers(self, patch_ls: Union[int, list, tuple, np.ndarray]):
+    def filter_faults_by_patch_numbers(self, patch_ls: Union[int, list, tuple, np.ndarray],fault_from_single_patch : bool =False):
         """
 
         """
-        if isinstance(patch_ls, int):
-            return self.patch_dic[patch_ls]
+        if isinstance(patch_ls, np.integer):
+            if fault_from_single_patch:
+                return self.faults_with_patches[patch_ls]
+            else:
+                return self.patch_dic[patch_ls]
         else:
             assert isinstance(patch_ls, (tuple, list, np.ndarray))
-            assert all([isinstance(x, Union[int,np.int) for x in patch_ls])
+            assert all([isinstance(x, np.integer) for x in patch_ls])
             fault_ls = list(set([self.patch_dic[patch_number].segment for patch_number in patch_ls]))
             return RsqSimMultiFault(fault_ls)
 
