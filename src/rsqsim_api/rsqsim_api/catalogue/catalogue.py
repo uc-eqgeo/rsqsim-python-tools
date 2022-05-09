@@ -676,16 +676,19 @@ class RsqSimCatalogue:
         mws = np.array([ev.mw for ev in self.all_events(fault_model)])
         min_mag = np.floor(np.min(mws))
         max_mag = np.max(mws)
-
+        print(min_mag,max_mag)
         for mag in np.arange(min_mag, max_mag, 0.5):
 
             filt_cat = self.filter_whole_catalogue(min_mw=mag)
-
+            print(mag)
             if filt_cat.event_list.size != 0:
+
                 nevents = len(filt_cat.all_events(fault_model))
+                print(nevents)
                 times = np.array([ev.t0 for ev in filt_cat.all_events(fault_model)])
                 tot_time = (np.max(times) - np.min(times)) / seconds_per_year
                 freq = nevents / tot_time
+                print(freq)
             else:
                 freq = 0
             mag_freq[mag] = freq
@@ -696,6 +699,7 @@ class RsqSimCatalogue:
         mf_dict["log_freq"] = np.log10(mf_dict["freq"])
 
         # plot
+        print("plotting")
         ax = mf_dict.plot.scatter(x="mag", y="freq")
         if best_fit:
             gr_fit=np.polyfit(mf_dict['mag'],mf_dict['log_freq'],1)
