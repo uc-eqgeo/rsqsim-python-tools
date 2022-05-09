@@ -564,7 +564,7 @@ class RsqSimSegment:
     @property
     def fault_outline(self):
         multip = MultiPolygon(patch.as_polygon() for patch in self.patch_outlines)
-        return unary_union(list(multip))
+        return unary_union(list(multip.geoms))
 
     def plot_2d(self, ax: plt.Axes):
         ax.triplot(self.vertices[:, 0], self.vertices[:, 1], self.triangles)
