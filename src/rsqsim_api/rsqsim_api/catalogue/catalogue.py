@@ -420,27 +420,6 @@ class RsqSimCatalogue:
         multi_cat = self.filter_by_events(multifault_ids)
         return multifault,multi_cat
 
-
-    def find_single_fault(self,fault_model: RsqSimMultiFault):
-        """
-        Identify events involving only 1 fault. Note that this is based on named fault segments so might not
-        reflect the area ruptured/ be consistent with other approaches to understanding multifault ruptures.
-
-        Parameters
-        ----------
-        fault_model : RsqSimMultiFault object
-
-        Returns
-        -------
-        list of single fault events
-        RsqSimCatalogue with only single ault ruptures
-        """
-        singlefault = [ev for ev in self.all_events(fault_model) if ev.num_faults == 1]
-        # and filter catalogue to just these events
-        singlefault_ids = [event.event_id for event in singlefault]
-        single_cat = self.filter_by_events(singlefault_ids)
-        return singlefault,single_cat
-
     def filter_by_region(self, region: Union[Polygon, gpd.GeoSeries], fault_model: RsqSimMultiFault,
                          event_numbers: Iterable = None):
         pass
@@ -759,7 +738,7 @@ class RsqSimCatalogue:
             if filt_cat.event_list.size != 0:
 
                 nevents = len(filt_cat.all_events(fault_model))
-
+                print(nevents)
                 times = np.array([ev.t0 for ev in filt_cat.all_events(fault_model)])
                 tot_time = (np.max(times) - np.min(times)) / csts.seconds_per_year
                 freq = nevents / tot_time
