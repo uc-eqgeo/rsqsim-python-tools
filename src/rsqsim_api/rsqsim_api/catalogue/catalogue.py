@@ -742,8 +742,6 @@ class RsqSimCatalogue:
             gr_trend=np.poly1d(gr_fit)
             plt.plot(mf_dict["mag"],10**gr_trend(mf_dict["mag"]),'r--',label="b="+str(round(abs(gr_trend.c[0]),2)))
             ax.legend()
-
-        # compute aki b value log10(exp(1))/(mean(magnitudes above reference magnitude) - reference magnitude);
         ax.set_yscale('log')
         ax.set_xticks(np.arange(min_mag, 10, 1))
         plt.xlabel("Mw")
