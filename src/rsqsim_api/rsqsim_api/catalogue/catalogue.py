@@ -387,8 +387,25 @@ class RsqSimCatalogue:
                 print(fault.name)
             return
 
-    def find_multi_fault(self):
-        pass
+    def find_multi_fault(self,fault_model: RsqSimMultiFault):
+        """
+        Identify events involving more than 1 fault. Note that this is based on named fault segments so might not
+        reflect the area ruptured/ be consistent with other approaches to understanding multifault ruptures.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault object
+
+        Returns
+        -------
+        list of multifault events
+        RsqSimCatalogue with only multifault ruptures
+        """
+        multifault = [ev for ev in self.all_events(fault_model) if ev.num_faults > 1]
+        # and filter catalogue to just these events
+        multifault_ids = [event.event_id for event in multifault]
+        multi_cat = self.filter_by_events(multifault_ids)
+        return multifault,multi_cat
 
     def filter_by_region(self, region: Union[Polygon, gpd.GeoSeries], fault_model: RsqSimMultiFault,
                          event_numbers: Iterable = None):
@@ -682,19 +699,18 @@ class RsqSimCatalogue:
         mws = np.array([ev.mw for ev in self.all_events(fault_model)])
         min_mag = np.floor(np.min(mws))
         max_mag = np.max(mws)
-        print(min_mag,max_mag)
+
         for mag in np.arange(min_mag, max_mag, 0.5):
 
             filt_cat = self.filter_whole_catalogue(min_mw=mag)
-            print(mag)
+            print("Filtering for {}\n".format(mag))
             if filt_cat.event_list.size != 0:
 
                 nevents = len(filt_cat.all_events(fault_model))
-                print(nevents)
+
                 times = np.array([ev.t0 for ev in filt_cat.all_events(fault_model)])
                 tot_time = (np.max(times) - np.min(times)) / seconds_per_year
                 freq = nevents / tot_time
-                print(freq)
             else:
                 freq = 0
             mag_freq[mag] = freq
