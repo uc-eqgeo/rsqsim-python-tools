@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 from rsqsim_api.visualisation.utilities import plot_coast
 from rsqsim_api.fault.segment import RsqSimSegment
 from rsqsim_api.io.mesh_utils import array_to_mesh
-
+import rsqsim_api.io.rsqsim_constants as csts
 
 def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float] = 1):
     """
@@ -389,9 +389,37 @@ class RsqSimMultiFault:
 
         return ax
 
+    def write_fault_traces_to_gis(self, fault_list: Iterable = None, prefix: str = "./bruce_faults"):
+        if fault_list is not None:
+            assert isinstance(fault_list, Iterable)
+            assert any([fault.lower() in self.names for fault in fault_list])
+            valid_names = []
+            for fault_name in fault_list:
+                if fault_name not in self.names:
+                    print("Fault not found: {}".format(fault_name))
+                else:
+                    valid_names.append(fault_name)
+            assert valid_names, "No valid fault names supplied"
+        else:
+            valid_names = self.names
+        valid_faults = [self.name_dic[name] for name in valid_names]
+        fault_dict = {'Names': [], 'geometry': [], 'Slip Rate': []}
+        for fault in valid_faults:
+            trace = fault.trace
+            fName = fault.name
+
+            mean_slip_rate = fault.mean_slip_rate * csts.seconds_per_year * 1000.
+            fault_dict['Names'].append(fName)
+            fault_dict['geometry'].append(trace)
+            fault_dict['Slip Rate'].append(mean_slip_rate)
+
+        all_faults = gpd.GeoDataFrame.from_dict(fault_dict)
+        all_faults.to_file(prefix+".shp", crs="EPSG:2193")
+
 
     def plot_slip_distribution_2d(self):
         pass
+
 
     def slip_rate_array(self, include_zeros: bool = True,
                         min_slip_rate: float = None, nztm_to_lonlat: bool = False):

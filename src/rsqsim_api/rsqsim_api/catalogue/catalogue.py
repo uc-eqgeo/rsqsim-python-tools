@@ -21,6 +21,7 @@ from rsqsim_api.tsunami.tsunami import SeaSurfaceDisplacements
 from rsqsim_api.visualisation.utilities import plot_coast, plot_background, plot_hillshade_niwa, plot_lake_polygons, \
     plot_river_lines, plot_highway_lines, plot_boundary_polygons
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
+import rsqsim_api.io.rsqsim_constants as csts
 
 fint = Union[int, float]
 sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
@@ -29,8 +30,6 @@ sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
 
 list_file_suffixes = (".pList", ".eList", ".dList", ".tList")
 extra_file_suffixes = (".dmuList", ".dsigmaList", ".dtauList", ".taupList")
-
-seconds_per_year = 31557600.0
 
 
 def get_mask(ev_ls, min_patches, faults_with_patches, event_list, patch_list, queue):
@@ -703,7 +702,7 @@ class RsqSimCatalogue:
                 nevents = len(filt_cat.all_events(fault_model))
 
                 times = np.array([ev.t0 for ev in filt_cat.all_events(fault_model)])
-                tot_time = (np.max(times) - np.min(times)) / seconds_per_year
+                tot_time = (np.max(times) - np.min(times)) / csts.seconds_per_year
                 freq = nevents / tot_time
             else:
                 freq = 0
