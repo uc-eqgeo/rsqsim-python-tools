@@ -14,7 +14,7 @@ from shapely.geometry import LineString, MultiPolygon
 from rsqsim_api.io.read_utils import read_dxf, read_stl
 from rsqsim_api.io.tsurf import tsurf
 from rsqsim_api.fault.patch import RsqSimTriangularPatch, RsqSimGenericPatch
-seconds_per_year = 31557600.0
+import rsqsim_api.io.rsqsim_constants as csts
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
 
@@ -70,6 +70,7 @@ class RsqSimSegment:
         self._adjacency_map = None
         self._laplacian = None
         self._boundary = None
+        self._mean_slip_rate =None
 
         self.patch_type = patch_type
         self.name = fault_name
@@ -176,6 +177,26 @@ class RsqSimSegment:
     @property
     def quaternion(self):
         return None
+
+    @property
+    def mean_slip_rate(self):
+        if self._mean_slip_rate is None:
+            self.get_mean_slip_rate()
+
+        return self._mean_slip_rate
+
+
+    def get_mean_slip_rate(self):
+
+        all_patches = []
+
+        for patch_id in self.patch_numbers:
+            patch = self.patch_dic[patch_id]
+            slip_rate = patch.total_slip
+            all_patches.append(slip_rate)
+
+        fault_slip_rate = np.mean(all_patches)
+        self._mean_slip_rate = fault_slip_rate
 
 
     def get_unique_vertices(self):
@@ -527,7 +548,7 @@ class RsqSimSegment:
         tris = pd.DataFrame(self.patch_triangle_rows)
         rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
         tris.loc[:, 9] = rakes
-        slip_rates = pd.Series(self.dip_slip * 1.e-3 / seconds_per_year)
+        slip_rates = pd.Series(self.dip_slip * 1.e-3 / csts.seconds_per_year)
         tris.loc[:, 10] = slip_rates
         segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=np.int)
         tris.loc[:, 11] = segment_num
