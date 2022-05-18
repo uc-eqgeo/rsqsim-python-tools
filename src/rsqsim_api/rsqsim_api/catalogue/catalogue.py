@@ -68,6 +68,7 @@ class RsqSimCatalogue:
         self._patch_slip = None
         self._accumulated_slip = None
         self._event_mean_slip = None
+        self._event_length = None
         self._event_mean_sdr = None
         self._event_length = None
         # Useful attributes
@@ -441,6 +442,7 @@ class RsqSimCatalogue:
 
     def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault,
                          child_processes: int = 0, min_patches: int = 1):
+        assert isinstance(fault_model,RsqSimMultiFault), "Fault model required"
         if isinstance(event_number, (int, np.int)):
             ev_ls = [event_number]
         else:
@@ -738,7 +740,7 @@ class RsqSimCatalogue:
             if filt_cat.event_list.size != 0:
 
                 nevents = len(filt_cat.all_events(fault_model))
-                print(nevents)
+
                 times = np.array([ev.t0 for ev in filt_cat.all_events(fault_model)])
                 tot_time = (np.max(times) - np.min(times)) / csts.seconds_per_year
                 freq = nevents / tot_time
