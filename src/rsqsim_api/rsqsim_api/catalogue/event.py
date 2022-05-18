@@ -12,7 +12,7 @@ from matplotlib.widgets import Slider
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import operator
 import numpy as np
-from shapely.geometry import Polygon
+from shapely.geometry import Point,Polygon
 from shapely.ops import unary_union
 from pyproj import Transformer
 import geopandas as gpd
@@ -49,6 +49,7 @@ class RsqSimEvent:
         self.patch_time = None
         self.patch_numbers = None
         self.mean_slip = None
+        self.length = None
 
     @property
     def num_faults(self):
@@ -168,6 +169,20 @@ class RsqSimEvent:
             if all([total_slip > 0., npatches > 0]):
                 self.mean_slip = total_slip/npatches
 
+    def find_length(self,min_slip_percentile: float | None =None):
+        if self.patches:
+            rupture_length=0.
+            for fault in self.faults:
+                fault_trace=fault.trace
+                patch_locs=[]
+                for patch in self.patches:
+                    centroid = Point(patch.centre[:2])
+
+                    patch_dist = fault_trace.project(centroid)
+                    patch_locs.append(patch_dist)
+                rupture_length += np.ptp(patch_locs)
+
+        self.length=rupture_length
 
 
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,

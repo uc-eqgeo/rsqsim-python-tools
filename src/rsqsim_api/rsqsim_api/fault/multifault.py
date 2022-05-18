@@ -389,7 +389,7 @@ class RsqSimMultiFault:
 
         return ax
 
-    def write_fault_traces_to_gis(self, fault_list: Iterable = None, prefix: str = "./bruce_faults"):
+    def write_fault_traces_to_gis(self, fault_list: Iterable = None, prefix: str = "./bruce_faults",crs: str ="EPSG:2193" ):
         if fault_list is not None:
             assert isinstance(fault_list, Iterable)
             assert any([fault.lower() in self.names for fault in fault_list])
@@ -414,7 +414,7 @@ class RsqSimMultiFault:
             fault_dict['Slip Rate'].append(mean_slip_rate)
 
         all_faults = gpd.GeoDataFrame.from_dict(fault_dict)
-        all_faults.to_file(prefix+".shp", crs="EPSG:2193")
+        all_faults.to_file(prefix+".shp", crs=crs)
 
 
     def plot_slip_distribution_2d(self):
