@@ -219,7 +219,6 @@ class RsqSimMultiFault:
 
         fault_numbers = all_fault_df.fault_num.to_numpy()
         fault_names_unique = dict.fromkeys(fault_names).keys()
-        #print(fault_names_unique)
         fault_num_unique = dict.fromkeys(fault_numbers).keys()
 
         if len(fault_names_unique) != len(fault_num_unique):
@@ -415,6 +414,7 @@ class RsqSimMultiFault:
             fault_dict['Slip Rate'].append(mean_slip_rate)
 
         all_faults = gpd.GeoDataFrame.from_dict(fault_dict)
+        all_faults.to_file(prefix+".shp", crs=crs)
         all_faults.to_file(prefix+"_traces.shp", crs=crs)
 
     def write_fault_outlines_to_gis(self, fault_list: Iterable = None, prefix: str = "./bruce_faults",crs: str ="EPSG:2193" ):

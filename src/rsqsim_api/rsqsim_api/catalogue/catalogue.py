@@ -68,6 +68,7 @@ class RsqSimCatalogue:
         self._patch_slip = None
         self._accumulated_slip = None
         self._event_mean_slip = None
+        self._event_length = None
         self._event_mean_sdr = None
         self._event_length = None
         # Useful attributes
@@ -570,6 +571,17 @@ class RsqSimCatalogue:
             event_mean_sdr[event.event_id] = [round(event.mean_strike),round(event.mean_dip),round(event.mean_rake)]
         self._event_mean_sdr = event_mean_sdr
 
+
+    def assign_event_length(self, fault_model: RsqSimMultiFault):
+        """
+        Create dict of event ids with associated maximum horizontal straight line distances between patches which slip in them.
+        Note that this overwrites any other value which could have been assigned to event length.
+        """
+        event_lengths = {}
+        for event in self.all_events(fault_model):
+           event.find_length()
+           event_lengths[event.event_id] = event.length
+        self._event_length = event_lengths
 
     def assign_event_length(self, fault_model: RsqSimMultiFault):
         """
