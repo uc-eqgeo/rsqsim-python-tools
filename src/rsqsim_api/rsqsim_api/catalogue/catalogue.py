@@ -68,6 +68,7 @@ class RsqSimCatalogue:
         self._patch_slip = None
         self._accumulated_slip = None
         self._event_mean_slip = None
+        self._event_length = None
         # Useful attributes
         self.t0, self.m0, self.mw = (None,) * 3
         self.x, self.y, self.z = (None,) * 3
@@ -142,6 +143,10 @@ class RsqSimCatalogue:
     @property
     def event_mean_slip(self):
         return self._event_mean_slip
+
+    @property
+    def event_length(self):
+        return self._event_length
 
     @classmethod
     def from_dataframe(cls, dataframe: pd.DataFrame, reproject: List = None):
@@ -527,6 +532,17 @@ class RsqSimCatalogue:
             event.find_mean_slip()
             event_mean_slip[event.event_id] = event.mean_slip
         self._event_mean_slip = event_mean_slip
+
+    def assign_event_length(self, fault_model: RsqSimMultiFault):
+        """
+        Create dict of event ids with associated maximum horizontal straight line distances between patches which slip in them.
+        Note that this overwrites any other value which could have been assigned to event length.
+        """
+        event_lengths = {}
+        for event in self.all_events(fault_model):
+           event.find_length()
+           event_lengths[event.event_id] = event.length
+        self._event_length = event_lengths
 
     def plot_accumulated_slip_2d(self, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma",
                                  crustal_cmap: str = "viridis", show: bool = True,
