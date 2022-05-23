@@ -1,4 +1,3 @@
-#!/usr/bin/python
 import os.path
 from os import mkdir
 from rsqsim_api.fault.multifault import RsqSimMultiFault
@@ -36,7 +35,6 @@ if __name__ == "__main__":
         short_catalogue = filtered_catalogue
 
     short_catalogue.all_slip_distributions_to_vtk(fault_model, args.output_directory)
-    short_catalogue.catalogue_df.to_csv(os.path.join(args.output_directory, "events.csv"), index=True)
 
     
 
