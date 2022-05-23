@@ -845,6 +845,24 @@ class RsqSimCatalogue:
         else:
             plt.close()
 
+    def all_slip_distributions_to_vtk(self, fault_model: RsqSimMultiFault, output_directory: str,
+                                      include_zeros: bool = False):
+        """
+
+        @param fault_model:
+        @param output_directory:
+        @param include_zeros:
+        @return:
+        """
+        assert os.path.exists(output_directory), "Make directory before writing VTK"
+        for event in self.all_events_generator(fault_model):
+            outfile_path = os.path.join(output_directory, f"event{event.event_id}.vtk")
+            event.slip_dist_to_vtk(outfile_path, include_zeros=include_zeros)
+
+
+
+
+
 
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627",
                fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in",
