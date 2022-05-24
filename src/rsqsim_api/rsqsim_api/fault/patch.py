@@ -8,7 +8,6 @@ import math
 from numba import njit
 from pyproj import Transformer
 from shapely.geometry import Polygon
-from tde.tde import calc_tri_displacements
 
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
@@ -335,40 +334,6 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
 
     def as_polygon(self):
         return Polygon(self.vertices)
-
-    def calculate_tsunami_greens_functions(self, x_array: np.ndarray, y_array: np.ndarray, z_array: np.ndarray,
-                                           grid_shape: tuple, poisson_ratio: float = 0.25):
-        assert all([isinstance(a, np.ndarray) for a in [x_array, y_array]])
-        assert x_array.shape == y_array.shape == z_array.shape
-        assert x_array.ndim == 1
-
-        assert all([a is not None for a in (self.dip_slip, self.strike_slip)])
-
-        xv, yv, zv = [self.vertices.T[i] for i in range(3)]
-        gf = calc_tri_displacements(x_array, y_array, z_array, xv, yv, -1. * zv,
-                                       poisson_ratio, self.strike_slip, 0., self.dip_slip)
-
-        vert_disp = np.array(gf["z"])
-        vert_grid = vert_disp.reshape(grid_shape[1:])
-        return vert_grid
-
-    def calculate_3d_greens_functions(self, x_array: np.ndarray, y_array: np.ndarray, z_array: np.ndarray = None,
-                                      poisson_ratio: float = 0.25):
-        assert all([isinstance(a, np.ndarray) for a in [x_array, y_array]])
-        assert x_array.shape == y_array.shape
-        assert x_array.ndim == 1
-        if z_array is None:
-            z_array = np.zeros(x_array.shape)
-        else:
-            assert z_array.shape == x_array.shape
-
-        assert all([a is not None for a in (self.dip_slip, self.strike_slip)])
-
-        xv, yv, zv = [self.vertices.T[i] for i in range(3)]
-        gf = calc_tri_displacements(x_array, y_array, z_array, xv, yv, -1. * zv,
-                                    poisson_ratio, self.strike_slip, 0., self.dip_slip)
-
-        return gf
 
 class OpenQuakeRectangularPatch(RsqSimGenericPatch):
     def __init__(self, segment, patch_number: int = 0,
