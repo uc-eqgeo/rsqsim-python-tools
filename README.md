@@ -32,6 +32,8 @@ Installation instructions for Anaconda can be found here: <https://www.anaconda.
    2. Run `cd {PATH_TO_REPO}`
    3. Run `conda env create`
    4. Run `conda activate rsqsim-python-tools`
+
+If you would like to use cutde to calculate sea-surface displacements and you have CUDA enabled, do the following
    
    
 ## Integration of the catalogue

@@ -5,7 +5,6 @@ from typing import Union, List
 import numpy as np
 import pandas as pd
 
-from tde.tde import calc_tri_displacements
 from matplotlib import pyplot as plt
 from pyproj import Transformer
 import meshio
