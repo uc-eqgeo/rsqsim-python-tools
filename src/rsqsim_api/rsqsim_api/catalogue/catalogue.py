@@ -216,6 +216,9 @@ class RsqSimCatalogue:
     def all_events(self, fault_model: RsqSimMultiFault):
         return self.events_by_number(list(self.catalogue_df.index), fault_model)
 
+    def all_events_generator(self, fault_model: RsqSimMultiFault):
+        return self.events_by_number(list(self.catalogue_df.index), fault_model, generator=True)
+
     def event_outlines(self, fault_model: RsqSimMultiFault, event_numbers: Iterable = None):
         if event_numbers is not None:
             events = self.events_by_number(event_numbers, fault_model)
@@ -407,7 +410,7 @@ class RsqSimCatalogue:
             return
 
     def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault,
-                         child_processes: int = 0, min_patches: int = 1):
+                         child_processes: int = 0, min_patches: int = 1, generator: bool = False):
         if isinstance(event_number, (int, np.int)):
             ev_ls = [event_number]
         else:
@@ -440,8 +443,11 @@ class RsqSimCatalogue:
                                                            patch_time=patch_time_list,
                                                            fault_model=fault_model, min_patches=min_patches,
                                                            event_id=index)
+                if generator:
+                    yield event_i
+                else:
+                    out_events.append(event_i)
 
-                out_events.append(event_i)
         else:
             # Using shared data between processes
             event_list = np.ctypeslib.as_ctypes(self.event_list)
@@ -480,8 +486,8 @@ class RsqSimCatalogue:
 
             for p in processes:
                 p.join()
-
-        return out_events
+        if not generator:
+            return out_events
 
     def assign_accumulated_slip(self):
         """
@@ -806,6 +812,24 @@ class RsqSimCatalogue:
             plt.show()
         else:
             plt.close()
+
+    def all_slip_distributions_to_vtk(self, fault_model: RsqSimMultiFault, output_directory: str,
+                                      include_zeros: bool = False):
+        """
+
+        @param fault_model:
+        @param output_directory:
+        @param include_zeros:
+        @return:
+        """
+        assert os.path.exists(output_directory), "Make directory before writing VTK"
+        for event in self.all_events_generator(fault_model):
+            outfile_path = os.path.join(output_directory, f"event{event.event_id}.vtk")
+            event.slip_dist_to_vtk(outfile_path, include_zeros=include_zeros)
+
+
+
+
 
 
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627",
