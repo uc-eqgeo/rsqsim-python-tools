@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import os.path
 from os import mkdir
 from rsqsim_api.fault.multifault import RsqSimMultiFault
