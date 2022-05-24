@@ -389,69 +389,6 @@ class RsqSimSegment:
         return cls.from_triangles(triangles, segment_number=segment_number, patch_numbers=patch_numbers,
                                   fault_name=fault_name, strike_slip=strike_slip, dip_slip=dip_slip)
 
-
-
-    def collect_greens_function(self, sites_x: Union[list, tuple, np.ndarray], sites_y: Union[list, tuple, np.ndarray],
-                                sites_z: Union[list, tuple, np.ndarray] = None, strike_slip: Union[int, float] = 1,
-                                dip_slip: Union[int, float] = 1, poisson_ratio: Union[int, float] = 0.25,
-                                tensional_slip: Union[int, float] = 0):
-        """
-
-        :param sites_x:
-        :param sites_y:
-        :param sites_z:
-        :param strike_slip:
-        :param dip_slip:
-        :param poisson_ratio:
-        :param tensional_slip:
-        :return:
-        """
-        x_array = np.array(sites_x)
-        y_array = np.array(sites_y)
-        if sites_z is None:
-            z_array = np.zeros(x_array.shape)
-        else:
-            z_array = np.array(sites_z)
-
-        x_vertices, y_vertices, z_vertices = [[vertices.T[i] for vertices in self.patch_vertices] for i in range(3)]
-
-        ds_gf_dic = {}
-        ss_gf_dic = {}
-        for patch_number, xv, yv, zv in zip(self.patch_numbers, x_vertices, y_vertices, z_vertices):
-            ds_gf_dic[patch_number] = calc_tri_displacements(x_array, y_array, z_array, xv, yv, -1. * zv,
-                                                             poisson_ratio, 0., tensional_slip, dip_slip)
-            ss_gf_dic[patch_number] = calc_tri_displacements(x_array, y_array, z_array, xv, yv, -1. * zv,
-                                                             poisson_ratio, strike_slip, tensional_slip, 0.)
-
-        self.ds_gf = ds_gf_dic
-        self.ss_gf = ss_gf_dic
-
-    def gf_design_matrix(self, displacements: DisplacementArray):
-        """
-        Maybe this should be stored on the DisplacementArray object?
-        :param displacements:
-        :return:
-        """
-        assert isinstance(displacements, DisplacementArray), "Expecting DisplacementArray object"
-        if any([a is None for a in (self.ds_gf, self.ss_gf)]):
-            self.collect_greens_function(displacements.x, displacements.y, displacements.z)
-        design_matrix_ls = []
-        d_list = []
-        w_list = []
-        for component, key in zip([displacements.e, displacements.n, displacements.v], ["x", "y", "z"]):
-            if component is not None:
-                for site in range(len(component)):
-                    component_ds = [self.ds_gf[i][key][site] for i in self.patch_numbers]
-                    component_ss = [self.ss_gf[i][key][site] for i in self.patch_numbers]
-                    component_combined = component_ds + component_ss
-                    design_matrix_ls.append(component_combined)
-                d_list.append(component)
-
-        design_matrix_array = np.array(design_matrix_ls)
-        d_array = np.hstack([a for a in d_list])
-
-        return design_matrix_array, d_array
-
     @property
     def adjacency_map(self):
         if self._adjacency_map is None:
