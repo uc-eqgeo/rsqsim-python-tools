@@ -13,7 +13,7 @@ from shapely.geometry import LineString, MultiPolygon
 
 from rsqsim_api.io.read_utils import read_dxf, read_stl
 from rsqsim_api.io.tsurf import tsurf
-from rsqsim_api.fault.patch import RsqSimTriangularPatch, RsqSimGenericPatch
+from rsqsim_api.fault.patch import RsqSimTriangularPatch, RsqSimGenericPatch, cross_3d, norm_3d
 import rsqsim_api.io.rsqsim_constants as csts
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
@@ -253,7 +253,7 @@ class RsqSimSegment:
     def from_triangles(cls, triangles: Union[np.ndarray, list, tuple], segment_number: int = 0,
                        patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None,
                        strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None,
-                       rake: Union[int, float] = None, total_slip: np.ndarray = None):
+                       rake: Union[int, float] = None, total_slip: np.ndarray = None, min_patch_area: float = 1.):
         """
         Create a segment from triangle vertices and (if appropriate) populate it with strike-slip/dip-slip values
         :param segment_number:
@@ -267,6 +267,19 @@ class RsqSimSegment:
         # Test shape of input array is appropriate
         triangle_array = np.array(triangles)
         assert triangle_array.shape[1] == 9, "Expecting 3d coordinates of 3 vertices each"
+        # check no patches have 0 area
+        triangle_verts=np.reshape(triangle_array,[len(triangle_array),3,3])
+        for i,triangle in enumerate(triangle_verts):
+            side1=triangle[1]-triangle[0]
+            side2=triangle[1]-triangle[2]
+            cross_prod=cross_3d(side1,side2)
+            norm_cross=norm_3d(cross_prod)
+            area=0.5*norm_cross
+            if area < min_patch_area:
+                np.delete(triangle_array,i,axis=0)
+                if patch_numbers is not None:
+                    np.delete(patch_numbers,i,axis=0)
+
         if patch_numbers is None:
             patch_numbers = np.arange(len(triangle_array))
         else:
@@ -287,7 +300,8 @@ class RsqSimSegment:
                 patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
                                               strike_slip=strike_slip,
                                               dip_slip=dip_slip, rake=rake)
-            triangle_ls.append(patch)
+
+
 
         fault.patch_outlines = triangle_ls
         fault.patch_numbers = np.array([patch.patch_number for patch in triangle_ls])
@@ -557,6 +571,18 @@ class RsqSimSegment:
 
         tris.to_csv(flt_name, index=False, header=False, sep="\t", encoding='ascii')
 
+    def to_rsqsim_fault_array(self, flt_name):
+        tris = pd.DataFrame(self.patch_triangle_rows)
+        rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
+        tris.loc[:, 9] = rakes
+        slip_rates = pd.Series(self.dip_slip * 1.e-3 / csts.seconds_per_year)
+        tris.loc[:, 10] = slip_rates
+        segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=np.int)
+        tris.loc[:, 11] = segment_num
+        seg_names = pd.Series([self.name for i in range(len(self.patch_numbers))])
+        tris.loc[:, 12] = seg_names
+
+        return tris
 
 class RsqSimFault:
     """
