@@ -267,18 +267,18 @@ class RsqSimSegment:
         # Test shape of input array is appropriate
         triangle_array = np.array(triangles)
         assert triangle_array.shape[1] == 9, "Expecting 3d coordinates of 3 vertices each"
-        # # check no patches have 0 area
-        # triangle_verts=np.reshape(triangle_array,[len(triangle_array),3,3])
-        # for i,triangle in enumerate(triangle_verts):
-        #     side1=triangle[1]-triangle[0]
-        #     side2=triangle[1]-triangle[2]
-        #     cross_prod=cross_3d(side1,side2)
-        #     norm_cross=norm_3d(cross_prod)
-        #     area=0.5*norm_cross
-        #     if area < min_patch_area:
-        #         np.delete(triangle_array,i,axis=0)
-        #         if patch_numbers is not None:
-        #             np.delete(patch_numbers,i,axis=0)
+        # check no patches have 0 area
+        triangle_verts=np.reshape(triangle_array,[len(triangle_array),3,3])
+        for i,triangle in enumerate(triangle_verts):
+            side1=triangle[1]-triangle[0]
+            side2=triangle[1]-triangle[2]
+            cross_prod=cross_3d(side1,side2)
+            norm_cross=norm_3d(cross_prod)
+            area=0.5*norm_cross
+            if area < min_patch_area:
+                np.delete(triangle_array,i,axis=0)
+                if patch_numbers is not None:
+                    np.delete(patch_numbers,i,axis=0)
 
         if patch_numbers is None:
             patch_numbers = np.arange(len(triangle_array))
@@ -301,7 +301,6 @@ class RsqSimSegment:
                                               strike_slip=strike_slip,
                                               dip_slip=dip_slip, rake=rake)
             triangle_ls.append(patch)
-
 
         fault.patch_outlines = triangle_ls
         fault.patch_numbers = np.array([patch.patch_number for patch in triangle_ls])
