@@ -414,7 +414,34 @@ class RsqSimMultiFault:
             fault_dict['Slip Rate'].append(mean_slip_rate)
 
         all_faults = gpd.GeoDataFrame.from_dict(fault_dict)
-        all_faults.to_file(prefix+".shp", crs=crs)
+        all_faults.to_file(prefix+"_traces.shp", crs=crs)
+
+    def write_fault_outlines_to_gis(self, fault_list: Iterable = None, prefix: str = "./bruce_faults",crs: str ="EPSG:2193" ):
+        if fault_list is not None:
+            assert isinstance(fault_list, Iterable)
+            assert any([fault.lower() in self.names for fault in fault_list])
+            valid_names = []
+            for fault_name in fault_list:
+                if fault_name not in self.names:
+                    print("Fault not found: {}".format(fault_name))
+                else:
+                    valid_names.append(fault_name)
+            assert valid_names, "No valid fault names supplied"
+        else:
+            valid_names = self.names
+        valid_faults = [self.name_dic[name] for name in valid_names]
+        fault_dict = {'Names': [], 'geometry': [], 'Slip Rate': []}
+        for fault in valid_faults:
+            outline = fault.fault_outline
+            fName = fault.name
+
+            mean_slip_rate = fault.mean_slip_rate * csts.seconds_per_year * 1000.
+            fault_dict['Names'].append(fName)
+            fault_dict['geometry'].append(outline)
+            fault_dict['Slip Rate'].append(mean_slip_rate)
+
+        all_faults = gpd.GeoDataFrame.from_dict(fault_dict)
+        all_faults.to_file(prefix+"_outlines.shp", crs=crs)
 
 
     def plot_slip_distribution_2d(self):
