@@ -16,6 +16,7 @@ from shapely.geometry import Point,Polygon
 from shapely.ops import unary_union
 from pyproj import Transformer
 import geopandas as gpd
+import math
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault
 from rsqsim_api.visualisation.utilities import plot_coast, plot_background
@@ -50,6 +51,9 @@ class RsqSimEvent:
         self.patch_numbers = None
         self.mean_slip = None
         self.length = None
+        self.mean_strike = None
+        self.mean_dip = None
+        self.mean_rake = None
 
     @property
     def num_faults(self):
@@ -168,6 +172,33 @@ class RsqSimEvent:
             npatches = len(self.patches)
             if all([total_slip > 0., npatches > 0]):
                 self.mean_slip = total_slip/npatches
+
+    def find_mean_strike(self):
+        if self.patches:
+            cumstrike=0.
+            for patch in self.patches:
+                cumstrike += patch.strike
+            npatches = len(self.patches)
+            if npatches > 0:
+                self.mean_strike = cumstrike/npatches
+
+    def find_mean_dip(self):
+        if self.patches:
+            cumdip=0.
+            for patch in self.patches:
+                cumdip += patch.dip
+                npatches = len(self.patches)
+            if npatches > 0:
+                self.mean_dip = cumdip/npatches
+
+    def find_mean_rake(self):
+        if self.patches:
+            cumrake=0.
+            for patch in self.patches:
+                cumrake += patch.rake
+            npatches = len(self.patches)
+            if npatches > 0:
+                self.mean_rake = cumrake/npatches
 
     def find_length(self,min_slip_percentile: float | None =None):
         if self.patches:
