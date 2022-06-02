@@ -68,6 +68,7 @@ class RsqSimCatalogue:
         self._patch_slip = None
         self._accumulated_slip = None
         self._event_mean_slip = None
+        self._event_mean_sdr = None
         self._event_length = None
         # Useful attributes
         self.t0, self.m0, self.mw = (None,) * 3
@@ -145,6 +146,10 @@ class RsqSimCatalogue:
         return self._event_mean_slip
 
     @property
+    def event_mean_sdr(self):
+        return self._event_mean_sdr
+
+    @property
     def event_length(self):
         return self._event_length
 
@@ -213,6 +218,10 @@ class RsqSimCatalogue:
 
     def first_event(self, fault_model: RsqSimMultiFault):
         return self.events_by_number(int(self.catalogue_df.index[0]), fault_model)[0]
+
+    def nth_event(self,fault_model: RsqSimMultiFault,n: int):
+        assert isinstance(n,int)
+        return self.events_by_number(int(self.catalogue_df.index[n-1]), fault_model)[0]
 
     def first_n_events(self, number_of_events: int, fault_model: RsqSimMultiFault):
         return self.events_by_number(list(self.catalogue_df.index[:number_of_events]), fault_model)
@@ -304,7 +313,7 @@ class RsqSimCatalogue:
                                               patch_slip=trimmed_patch_slip, patch_time_list=trimmed_patch_time)
         return rcat
 
-    def filter_by_events(self, event_number: Union[int, np.int, Iterable[np.int]], reset_index: bool = False):
+    def filter_by_events(self, event_number: Union[int, np.int, Iterable[int]], reset_index: bool = False):
         if isinstance(event_number, (int, np.int)):
             ev_ls = [event_number]
         else:
@@ -410,6 +419,27 @@ class RsqSimCatalogue:
         multifault_ids = [event.event_id for event in multifault]
         multi_cat = self.filter_by_events(multifault_ids)
         return multifault,multi_cat
+
+
+    def find_single_fault(self,fault_model: RsqSimMultiFault):
+        """
+        Identify events involving only 1 fault. Note that this is based on named fault segments so might not
+        reflect the area ruptured/ be consistent with other approaches to understanding multifault ruptures.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault object
+
+        Returns
+        -------
+        list of single fault events
+        RsqSimCatalogue with only single ault ruptures
+        """
+        singlefault = [ev for ev in self.all_events(fault_model) if ev.num_faults == 1]
+        # and filter catalogue to just these events
+        singlefault_ids = [event.event_id for event in singlefault]
+        single_cat = self.filter_by_events(singlefault_ids)
+        return singlefault,single_cat
 
     def filter_by_region(self, region: Union[Polygon, gpd.GeoSeries], fault_model: RsqSimMultiFault,
                          event_numbers: Iterable = None):
@@ -532,6 +562,20 @@ class RsqSimCatalogue:
             event.find_mean_slip()
             event_mean_slip[event.event_id] = event.mean_slip
         self._event_mean_slip = event_mean_slip
+
+    def assign_event_mean_sdr(self, fault_model: RsqSimMultiFault):
+        """
+        Create dict of event ids with associated mean strike,dip and rake on the patches which slip in them.
+        Note that this overwrites any other value which could have been assigned to mean strike, mean dip or mean rake.
+        """
+        event_mean_sdr = {}
+        for event in self.all_events(fault_model):
+            event.find_mean_strike()
+            event.find_mean_dip()
+            event.find_mean_rake()
+            event_mean_sdr[event.event_id] = [round(event.mean_strike),round(event.mean_dip),round(event.mean_rake)]
+        self._event_mean_sdr = event_mean_sdr
+
 
     def assign_event_length(self, fault_model: RsqSimMultiFault):
         """
