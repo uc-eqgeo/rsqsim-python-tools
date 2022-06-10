@@ -557,7 +557,6 @@ class RsqSimCatalogue:
         """
         event_mean_slip = {}
         for event in self.all_events(fault_model):
-            event.find_mean_slip()
             event_mean_slip[event.event_id] = event.mean_slip
         self._event_mean_slip = event_mean_slip
 
@@ -568,9 +567,6 @@ class RsqSimCatalogue:
         """
         event_mean_sdr = {}
         for event in self.all_events(fault_model):
-            event.find_mean_strike()
-            event.find_mean_dip()
-            event.find_mean_rake()
             event_mean_sdr[event.event_id] = [round(event.mean_strike),round(event.mean_dip),round(event.mean_rake)]
         self._event_mean_sdr = event_mean_sdr
 
