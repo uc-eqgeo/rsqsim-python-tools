@@ -461,7 +461,7 @@ class RsqSimCatalogue:
             return
 
     def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault,
-                         child_processes: int = 0, min_patches: int = 1, generator: bool = False):
+                         child_processes: int = 0, min_patches: int = 1):
         if isinstance(event_number, (int, np.int)):
             ev_ls = [event_number]
         else:
@@ -494,10 +494,7 @@ class RsqSimCatalogue:
                                                            patch_time=patch_time_list,
                                                            fault_model=fault_model, min_patches=min_patches,
                                                            event_id=index)
-                if generator:
-                    yield event_i
-                else:
-                    out_events.append(event_i)
+                out_events.append(event_i)
 
         else:
             # Using shared data between processes
@@ -537,8 +534,8 @@ class RsqSimCatalogue:
 
             for p in processes:
                 p.join()
-        if not generator:
-            return out_events
+
+        return out_events
 
     def assign_accumulated_slip(self):
         """
@@ -559,7 +556,6 @@ class RsqSimCatalogue:
         """
         event_mean_slip = {}
         for event in self.all_events(fault_model):
-            event.find_mean_slip()
             event_mean_slip[event.event_id] = event.mean_slip
         self._event_mean_slip = event_mean_slip
 
@@ -570,9 +566,6 @@ class RsqSimCatalogue:
         """
         event_mean_sdr = {}
         for event in self.all_events(fault_model):
-            event.find_mean_strike()
-            event.find_mean_dip()
-            event.find_mean_rake()
             event_mean_sdr[event.event_id] = [round(event.mean_strike),round(event.mean_dip),round(event.mean_rake)]
         self._event_mean_sdr = event_mean_sdr
 

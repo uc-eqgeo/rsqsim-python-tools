@@ -219,7 +219,7 @@ class RsqSimMultiFault:
 
         fault_numbers = all_fault_df.fault_num.to_numpy()
         fault_names_unique = dict.fromkeys(fault_names).keys()
-        print(fault_names_unique)
+        #print(fault_names_unique)
         fault_num_unique = dict.fromkeys(fault_numbers).keys()
 
         if len(fault_names_unique) != len(fault_num_unique):
