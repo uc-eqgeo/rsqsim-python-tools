@@ -215,6 +215,9 @@ class RsqSimCatalogue:
 
     def write_csv_and_arrays(self, prefix: str, directory: str = None, write_index: bool = True):
         assert prefix, "Empty prefix!"
+        if not any([os.path.exists(directory),directory is None]):
+            os.mkdir(directory)
+
         write_catalogue_dataframe_and_arrays(prefix, self, directory=directory, write_index=write_index)
 
     def first_event(self, fault_model: RsqSimMultiFault):
@@ -714,9 +717,9 @@ class RsqSimCatalogue:
         return plots
 
     def plot_gr(self, fault_model: RsqSimMultiFault, show: bool = True,
-                write: str = None, best_fit: bool = True):
+                write: str = None, best_fit: bool = True, interval: float = 0.25):
         """
-        Plot Gutenburg-Richter distribution for a given catalogue.
+        Plot Gutenburg-Richter distribution for a given catalogue with Aki b-value at reference mag.
         y-axis: log(annual frequency of events with M>Mw)
         x axis: Mw
 
@@ -730,19 +733,20 @@ class RsqSimCatalogue:
         mag_freq: dict[int, float | Any] = {}
         # find min magnitude of catalogue
         mws = np.array([ev.mw for ev in self.all_events(fault_model)])
-        min_mag = np.floor(np.min(mws))
+        min_mag = interval*round(np.min(mws)/interval)
         max_mag = np.max(mws)
-
-        for mag in np.arange(min_mag, max_mag, 0.5):
+        print(f"Filtering")
+        tot_time = (np.max(self.catalogue_df['t0']) - np.min(self.catalogue_df['t0'])) / csts.seconds_per_year
+        for mag in np.arange(min_mag, max_mag, interval):
 
             filt_cat = self.filter_whole_catalogue(min_mw=mag)
-            print("Filtering for {}\n".format(mag))
+
             if filt_cat.event_list.size != 0:
 
                 nevents = len(filt_cat.all_events(fault_model))
 
                 times = np.array([ev.t0 for ev in filt_cat.all_events(fault_model)])
-                tot_time = (np.max(times) - np.min(times)) / csts.seconds_per_year
+
                 freq = nevents / tot_time
             else:
                 freq = 0
@@ -761,6 +765,8 @@ class RsqSimCatalogue:
             gr_trend=np.poly1d(gr_fit)
             plt.plot(mf_dict["mag"],10**gr_trend(mf_dict["mag"]),'r--',label="b="+str(round(abs(gr_trend.c[0]),2)))
             ax.legend()
+
+        # compute aki b value log10(exp(1))/(mean(magnitudes above reference magnitude) - reference magnitude);
         ax.set_yscale('log')
         ax.set_xticks(np.arange(min_mag, 10, 1))
         plt.xlabel("Mw")
