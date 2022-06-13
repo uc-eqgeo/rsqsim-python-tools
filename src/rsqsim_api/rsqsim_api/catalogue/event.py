@@ -581,6 +581,19 @@ class RsqSimEvent:
                                                min_slip_value=min_slip_value, nztm_to_lonlat=nztm_to_lonlat)
         np.savetxt(txt_file, slip_dist_array, fmt="%.6f", delimiter=" ", header=header)
 
+    def discretize_tiles(self, tile_list: List[Polygon], probability: float, rake: float):
+        included_tiles = []
+
+        for tile in tile_list:
+            overlapping = tile.intersects(self.exterior)
+            if overlapping:
+                intersection = tile.intersection(self.exterior)
+                if intersection.area >= 0.5 * tile.area:
+                    included_tiles.append(tile)
+
+        out_gs = gpd.GeoSeries(included_tiles, crs=2193)
+        return out_gs
+
     def discretize_openquake(self, tile_list: List[Polygon], probability: float, rake: float):
         included_tiles = []
 
