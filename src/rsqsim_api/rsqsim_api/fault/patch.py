@@ -203,10 +203,10 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
     def calculate_down_dip_vector(normal_vector):
         dx, dy, dz = normal_vector
         if dz == 0:
-            return np.array([0., 0., np.nan])
+            dd_vec = np.array([0., 0., -1.])
         else:
             dd_vec = np.array([dx, dy, -1 / dz])
-            return dd_vec / norm_3d(dd_vec)
+        return dd_vec / norm_3d(dd_vec)
 
     @property
     def dip(self):
@@ -219,8 +219,11 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
             return np.nan
         else:
             horizontal = norm_3d(down_dip_vector[:-1])
-            vertical = -1 * down_dip_vector[-1]
-            return np.degrees(np.arctan(vertical / horizontal))
+            if horizontal < 1e-10 :
+                return 90.
+            else:
+                vertical = -1 * down_dip_vector[-1]
+                return np.degrees(np.arctan(vertical / horizontal))
 
     @property
     def along_strike_vector(self):
@@ -228,11 +231,12 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
 
     @property
     def strike(self):
-        if self.along_strike_vector is not None:
-            strike = 90. - np.degrees(np.arctan2(self.along_strike_vector[1], self.along_strike_vector[0]))
-            return normalize_bearing(strike)
-        else:
-            return None
+        if any([self.normal_vector is None, self.down_dip_vector is None, self.along_strike_vector is None]):
+            self.calculate_normal_vector()
+            self.calculate_down_dip_vector()
+            self.calculate_along_strike_vector()
+        strike = 90. - np.degrees(np.arctan2(self.along_strike_vector[1], self.along_strike_vector[0]))
+        return normalize_bearing(strike)
 
     @staticmethod
     @njit(cache=True)
