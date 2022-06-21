@@ -177,6 +177,11 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
 
         return np.array(transformer_nztm2wgs.transform(*self.vertices.T)).T
 
+    @property
+    def centre_lonlat(self):
+
+        return np.array(transformer_nztm2wgs.transform(*self.centre.T)).T
+
     @staticmethod
     @njit(cache=True)
     def calculate_normal_vector(vertices):
