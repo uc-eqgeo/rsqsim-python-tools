@@ -164,6 +164,7 @@ class RsqSimEvent:
         else:
             event.patches = []
             event.faults = []
+            print(f"Event {event_id} doesn't rupture more than {min_patches} patches on any fault. \n Decrease min_patches if you want a fault + patches returned.")
 
         return event
 
@@ -403,7 +404,7 @@ class RsqSimEvent:
                             figsize: tuple = (6.4, 4.8)):
 
         assert file_format in ("gif", "mov", "avi", "mp4")
-
+        assert len(self.faults) > 0, "Can't plot an event with no faults."
         fig, ax = plt.subplots()
         fig.set_size_inches(figsize)
         plot_coast(ax, clip_boundary=self.bounds)
