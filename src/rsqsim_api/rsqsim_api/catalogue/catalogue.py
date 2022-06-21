@@ -198,20 +198,20 @@ class RsqSimCatalogue:
 
     @classmethod
     def from_dataframe_and_arrays(cls, dataframe: pd.DataFrame, event_list: np.ndarray, patch_list: np.ndarray,
-                                  patch_slip: np.ndarray, patch_time_list: np.ndarray):
+                                  patch_slip: np.ndarray, patch_time_list: np.ndarray,reproject: List = None):
         assert all([arr.ndim == 1 for arr in [event_list, patch_list, patch_slip, patch_time_list]])
         list_len = event_list.size
         assert all([arr.size == list_len for arr in [patch_list, patch_slip, patch_time_list]])
         assert len(np.unique(event_list)) == len(dataframe), "Number of events in dataframe and lists do not match"
-        rcat = cls.from_dataframe(dataframe)
+        rcat = cls.from_dataframe(dataframe,reproject=reproject)
         rcat.event_list, rcat.patch_list, rcat.patch_slip, rcat.patch_time_list = [event_list, patch_list,
                                                                                    patch_slip, patch_time_list]
         return rcat
 
     @classmethod
-    def from_csv_and_arrays(cls, prefix: str, read_index: bool = True):
+    def from_csv_and_arrays(cls, prefix: str, read_index: bool = True, reproject: List = None):
         df, event_ls, patch_ls, slip_ls, time_ls = read_csv_and_array(prefix, read_index=read_index)
-        return cls.from_dataframe_and_arrays(df, event_ls, patch_ls, slip_ls, time_ls)
+        return cls.from_dataframe_and_arrays(df, event_ls, patch_ls, slip_ls, time_ls, reproject=reproject)
 
     def write_csv_and_arrays(self, prefix: str, directory: str = None, write_index: bool = True):
         assert prefix, "Empty prefix!"
@@ -351,8 +351,10 @@ class RsqSimCatalogue:
 
     def filter_by_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],
                         minimum_patches_per_fault: int = None):
-        if isinstance(fault_or_faults, (RsqSimSegment, RsqSimMultiFault)):
+        if isinstance(fault_or_faults,RsqSimSegment):
             fault_ls = [fault_or_faults]
+        elif isinstance(fault_or_faults,RsqSimMultiFault):
+            fault_ls=fault_or_faults.faults
         else:
             fault_ls = list(fault_or_faults)
 
@@ -397,9 +399,10 @@ class RsqSimCatalogue:
             return filtered_cat
         else:
             print("No events found on the following faults:")
-            for fault in fault_or_faults:
-                print(fault.name)
-            return
+            for fault in fault_ls:
+               print(fault.name)
+
+            return None
 
     def find_multi_fault(self,fault_model: RsqSimMultiFault):
         """
