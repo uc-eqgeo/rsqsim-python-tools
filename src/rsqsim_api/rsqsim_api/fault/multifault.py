@@ -534,6 +534,20 @@ class RsqSimMultiFault:
         outline_gpd = gpd.GeoDataFrame({"fault": self.names}, geometry=outlines, crs=self.crs)
         self._outlines = outline_gpd
 
+    def merge_segments(self, matching_string: str, fault_name: str = None):
+        """
+        Merge segments of a fault.
+        """
+        matching_names = [name for name in self.names if fnmatch.fnmatch(name, f"*{matching_string.lower()}*")]
+        matching_faults = [self.name_dic[name] for name in matching_names]
+        vertices = np.vstack([fault.patch_vertices_flat for fault in matching_faults])
+        patch_numbers = np.hstack([fault.patch_numbers for fault in matching_faults])
+
+        new_segment = RsqSimSegment.from_triangles(vertices, patch_numbers=patch_numbers, fault_name=fault_name)
+        return new_segment
+
+
+
 
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627",
                fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in"):
