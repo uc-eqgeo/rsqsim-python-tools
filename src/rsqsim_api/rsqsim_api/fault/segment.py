@@ -727,11 +727,9 @@ class RsqSimSegment:
 
         # Collate tile centres
         centre_points_for_plane_fitting = np.vstack(centre_points_for_plane_fitting)
-        print(centre_points_for_plane_fitting)
         # Turn local coordinates back into global coordinates
         plane_fitting_centre_points_xyz = np.dot(rotation_matrix, centre_points_for_plane_fitting.T).T + plane_origin
         all_tile_ls = []
-        print(interpolation_widths)
         for plane_fitting_centre, interp_width in zip(plane_fitting_centre_points_xyz, interpolation_widths):
             relative_positions = self.vertices - plane_fitting_centre
             along_dists = np.dot(relative_positions, self.strike_direction_vector)
