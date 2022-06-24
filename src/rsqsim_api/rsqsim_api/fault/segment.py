@@ -760,6 +760,8 @@ class RsqSimSegment:
             poly_ls = []
             for i, j in zip([1, 1, -1, -1], [1, -1, -1, 1]):
                 corner_i = plane_fitting_centre + (i * strike_vector * width/2 + j * down_dip_vector * interp_width / 2.)
+                if corner_i[-1] > 0.:
+                    corner_i[-1] = 0.
                 poly_ls.append(corner_i)
 
             # top_depths.append(poly_ls[1][-1])
