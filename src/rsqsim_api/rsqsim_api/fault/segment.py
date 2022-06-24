@@ -73,8 +73,9 @@ class RsqSimSegment:
         self._adjacency_map = None
         self._laplacian = None
         self._boundary = None
-        self._mean_slip_rate =None
+        self._mean_slip_rate = None
         self._dip_dir = None
+        self._trace = None
 
         self.patch_type = patch_type
         self.name = fault_name
@@ -531,14 +532,22 @@ class RsqSimSegment:
 
     @property
     def trace(self):
-        top_edges = self.find_top_edges()
-        line_list = []
-        for edge in top_edges:
-            v1 = self.vertices[edge[0]]
-            v2 = self.vertices[edge[1]]
-            line = LineString([v1[:-1], v2[:-1]])
-            line_list.append(line)
-        return linemerge(line_list)
+        if self._trace is None:
+            top_edges = self.find_top_edges()
+            line_list = []
+            for edge in top_edges:
+                v1 = self.vertices[edge[0]]
+                v2 = self.vertices[edge[1]]
+                line = LineString([v1[:-1], v2[:-1]])
+                line_list.append(line)
+            return linemerge(line_list)
+        else:
+            return self._trace
+
+    @trace.setter
+    def trace(self, trace: LineString):
+        assert isinstance(trace, LineString)
+        self._trace = trace
 
     @property
     def fault_outline(self):
@@ -643,20 +652,17 @@ class RsqSimSegment:
         centre_points, width = optimize_point_spacing(self.trace, approx_spacing)
         centre_array = np.vstack([centre_point.coords for centre_point in centre_points])
         centre_array_3d = np.vstack([centre_array.T, np.zeros(centre_array.shape[0])]).T
-        all_horizontal_dists = []
-        all_depths = []
+
+        local_dips = []
         for centre in centre_array_3d:
             relevant_vertices = self.vertices[np.abs(np.dot(self.vertices - centre, self.strike_direction_vector)
                                                      < width/2.)]
             horizontal_dists = np.dot(relevant_vertices - centre, self.dip_direction_vector)
-            all_horizontal_dists.append(horizontal_dists)
             depths = np.abs(relevant_vertices[:, -1])
-            all_depths.append(depths)
-        horizontal_dist_array = np.hstack(all_horizontal_dists)
-        depth_array = np.hstack(all_depths)
-        dip_angle = fit_2d_line(horizontal_dist_array, depth_array)
+            local_dip = fit_2d_line(horizontal_dists, depths)
+            local_dips.append(local_dip)
 
-        return abs(dip_angle)
+        return abs(np.median(local_dips))
 
 
 
@@ -695,8 +701,8 @@ class RsqSimSegment:
         for centre in rotated_centre_array_3d:
             relevant_vertices = rotated_vertices[np.abs(np.dot(rotated_vertices - centre, rotated_along_strike_vector))
                                                  < width/2.]
-            horizontal_dists = np.dot(relevant_vertices - centre, rotated_down_dip_vector)
-            depths = np.abs(relevant_vertices[:, -1])
+            horizontal_dists = np.dot(relevant_vertices[:, :-1] - centre[:-1], rotated_down_dip_vector[:-1])
+            depths = relevant_vertices[:, -1]
 
             start_across = 0.
             end_across = max(horizontal_dists)
@@ -804,5 +810,11 @@ class RsqSimFault:
             assert isinstance(segments, Iterable), "Expected either one segment or a list of segments"
             assert all([isinstance(segment, RsqSimSegment) for segment in segments]), "Expected a list of segments"
             self._segments = list(segments)
+
+
+class OpenQuakeSegment:
+    def __init__(self, polygons: list):
+        self._polygons = polygons
+
 
 

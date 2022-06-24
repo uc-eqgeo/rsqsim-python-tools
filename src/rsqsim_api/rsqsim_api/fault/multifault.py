@@ -14,6 +14,8 @@ from rsqsim_api.fault.segment import RsqSimSegment
 from rsqsim_api.io.mesh_utils import array_to_mesh
 import rsqsim_api.io.rsqsim_constants as csts
 
+from shapely.ops import linemerge
+
 def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float] = 1):
     """
     Efficiently checks whether vertices (3D point coordinates) may be duplicates by (1) sorting them,
@@ -538,12 +540,17 @@ class RsqSimMultiFault:
         """
         Merge segments of a fault.
         """
-        matching_names = [name for name in self.names if fnmatch.fnmatch(name, f"*{matching_string.lower()}*")]
+        matching_names = [name for name in self.names if any([fnmatch.fnmatch(name, f"{matching_string.lower()}?"),
+                                                              fnmatch.fnmatch(name, f"{matching_string.lower()}??")])]
         matching_faults = [self.name_dic[name] for name in matching_names]
         vertices = np.vstack([fault.patch_vertices_flat for fault in matching_faults])
         patch_numbers = np.hstack([fault.patch_numbers for fault in matching_faults])
 
         new_segment = RsqSimSegment.from_triangles(vertices, patch_numbers=patch_numbers, fault_name=fault_name)
+        traces = [fault.trace for fault in matching_faults]
+        merged_traces = linemerge(traces)
+        new_segment.trace = merged_traces
+
         return new_segment
 
 
