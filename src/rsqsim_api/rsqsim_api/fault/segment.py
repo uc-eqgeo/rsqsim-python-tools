@@ -310,6 +310,7 @@ class RsqSimSegment:
                                               dip_slip=dip_slip, rake=rake)
             triangle_ls.append(patch)
 
+
         fault.patch_outlines = triangle_ls
         fault.patch_numbers = np.array([patch.patch_number for patch in triangle_ls])
         fault.patch_dic = {p_num: patch for p_num, patch in zip(fault.patch_numbers, fault.patch_outlines)}
@@ -430,8 +431,7 @@ class RsqSimSegment:
 
         triangles = read_stl(stl_file)
         return cls.from_triangles(triangles, segment_number=segment_number, patch_numbers=patch_numbers,
-                                  fault_name=fault_name, strike_slip=strike_slip, dip_slip=dip_slip, rake=rake,
-                                  total_slip=total_slip)
+                                  fault_name=fault_name, strike_slip=strike_slip, dip_slip=dip_slip)
 
     @property
     def adjacency_map(self):
@@ -583,6 +583,7 @@ class RsqSimSegment:
             rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
             print("Rake not set, writing out as 90")
         tris.loc[:, 9] = rakes
+        slip_rates = pd.Series(self.dip_slip * 1.e-3 / csts.seconds_per_year)
         total_slip = [np.linalg.norm([self.dip_slip[i], self.strike_slip[i]]) for i in range(len(self.dip_slip))]
         slip_rates = pd.Series([rate * 1.e-3 / csts.seconds_per_year for rate in total_slip])
         tris.loc[:, 10] = slip_rates
@@ -593,6 +594,18 @@ class RsqSimSegment:
 
         tris.to_csv(flt_name, index=False, header=False, sep="\t", encoding='ascii')
 
+    def to_rsqsim_fault_array(self, flt_name):
+        tris = pd.DataFrame(self.patch_triangle_rows)
+        rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
+        tris.loc[:, 9] = rakes
+        slip_rates = pd.Series(self.dip_slip * 1.e-3 / csts.seconds_per_year)
+        tris.loc[:, 10] = slip_rates
+        segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=np.int)
+        tris.loc[:, 11] = segment_num
+        seg_names = pd.Series([self.name for i in range(len(self.patch_numbers))])
+        tris.loc[:, 12] = seg_names
+
+        return tris
     def to_rsqsim_fault_array(self, flt_name):
         tris = pd.DataFrame(self.patch_triangle_rows)
         if self.rake is not None:
