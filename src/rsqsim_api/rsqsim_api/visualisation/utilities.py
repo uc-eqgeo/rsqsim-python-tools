@@ -281,7 +281,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                     plot_rivers: bool = True, plot_lakes: bool = True, hillshade_fine: bool = False,
                     plot_highways: bool = True, plot_boundaries: bool = False, subplots=None,
                     pickle_name: str = None, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain,
-                    plot_hk: bool = False, plot_fault_outlines: bool = True):
+                    plot_hk: bool = False, plot_fault_outlines: bool = True, wgs: bool =  False):
 
         if subplots is not None:
             fig, ax = subplots
@@ -302,7 +302,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
             ax.set_xlim(x_lim)
             ax.set_ylim(y_lim)
         else:
-            plot_coast(ax, clip_boundary=plot_bounds)
+            plot_coast(ax, clip_boundary=plot_bounds,wgs=wgs)
 
         if plot_lakes:
             plot_lake_polygons(ax=ax, clip_bounds=plot_bounds)
@@ -328,8 +328,8 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
         ax.set_xlim(x_lim)
         ax.set_ylim(y_lim)
 
-        ax.set_xticks([])
-        ax.set_yticks([])
+        #ax.set_xticks([])
+        #ax.set_yticks([])
 
         if pickle_name is not None:
             with open(pickle_name, "wb") as pfile:

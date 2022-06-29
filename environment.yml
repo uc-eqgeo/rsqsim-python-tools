@@ -21,6 +21,7 @@ dependencies:
   - pip
   - git
   - git-lfs
+  - pygeos
   - pip:
     - src/rsqsim_api
     - src/tri_dislocations

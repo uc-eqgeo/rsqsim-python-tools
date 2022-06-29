@@ -250,7 +250,7 @@ class RsqSimEvent:
                      coast_only: bool = True, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain,
                      plot_log_scale: bool = False, log_cmap: str = "magma", log_min: float = 1.0,
                      log_max: float = 100., plot_traces: bool = True, trace_colour: str = "pink",
-                     min_slip_percentile: float = None, min_slip_value: float = None, plot_zeros: bool = True):
+                     min_slip_percentile: float = None, min_slip_value: float = None, plot_zeros: bool = True, wgs: bool =False, title: str = None):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
 
@@ -275,11 +275,11 @@ class RsqSimEvent:
             fig, ax = plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
                                       bounds=bounds, plot_rivers=plot_rivers, plot_lakes=plot_lakes,
                                       plot_highways=plot_highways, plot_boundaries=plot_boundaries,
-                                      hillshade_cmap=hillshade_cmap)
+                                      hillshade_cmap=hillshade_cmap, wgs=wgs)
         elif coast_only:
             fig, ax = plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
                                       bounds=bounds, plot_rivers=False, plot_lakes=False, plot_highways=False,
-                                      plot_boundaries=False, hillshade_cmap=hillshade_cmap)
+                                      plot_boundaries=False, hillshade_cmap=hillshade_cmap, wgs=wgs)
 
 
         else:
@@ -384,9 +384,10 @@ class RsqSimEvent:
 
 
 
-        plot_coast(ax=ax)
+        plot_coast(ax=ax,wgs=wgs)
 
-
+        if title:
+            plt.title(title)
         if write is not None:
             fig.savefig(write, dpi=300)
             if show:
@@ -407,10 +408,12 @@ class RsqSimEvent:
         assert len(self.faults) > 0, "Can't plot an event with no faults."
         fig, ax = plt.subplots()
         fig.set_size_inches(figsize)
+        ax.set_facecolor('w')
+        plt.figure(facecolor='w')
         plot_coast(ax, clip_boundary=self.bounds)
         ax.set_aspect("equal")
-        ax.get_xaxis().set_visible(False)
-        ax.get_yaxis().set_visible(False)
+        ax.get_xaxis().set_visible(True)
+        ax.get_yaxis().set_visible(True)
 
         colour_dic = {}
         timestamps = defaultdict(set)
@@ -502,7 +505,7 @@ class RsqSimEvent:
 
         if write is not None:
             writer = PillowWriter(fps=fps) if file_format == "gif" else FFMpegWriter(fps=fps)
-            animation.save(f"{write}.{file_format}", writer)
+            animation.save(f"{write}.{file_format}", writer,savefig_kwargs=dict(facecolor='w'))
 
         if show:
             plt.show()
@@ -556,6 +559,7 @@ class RsqSimEvent:
         data_dic = {}
         for label, index in zip(["slip", "rake", "time"], [9, 10, 11]):
             data_dic[label] = slip_dist_array[:, index]
+
         mesh.cell_data = data_dic
 
         return mesh

@@ -256,12 +256,15 @@ class RsqSimSegment:
                        rake: Union[int, float] = None, total_slip: np.ndarray = None, min_patch_area: float = 1.):
         """
         Create a segment from triangle vertices and (if appropriate) populate it with strike-slip/dip-slip values
+        either specified separately or (if total_slip and rake are given) calculated from total slip + rake.
         :param segment_number:
         :param triangles:
         :param patch_numbers:
         :param fault_name:
         :param strike_slip:
         :param dip_slip:
+        :param total_slip:
+        :param rake:
         :return:
         """
         # Test shape of input array is appropriate
@@ -294,6 +297,11 @@ class RsqSimSegment:
         for i, (patch_num, triangle) in enumerate(zip(patch_numbers, triangle_array)):
             triangle3 = triangle.reshape(3, 3)
             if total_slip is not None:
+                assert rake is not None, "Specifying total slip requires rake to calculate strike-slip and dip-slip components"
+                if strike_slip is not None:
+                    print('Both total slip rate and strike slip rate specified '
+                          '- strike slip and dip slip rates will be recalculated based on total slip and rake')
+
                 patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num, strike_slip=strike_slip,
                                               dip_slip=dip_slip, rake=rake, total_slip=total_slip[i])
             else:
@@ -417,11 +425,13 @@ class RsqSimSegment:
     @classmethod
     def from_stl(cls, stl_file: str, segment_number: int = 0,
                  patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None,
-                 strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None):
+                 strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None,
+                 rake: Union[int, float] = None, total_slip: np.ndarray = None):
 
         triangles = read_stl(stl_file)
         return cls.from_triangles(triangles, segment_number=segment_number, patch_numbers=patch_numbers,
-                                  fault_name=fault_name, strike_slip=strike_slip, dip_slip=dip_slip)
+                                  fault_name=fault_name, strike_slip=strike_slip, dip_slip=dip_slip, rake=rake,
+                                  total_slip=total_slip)
 
     @property
     def adjacency_map(self):
@@ -555,13 +565,26 @@ class RsqSimSegment:
 
     @property
     def dip_slip(self):
-        return np.array([patch.dip_slip for patch in self.patch_outlines])
+        return np.array([patch.dip_slip for patch in self.patch_outlines]).flatten()
+
+    @property
+    def strike_slip(self):
+        return np.array([patch.strike_slip for patch in self.patch_outlines]).flatten()
+
+    @property
+    def rake(self):
+        return np.array([patch.rake for patch in self.patch_outlines]).flatten()
 
     def to_rsqsim_fault_file(self, flt_name):
         tris = pd.DataFrame(self.patch_triangle_rows)
-        rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
+        if self.rake is not None:
+            rakes = pd.Series(self.rake)
+        else:
+            rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
+            print("Rake not set, writing out as 90")
         tris.loc[:, 9] = rakes
-        slip_rates = pd.Series(self.dip_slip * 1.e-3 / csts.seconds_per_year)
+        total_slip = [np.linalg.norm([self.dip_slip[i], self.strike_slip[i]]) for i in range(len(self.dip_slip))]
+        slip_rates = pd.Series([rate * 1.e-3 / csts.seconds_per_year for rate in total_slip])
         tris.loc[:, 10] = slip_rates
         segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=np.int)
         tris.loc[:, 11] = segment_num
@@ -572,9 +595,14 @@ class RsqSimSegment:
 
     def to_rsqsim_fault_array(self, flt_name):
         tris = pd.DataFrame(self.patch_triangle_rows)
-        rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
+        if self.rake is not None:
+            rakes = pd.Series(self.rake)
+        else:
+            rakes=pd.Series(np.ones(self.dip_slip.shape)*90.)
+            print("Rake not set, writing out as 90")
         tris.loc[:, 9] = rakes
-        slip_rates = pd.Series(self.dip_slip * 1.e-3 / csts.seconds_per_year)
+        total_slip=[np.linalg.norm([self.dip_slip[i],self.strike_slip[i]]) for i in range(len(self.dip_slip))]
+        slip_rates = pd.Series([rate * 1.e-3 / csts.seconds_per_year for rate in total_slip])
         tris.loc[:, 10] = slip_rates
         segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=np.int)
         tris.loc[:, 11] = segment_num

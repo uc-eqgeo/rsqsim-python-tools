@@ -233,8 +233,6 @@ class RsqSimCatalogue:
     def all_events(self, fault_model: RsqSimMultiFault):
         return self.events_by_number(list(self.catalogue_df.index), fault_model)
 
-    def all_events_generator(self, fault_model: RsqSimMultiFault):
-        return self.events_by_number(list(self.catalogue_df.index), fault_model, generator=True)
 
     def event_outlines(self, fault_model: RsqSimMultiFault, event_numbers: Iterable = None):
         if event_numbers is not None:
@@ -371,6 +369,8 @@ class RsqSimCatalogue:
             all_patches += list(fault.patch_dic.keys())
         patch_numbers = np.unique(np.array(all_patches))
 
+        #in1d will return true if any value in patch_numbers matches a value in patch_list
+        #i.e. don't have to rupture all faults in the list, only 1
         patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
         selected_events = self.event_list[patch_indices]
         selected_patches = self.patch_list[patch_indices]
@@ -404,6 +404,27 @@ class RsqSimCatalogue:
             print("No events found on the following faults:")
             for fault in fault_ls:
                print(fault.name)
+
+            return None
+
+    def filter_not_on_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],fault_model: RsqSimMultiFault):
+        if isinstance(fault_or_faults, RsqSimSegment):
+            fault_ls = [fault_or_faults.name]
+        elif isinstance(fault_or_faults, RsqSimMultiFault):
+            fault_ls = [fault.name for fault in fault_or_faults.faults]
+        else:
+            fault_ls = list(fault_or_faults)
+
+        ev_list=[]
+        for event in self.all_events(fault_model=fault_model):
+            fault_names=[fault.name for fault in event.faults]
+            if not any([name in fault_ls for name in fault_names]):
+                ev_list.append(event.event_id)
+
+        if len(ev_list) >0 :
+            return self.filter_by_events(ev_list)
+        else:
+            print("All events include at least one of the specified faults.")
 
             return None
 
@@ -881,7 +902,7 @@ class RsqSimCatalogue:
             plt.close()
 
     def all_slip_distributions_to_vtk(self, fault_model: RsqSimMultiFault, output_directory: str,
-                                      include_zeros: bool = False):
+                                      include_zeros: bool = False, min_slip_value: float = None):
         """
 
         @param fault_model:
@@ -890,9 +911,9 @@ class RsqSimCatalogue:
         @return:
         """
         assert os.path.exists(output_directory), "Make directory before writing VTK"
-        for event in self.all_events_generator(fault_model):
+        for event in self.all_events(fault_model):
             outfile_path = os.path.join(output_directory, f"event{event.event_id}.vtk")
-            event.slip_dist_to_vtk(outfile_path, include_zeros=include_zeros)
+            event.slip_dist_to_vtk(outfile_path, include_zeros=include_zeros,min_slip_value=min_slip_value)
 
 
 

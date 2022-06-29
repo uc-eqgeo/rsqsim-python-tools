@@ -371,7 +371,7 @@ class RsqSimMultiFault:
         y2 =max([max(fault.vertices[:, 1]) for fault in valid_faults])*1.01
 
         boundary = [x1, y1, x2, y2]
-        print(boundary)
+        #print(boundary)
         if ax is None:
             fig, ax = plt.subplots()
         else:
