@@ -431,7 +431,7 @@ class RsqSimSegment:
 
         triangles = read_stl(stl_file)
         return cls.from_triangles(triangles, segment_number=segment_number, patch_numbers=patch_numbers,
-                                  fault_name=fault_name, strike_slip=strike_slip, dip_slip=dip_slip)
+                                  fault_name=fault_name, strike_slip=strike_slip, dip_slip=dip_slip,rake=rake)
 
     @property
     def adjacency_map(self):
@@ -596,18 +596,6 @@ class RsqSimSegment:
 
     def to_rsqsim_fault_array(self, flt_name):
         tris = pd.DataFrame(self.patch_triangle_rows)
-        rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
-        tris.loc[:, 9] = rakes
-        slip_rates = pd.Series(self.dip_slip * 1.e-3 / csts.seconds_per_year)
-        tris.loc[:, 10] = slip_rates
-        segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=np.int)
-        tris.loc[:, 11] = segment_num
-        seg_names = pd.Series([self.name for i in range(len(self.patch_numbers))])
-        tris.loc[:, 12] = seg_names
-
-        return tris
-    def to_rsqsim_fault_array(self, flt_name):
-        tris = pd.DataFrame(self.patch_triangle_rows)
         if self.rake is not None:
             rakes = pd.Series(self.rake)
         else:
@@ -615,7 +603,10 @@ class RsqSimSegment:
             print("Rake not set, writing out as 90")
         tris.loc[:, 9] = rakes
         total_slip=[np.linalg.norm([self.dip_slip[i],self.strike_slip[i]]) for i in range(len(self.dip_slip))]
+
         slip_rates = pd.Series([rate * 1.e-3 / csts.seconds_per_year for rate in total_slip])
+        if any([rate < 1.e-15 and rate > 0. for rate in slip_rates]):
+            print("Non-zero slip rates less than 1e-15 - check your units (this function assumes mm/yr as input)")
         tris.loc[:, 10] = slip_rates
         segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=np.int)
         tris.loc[:, 11] = segment_num

@@ -17,6 +17,8 @@ from shapely.ops import unary_union
 from pyproj import Transformer
 import geopandas as gpd
 import math
+from string import digits
+import pandas as pd
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault
 from rsqsim_api.visualisation.utilities import plot_coast, plot_background
@@ -241,6 +243,68 @@ class RsqSimEvent:
 
         self.length=rupture_length
 
+    def make_fault_moment_dict(self,fault_model: RsqSimMultiFault, mu:float = 3.0e10,by_cfm_names: bool =True):
+        """
+        make a dictionary of faults involved in event and the moment released on them
+        Parameters
+        ----------
+        fault_model: RsqSimMultiFault
+        by_cfm_names: boolean, default= True Divide faults by the CFM segment names rather than the further segmentation in the V2 catalogue
+        mu: lame paramter, default value is 30GPa
+        """
+        assert self.faults is not None, "Event has no faults, can't calculate moment"
+        m0_dict={}
+        for fault in self.faults:
+            fault_patches=np.array(list(fault.patch_dic.keys()))
+            fault_patch_numbers=self.patch_numbers[np.in1d(self.patch_numbers,fault_patches)]
+            fault_patch_slip=self.patch_slip[np.in1d(self.patch_numbers,fault_patches)]
+            areas=[fault.patch_dic[number].area for number in fault_patch_numbers]
+            m0=sum(fault_patch_slip*areas*mu)
+            m0_dict[fault.name]=m0
+
+        if by_cfm_names:
+            # make lookup for fault segment names
+            fault_short_dict = {}
+            fault_short_names = []
+            rm_digs = str.maketrans('', '', digits)
+            rm_hyph = str.maketrans('', '', "-")
+            for name in fault_model.names:
+                short_name = name.translate(rm_digs)
+                short_name = short_name.translate(rm_hyph)
+                fault_short_names += short_name
+                fault_short_dict[name] = short_name
+
+            m0_df=pd.DataFrame.from_dict(m0_dict,orient='index',columns=['M0'])
+            m0_df["segName"]=[fault_short_dict[key] for key in m0_df.index]
+            m0_df.reset_index(inplace=True,drop=True)
+            m0_per_segment=m0_df.groupby(by="segName").sum()
+            m0_seg_dict=dict(zip(m0_per_segment.index,m0_per_segment.M0))
+        else:
+            m0_seg_dict=m0_dict
+
+        return m0_seg_dict
+
+
+    def make_moment_prop_dict(self,fault_model: RsqSimMultiFault, mu:float = 3.0e10,by_cfm_names: bool =True):
+        """
+        Make dictionary of fault names and the proportion of the seismic moment in the event they release.
+        Parameters
+        ----------
+        fault_model
+        mu
+        by_cfm_names
+        """
+        m0_dict=self.make_fault_moment_dict(fault_model=fault_model,mu=mu,by_cfm_names=by_cfm_names)
+
+        prop_dict={}
+        for fault_name in m0_dict.keys():
+            prop_dict[fault_name]=m0_dict[fault_name]/self.m0
+
+        # and sort
+        prop_dict_sorted_keys=sorted(prop_dict,key=prop_dict.get,reverse=True)
+        prop_dict_sorted=dict(zip(prop_dict_sorted_keys,[prop_dict[x] for x in prop_dict_sorted_keys]))
+
+        return prop_dict_sorted
 
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
                      write: str = None, subplots = None, global_max_sub_slip: int = 0, global_max_slip: int = 0,
