@@ -306,7 +306,7 @@ class RsqSimEvent:
 
         return prop_dict_sorted
 
-    def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
+    def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True, extra_sub_list: list = None,
                      write: str = None, subplots = None, global_max_sub_slip: int = 0, global_max_slip: int = 0,
                      figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0, bounds: tuple = None,
                      plot_rivers: bool = True, plot_lakes: bool = True,
@@ -354,10 +354,13 @@ class RsqSimEvent:
 
         # Find maximum slip to scale colourbar
         max_slip = 0
-
+        if extra_sub_list is not None:
+            sub_list=[*bruce_subduction,*extra_sub_list]
+        else:
+            sub_list=bruce_subduction
         colour_dic = {}
         for f_i, fault in enumerate(self.faults):
-            if fault.name in bruce_subduction:
+            if fault.name in sub_list:
                 if plot_zeros:
                     colours = np.zeros(fault.patch_numbers.shape)
                 else:
@@ -383,7 +386,7 @@ class RsqSimEvent:
         subduction_list = []
         subduction_plot = None
         for f_i, fault in enumerate(self.faults):
-            if fault.name in bruce_subduction:
+            if fault.name in sub_list:
                 subduction_list.append(fault.name)
                 if plot_log_scale:
                     subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
@@ -398,7 +401,7 @@ class RsqSimEvent:
         max_slip = 0
         colour_dic = {}
         for f_i, fault in enumerate(self.faults):
-            if fault.name not in bruce_subduction:
+            if fault.name not in sub_list:
                 if plot_zeros:
                     colours = np.zeros(fault.patch_numbers.shape)
                 else:
@@ -419,7 +422,7 @@ class RsqSimEvent:
 
         crustal_plot = None
         for f_i, fault in enumerate(self.faults):
-            if fault.name not in bruce_subduction:
+            if fault.name not in sub_list:
                 if plot_log_scale:
                     crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
                                                    facecolors=colour_dic[f_i],
@@ -466,7 +469,7 @@ class RsqSimEvent:
 
     def plot_slip_evolution(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
                             step_size: int = 1, write: str = None, fps: int = 20, file_format: str = "gif",
-                            figsize: tuple = (6.4, 4.8)):
+                            figsize: tuple = (6.4, 4.8), extra_sub_list: list = None):
 
         assert file_format in ("gif", "mov", "avi", "mp4")
         assert len(self.faults) > 0, "Can't plot an event with no faults."
@@ -483,6 +486,13 @@ class RsqSimEvent:
         timestamps = defaultdict(set)
         subduction_max_slip = 0
         crustal_max_slip = 0
+
+        if extra_sub_list is not None:
+            sub_list=[*bruce_subduction,*extra_sub_list]
+        else:
+            sub_list=bruce_subduction
+
+
         subduction_list = []
         for f_i, fault in enumerate(self.faults):
             colours = np.zeros(fault.patch_numbers.shape)
@@ -496,7 +506,7 @@ class RsqSimEvent:
                     timestamps[times[local_id]].add(f_i)
 
             colour_dic[f_i] = (colours, times)
-            if fault.name in bruce_subduction:
+            if fault.name in sub_list:
                 subduction_list.append(fault.name)
                 if max(colours) > subduction_max_slip:
                     subduction_max_slip = max(colours)
@@ -508,7 +518,7 @@ class RsqSimEvent:
         subduction_plot = None
         for f_i, fault in enumerate(self.faults):
             init_colours = np.zeros(fault.patch_numbers.shape)
-            if fault.name in bruce_subduction:
+            if fault.name in sub_list:
                 subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
                                     facecolors=init_colours,
                                     cmap=subduction_cmap, vmin=0, vmax=subduction_max_slip)
@@ -517,7 +527,7 @@ class RsqSimEvent:
         crustal_plot = None
         for f_i, fault in enumerate(self.faults):
             init_colours = np.zeros(fault.patch_numbers.shape)
-            if fault.name not in bruce_subduction:
+            if fault.name not in sub_list:
                 crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
                                     facecolors=init_colours,
                                     cmap=crustal_cmap, vmin=0, vmax=crustal_max_slip)
