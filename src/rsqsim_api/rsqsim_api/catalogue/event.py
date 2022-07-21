@@ -12,6 +12,9 @@ from matplotlib.widgets import Slider
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import operator
 import numpy as np
+import fnmatch
+import meshio
+import os
 from shapely.geometry import Point,Polygon
 from shapely.ops import unary_union
 from pyproj import Transformer
@@ -694,7 +697,154 @@ class RsqSimEvent:
         else:
             return
 
+    def event_to_OQ_xml(self,fault_model: RsqSimMultiFault,path2cfm:str,catalogue_version:str = 'v2',xml_dir:str='OQ_events',\
+                        subd_tile_size:float=15000.,tile_size:float=5000.,probability:float=0.9,tectonic_region:str='NZ'):
+        assert os.path.exists(path2cfm),"Path to CFM does not exist"
+        if catalogue_version=='v2':
+            fault_model.make_v2_name_dic(path2cfm=path2cfm)
+            name_dict=fault_model.v2_name_dic
+        else:
+            name_dict=dict(zip(fault_model.names,fault_model.names))
+        unique_names=set(name_dict.values())
 
+        #which faults are involved in this event?
+        faults=RsqSimMultiFault(self.faults)
+        faultNames=faults.names
+        # find corresponding larger/cfm faults
+        allFaults=np.unique([name_dict[name] for name in faultNames])
+        subdFaults=np.unique([name_dict[name] for name in faultNames if fnmatch.fnmatch(name, "*puysegar*") or fnmatch.fnmatch(name, "*hikurangi*")])
+
+        outdir=os.path.join(xml_dir,f'event_{self.event_id}')
+        if not os.path.exists(outdir):
+          os.makedirs(outdir)
+
+        poly_list = []
+        for fName in allFaults:
+            try:
+                # print(fName)
+                # need to find all parts of the fault, then later select those which have non-zero slip
+                fault_merged = fault_model.merge_segments(fName, name_dict=name_dict, fault_name=fName)
+
+                if len(subdFaults) > 0 and fName in subdFaults:
+                    dip_angle = fault_merged.get_average_dip(subd_tile_size)
+                    new_fault_rect = fault_merged.discretize_rectangular_tiles(tile_size=subd_tile_size)
+                else:
+                    # Average dip
+                    dip_angle = fault_merged.get_average_dip()
+                    # Discretize into rectangular tiles
+                    new_fault_rect = fault_merged.discretize_rectangular_tiles(tile_size=tile_size)
+
+                # want to discard patches which don't slip in the event
+                for quad in new_fault_rect:
+                    # find nearest patch
+                    approx_centroid = np.mean(quad, axis=0)
+                    # find closest patches is only in 2d so then need to check depth
+                    nearest_patches_ids = faults.find_closest_patches(approx_centroid[0], approx_centroid[1])
+                    nearest_patches = [faults.patch_dic[patch_id] for patch_id in nearest_patches_ids]
+                    min_z_diff = min([np.abs(patch.centre[2] - approx_centroid[2]) for patch in nearest_patches])
+                    nearest_patches_z = [patch for patch in nearest_patches if
+                                         np.abs(patch.centre[2] - approx_centroid[2]) == min_z_diff]
+                    patch_ids = [patch.patch_number for patch in nearest_patches_z]
+
+                    # find associated slip
+                    slip = 0.
+                    for patch_id in patch_ids:
+                        if patch_id in self.patch_numbers:
+                            slip_index = np.searchsorted(self.patch_numbers, patch_id)
+                            slip_mag = self.patch_slip[slip_index]
+                            slip += slip_mag
+                    mean_slip = slip / len(patch_ids)
+                    # check slip isn't 0/ less than a mm
+                    if mean_slip > 1.e-3:
+                        poly_list.append(Polygon(quad))
+
+            except:
+                 print(f"{fName} could not be discretised - event slip distribution will be incomplete")
+
+            #set parameters for OQ
+            #parameters for openquake
+            hypocentre=np.array([self.x,self.y,self.z])
+            evname=f'event_{self.event_id}_OQ'
+            event_asOQ=OpenQuakeMultiSquareRupture(tile_list=poly_list,probability=probability,magnitude=self.mw,\
+                                                   rake=self.mean_rake,hypocentre=hypocentre,event_id=self.event_id,name=evname,tectonic_region=tectonic_region)
+            event_asOQ.to_oq_xml(write=os.path.join(outdir,f'event_{self.event_id}.xml'))
+
+            return
+
+
+
+    def slip_dist_to_quads(self,fault_model: RsqSimMultiFault,path2cfm:str,catalogue_version:str = 'v2',vtk_dir:str='fault_vtks',\
+                    subd_tile_size:float=15000.,tile_size:float=5000.,):
+
+        assert os.path.exists(path2cfm), "Path to CFM does not exist"
+        if catalogue_version == 'v2':
+            fault_model.make_v2_name_dic(path2cfm=path2cfm)
+            name_dict = fault_model.v2_name_dic
+        else:
+            name_dict = dict(zip(fault_model.names, fault_model.names))
+        unique_names = set(name_dict.values())
+
+        # which faults are involved in this event?
+        faults = RsqSimMultiFault(self.faults)
+        faultNames = faults.names
+        # find corresponding larger/cfm faults
+        allFaults = np.unique([name_dict[name] for name in faultNames])
+        subdFaults = np.unique([name_dict[name] for name in faultNames if
+                                fnmatch.fnmatch(name, "*puysegar*") or fnmatch.fnmatch(name, "*hikurangi*")])
+
+        outdir = os.path.join(vtk_dir, f'event_{self.event_id}_quad')
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+
+        poly_list = []
+        for fName in allFaults:
+            try:
+                # print(fName)
+                # need to find all parts of the fault, then later select those which have non-zero slip
+                fault_merged = fault_model.merge_segments(fName, name_dict=name_dict, fault_name=fName)
+
+                if len(subdFaults) > 0 and fName in subdFaults:
+                    dip_angle = fault_merged.get_average_dip(subd_tile_size)
+                    new_fault_rect = fault_merged.discretize_rectangular_tiles(tile_size=subd_tile_size)
+                else:
+                    # Average dip
+                    dip_angle = fault_merged.get_average_dip()
+                    # Discretize into rectangular tiles
+                    new_fault_rect = fault_merged.discretize_rectangular_tiles(tile_size=tile_size)
+                # Turn into quadrilateral mesh
+                vertices = np.unique(np.vstack([rect for rect in new_fault_rect]), axis=0)
+                vertex_dict = {tuple(vertex): i for i, vertex in enumerate(vertices)}
+                new_fault_rect_indices = [[vertex_dict[tuple(vertex)] for vertex in quad] for quad in
+                                          new_fault_rect]
+                mesh = meshio.Mesh(points=vertices, cells={"quad": new_fault_rect_indices})
+
+                #assign slip to these
+                slip_list=[]
+                for quad in new_fault_rect:
+                    # find nearest patch
+                    approx_centroid = np.mean(quad, axis=0)
+                    # find closest patches is only in 2d so then need to check depth
+                    nearest_patches_ids = faults.find_closest_patches(approx_centroid[0], approx_centroid[1])
+                    nearest_patches = [faults.patch_dic[patch_id] for patch_id in nearest_patches_ids]
+                    min_z_diff = min([np.abs(patch.centre[2] - approx_centroid[2]) for patch in nearest_patches])
+                    nearest_patches_z = [patch for patch in nearest_patches if
+                                         np.abs(patch.centre[2] - approx_centroid[2]) == min_z_diff]
+                    patch_ids = [patch.patch_number for patch in nearest_patches_z]
+
+                    # find associated slip
+                    slip = 0.
+                    for patch_id in patch_ids:
+                        if patch_id in self.patch_numbers:
+                            slip_index = np.searchsorted(self.patch_numbers, patch_id)
+                            slip_mag = self.patch_slip[slip_index]
+                            slip += slip_mag
+                    mean_slip = slip / len(patch_ids)
+                    slip_list.append(mean_slip)
+                mesh.cell_data = {"slip": np.array(slip_list)}
+                meshio.write(os.path.join(outdir, f'{fName}_{self.event_id}.vtk'), mesh, file_format="vtk")
+            except:
+                print(f"{fName} could not be discretised - event slip distribution will be incomplete")
+        return
 
 
 class OpenQuakeMultiSquareRupture:

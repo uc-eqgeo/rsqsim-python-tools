@@ -7,6 +7,7 @@ import fnmatch
 import numpy as np
 import pandas as pd
 import geopandas as gpd
+import difflib
 from matplotlib import pyplot as plt
 
 from rsqsim_api.visualisation.utilities import plot_coast
@@ -15,6 +16,7 @@ from rsqsim_api.io.mesh_utils import array_to_mesh
 import rsqsim_api.io.rsqsim_constants as csts
 
 from shapely.ops import linemerge
+from shapely.geometry import LineString
 
 def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float] = 1):
     """
@@ -36,6 +38,7 @@ def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float]
     return num_closer, float(tolerance)
 
 
+
 class RsqSimMultiFault:
     def __init__(self, faults: Union[list, tuple, set], crs: int = 2193):
         self._faults = None
@@ -45,6 +48,7 @@ class RsqSimMultiFault:
         self._crs = crs
         self._traces = None
         self._outlines = None
+        self._v2_name_dic = None
         self.patch_dic = {}
         for fault in self.faults:
             if self.patch_dic is not None:
@@ -105,6 +109,37 @@ class RsqSimMultiFault:
     @property
     def crs(self):
         return self._crs
+
+    @property
+    def v2_name_dic(self):
+        return self._v2_name_dic
+
+    def make_v2_name_dic(self,path2cfm: str):
+        """Make dictionary to convert Bruce V2 fault segment names to the equivalent CFM names"""
+        assert os.path.exists(path2cfm), "Path to CFM fault model not found"
+        cfm = gpd.read_file(path2cfm)
+        cfm_names=[name.lower() for name in cfm['Name']]
+        nearest_cfm = [difflib.get_close_matches(name[:-1], cfm_names, n=1) for name in self.names]
+        name_dict=dict(zip(self.names,nearest_cfm))
+        for key in name_dict.keys():
+            if not bool(name_dict[key]):
+                name_dict[key]=key[:-1].replace(" ","")
+            else:
+                name_dict[key]=name_dict[key][0].replace(" ","")
+        #add in awkward faults
+        name_dict['wairau20'] = 'wairau'
+        name_dict['wairau30'] = 'wairau'
+        # add hikurangi and puysegur
+        puy_names = [name for name in self.names if fnmatch.fnmatch(name, "*puysegar*")]
+        hikurangi_names = [name for name in self.names if fnmatch.fnmatch(name, "*hikurangi*")]
+        for name in puy_names:
+            name_dict[name] = 'puy'
+        for name in hikurangi_names:
+            name_dict[name] = 'hik'
+
+        self._v2_name_dic=name_dict
+
+        return
 
     @classmethod
     def read_fault_file(cls, fault_file: str, verbose: bool = False):
@@ -536,11 +571,14 @@ class RsqSimMultiFault:
         outline_gpd = gpd.GeoDataFrame({"fault": self.names}, geometry=outlines, crs=self.crs)
         self._outlines = outline_gpd
 
-    def merge_segments(self, matching_string: str, fault_name: str = None):
+    def merge_segments(self, matching_string: str, name_dict: dict = None, fault_name: str = None):
         """
         Merge segments of a fault.
         """
-        matching_names = [name for name in self.names if any([fnmatch.fnmatch(name, f"{matching_string.lower()}?"),
+        if name_dict is not None:
+            matching_names = [name for name in self.names if any([fnmatch.fnmatch(name_dict[name], f"{matching_string}")])]
+        else:
+            matching_names=[name for name in self.names if any([fnmatch.fnmatch(name, f"{matching_string.lower()}?"),
                                                               fnmatch.fnmatch(name, f"{matching_string.lower()}??")])]
         matching_faults = [self.name_dic[name] for name in matching_names]
         vertices = np.vstack([fault.patch_vertices_flat for fault in matching_faults])
@@ -549,7 +587,16 @@ class RsqSimMultiFault:
         new_segment = RsqSimSegment.from_triangles(vertices, patch_numbers=patch_numbers, fault_name=fault_name)
         traces = [fault.trace for fault in matching_faults]
         merged_traces = linemerge(traces)
-        new_segment.trace = merged_traces
+
+        if isinstance(merged_traces,LineString):
+            new_segment.trace = merged_traces
+        else:
+            try:
+                merged_coords=[list(geom.coords) for geom in merged_traces.geoms]
+                merged_trace=LineString([trace for sublist in merged_coords for trace in sublist])
+                new_segment.trace=merged_trace
+            except:
+                print(f'Check trace type for {fault_name}')
 
         return new_segment
 

@@ -1,6 +1,11 @@
+import os.path
+
 import numpy as np
 from typing import Union, List, Tuple, Dict
 from shapely.geometry import LineString
+import geopandas as gpd
+import difflib
+
 
 def smallest_difference(value1, value2):
     """
@@ -208,6 +213,7 @@ def optimize_point_spacing(line: LineString, spacing: float):
 
     centre_points = [line.interpolate((i + 0.5) * new_width) for i in range(num_points)]
     return centre_points, new_width
+
 
 
 

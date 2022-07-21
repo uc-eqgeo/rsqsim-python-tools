@@ -17,7 +17,7 @@ from rsqsim_api.fault.patch import RsqSimTriangularPatch, RsqSimGenericPatch, cr
 from rsqsim_api.fault.utilities import optimize_point_spacing, calculate_dip_direction, reverse_bearing, fit_2d_line
 import rsqsim_api.io.rsqsim_constants as csts
 from fault_mesh_tools.faultmeshops.faultmeshops import get_fault_rotation_matrix, fault_global_to_local, \
-    fault_local_to_global, fit_plane_to_points
+     fault_local_to_global, fit_plane_to_points
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
 
@@ -617,7 +617,7 @@ class RsqSimSegment:
             rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
             print("Rake not set, writing out as 90")
         tris.loc[:, 9] = rakes
-        slip_rates = pd.Series(self.dip_slip * 1.e-3 / csts.seconds_per_year)
+        #slip_rates = pd.Series(self.dip_slip * 1.e-3 / csts.seconds_per_year)
         total_slip = [np.linalg.norm([self.dip_slip[i], self.strike_slip[i]]) for i in range(len(self.dip_slip))]
         slip_rates = pd.Series([rate * 1.e-3 / csts.seconds_per_year for rate in total_slip])
         tris.loc[:, 10] = slip_rates
@@ -637,8 +637,13 @@ class RsqSimSegment:
             print("Rake not set, writing out as 90")
         tris.loc[:, 9] = rakes
         total_slip=[np.linalg.norm([self.dip_slip[i],self.strike_slip[i]]) for i in range(len(self.dip_slip))]
+        srs=[rate * 1.e-3 / csts.seconds_per_year for rate in total_slip]
+        try:
+            rates=[slip.item() for slip in srs]
+        except AttributeError:
+            rates=srs
+        slip_rates = pd.Series(rates)
 
-        slip_rates = pd.Series([rate * 1.e-3 / csts.seconds_per_year for rate in total_slip])
         if any([rate < 1.e-15 and rate > 0. for rate in slip_rates]):
             print("Non-zero slip rates less than 1e-15 - check your units (this function assumes mm/yr as input)")
         tris.loc[:, 10] = slip_rates
@@ -791,7 +796,10 @@ class RsqSimSegment:
             if down_dip_vector[-1] > 0:
                 down_dip_vector *= -1
 
-            dip = np.degrees(np.arctan(-1 * down_dip_vector[-1] / np.linalg.norm(down_dip_vector[:-1])))
+            if np.linalg.norm(down_dip_vector[:-1]) > 1.e-15:
+                dip = np.degrees(np.arctan(-1 * down_dip_vector[-1] / np.linalg.norm(down_dip_vector[:-1])))
+            else:
+                dip=90.
             # dips.append(dip)
 
             poly_ls = []
