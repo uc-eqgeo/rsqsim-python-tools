@@ -22,6 +22,7 @@ import geopandas as gpd
 import math
 from string import digits
 import pandas as pd
+from shapely.geometry import LineString
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault
 from rsqsim_api.visualisation.utilities import plot_coast, plot_background
@@ -425,6 +426,15 @@ class RsqSimEvent:
 
         crustal_plot = None
         for f_i, fault in enumerate(self.faults):
+            if isinstance(fault.trace, LineString):
+                ax.plot(*fault.trace.coords.xy, 'r')
+            else:
+                try:
+                    merged_coords = [list(geom.coords) for geom in fault.trace.geoms]
+                    merged_trace = LineString([trace for sublist in merged_coords for trace in sublist])
+                    ax.plot(*merged_trace.coords.xy, 'r')
+                except:
+                    pass
             if fault.name not in sub_list:
                 if plot_log_scale:
                     crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
@@ -521,6 +531,15 @@ class RsqSimEvent:
         subduction_plot = None
         for f_i, fault in enumerate(self.faults):
             init_colours = np.zeros(fault.patch_numbers.shape)
+            if isinstance(fault.trace, LineString):
+                ax.plot(*fault.trace.coords.xy,'r')
+            else:
+                try:
+                    merged_coords = [list(geom.coords) for geom in fault.trace.geoms]
+                    merged_trace = LineString([trace for sublist in merged_coords for trace in sublist])
+                    ax.plot(*merged_trace.coords.xy,'r')
+                except:
+                    pass
             if fault.name in sub_list:
                 subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
                                     facecolors=init_colours,
