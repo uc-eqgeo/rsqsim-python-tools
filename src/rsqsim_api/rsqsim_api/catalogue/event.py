@@ -425,26 +425,77 @@ class RsqSimEvent:
         max_slip = global_max_slip if global_max_slip > 0 else max_slip
 
         crustal_plot = None
-        for f_i, fault in enumerate(self.faults):
+        #check for 90 degree dipping faults
+        vert_faults=[fault for fault in self.faults if fault.mean_dip==90.]
+        if len(vert_faults) ==0:
+            for f_i,fault in enumerate(self.faults):
+                if isinstance(fault.trace, LineString):
+                    ax.plot(*fault.trace.coords.xy, color='gray', linestyle='dashed')
+                else:
+                    try:
+                        merged_coords = [list(geom.coords) for geom in fault.trace.geoms]
+                        merged_trace = LineString([trace for sublist in merged_coords for trace in sublist])
+                        ax.plot(*merged_trace.coords.xy, color='gray', linestyle='dashed')
+                    except:
+                        pass
+                if fault.name not in sub_list:
+                    if plot_log_scale:
+                        crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                    facecolors=colour_dic[f_i],
+                                                    cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
+                    else:
+                        crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                    facecolors=colour_dic[f_i],
+                                                    cmap=crustal_cmap, vmin=0., vmax=max_slip)
+                    plots.append(crustal_plot)
+        elif len(self.faults)==1:
+            fault=self.faults[0]
+            f_i=0
             if isinstance(fault.trace, LineString):
-                ax.plot(*fault.trace.coords.xy, 'r')
+                ax.plot(*fault.trace.coords.xy, color='gray', linestyle='dashed')
             else:
                 try:
                     merged_coords = [list(geom.coords) for geom in fault.trace.geoms]
                     merged_trace = LineString([trace for sublist in merged_coords for trace in sublist])
-                    ax.plot(*merged_trace.coords.xy, 'r')
+                    ax.plot(*merged_trace.coords.xy, color='gray', linestyle='dashed')
                 except:
                     pass
             if fault.name not in sub_list:
                 if plot_log_scale:
-                    crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
-                                                   facecolors=colour_dic[f_i],
-                                                   cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
+                    crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 2], fault.triangles,
+                                                facecolors=colour_dic[f_i],
+                                                cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
                 else:
-                    crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                    crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 2], fault.triangles,
                                                 facecolors=colour_dic[f_i],
                                                 cmap=crustal_cmap, vmin=0., vmax=max_slip)
                 plots.append(crustal_plot)
+        else:
+            for f_i, fault in enumerate(self.faults):
+                if isinstance(fault.trace, LineString):
+                    ax.plot(*fault.trace.coords.xy, color='gray',linestyle='dashed')
+                else:
+                    try:
+                        merged_coords = [list(geom.coords) for geom in fault.trace.geoms]
+                        merged_trace = LineString([trace for sublist in merged_coords for trace in sublist])
+                        ax.plot(*merged_trace.coords.xy, color='gray',linestyle='dashed')
+                    except:
+                        pass
+                if fault.name not in sub_list:
+                    if fault in vert_faults:
+                        pass
+                    else:
+
+                        if plot_log_scale:
+                            crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                           facecolors=colour_dic[f_i],
+                                                           cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
+                        else:
+                            crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                        facecolors=colour_dic[f_i],
+                                                        cmap=crustal_cmap, vmin=0., vmax=max_slip)
+                        plots.append(crustal_plot)
+
 
         if any([subplots is None, isinstance(subplots,str)]):
             if plot_log_scale:
@@ -532,12 +583,12 @@ class RsqSimEvent:
         for f_i, fault in enumerate(self.faults):
             init_colours = np.zeros(fault.patch_numbers.shape)
             if isinstance(fault.trace, LineString):
-                ax.plot(*fault.trace.coords.xy,'r')
+                ax.plot(*fault.trace.coords.xy, color='gray',linestyle='dashed')
             else:
                 try:
                     merged_coords = [list(geom.coords) for geom in fault.trace.geoms]
                     merged_trace = LineString([trace for sublist in merged_coords for trace in sublist])
-                    ax.plot(*merged_trace.coords.xy,'r')
+                    ax.plot(*merged_trace.coords.xy, color='gray',linestyle='dashed')
                 except:
                     pass
             if fault.name in sub_list:

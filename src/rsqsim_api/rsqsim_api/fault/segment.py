@@ -76,6 +76,7 @@ class RsqSimSegment:
         self._mean_slip_rate = None
         self._dip_dir = None
         self._trace = None
+        self._mean_dip = None
 
         self.patch_type = patch_type
         self.name = fault_name
@@ -186,6 +187,20 @@ class RsqSimSegment:
     @property
     def quaternion(self):
         return None
+
+    @property
+    def mean_dip(self):
+        if self._mean_dip is None:
+            self.get_mean_dip()
+
+        return self._mean_dip
+
+    def get_mean_dip(self):
+        cum_dip = []
+        for patch_id in self.patch_numbers:
+            patch = self.patch_dic[patch_id]
+            cum_dip.append(patch.dip)
+        self._mean_dip=np.mean(cum_dip)
 
     @property
     def mean_slip_rate(self):
