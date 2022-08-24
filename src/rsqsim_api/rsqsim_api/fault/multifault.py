@@ -14,9 +14,10 @@ from rsqsim_api.visualisation.utilities import plot_coast
 from rsqsim_api.fault.segment import RsqSimSegment
 from rsqsim_api.io.mesh_utils import array_to_mesh
 import rsqsim_api.io.rsqsim_constants as csts
+from rsqsim_api.fault.utilities import merge_multiple_nearly_adjacent_segments
 
-from shapely.ops import linemerge
-from shapely.geometry import LineString
+from shapely.ops import linemerge,split
+from shapely.geometry import LineString,MultiLineString
 
 def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float] = 1):
     """
@@ -586,7 +587,15 @@ class RsqSimMultiFault:
 
         new_segment = RsqSimSegment.from_triangles(vertices, patch_numbers=patch_numbers, fault_name=fault_name)
         traces = [fault.trace for fault in matching_faults]
-        merged_traces = linemerge(traces)
+
+
+        if all([isinstance(trace,LineString) for trace in traces]):
+            merged_traces=linemerge(traces)
+        else:
+            trace_list = [list(trace.geoms) for trace in traces if isinstance(trace,MultiLineString)]
+            merged_traces=merge_multiple_nearly_adjacent_segments(trace_list[0])
+            #print(trace_list)
+        #merged_traces = merge_multiple_nearly_adjacent_segments(traces)
 
         if isinstance(merged_traces,LineString):
             new_segment.trace = merged_traces
