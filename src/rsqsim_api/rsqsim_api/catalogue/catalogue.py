@@ -1,4 +1,4 @@
-from typing import Union, Iterable, List, Dict, Any
+from typing import Union, Iterable, List, Any
 from collections import abc, Counter, defaultdict
 import os
 import pickle
@@ -68,6 +68,7 @@ class RsqSimCatalogue:
         self._patch_slip = None
         self._accumulated_slip = None
         self._event_mean_slip = None
+        self._event_length = None
         self._event_mean_sdr = None
         self._event_length = None
         # Useful attributes
@@ -197,23 +198,26 @@ class RsqSimCatalogue:
 
     @classmethod
     def from_dataframe_and_arrays(cls, dataframe: pd.DataFrame, event_list: np.ndarray, patch_list: np.ndarray,
-                                  patch_slip: np.ndarray, patch_time_list: np.ndarray):
+                                  patch_slip: np.ndarray, patch_time_list: np.ndarray,reproject: List = None):
         assert all([arr.ndim == 1 for arr in [event_list, patch_list, patch_slip, patch_time_list]])
         list_len = event_list.size
         assert all([arr.size == list_len for arr in [patch_list, patch_slip, patch_time_list]])
         assert len(np.unique(event_list)) == len(dataframe), "Number of events in dataframe and lists do not match"
-        rcat = cls.from_dataframe(dataframe)
+        rcat = cls.from_dataframe(dataframe,reproject=reproject)
         rcat.event_list, rcat.patch_list, rcat.patch_slip, rcat.patch_time_list = [event_list, patch_list,
                                                                                    patch_slip, patch_time_list]
         return rcat
 
     @classmethod
-    def from_csv_and_arrays(cls, prefix: str, read_index: bool = True):
+    def from_csv_and_arrays(cls, prefix: str, read_index: bool = True, reproject: List = None):
         df, event_ls, patch_ls, slip_ls, time_ls = read_csv_and_array(prefix, read_index=read_index)
-        return cls.from_dataframe_and_arrays(df, event_ls, patch_ls, slip_ls, time_ls)
+        return cls.from_dataframe_and_arrays(df, event_ls, patch_ls, slip_ls, time_ls, reproject=reproject)
 
     def write_csv_and_arrays(self, prefix: str, directory: str = None, write_index: bool = True):
         assert prefix, "Empty prefix!"
+        if not any([os.path.exists(directory),directory is None]):
+            os.mkdir(directory)
+
         write_catalogue_dataframe_and_arrays(prefix, self, directory=directory, write_index=write_index)
 
     def first_event(self, fault_model: RsqSimMultiFault):
@@ -229,8 +233,6 @@ class RsqSimCatalogue:
     def all_events(self, fault_model: RsqSimMultiFault):
         return self.events_by_number(list(self.catalogue_df.index), fault_model)
 
-    def all_events_generator(self, fault_model: RsqSimMultiFault):
-        return self.events_by_number(list(self.catalogue_df.index), fault_model, generator=True)
 
     def event_outlines(self, fault_model: RsqSimMultiFault, event_numbers: Iterable = None):
         if event_numbers is not None:
@@ -350,8 +352,10 @@ class RsqSimCatalogue:
 
     def filter_by_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],
                         minimum_patches_per_fault: int = None):
-        if isinstance(fault_or_faults, (RsqSimSegment, RsqSimMultiFault)):
+        if isinstance(fault_or_faults,RsqSimSegment):
             fault_ls = [fault_or_faults]
+        elif isinstance(fault_or_faults,RsqSimMultiFault):
+            fault_ls=fault_or_faults.faults
         else:
             fault_ls = list(fault_or_faults)
 
@@ -365,6 +369,8 @@ class RsqSimCatalogue:
             all_patches += list(fault.patch_dic.keys())
         patch_numbers = np.unique(np.array(all_patches))
 
+        #in1d will return true if any value in patch_numbers matches a value in patch_list
+        #i.e. don't have to rupture all faults in the list, only 1
         patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
         selected_events = self.event_list[patch_indices]
         selected_patches = self.patch_list[patch_indices]
@@ -396,9 +402,31 @@ class RsqSimCatalogue:
             return filtered_cat
         else:
             print("No events found on the following faults:")
-            for fault in fault_or_faults:
-                print(fault.name)
-            return
+            for fault in fault_ls:
+               print(fault.name)
+
+            return None
+
+    def filter_not_on_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],fault_model: RsqSimMultiFault):
+        if isinstance(fault_or_faults, RsqSimSegment):
+            fault_ls = [fault_or_faults.name]
+        elif isinstance(fault_or_faults, RsqSimMultiFault):
+            fault_ls = [fault.name for fault in fault_or_faults.faults]
+        else:
+            fault_ls = list(fault_or_faults)
+
+        ev_list=[]
+        for event in self.all_events(fault_model=fault_model):
+            fault_names=[fault.name for fault in event.faults]
+            if not any([name in fault_ls for name in fault_names]):
+                ev_list.append(event.event_id)
+
+        if len(ev_list) >0 :
+            return self.filter_by_events(ev_list)
+        else:
+            print("All events include at least one of the specified faults.")
+
+            return None
 
     def find_multi_fault(self,fault_model: RsqSimMultiFault):
         """
@@ -419,27 +447,6 @@ class RsqSimCatalogue:
         multifault_ids = [event.event_id for event in multifault]
         multi_cat = self.filter_by_events(multifault_ids)
         return multifault,multi_cat
-
-
-    def find_single_fault(self,fault_model: RsqSimMultiFault):
-        """
-        Identify events involving only 1 fault. Note that this is based on named fault segments so might not
-        reflect the area ruptured/ be consistent with other approaches to understanding multifault ruptures.
-
-        Parameters
-        ----------
-        fault_model : RsqSimMultiFault object
-
-        Returns
-        -------
-        list of single fault events
-        RsqSimCatalogue with only single ault ruptures
-        """
-        singlefault = [ev for ev in self.all_events(fault_model) if ev.num_faults == 1]
-        # and filter catalogue to just these events
-        singlefault_ids = [event.event_id for event in singlefault]
-        single_cat = self.filter_by_events(singlefault_ids)
-        return singlefault,single_cat
 
     def filter_by_region(self, region: Union[Polygon, gpd.GeoSeries], fault_model: RsqSimMultiFault,
                          event_numbers: Iterable = None):
@@ -462,6 +469,7 @@ class RsqSimCatalogue:
 
     def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault,
                          child_processes: int = 0, min_patches: int = 1):
+        assert isinstance(fault_model,RsqSimMultiFault), "Fault model required"
         if isinstance(event_number, (int, np.int)):
             ev_ls = [event_number]
         else:
@@ -580,6 +588,7 @@ class RsqSimCatalogue:
            event.find_length()
            event_lengths[event.event_id] = event.length
         self._event_length = event_lengths
+
 
     def plot_accumulated_slip_2d(self, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma",
                                  crustal_cmap: str = "viridis", show: bool = True,
@@ -733,9 +742,9 @@ class RsqSimCatalogue:
         return plots
 
     def plot_gr(self, fault_model: RsqSimMultiFault, show: bool = True,
-                write: str = None, best_fit: bool = True):
+                write: str = None, best_fit: bool = True, interval: float = 0.25):
         """
-        Plot Gutenburg-Richter distribution for a given catalogue.
+        Plot Gutenburg-Richter distribution for a given catalogue with Aki b-value at reference mag.
         y-axis: log(annual frequency of events with M>Mw)
         x axis: Mw
 
@@ -749,19 +758,20 @@ class RsqSimCatalogue:
         mag_freq: dict[int, float | Any] = {}
         # find min magnitude of catalogue
         mws = np.array([ev.mw for ev in self.all_events(fault_model)])
-        min_mag = np.floor(np.min(mws))
+        min_mag = interval*round(np.min(mws)/interval)
         max_mag = np.max(mws)
-
-        for mag in np.arange(min_mag, max_mag, 0.5):
+        print(f"Filtering")
+        tot_time = (np.max(self.catalogue_df['t0']) - np.min(self.catalogue_df['t0'])) / csts.seconds_per_year
+        for mag in np.arange(min_mag, max_mag, interval):
 
             filt_cat = self.filter_whole_catalogue(min_mw=mag)
-            print("Filtering for {}\n".format(mag))
+
             if filt_cat.event_list.size != 0:
 
                 nevents = len(filt_cat.all_events(fault_model))
 
                 times = np.array([ev.t0 for ev in filt_cat.all_events(fault_model)])
-                tot_time = (np.max(times) - np.min(times)) / csts.seconds_per_year
+
                 freq = nevents / tot_time
             else:
                 freq = 0
@@ -882,7 +892,7 @@ class RsqSimCatalogue:
             plt.close()
 
     def all_slip_distributions_to_vtk(self, fault_model: RsqSimMultiFault, output_directory: str,
-                                      include_zeros: bool = False):
+                                      include_zeros: bool = False, min_slip_value: float = None):
         """
 
         @param fault_model:
@@ -891,9 +901,9 @@ class RsqSimCatalogue:
         @return:
         """
         assert os.path.exists(output_directory), "Make directory before writing VTK"
-        for event in self.all_events_generator(fault_model):
+        for event in self.all_events(fault_model):
             outfile_path = os.path.join(output_directory, f"event{event.event_id}.vtk")
-            event.slip_dist_to_vtk(outfile_path, include_zeros=include_zeros)
+            event.slip_dist_to_vtk(outfile_path, include_zeros=include_zeros,min_slip_value=min_slip_value)
 
 
 

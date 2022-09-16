@@ -173,7 +173,7 @@ def plot_hk_boundary(ax: plt.Axes, edgecolor: str = "r", linewidth: int = 0.1, c
 
 
 
-def plot_coast(ax: plt.Axes, clip_boundary: list = None, edgecolor: str = "0.5", facecolor: str = "none", linewidth: int = 0.3,
+def plot_coast(ax: plt.Axes, clip_boundary: list = None, edgecolor: str = "0.5", facecolor: str = 'none', linewidth: int = 0.3,
                trim_polygons=True, wgs: bool = False, coarse: bool = False, fine: bool = False):
     assert not all([coarse, fine])
     if clip_boundary is None:
@@ -280,8 +280,8 @@ def format_label_text_wgs(ax: plt.Axes, xspacing: int = 5, yspacing: int = 5, y_
 def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0, bounds: tuple = None,
                     plot_rivers: bool = True, plot_lakes: bool = True, hillshade_fine: bool = False,
                     plot_highways: bool = True, plot_boundaries: bool = False, subplots=None,
-                    pickle_name: str = None, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain,
-                    plot_hk: bool = False, plot_fault_outlines: bool = True):
+                    pickle_name: str = None, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain,plot_edge_label: bool = True,
+                    plot_hk: bool = False, plot_fault_outlines: bool = True, wgs: bool =  False, land_color: str ='antiquewhite'):
 
         if subplots is not None:
             fig, ax = subplots
@@ -292,7 +292,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
         plot_bounds = list(bounds)
 
         if hillshading_intensity > 0:
-            plot_coast(ax, clip_boundary=plot_bounds, colors="0.0")
+            plot_coast(ax, clip_boundary=plot_bounds, facecolor=land_color)
             x_lim = ax.get_xlim()
             y_lim = ax.get_ylim()
             if hillshade_fine:
@@ -302,7 +302,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
             ax.set_xlim(x_lim)
             ax.set_ylim(y_lim)
         else:
-            plot_coast(ax, clip_boundary=plot_bounds)
+            plot_coast(ax, clip_boundary=plot_bounds,wgs=wgs, facecolor=land_color)
 
         if plot_lakes:
             plot_lake_polygons(ax=ax, clip_bounds=plot_bounds)
@@ -328,8 +328,9 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
         ax.set_xlim(x_lim)
         ax.set_ylim(y_lim)
 
-        ax.set_xticks([])
-        ax.set_yticks([])
+        if not plot_edge_label:
+            ax.set_xticks([])
+            ax.set_yticks([])
 
         if pickle_name is not None:
             with open(pickle_name, "wb") as pfile:

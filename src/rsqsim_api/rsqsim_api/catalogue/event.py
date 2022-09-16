@@ -1,28 +1,33 @@
-from typing import Union, List
-from collections import defaultdict
+import fnmatch
+import json
+import operator
+import os
 import pickle
-
 import xml.etree.ElementTree as ElemTree
+from collections import defaultdict
+from math import isclose
+from string import digits
+from typing import Union, List
 from xml.dom import minidom
 
-from matplotlib import pyplot as plt
+import geopandas as gpd
+import meshio
+import numpy as np
+import pandas as pd
 from matplotlib import cm, colors
+from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 from matplotlib.widgets import Slider
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-import operator
-import numpy as np
-from shapely.geometry import Point,Polygon
-from shapely.ops import unary_union
 from pyproj import Transformer
-import geopandas as gpd
-import math
+from shapely.geometry import LineString, Polygon, MultiPolygon, Point
+from shapely.ops import unary_union
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault
-from rsqsim_api.visualisation.utilities import plot_coast, plot_background
+from rsqsim_api.fault.patch import OpenQuakeRectangularPatch
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
 from rsqsim_api.io.mesh_utils import array_to_mesh
-from rsqsim_api.fault.patch import OpenQuakeRectangularPatch
+from rsqsim_api.visualisation.utilities import plot_coast, plot_background
 
 transformer_nztm2wgs = Transformer.from_crs(2193, 4326, always_xy=True)
 
@@ -95,7 +100,6 @@ class RsqSimEvent:
             self.find_mean_rake()
         return self._mean_rake
 
-
     @classmethod
     def from_catalogue_array(cls, t0: float, m0: float, mw: float, x: float,
                              y: float, z: float, area: float, dt: float, event_id: int = None):
@@ -137,7 +141,7 @@ class RsqSimEvent:
 
         faults_with_patches = fault_model.faults_with_patches
         patches_on_fault = defaultdict(list)
-        [ patches_on_fault[faults_with_patches[i]].append(i) for i in patch_numbers ]
+        [patches_on_fault[faults_with_patches[i]].append(i) for i in patch_numbers]
 
         mask = np.full(len(patch_numbers), True)
         for fault in patches_on_fault.keys():
@@ -151,7 +155,6 @@ class RsqSimEvent:
         event.patch_slip = patch_slip[mask]
         event.patch_time = patch_time[mask]
 
-
         if event.patch_numbers.size > 1:
             patchnum_lookup = operator.itemgetter(*(event.patch_numbers))
             event.patches = list(patchnum_lookup(fault_model.patch_dic))
@@ -164,7 +167,8 @@ class RsqSimEvent:
         else:
             event.patches = []
             event.faults = []
-            print(f"Event {event_id} doesn't rupture more than {min_patches} patches on any fault. \n Decrease min_patches if you want a fault + patches returned.")
+            print(
+                f"Event {event_id} doesn't rupture more than {min_patches} patches on any fault. \n Decrease min_patches if you want a fault + patches returned.")
 
         return event
 
@@ -197,41 +201,42 @@ class RsqSimEvent:
             total_slip = np.sum(self.patch_slip)
             npatches = len(self.patches)
             if all([total_slip > 0., npatches > 0]):
-                self._mean_slip = total_slip/npatches
+                self._mean_slip = total_slip / npatches
 
     def find_mean_strike(self):
         if self.patches:
-            cumstrike=0.
+            cumstrike = 0.
             for patch in self.patches:
                 cumstrike += patch.strike
             npatches = len(self.patches)
             if npatches > 0:
-                self._mean_strike = cumstrike/npatches
+                self._mean_strike = cumstrike / npatches
 
     def find_mean_dip(self):
         if self.patches:
-            cumdip=0.
+            cumdip = 0.
+            npatches = len(self.patches)
             for patch in self.patches:
                 cumdip += patch.dip
-                npatches = len(self.patches)
+
             if npatches > 0:
-                self._mean_dip = cumdip/npatches
+                self._mean_dip = cumdip / npatches
 
     def find_mean_rake(self):
         if self.patches:
-            cumrake=0.
+            cumrake = 0.
             for patch in self.patches:
                 cumrake += patch.rake
             npatches = len(self.patches)
             if npatches > 0:
-                self._mean_rake = cumrake/npatches
+                self._mean_rake = cumrake / npatches
 
-    def find_length(self,min_slip_percentile: float | None =None):
+    def find_length(self, min_slip_percentile: float | None = None):
         if self.patches:
-            rupture_length=0.
+            rupture_length = 0.
             for fault in self.faults:
-                fault_trace=fault.trace
-                patch_locs=[]
+                fault_trace = fault.trace
+                patch_locs = []
                 for patch in self.patches:
                     centroid = Point(patch.centre[:2])
 
@@ -239,18 +244,83 @@ class RsqSimEvent:
                     patch_locs.append(patch_dist)
                 rupture_length += np.ptp(patch_locs)
 
-        self.length=rupture_length
+        self.length = rupture_length
 
+    def make_fault_moment_dict(self, fault_model: RsqSimMultiFault, mu: float = 3.0e10, by_cfm_names: bool = True):
+        """
+        make a dictionary of faults involved in event and the moment released on them
+        Parameters
+        ----------
+        fault_model: RsqSimMultiFault
+        by_cfm_names: boolean, default= True Divide faults by the CFM segment names rather than the further segmentation in the V2 catalogue
+        mu: lame paramter, default value is 30GPa
+        """
+        assert self.faults is not None, "Event has no faults, can't calculate moment"
+        m0_dict = {}
+        for fault in self.faults:
+            fault_patches = np.array(list(fault.patch_dic.keys()))
+            fault_patch_numbers = self.patch_numbers[np.in1d(self.patch_numbers, fault_patches)]
+            fault_patch_slip = self.patch_slip[np.in1d(self.patch_numbers, fault_patches)]
+            areas = [fault.patch_dic[number].area for number in fault_patch_numbers]
+            m0 = sum(fault_patch_slip * areas * mu)
+            m0_dict[fault.name] = m0
+
+        if by_cfm_names:
+            # make lookup for fault segment names
+            fault_short_dict = {}
+            fault_short_names = []
+            rm_digs = str.maketrans('', '', digits)
+            rm_hyph = str.maketrans('', '', "-")
+            for name in fault_model.names:
+                short_name = name.translate(rm_digs)
+                short_name = short_name.translate(rm_hyph)
+                fault_short_names += short_name
+                fault_short_dict[name] = short_name
+
+            m0_df = pd.DataFrame.from_dict(m0_dict, orient='index', columns=['M0'])
+            m0_df["segName"] = [fault_short_dict[key] for key in m0_df.index]
+            m0_df.reset_index(inplace=True, drop=True)
+            m0_per_segment = m0_df.groupby(by="segName").sum()
+            m0_seg_dict = dict(zip(m0_per_segment.index, m0_per_segment.M0))
+        else:
+            m0_seg_dict = m0_dict
+
+        return m0_seg_dict
+
+    def make_moment_prop_dict(self, fault_model: RsqSimMultiFault, mu: float = 3.0e10, by_cfm_names: bool = True):
+        """
+        Make dictionary of fault names and the proportion of the seismic moment in the event they release.
+        Parameters
+        ----------
+        fault_model
+        mu
+        by_cfm_names
+        """
+        m0_dict = self.make_fault_moment_dict(fault_model=fault_model, mu=mu, by_cfm_names=by_cfm_names)
+
+        prop_dict = {}
+        for fault_name in m0_dict.keys():
+            prop_dict[fault_name] = m0_dict[fault_name] / self.m0
+
+        # and sort
+        prop_dict_sorted_keys = sorted(prop_dict, key=prop_dict.get, reverse=True)
+        prop_dict_sorted = dict(zip(prop_dict_sorted_keys, [prop_dict[x] for x in prop_dict_sorted_keys]))
+
+        return prop_dict_sorted
 
     def plot_slip_2d(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
-                     write: str = None, subplots = None, global_max_sub_slip: int = 0, global_max_slip: int = 0,
+                     extra_sub_list: list = None,
+                     write: str = None, subplots=None, global_max_sub_slip: int = 0, global_max_slip: int = 0,
                      figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 0.0, bounds: tuple = None,
                      plot_rivers: bool = True, plot_lakes: bool = True,
                      plot_highways: bool = True, plot_boundaries: bool = False, create_background: bool = False,
                      coast_only: bool = True, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain,
                      plot_log_scale: bool = False, log_cmap: str = "magma", log_min: float = 1.0,
                      log_max: float = 100., plot_traces: bool = True, trace_colour: str = "pink",
-                     min_slip_percentile: float = None, min_slip_value: float = None, plot_zeros: bool = True):
+                     land_color: str = 'antiquewhite',
+                     min_slip_percentile: float = None, min_slip_value: float = None, plot_zeros: bool = True,
+                     wgs: bool = False, title: str = None,
+                     plot_edge_label: bool = True):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
 
@@ -275,11 +345,14 @@ class RsqSimEvent:
             fig, ax = plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
                                       bounds=bounds, plot_rivers=plot_rivers, plot_lakes=plot_lakes,
                                       plot_highways=plot_highways, plot_boundaries=plot_boundaries,
-                                      hillshade_cmap=hillshade_cmap)
+                                      hillshade_cmap=hillshade_cmap, wgs=wgs, land_color=land_color,
+                                      plot_edge_label=plot_edge_label)
         elif coast_only:
+
             fig, ax = plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
                                       bounds=bounds, plot_rivers=False, plot_lakes=False, plot_highways=False,
-                                      plot_boundaries=False, hillshade_cmap=hillshade_cmap)
+                                      plot_boundaries=False, hillshade_cmap=hillshade_cmap, wgs=wgs,
+                                      land_color=land_color, plot_edge_label=plot_edge_label)
 
 
         else:
@@ -290,10 +363,13 @@ class RsqSimEvent:
 
         # Find maximum slip to scale colourbar
         max_slip = 0
-
+        if extra_sub_list is not None:
+            sub_list = bruce_subduction + extra_sub_list
+        else:
+            sub_list = bruce_subduction
         colour_dic = {}
         for f_i, fault in enumerate(self.faults):
-            if fault.name in bruce_subduction:
+            if fault.name in sub_list:
                 if plot_zeros:
                     colours = np.zeros(fault.patch_numbers.shape)
                 else:
@@ -319,7 +395,7 @@ class RsqSimEvent:
         subduction_list = []
         subduction_plot = None
         for f_i, fault in enumerate(self.faults):
-            if fault.name in bruce_subduction:
+            if fault.name in sub_list:
                 subduction_list.append(fault.name)
                 if plot_log_scale:
                     subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
@@ -334,7 +410,7 @@ class RsqSimEvent:
         max_slip = 0
         colour_dic = {}
         for f_i, fault in enumerate(self.faults):
-            if fault.name not in bruce_subduction:
+            if fault.name not in sub_list:
                 if plot_zeros:
                     colours = np.zeros(fault.patch_numbers.shape)
                 else:
@@ -354,19 +430,78 @@ class RsqSimEvent:
         max_slip = global_max_slip if global_max_slip > 0 else max_slip
 
         crustal_plot = None
-        for f_i, fault in enumerate(self.faults):
-            if fault.name not in bruce_subduction:
-                if plot_log_scale:
-                    crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
-                                                   facecolors=colour_dic[f_i],
-                                                   cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
+        # check for 90 degree dipping faults
+        vert_faults = [fault for fault in self.faults if fault.mean_dip == 90.]
+        if len(vert_faults) == 0:
+            for f_i, fault in enumerate(self.faults):
+                if isinstance(fault.trace, LineString):
+                    ax.plot(*fault.trace.coords.xy, color='black', linestyle='dashed', linewidth=0.1)
                 else:
-                    crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                    try:
+                        merged_coords = [list(geom.coords) for geom in fault.trace.geoms]
+                        merged_trace = LineString([trace for sublist in merged_coords for trace in sublist])
+                        ax.plot(*merged_trace.coords.xy, color='black', linestyle='dashed', linewidth=0.1)
+                    except:
+                        pass
+                if fault.name not in sub_list:
+                    if plot_log_scale:
+                        crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                    facecolors=colour_dic[f_i],
+                                                    cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
+                    else:
+                        crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                    facecolors=colour_dic[f_i],
+                                                    cmap=crustal_cmap, vmin=0., vmax=max_slip)
+                    plots.append(crustal_plot)
+        elif len(self.faults) == 1:
+            fault = self.faults[0]
+            f_i = 0
+            if isinstance(fault.trace, LineString):
+                ax.plot(*fault.trace.coords.xy, color='black', linestyle='dashed', linewidth=0.1)
+            else:
+                try:
+                    merged_coords = [list(geom.coords) for geom in fault.trace.geoms]
+                    merged_trace = LineString([trace for sublist in merged_coords for trace in sublist])
+                    ax.plot(*merged_trace.coords.xy, color='black', linestyle='dashed', linewidth=0.1)
+                except:
+                    pass
+            if fault.name not in sub_list:
+                if plot_log_scale:
+                    crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 2], fault.triangles,
+                                                facecolors=colour_dic[f_i],
+                                                cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
+                else:
+                    crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 2], fault.triangles,
                                                 facecolors=colour_dic[f_i],
                                                 cmap=crustal_cmap, vmin=0., vmax=max_slip)
                 plots.append(crustal_plot)
+        else:
+            for f_i, fault in enumerate(self.faults):
+                if isinstance(fault.trace, LineString):
+                    ax.plot(*fault.trace.coords.xy, color='black', linestyle='dashed', linewidth=0.1)
+                else:
+                    try:
+                        merged_coords = [list(geom.coords) for geom in fault.trace.geoms]
+                        merged_trace = LineString([trace for sublist in merged_coords for trace in sublist])
+                        ax.plot(*merged_trace.coords.xy, color='black', linestyle='dashed', linewidth=0.1)
+                    except:
+                        pass
+                if fault.name not in sub_list:
+                    if fault in vert_faults:
+                        pass
+                    else:
 
-        if any([subplots is None, isinstance(subplots,str)]):
+                        if plot_log_scale:
+                            crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                        facecolors=colour_dic[f_i],
+                                                        cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
+                        else:
+                            crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
+                                                        facecolors=colour_dic[f_i],
+                                                        cmap=crustal_cmap, vmin=0., vmax=max_slip)
+                        plots.append(crustal_plot)
+
+        if any([subplots is None, isinstance(subplots, str)]):
             if plot_log_scale:
                 if subduction_list:
                     sub_cbar = fig.colorbar(subduction_plot, ax=ax)
@@ -382,11 +517,10 @@ class RsqSimEvent:
                     crust_cbar = fig.colorbar(crustal_plot, ax=ax)
                     crust_cbar.set_label("Slip (m)")
 
+        plot_coast(ax=ax, wgs=wgs)
 
-
-        plot_coast(ax=ax)
-
-
+        if title:
+            plt.title(title)
         if write is not None:
             fig.savefig(write, dpi=300)
             if show:
@@ -401,21 +535,29 @@ class RsqSimEvent:
 
     def plot_slip_evolution(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
                             step_size: int = 1, write: str = None, fps: int = 20, file_format: str = "gif",
-                            figsize: tuple = (6.4, 4.8)):
+                            figsize: tuple = (6.4, 4.8), extra_sub_list: list = None):
 
         assert file_format in ("gif", "mov", "avi", "mp4")
         assert len(self.faults) > 0, "Can't plot an event with no faults."
         fig, ax = plt.subplots()
         fig.set_size_inches(figsize)
+        ax.set_facecolor('w')
+        plt.figure(facecolor='w')
         plot_coast(ax, clip_boundary=self.bounds)
         ax.set_aspect("equal")
-        ax.get_xaxis().set_visible(False)
-        ax.get_yaxis().set_visible(False)
+        ax.get_xaxis().set_visible(True)
+        ax.get_yaxis().set_visible(True)
 
         colour_dic = {}
         timestamps = defaultdict(set)
         subduction_max_slip = 0
         crustal_max_slip = 0
+
+        if extra_sub_list is not None:
+            sub_list = [*bruce_subduction, *extra_sub_list]
+        else:
+            sub_list = bruce_subduction
+
         subduction_list = []
         for f_i, fault in enumerate(self.faults):
             colours = np.zeros(fault.patch_numbers.shape)
@@ -429,7 +571,7 @@ class RsqSimEvent:
                     timestamps[times[local_id]].add(f_i)
 
             colour_dic[f_i] = (colours, times)
-            if fault.name in bruce_subduction:
+            if fault.name in sub_list:
                 subduction_list.append(fault.name)
                 if max(colours) > subduction_max_slip:
                     subduction_max_slip = max(colours)
@@ -441,21 +583,29 @@ class RsqSimEvent:
         subduction_plot = None
         for f_i, fault in enumerate(self.faults):
             init_colours = np.zeros(fault.patch_numbers.shape)
-            if fault.name in bruce_subduction:
+            if isinstance(fault.trace, LineString):
+                ax.plot(*fault.trace.coords.xy, color='gray', linestyle='dashed')
+            else:
+                try:
+                    merged_coords = [list(geom.coords) for geom in fault.trace.geoms]
+                    merged_trace = LineString([trace for sublist in merged_coords for trace in sublist])
+                    ax.plot(*merged_trace.coords.xy, color='gray', linestyle='dashed')
+                except:
+                    pass
+            if fault.name in sub_list:
                 subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
-                                    facecolors=init_colours,
-                                    cmap=subduction_cmap, vmin=0, vmax=subduction_max_slip)
+                                               facecolors=init_colours,
+                                               cmap=subduction_cmap, vmin=0, vmax=subduction_max_slip)
                 plots[f_i] = (subduction_plot, init_colours)
 
         crustal_plot = None
         for f_i, fault in enumerate(self.faults):
             init_colours = np.zeros(fault.patch_numbers.shape)
-            if fault.name not in bruce_subduction:
+            if fault.name not in sub_list:
                 crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
-                                    facecolors=init_colours,
-                                    cmap=crustal_cmap, vmin=0, vmax=crustal_max_slip)
+                                            facecolors=init_colours,
+                                            cmap=crustal_cmap, vmin=0, vmax=crustal_max_slip)
                 plots[f_i] = (crustal_plot, init_colours)
-
 
         ax_divider = make_axes_locatable(ax)
         ax_time = ax_divider.append_axes("bottom", size="3%", pad=0.5)
@@ -502,7 +652,7 @@ class RsqSimEvent:
 
         if write is not None:
             writer = PillowWriter(fps=fps) if file_format == "gif" else FFMpegWriter(fps=fps)
-            animation.save(f"{write}.{file_format}", writer)
+            animation.save(f"{write}.{file_format}", writer, savefig_kwargs=dict(facecolor='w'))
 
         if show:
             plt.show()
@@ -556,6 +706,7 @@ class RsqSimEvent:
         data_dic = {}
         for label, index in zip(["slip", "rake", "time"], [9, 10, 11]):
             data_dic[label] = slip_dist_array[:, index]
+
         mesh.cell_data = data_dic
 
         return mesh
@@ -575,7 +726,7 @@ class RsqSimEvent:
     def slip_dist_to_txt(self, txt_file, include_zeros: bool = True, min_slip_percentile: float = None,
                          min_slip_value: float = None, nztm_to_lonlat: bool = False):
         if nztm_to_lonlat:
-            header="lon1 lat1 z1 lon2 lat2 z2 lon3 lat3 z3 slip_m rake_deg time_s"
+            header = "lon1 lat1 z1 lon2 lat2 z2 lon3 lat3 z3 slip_m rake_deg time_s"
         else:
             header = "x1 y1 z1 x2 y2 z2 x3 y3 z3 slip_m rake_deg time_s"
         slip_dist_array = self.slip_dist_array(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
@@ -616,7 +767,305 @@ class RsqSimEvent:
         else:
             return
 
+    def event_to_json(self, fault_model: RsqSimMultiFault, path2cfm: str, catalogue_version: str = 'v1',
+                      xml_dir: str = 'OQ-events', wgs84: bool = False, subd_tile_size: float = 15000.,
+                      tile_size: float = 5000., tectonic_region: str = "NZ"):
+        """
 
+        Parameters
+        ----------
+        fault_model
+        path2cfm
+        catalogue_version
+        xml_dir
+        wgs84: is event in lon/lat WGS84 already? default: False
+        subd_tile_size
+        tile_size
+        tectonic_region
+        """
+        # setup
+        assert os.path.exists(path2cfm), "Path to CFM does not exist"
+
+        if catalogue_version == 'v2':
+            fault_model.make_v2_name_dic(path2cfm=path2cfm)
+            name_dict = fault_model.v2_name_dic
+        else:
+            name_dict = dict(zip(fault_model.names, fault_model.names))
+
+        # create output directory if needed
+        outdir = os.path.join(xml_dir, f'event_{self.event_id}')
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+
+        ### create metadata string for event
+        # start with timestamp (not sure this is really necessary)
+        ev_time = self.t0
+        yrs = f"{np.floor(ev_time / (365.25 * 24. * 3600.)):.0f}"
+        months = f"{np.floor((ev_time - (float(yrs) * 365.25 * 24. * 3600.)) / (3600. * 24. * 30.4)):02.0f}"
+        remain_ym = ev_time - (float(yrs) * (365.25 * 24. * 3600.) + float(months) * (3600. * 24. * 30.4))
+        days = np.floor(remain_ym / (24. * 3600.))
+        hours = np.floor((remain_ym - days * (24. * 3600.)) / 3600.)
+        mins = np.floor((remain_ym - days * (24. * 3600.) - (hours * 3600.)) / 60.)
+        secs = remain_ym - days * (24. * 3600.) - (hours * 3600.) - mins * 60.
+        timestring = f"{yrs}-{months}-{days:02.0f}T{hours:02.0f}:{mins:02.0f}:{secs:02.6f}Z"
+        # location
+        if not wgs84:
+            lon, lat = transformer_nztm2wgs.transform(self.x, self.y)
+        else:
+            lon = self.x
+            lat = self.y
+
+        metadata = {"lat": np.round(lat, decimals=3), "id": f"rsq{catalogue_version}{self.event_id}", "mech": "ALL",
+                    "mag": self.mw, "rake": self.mean_rake, "reference": f"rsqsim_{catalogue_version}",
+                    "netid": f"{tectonic_region}", "depth": f'{self.z / 1000.:.1f}',
+                    "network": f"rsqsim_{catalogue_version}", "locstring": f"{tectonic_region}",
+                    "time": f"{timestring}", "lon": np.round(lon, decimals=3),
+                    "productcode": f"rsq{catalogue_version}{self.event_id}"}
+
+        ### convert faults to quadrilaterals
+        # which faults are involved in this event?
+        faults = RsqSimMultiFault(self.faults)
+        faultNames = faults.names
+        # find corresponding larger/cfm faults
+        allFaults = np.unique([name_dict[name] for name in faultNames])
+        subdFaults = np.unique([name_dict[name] for name in faultNames if
+                                fnmatch.fnmatch(name, "*puy*") or fnmatch.fnmatch(name, "*hik*")])
+
+        # create empty list to store polygons
+        poly_list = []
+
+        # iterate over faults which participate in the event
+        for fName in allFaults:
+            try:
+                # need to find all parts of the fault, then later select those which have non-zero slip
+                fault_merged = fault_model.merge_segments(fName, name_dict=name_dict, fault_name=fName)
+                if len(subdFaults) > 0 and fName in subdFaults:
+                    # find average dip using subduction tile size
+                    dip_angle = fault_merged.get_average_dip(subd_tile_size)
+                    # Discretize into rectangular tiles
+                    new_fault_rect = fault_merged.discretize_rectangular_tiles(tile_size=subd_tile_size)
+                else:
+                    # average dip
+                    dip_angle = fault_merged.get_average_dip()
+                    # Discretize into rectangular tiles
+                    new_fault_rect = fault_merged.discretize_rectangular_tiles(tile_size=tile_size)
+
+                # want to discard patches which don't slip in the event
+                for quad in new_fault_rect:
+                    # find nearest triangular patches (to check slip is non-zero on the quads which get passed to the json)
+                    approx_centroid = np.mean(quad, axis=0)
+                    # find closest patches is only in 2d so then need to check depth
+                    nearest_patches_ids = faults.find_closest_patches(approx_centroid[0], approx_centroid[1])
+                    nearest_patches = [faults.patch_dic[patch_id] for patch_id in nearest_patches_ids]
+                    min_z_diff = min([np.abs(patch.centre[2] - approx_centroid[2]) for patch in nearest_patches])
+                    nearest_patches_z = [patch for patch in nearest_patches if
+                                         np.abs(patch.centre[2] - approx_centroid[2]) == min_z_diff]
+                    patch_ids = [patch.patch_number for patch in nearest_patches_z]
+                    # find associated slip
+                    slip = 0.
+                    for patch_id in patch_ids:
+                        if patch_id in self.patch_numbers:
+                            slip_index = np.searchsorted(self.patch_numbers, patch_id)
+                            slip_mag = self.patch_slip[slip_index]
+                            slip += slip_mag
+
+                    mean_slip = slip / len(patch_ids)
+
+                    # check slip isn't 0/ less than a mm
+                    if mean_slip > 1.e-3:
+                        # convert coordinates to lat lon if needed
+                        if not wgs84:
+                            x2, y2 = transformer_nztm2wgs.transform(quad[:, 0], quad[:, 1])
+                        else:
+                            x2, y2 = quad[:, 0], quad[:, 1]
+                        # and round to 3dp
+                        quad[:, 0] = np.round(x2, decimals=3)
+                        quad[:, 1] = np.round(y2, decimals=3)
+
+                        # need depths to be positive and in km
+                        new_depths = np.zeros(np.shape(quad[:, 2]))
+                        for i, depth in enumerate(quad[:, 2]):
+                            # prevent 0s being written as -0.0
+                            if isclose(depth, 0.0, abs_tol=0.2):
+                                new_depths[i] = 0.
+                            else:
+                                new_depths[i] = np.round(-1. * depth / 1000., decimals=2)
+
+                        quad[:, 2] = new_depths
+                        # sort into correct order for json (shallowest points first)
+                        quad_sorted = np.sort(quad, axis=0)
+                        poly_list.append(Polygon(quad_sorted))
+            except:
+                print(f"{fName} could not be discretised - event slip distribution will be incomplete")
+        all_segs = MultiPolygon(poly_list)
+        polys = gpd.GeoSeries(all_segs)
+        # write to initial json
+        polys.to_file(os.path.join(outdir, f'{self.event_id}.json'), driver='GeoJSON')
+
+        # read back in to edit properties
+        with open(os.path.join(outdir, f'{self.event_id}.json'), 'r') as jfile:
+            pjson = json.load(jfile)
+        pjson['metadata'] = metadata
+        pjson['features'][0]['properties'] = {"rupture type": "rupture extent"}
+        # hack to remove extra set of brackets
+        pjson['features'][0]['geometry']['coordinates'] = [
+            [item[0] for item in pjson['features'][0]['geometry']['coordinates'][:]]]
+
+        # and write back out to json
+        with open(os.path.join(outdir, f'{self.event_id}.json'), 'w') as jfile:
+            json.dump(pjson, jfile)
+
+    def event_to_OQ_xml(self, fault_model: RsqSimMultiFault, path2cfm: str, catalogue_version: str = 'v2',
+                        xml_dir: str = 'OQ_events',
+                        subd_tile_size: float = 15000., tile_size: float = 5000., probability: float = 0.9,
+                        tectonic_region: str = 'NZ'):
+        assert os.path.exists(path2cfm), "Path to CFM does not exist"
+        if catalogue_version == 'v2':
+            fault_model.make_v2_name_dic(path2cfm=path2cfm)
+            name_dict = fault_model.v2_name_dic
+        else:
+            name_dict = dict(zip(fault_model.names, fault_model.names))
+        unique_names = set(name_dict.values())
+
+        # which faults are involved in this event?
+        faults = RsqSimMultiFault(self.faults)
+        faultNames = faults.names
+        # find corresponding larger/cfm faults
+        allFaults = np.unique([name_dict[name] for name in faultNames])
+        subdFaults = np.unique([name_dict[name] for name in faultNames if
+                                fnmatch.fnmatch(name, "*puysegar*") or fnmatch.fnmatch(name, "*hikurangi*")])
+
+        outdir = os.path.join(xml_dir, f'event_{self.event_id}')
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+
+        poly_list = []
+        for fName in allFaults:
+            try:
+                # print(fName)
+                # need to find all parts of the fault, then later select those which have non-zero slip
+                fault_merged = fault_model.merge_segments(fName, name_dict=name_dict, fault_name=fName)
+
+                if len(subdFaults) > 0 and fName in subdFaults:
+                    dip_angle = fault_merged.get_average_dip(subd_tile_size)
+                    new_fault_rect = fault_merged.discretize_rectangular_tiles(tile_size=subd_tile_size)
+                else:
+                    # Average dip
+                    dip_angle = fault_merged.get_average_dip()
+                    # Discretize into rectangular tiles
+                    new_fault_rect = fault_merged.discretize_rectangular_tiles(tile_size=tile_size)
+
+                # want to discard patches which don't slip in the event
+                for quad in new_fault_rect:
+                    # find nearest patch
+                    approx_centroid = np.mean(quad, axis=0)
+                    # find closest patches is only in 2d so then need to check depth
+                    nearest_patches_ids = faults.find_closest_patches(approx_centroid[0], approx_centroid[1])
+                    nearest_patches = [faults.patch_dic[patch_id] for patch_id in nearest_patches_ids]
+                    min_z_diff = min([np.abs(patch.centre[2] - approx_centroid[2]) for patch in nearest_patches])
+                    nearest_patches_z = [patch for patch in nearest_patches if
+                                         np.abs(patch.centre[2] - approx_centroid[2]) == min_z_diff]
+                    patch_ids = [patch.patch_number for patch in nearest_patches_z]
+
+                    # find associated slip
+                    slip = 0.
+                    for patch_id in patch_ids:
+                        if patch_id in self.patch_numbers:
+                            slip_index = np.searchsorted(self.patch_numbers, patch_id)
+                            slip_mag = self.patch_slip[slip_index]
+                            slip += slip_mag
+                    mean_slip = slip / len(patch_ids)
+                    # check slip isn't 0/ less than a mm
+                    if mean_slip > 1.e-3:
+                        poly_list.append(Polygon(quad))
+
+            except:
+                print(f"{fName} could not be discretised - event slip distribution will be incomplete")
+
+            # set parameters for OQ
+            # parameters for openquake
+            hypocentre = np.array([self.x, self.y, self.z])
+            evname = f'event_{self.event_id}_OQ'
+            event_asOQ = OpenQuakeMultiSquareRupture(tile_list=poly_list, probability=probability, magnitude=self.mw,
+                                                     rake=self.mean_rake, hypocentre=hypocentre, event_id=self.event_id,
+                                                     name=evname, tectonic_region=tectonic_region)
+            event_asOQ.to_oq_xml(write=os.path.join(outdir, f'event_{self.event_id}.xml'))
+
+            return
+
+    def slip_dist_to_quads(self, fault_model: RsqSimMultiFault, path2cfm: str, catalogue_version: str = 'v2',
+                           vtk_dir: str = 'fault_vtks',
+                           subd_tile_size: float = 15000., tile_size: float = 5000., ):
+
+        assert os.path.exists(path2cfm), "Path to CFM does not exist"
+        if catalogue_version == 'v2':
+            fault_model.make_v2_name_dic(path2cfm=path2cfm)
+            name_dict = fault_model.v2_name_dic
+        else:
+            name_dict = dict(zip(fault_model.names, fault_model.names))
+        unique_names = set(name_dict.values())
+
+        # which faults are involved in this event?
+        faults = RsqSimMultiFault(self.faults)
+        faultNames = faults.names
+        # find corresponding larger/cfm faults
+        allFaults = np.unique([name_dict[name] for name in faultNames])
+        subdFaults = np.unique([name_dict[name] for name in faultNames if
+                                fnmatch.fnmatch(name, "*puysegar*") or fnmatch.fnmatch(name, "*hikurangi*")])
+
+        outdir = os.path.join(vtk_dir, f'event_{self.event_id}_quad')
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+
+        poly_list = []
+        for fName in allFaults:
+            try:
+                # print(fName)
+                # need to find all parts of the fault, then later select those which have non-zero slip
+                fault_merged = fault_model.merge_segments(fName, name_dict=name_dict, fault_name=fName)
+
+                if len(subdFaults) > 0 and fName in subdFaults:
+                    dip_angle = fault_merged.get_average_dip(subd_tile_size)
+                    new_fault_rect = fault_merged.discretize_rectangular_tiles(tile_size=subd_tile_size)
+                else:
+                    # Average dip
+                    dip_angle = fault_merged.get_average_dip()
+                    # Discretize into rectangular tiles
+                    new_fault_rect = fault_merged.discretize_rectangular_tiles(tile_size=tile_size)
+                # Turn into quadrilateral mesh
+                vertices = np.unique(np.vstack([rect for rect in new_fault_rect]), axis=0)
+                vertex_dict = {tuple(vertex): i for i, vertex in enumerate(vertices)}
+                new_fault_rect_indices = [[vertex_dict[tuple(vertex)] for vertex in quad] for quad in
+                                          new_fault_rect]
+                mesh = meshio.Mesh(points=vertices, cells={"quad": new_fault_rect_indices})
+
+                # assign slip to these
+                slip_list = []
+                for quad in new_fault_rect:
+                    # find nearest patch
+                    approx_centroid = np.mean(quad, axis=0)
+                    # find closest patches is only in 2d so then need to check depth
+                    nearest_patches_ids = faults.find_closest_patches(approx_centroid[0], approx_centroid[1])
+                    nearest_patches = [faults.patch_dic[patch_id] for patch_id in nearest_patches_ids]
+                    min_z_diff = min([np.abs(patch.centre[2] - approx_centroid[2]) for patch in nearest_patches])
+                    nearest_patches_z = [patch for patch in nearest_patches if
+                                         np.abs(patch.centre[2] - approx_centroid[2]) == min_z_diff]
+                    patch_ids = [patch.patch_number for patch in nearest_patches_z]
+
+                    # find associated slip
+                    slip = 0.
+                    for patch_id in patch_ids:
+                        if patch_id in self.patch_numbers:
+                            slip_index = np.searchsorted(self.patch_numbers, patch_id)
+                            slip_mag = self.patch_slip[slip_index]
+                            slip += slip_mag
+                    mean_slip = slip / len(patch_ids)
+                    slip_list.append(mean_slip)
+                mesh.cell_data = {"slip": np.array(slip_list)}
+                meshio.write(os.path.join(outdir, f'{fName}_{self.event_id}.vtk'), mesh, file_format="vtk")
+            except:
+                print(f"{fName} could not be discretised - event slip distribution will be incomplete")
+        return
 
 
 class OpenQuakeMultiSquareRupture:
@@ -671,11 +1120,4 @@ class OpenQuakeMultiSquareRupture:
             with open(write, "wb") as xml:
                 xml.write(pretty_xml_str)
 
-
         return source_element
-
-
-
-
-
-
