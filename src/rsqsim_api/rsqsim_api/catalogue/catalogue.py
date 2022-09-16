@@ -1,4 +1,4 @@
-from typing import Union, Iterable, List, Dict, Any
+from typing import Union, Iterable, List, Any
 from collections import abc, Counter, defaultdict
 import os
 import pickle
@@ -589,16 +589,6 @@ class RsqSimCatalogue:
            event_lengths[event.event_id] = event.length
         self._event_length = event_lengths
 
-    def assign_event_length(self, fault_model: RsqSimMultiFault):
-        """
-        Create dict of event ids with associated maximum horizontal straight line distances between patches which slip in them.
-        Note that this overwrites any other value which could have been assigned to event length.
-        """
-        event_lengths = {}
-        for event in self.all_events(fault_model):
-           event.find_length()
-           event_lengths[event.event_id] = event.length
-        self._event_length = event_lengths
 
     def plot_accumulated_slip_2d(self, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma",
                                  crustal_cmap: str = "viridis", show: bool = True,

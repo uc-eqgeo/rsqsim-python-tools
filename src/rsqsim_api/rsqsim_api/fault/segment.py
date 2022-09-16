@@ -2,22 +2,20 @@ import os
 from collections.abc import Iterable
 from typing import Union, List
 
+import meshio
 import numpy as np
 import pandas as pd
-
+from fault_mesh_tools.faultmeshops.faultmeshops import fit_plane_to_points
 from matplotlib import pyplot as plt
 from pyproj import Transformer
-import meshio
-from shapely.ops import linemerge, unary_union
 from shapely.geometry import LineString, MultiPolygon
+from shapely.ops import linemerge, unary_union
 
-from rsqsim_api.io.read_utils import read_dxf, read_stl
-from rsqsim_api.io.tsurf import tsurf
+import rsqsim_api.io.rsqsim_constants as csts
 from rsqsim_api.fault.patch import RsqSimTriangularPatch, RsqSimGenericPatch, cross_3d, norm_3d
 from rsqsim_api.fault.utilities import optimize_point_spacing, calculate_dip_direction, reverse_bearing, fit_2d_line
-import rsqsim_api.io.rsqsim_constants as csts
-from fault_mesh_tools.faultmeshops.faultmeshops import get_fault_rotation_matrix, fault_global_to_local, \
-     fault_local_to_global, fit_plane_to_points
+from rsqsim_api.io.read_utils import read_dxf, read_stl
+from rsqsim_api.io.tsurf import tsurf
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
 
@@ -197,10 +195,9 @@ class RsqSimSegment:
 
     def get_mean_dip(self):
         cum_dip = []
-        for patch_id in self.patch_numbers:
-            patch = self.patch_dic[patch_id]
+        for patch in self.patch_outlines:
             cum_dip.append(patch.dip)
-        self._mean_dip=np.mean(cum_dip)
+        self._mean_dip = np.mean(cum_dip)
 
     @property
     def mean_slip_rate(self):
@@ -209,19 +206,14 @@ class RsqSimSegment:
 
         return self._mean_slip_rate
 
-
     def get_mean_slip_rate(self):
-
         all_patches = []
-
-        for patch_id in self.patch_numbers:
-            patch = self.patch_dic[patch_id]
+        for patch in self.patch_outlines:
             slip_rate = patch.total_slip
             all_patches.append(slip_rate)
 
         fault_slip_rate = np.mean(all_patches)
         self._mean_slip_rate = fault_slip_rate
-
 
     def get_unique_vertices(self):
         if self.patch_vertices is None:
@@ -295,17 +287,17 @@ class RsqSimSegment:
         triangle_array = np.array(triangles)
         assert triangle_array.shape[1] == 9, "Expecting 3d coordinates of 3 vertices each"
         # check no patches have 0 area
-        triangle_verts=np.reshape(triangle_array,[len(triangle_array),3,3])
-        for i,triangle in enumerate(triangle_verts):
-            side1=triangle[1]-triangle[0]
-            side2=triangle[1]-triangle[2]
-            cross_prod=cross_3d(side1,side2)
-            norm_cross=norm_3d(cross_prod)
-            area=0.5*norm_cross
+        triangle_verts = np.reshape(triangle_array, [len(triangle_array), 3, 3])
+        for i, triangle in enumerate(triangle_verts):
+            side1 = triangle[1] - triangle[0]
+            side2 = triangle[1] - triangle[2]
+            cross_prod = cross_3d(side1, side2)
+            norm_cross = norm_3d(cross_prod)
+            area = 0.5 * norm_cross
             if area < min_patch_area:
-                np.delete(triangle_array,i,axis=0)
+                np.delete(triangle_array, i, axis=0)
                 if patch_numbers is not None:
-                    np.delete(patch_numbers,i,axis=0)
+                    np.delete(patch_numbers, i, axis=0)
 
         if patch_numbers is None:
             patch_numbers = np.arange(len(triangle_array))
@@ -326,14 +318,14 @@ class RsqSimSegment:
                     print('Both total slip rate and strike slip rate specified '
                           '- strike slip and dip slip rates will be recalculated based on total slip and rake')
 
-                patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num, strike_slip=strike_slip,
+                patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
+                                              strike_slip=strike_slip,
                                               dip_slip=dip_slip, rake=rake, total_slip=total_slip[i])
             else:
                 patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
                                               strike_slip=strike_slip,
                                               dip_slip=dip_slip, rake=rake)
             triangle_ls.append(patch)
-
 
         fault.patch_outlines = triangle_ls
         fault.patch_numbers = np.array([patch.patch_number for patch in triangle_ls])
@@ -387,9 +379,9 @@ class RsqSimSegment:
 
         if read_slip_rate:
             assert "slip_rate" in dataframe.columns, "Cannot read slip rate"
-            slip_rate=dataframe.slip_rate.to_numpy()
+            slip_rate = dataframe.slip_rate.to_numpy()
         else:
-            #set slip rate to 1 for calculating tsunami green functions
+            # set slip rate to 1 for calculating tsunami green functions
             slip_rate = 1
 
         if read_rake:
@@ -406,8 +398,8 @@ class RsqSimSegment:
             triangle3 = triangle.reshape(3, 3)
             if read_rake:
                 if read_slip_rate:
-                    strike_slip = rake_dic[rake[i]][0]*slip_rate[i]
-                    dip_slip = rake_dic[rake[i]][1]*slip_rate[i]
+                    strike_slip = rake_dic[rake[i]][0] * slip_rate[i]
+                    dip_slip = rake_dic[rake[i]][1] * slip_rate[i]
                 else:
                     strike_slip = rake_dic[rake[i]][0]
                     dip_slip = rake_dic[rake[i]][1]
@@ -455,7 +447,7 @@ class RsqSimSegment:
 
         triangles = read_stl(stl_file)
         return cls.from_triangles(triangles, segment_number=segment_number, patch_numbers=patch_numbers,
-                                  fault_name=fault_name, strike_slip=strike_slip, dip_slip=dip_slip,rake=rake)
+                                  fault_name=fault_name, strike_slip=strike_slip, dip_slip=dip_slip, rake=rake)
 
     @property
     def adjacency_map(self):
@@ -613,16 +605,11 @@ class RsqSimSegment:
         for patch, ds in zip(self.patch_outlines, ds_array):
             patch.dip_slip = ds
 
-    @property
-    def strike_slip(self):
-        return np.array([patch.strike_slip for patch in self.patch_outlines])
-
     @strike_slip.setter
     def strike_slip(self, ss_array: np.ndarray):
         assert len(ss_array) == len(self.patch_outlines)
         for patch, ss in zip(self.patch_outlines, ss_array):
             patch.strike_slip = ss
-
 
     def to_rsqsim_fault_file(self, flt_name):
         tris = pd.DataFrame(self.patch_triangle_rows)
@@ -632,7 +619,7 @@ class RsqSimSegment:
             rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
             print("Rake not set, writing out as 90")
         tris.loc[:, 9] = rakes
-        #slip_rates = pd.Series(self.dip_slip * 1.e-3 / csts.seconds_per_year)
+        # slip_rates = pd.Series(self.dip_slip * 1.e-3 / csts.seconds_per_year)
         total_slip = [np.linalg.norm([self.dip_slip[i], self.strike_slip[i]]) for i in range(len(self.dip_slip))]
         slip_rates = pd.Series([rate * 1.e-3 / csts.seconds_per_year for rate in total_slip])
         tris.loc[:, 10] = slip_rates
@@ -648,15 +635,15 @@ class RsqSimSegment:
         if self.rake is not None:
             rakes = pd.Series(self.rake)
         else:
-            rakes=pd.Series(np.ones(self.dip_slip.shape)*90.)
+            rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
             print("Rake not set, writing out as 90")
         tris.loc[:, 9] = rakes
-        total_slip=[np.linalg.norm([self.dip_slip[i],self.strike_slip[i]]) for i in range(len(self.dip_slip))]
-        srs=[rate * 1.e-3 / csts.seconds_per_year for rate in total_slip]
+        total_slip = [np.linalg.norm([self.dip_slip[i], self.strike_slip[i]]) for i in range(len(self.dip_slip))]
+        srs = [rate * 1.e-3 / csts.seconds_per_year for rate in total_slip]
         try:
-            rates=[slip.item() for slip in srs]
+            rates = [slip.item() for slip in srs]
         except AttributeError:
-            rates=srs
+            rates = srs
         slip_rates = pd.Series(rates)
 
         if any([rate < 1.e-15 and rate > 0. for rate in slip_rates]):
@@ -707,19 +694,13 @@ class RsqSimSegment:
         local_dips = []
         for centre in centre_array_3d:
             relevant_vertices = self.vertices[np.abs(np.dot(self.vertices - centre, self.strike_direction_vector)
-                                                     < width/2.)]
+                                                     < width / 2.)]
             horizontal_dists = np.dot(relevant_vertices - centre, self.dip_direction_vector)
             depths = np.abs(relevant_vertices[:, -1])
             local_dip = fit_2d_line(horizontal_dists, depths)
             local_dips.append(local_dip)
 
         return abs(np.median(local_dips))
-
-
-
-
-
-
 
     def discretize_rectangular_tiles(self, tile_size: float = 5000., interpolation_distance: float = 1000.):
         """
@@ -736,8 +717,8 @@ class RsqSimSegment:
                                     np.cos(np.radians(dip_angle)) * self.dip_direction_vector[1],
                                     -1 * np.sin(np.radians(dip_angle))])
         plane_normal = np.array([np.sin(np.radians(dip_angle)) * self.dip_direction_vector[0],
-                                np.sin(np.radians(dip_angle)) * self.dip_direction_vector[1],
-                                np.cos(np.radians(dip_angle))])
+                                 np.sin(np.radians(dip_angle)) * self.dip_direction_vector[1],
+                                 np.cos(np.radians(dip_angle))])
 
         rotation_matrix = np.column_stack((down_dip_vector, self.strike_direction_vector, plane_normal))
         plane_origin = centre_array_3d[0]
@@ -751,7 +732,7 @@ class RsqSimSegment:
         interpolation_widths = []
         for centre in rotated_centre_array_3d:
             relevant_vertices = rotated_vertices[np.abs(np.dot(rotated_vertices - centre, rotated_along_strike_vector))
-                                                 < width/2.]
+                                                 < width / 2.]
             horizontal_dists = np.dot(relevant_vertices[:, :-1] - centre[:-1], rotated_down_dip_vector[:-1])
             depths = relevant_vertices[:, -1]
 
@@ -776,7 +757,6 @@ class RsqSimSegment:
                 interpolated_x = np.array([point.x for point in interpolated_points])
                 interpolated_z_values = np.array([point.y for point in interpolated_points])
 
-
                 # Calculate local coordinates of tile centres
                 point_xys = np.array([xi * rotated_down_dip_vector[:-1] + centre[:-1] for xi in interpolated_x])
                 point_xyz = np.vstack((point_xys.T, interpolated_z_values)).T
@@ -791,8 +771,8 @@ class RsqSimSegment:
             relative_positions = self.vertices - plane_fitting_centre
             along_dists = np.dot(relative_positions, self.strike_direction_vector)
             across_dists = np.dot(relative_positions, down_dip_vector)
-            of_interest = (along_dists >= -1 * width/ 2) * (along_dists <= width/ 2.) * \
-                          (across_dists >= -1 * interp_width/ 2) * (across_dists <= interp_width/ 2)
+            of_interest = (along_dists >= -1 * width / 2) * (along_dists <= width / 2.) * \
+                          (across_dists >= -1 * interp_width / 2) * (across_dists <= interp_width / 2)
             relevant_vertices = self.vertices[of_interest]
             # Normal to plane
             normal_i, _ = fit_plane_to_points(relevant_vertices)
@@ -814,12 +794,13 @@ class RsqSimSegment:
             if np.linalg.norm(down_dip_vector[:-1]) > 1.e-15:
                 dip = np.degrees(np.arctan(-1 * down_dip_vector[-1] / np.linalg.norm(down_dip_vector[:-1])))
             else:
-                dip=90.
+                dip = 90.
             # dips.append(dip)
 
             poly_ls = []
             for i, j in zip([1, 1, -1, -1], [1, -1, -1, 1]):
-                corner_i = plane_fitting_centre + (i * strike_vector * width/2 + j * down_dip_vector * interp_width / 2.)
+                corner_i = plane_fitting_centre + (
+                            i * strike_vector * width / 2 + j * down_dip_vector * interp_width / 2.)
                 if corner_i[-1] > 0.:
                     corner_i[-1] = 0.
                 poly_ls.append(corner_i)
@@ -833,10 +814,6 @@ class RsqSimSegment:
             all_tile_ls.append(np.array(poly_ls))
 
         return np.array(all_tile_ls)
-
-
-
-
 
 
 class RsqSimFault:
@@ -869,6 +846,3 @@ class RsqSimFault:
 class OpenQuakeSegment:
     def __init__(self, polygons: list):
         self._polygons = polygons
-
-
-
