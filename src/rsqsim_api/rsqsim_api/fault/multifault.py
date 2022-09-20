@@ -7,12 +7,17 @@ import fnmatch
 import numpy as np
 import pandas as pd
 import geopandas as gpd
+import difflib
 from matplotlib import pyplot as plt
 
 from rsqsim_api.visualisation.utilities import plot_coast
 from rsqsim_api.fault.segment import RsqSimSegment
 from rsqsim_api.io.mesh_utils import array_to_mesh
+import rsqsim_api.io.rsqsim_constants as csts
+from rsqsim_api.fault.utilities import merge_multiple_nearly_adjacent_segments
 
+from shapely.ops import linemerge,split
+from shapely.geometry import LineString,MultiLineString
 
 def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float] = 1):
     """
@@ -34,6 +39,7 @@ def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float]
     return num_closer, float(tolerance)
 
 
+
 class RsqSimMultiFault:
     def __init__(self, faults: Union[list, tuple, set], crs: int = 2193):
         self._faults = None
@@ -43,6 +49,7 @@ class RsqSimMultiFault:
         self._crs = crs
         self._traces = None
         self._outlines = None
+        self._v2_name_dic = None
         self.patch_dic = {}
         for fault in self.faults:
             if self.patch_dic is not None:
@@ -50,16 +57,18 @@ class RsqSimMultiFault:
 
         self.faults_with_patches = {patch_num: patch.segment for patch_num, patch in self.patch_dic.items()}
 
-    def filter_faults_by_patch_numbers(self, patch_ls: Union[int, list, tuple, np.ndarray]):
+    def filter_faults_by_patch_numbers(self, patch_ls: Union[int, list, tuple, np.ndarray],fault_from_single_patch : bool =False):
         """
 
         """
-        if isinstance(patch_ls, int):
-            return self.patch_dic[patch_ls]
+        if isinstance(patch_ls, np.integer):
+            if fault_from_single_patch:
+                return self.faults_with_patches[patch_ls]
+            else:
+                return self.patch_dic[patch_ls]
         else:
             assert isinstance(patch_ls, (tuple, list, np.ndarray))
-            assert patch_ls
-            assert all([isinstance(x, int) for x in patch_ls])
+            assert all([isinstance(x, np.integer) for x in patch_ls])
             fault_ls = list(set([self.patch_dic[patch_number].segment for patch_number in patch_ls]))
             return RsqSimMultiFault(fault_ls)
 
@@ -101,6 +110,37 @@ class RsqSimMultiFault:
     @property
     def crs(self):
         return self._crs
+
+    @property
+    def v2_name_dic(self):
+        return self._v2_name_dic
+
+    def make_v2_name_dic(self,path2cfm: str):
+        """Make dictionary to convert Bruce V2 fault segment names to the equivalent CFM names"""
+        assert os.path.exists(path2cfm), "Path to CFM fault model not found"
+        cfm = gpd.read_file(path2cfm)
+        cfm_names=[name.lower() for name in cfm['Name']]
+        nearest_cfm = [difflib.get_close_matches(name[:-1], cfm_names, n=1) for name in self.names]
+        name_dict=dict(zip(self.names,nearest_cfm))
+        for key in name_dict.keys():
+            if not bool(name_dict[key]):
+                name_dict[key]=key[:-1].replace(" ","")
+            else:
+                name_dict[key]=name_dict[key][0].replace(" ","")
+        #add in awkward faults
+        name_dict['wairau20'] = 'wairau'
+        name_dict['wairau30'] = 'wairau'
+        # add hikurangi and puysegur
+        puy_names = [name for name in self.names if fnmatch.fnmatch(name, "*puysegar*")]
+        hikurangi_names = [name for name in self.names if fnmatch.fnmatch(name, "*hikurangi*")]
+        for name in puy_names:
+            name_dict[name] = 'puy'
+        for name in hikurangi_names:
+            name_dict[name] = 'hik'
+
+        self._v2_name_dic=name_dict
+
+        return
 
     @classmethod
     def read_fault_file(cls, fault_file: str, verbose: bool = False):
@@ -197,7 +237,7 @@ class RsqSimMultiFault:
             names_strings = fid.readlines()
             if names_strings[0].strip()[:3] == "[b'":
                 fault_names = [name.strip()[3:-2].strip().split(",")[0] for name in names_strings]
-            if names_strings[0].strip()[:2] == "['":
+            elif names_strings[0].strip()[:2] == "['":
                 fault_names = [name.strip()[2:-4].strip() for name in names_strings]
             else:
                 fault_names = [name.strip() for name in names_strings]
@@ -345,12 +385,107 @@ class RsqSimMultiFault:
         if show:
             fig.show()
 
-    def plot_fault_outlines(self, ax: plt.Axes, edgecolor: str = "r", linewidth: int = 0.1, clip_bounds: list = None,
+    def plot_fault_traces(self, fault_list: Iterable = None, ax: plt.Axes = None, edgecolor: str = "r", linewidth: int = 0.1, clip_bounds: list = None,
                             linestyle: str = "-", facecolor: str = "0.8"):
-        pass
+        # TODO: fix projection issue which means fault traces aren't plotted on correct scale
+        if fault_list is not None:
+            assert isinstance(fault_list, Iterable)
+            assert any([fault.lower() in self.names for fault in fault_list])
+            valid_names = []
+            for fault_name in fault_list:
+                if fault_name not in self.names:
+                    print("Fault not found: {}".format(fault_name))
+                else:
+                    valid_names.append(fault_name)
+            assert valid_names, "No valid fault names supplied"
+        else:
+            valid_names = self.names
+
+        # Find boundary
+        valid_faults = [self.name_dic[name] for name in valid_names]
+        x1 = min([min(fault.vertices[:, 0]) for fault in valid_faults])*0.99
+        y1 = min([min(fault.vertices[:, 1]) for fault in valid_faults])*0.99
+        x2 = max([max(fault.vertices[:, 0]) for fault in valid_faults])*1.01
+        y2 =max([max(fault.vertices[:, 1]) for fault in valid_faults])*1.01
+
+        boundary = [x1, y1, x2, y2]
+        #print(boundary)
+        if ax is None:
+            fig, ax = plt.subplots()
+        else:
+            assert isinstance(ax,plt.Axes)
+        # plot traces
+        for fault in valid_faults:
+            faultArr=np.array(fault.trace.coords)
+            ax.plot(faultArr[:,0],faultArr[:,1],"r")
+            print(np.array(fault.trace.coords))
+        x1,y1,x2,y2=plot_coast(ax, clip_boundary=boundary)
+
+        ax.set_xlim(x1,x2)
+        ax.set_ylim(y1,y2)
+        ax.set_aspect("equal")
+
+        return ax
+
+    def write_fault_traces_to_gis(self, fault_list: Iterable = None, prefix: str = "./bruce_faults",crs: str ="EPSG:2193" ):
+        if fault_list is not None:
+            assert isinstance(fault_list, Iterable)
+            assert any([fault.lower() in self.names for fault in fault_list])
+            valid_names = []
+            for fault_name in fault_list:
+                if fault_name not in self.names:
+                    print("Fault not found: {}".format(fault_name))
+                else:
+                    valid_names.append(fault_name)
+            assert valid_names, "No valid fault names supplied"
+        else:
+            valid_names = self.names
+        valid_faults = [self.name_dic[name] for name in valid_names]
+        fault_dict = {'Names': [], 'geometry': [], 'Slip Rate': []}
+        for fault in valid_faults:
+            trace = fault.trace
+            fName = fault.name
+
+            mean_slip_rate = fault.mean_slip_rate * csts.seconds_per_year * 1000.
+            fault_dict['Names'].append(fName)
+            fault_dict['geometry'].append(trace)
+            fault_dict['Slip Rate'].append(mean_slip_rate)
+
+        all_faults = gpd.GeoDataFrame.from_dict(fault_dict)
+        all_faults.to_file(prefix+".shp", crs=crs)
+        all_faults.to_file(prefix+"_traces.shp", crs=crs)
+
+    def write_fault_outlines_to_gis(self, fault_list: Iterable = None, prefix: str = "./bruce_faults",crs: str ="EPSG:2193" ):
+        if fault_list is not None:
+            assert isinstance(fault_list, Iterable)
+            assert any([fault.lower() in self.names for fault in fault_list])
+            valid_names = []
+            for fault_name in fault_list:
+                if fault_name not in self.names:
+                    print("Fault not found: {}".format(fault_name))
+                else:
+                    valid_names.append(fault_name)
+            assert valid_names, "No valid fault names supplied"
+        else:
+            valid_names = self.names
+        valid_faults = [self.name_dic[name] for name in valid_names]
+        fault_dict = {'Names': [], 'geometry': [], 'Slip Rate': []}
+        for fault in valid_faults:
+            outline = fault.fault_outline
+            fName = fault.name
+
+            mean_slip_rate = fault.mean_slip_rate * csts.seconds_per_year * 1000.
+            fault_dict['Names'].append(fName)
+            fault_dict['geometry'].append(outline)
+            fault_dict['Slip Rate'].append(mean_slip_rate)
+
+        all_faults = gpd.GeoDataFrame.from_dict(fault_dict)
+        all_faults.to_file(prefix+"_outlines.shp", crs=crs)
+
 
     def plot_slip_distribution_2d(self):
         pass
+
 
     def slip_rate_array(self, include_zeros: bool = True,
                         min_slip_rate: float = None, nztm_to_lonlat: bool = False):
@@ -436,6 +571,45 @@ class RsqSimMultiFault:
         outlines = [fault.fault_outline for fault in self.faults]
         outline_gpd = gpd.GeoDataFrame({"fault": self.names}, geometry=outlines, crs=self.crs)
         self._outlines = outline_gpd
+
+    def merge_segments(self, matching_string: str, name_dict: dict = None, fault_name: str = None):
+        """
+        Merge segments of a fault.
+        """
+        if name_dict is not None:
+            matching_names = [name for name in self.names if any([fnmatch.fnmatch(name_dict[name], f"{matching_string}")])]
+        else:
+            matching_names=[name for name in self.names if any([fnmatch.fnmatch(name, f"{matching_string.lower()}?"),
+                                                              fnmatch.fnmatch(name, f"{matching_string.lower()}??")])]
+        matching_faults = [self.name_dic[name] for name in matching_names]
+        vertices = np.vstack([fault.patch_vertices_flat for fault in matching_faults])
+        patch_numbers = np.hstack([fault.patch_numbers for fault in matching_faults])
+
+        new_segment = RsqSimSegment.from_triangles(vertices, patch_numbers=patch_numbers, fault_name=fault_name)
+        traces = [fault.trace for fault in matching_faults]
+
+
+        if all([isinstance(trace,LineString) for trace in traces]):
+            merged_traces=linemerge(traces)
+        else:
+            trace_list = [list(trace.geoms) for trace in traces if isinstance(trace,MultiLineString)]
+            merged_traces=merge_multiple_nearly_adjacent_segments(trace_list[0])
+            #print(trace_list)
+        #merged_traces = merge_multiple_nearly_adjacent_segments(traces)
+
+        if isinstance(merged_traces,LineString):
+            new_segment.trace = merged_traces
+        else:
+            try:
+                merged_coords=[list(geom.coords) for geom in merged_traces.geoms]
+                merged_trace=LineString([trace for sublist in merged_coords for trace in sublist])
+                new_segment.trace=merged_trace
+            except:
+                print(f'Check trace type for {fault_name}')
+
+        return new_segment
+
+
 
 
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627",

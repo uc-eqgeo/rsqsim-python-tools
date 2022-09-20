@@ -1,4 +1,4 @@
-from typing import Union, Iterable, List, Dict, Any
+from typing import Union, Iterable, List, Any
 from collections import abc, Counter, defaultdict
 import os
 import pickle
@@ -21,6 +21,7 @@ from rsqsim_api.tsunami.tsunami import SeaSurfaceDisplacements
 from rsqsim_api.visualisation.utilities import plot_coast, plot_background, plot_hillshade_niwa, plot_lake_polygons, \
     plot_river_lines, plot_highway_lines, plot_boundary_polygons
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
+import rsqsim_api.io.rsqsim_constants as csts
 
 fint = Union[int, float]
 sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
@@ -29,8 +30,6 @@ sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
 
 list_file_suffixes = (".pList", ".eList", ".dList", ".tList")
 extra_file_suffixes = (".dmuList", ".dsigmaList", ".dtauList", ".taupList")
-
-seconds_per_year = 31557600.0
 
 
 def get_mask(ev_ls, min_patches, faults_with_patches, event_list, patch_list, queue):
@@ -69,6 +68,9 @@ class RsqSimCatalogue:
         self._patch_slip = None
         self._accumulated_slip = None
         self._event_mean_slip = None
+        self._event_length = None
+        self._event_mean_sdr = None
+        self._event_length = None
         # Useful attributes
         self.t0, self.m0, self.mw = (None,) * 3
         self.x, self.y, self.z = (None,) * 3
@@ -144,6 +146,14 @@ class RsqSimCatalogue:
     def event_mean_slip(self):
         return self._event_mean_slip
 
+    @property
+    def event_mean_sdr(self):
+        return self._event_mean_sdr
+
+    @property
+    def event_length(self):
+        return self._event_length
+
     @classmethod
     def from_dataframe(cls, dataframe: pd.DataFrame, reproject: List = None):
         rsqsim_cat = cls()
@@ -188,33 +198,41 @@ class RsqSimCatalogue:
 
     @classmethod
     def from_dataframe_and_arrays(cls, dataframe: pd.DataFrame, event_list: np.ndarray, patch_list: np.ndarray,
-                                  patch_slip: np.ndarray, patch_time_list: np.ndarray):
+                                  patch_slip: np.ndarray, patch_time_list: np.ndarray,reproject: List = None):
         assert all([arr.ndim == 1 for arr in [event_list, patch_list, patch_slip, patch_time_list]])
         list_len = event_list.size
         assert all([arr.size == list_len for arr in [patch_list, patch_slip, patch_time_list]])
         assert len(np.unique(event_list)) == len(dataframe), "Number of events in dataframe and lists do not match"
-        rcat = cls.from_dataframe(dataframe)
+        rcat = cls.from_dataframe(dataframe,reproject=reproject)
         rcat.event_list, rcat.patch_list, rcat.patch_slip, rcat.patch_time_list = [event_list, patch_list,
                                                                                    patch_slip, patch_time_list]
         return rcat
 
     @classmethod
-    def from_csv_and_arrays(cls, prefix: str, read_index: bool = True):
+    def from_csv_and_arrays(cls, prefix: str, read_index: bool = True, reproject: List = None):
         df, event_ls, patch_ls, slip_ls, time_ls = read_csv_and_array(prefix, read_index=read_index)
-        return cls.from_dataframe_and_arrays(df, event_ls, patch_ls, slip_ls, time_ls)
+        return cls.from_dataframe_and_arrays(df, event_ls, patch_ls, slip_ls, time_ls, reproject=reproject)
 
     def write_csv_and_arrays(self, prefix: str, directory: str = None, write_index: bool = True):
         assert prefix, "Empty prefix!"
+        if not any([os.path.exists(directory),directory is None]):
+            os.mkdir(directory)
+
         write_catalogue_dataframe_and_arrays(prefix, self, directory=directory, write_index=write_index)
 
     def first_event(self, fault_model: RsqSimMultiFault):
         return self.events_by_number(int(self.catalogue_df.index[0]), fault_model)[0]
+
+    def nth_event(self,fault_model: RsqSimMultiFault,n: int):
+        assert isinstance(n,int)
+        return self.events_by_number(int(self.catalogue_df.index[n-1]), fault_model)[0]
 
     def first_n_events(self, number_of_events: int, fault_model: RsqSimMultiFault):
         return self.events_by_number(list(self.catalogue_df.index[:number_of_events]), fault_model)
 
     def all_events(self, fault_model: RsqSimMultiFault):
         return self.events_by_number(list(self.catalogue_df.index), fault_model)
+
 
     def event_outlines(self, fault_model: RsqSimMultiFault, event_numbers: Iterable = None):
         if event_numbers is not None:
@@ -297,7 +315,7 @@ class RsqSimCatalogue:
                                               patch_slip=trimmed_patch_slip, patch_time_list=trimmed_patch_time)
         return rcat
 
-    def filter_by_events(self, event_number: Union[int, np.int, Iterable[np.int]], reset_index: bool = False):
+    def filter_by_events(self, event_number: Union[int, np.int, Iterable[int]], reset_index: bool = False):
         if isinstance(event_number, (int, np.int)):
             ev_ls = [event_number]
         else:
@@ -334,8 +352,10 @@ class RsqSimCatalogue:
 
     def filter_by_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],
                         minimum_patches_per_fault: int = None):
-        if isinstance(fault_or_faults, (RsqSimSegment, RsqSimMultiFault)):
+        if isinstance(fault_or_faults,RsqSimSegment):
             fault_ls = [fault_or_faults]
+        elif isinstance(fault_or_faults,RsqSimMultiFault):
+            fault_ls=fault_or_faults.faults
         else:
             fault_ls = list(fault_or_faults)
 
@@ -349,6 +369,8 @@ class RsqSimCatalogue:
             all_patches += list(fault.patch_dic.keys())
         patch_numbers = np.unique(np.array(all_patches))
 
+        #in1d will return true if any value in patch_numbers matches a value in patch_list
+        #i.e. don't have to rupture all faults in the list, only 1
         patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
         selected_events = self.event_list[patch_indices]
         selected_patches = self.patch_list[patch_indices]
@@ -380,12 +402,51 @@ class RsqSimCatalogue:
             return filtered_cat
         else:
             print("No events found on the following faults:")
-            for fault in fault_or_faults:
-                print(fault.name)
-            return
+            for fault in fault_ls:
+               print(fault.name)
 
-    def find_multi_fault(self):
-        pass
+            return None
+
+    def filter_not_on_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],fault_model: RsqSimMultiFault):
+        if isinstance(fault_or_faults, RsqSimSegment):
+            fault_ls = [fault_or_faults.name]
+        elif isinstance(fault_or_faults, RsqSimMultiFault):
+            fault_ls = [fault.name for fault in fault_or_faults.faults]
+        else:
+            fault_ls = list(fault_or_faults)
+
+        ev_list=[]
+        for event in self.all_events(fault_model=fault_model):
+            fault_names=[fault.name for fault in event.faults]
+            if not any([name in fault_ls for name in fault_names]):
+                ev_list.append(event.event_id)
+
+        if len(ev_list) >0 :
+            return self.filter_by_events(ev_list)
+        else:
+            print("All events include at least one of the specified faults.")
+
+            return None
+
+    def find_multi_fault(self,fault_model: RsqSimMultiFault):
+        """
+        Identify events involving more than 1 fault. Note that this is based on named fault segments so might not
+        reflect the area ruptured/ be consistent with other approaches to understanding multifault ruptures.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault object
+
+        Returns
+        -------
+        list of multifault events
+        RsqSimCatalogue with only multifault ruptures
+        """
+        multifault = [ev for ev in self.all_events(fault_model) if ev.num_faults > 1]
+        # and filter catalogue to just these events
+        multifault_ids = [event.event_id for event in multifault]
+        multi_cat = self.filter_by_events(multifault_ids)
+        return multifault,multi_cat
 
     def filter_by_region(self, region: Union[Polygon, gpd.GeoSeries], fault_model: RsqSimMultiFault,
                          event_numbers: Iterable = None):
@@ -408,6 +469,7 @@ class RsqSimCatalogue:
 
     def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault,
                          child_processes: int = 0, min_patches: int = 1):
+        assert isinstance(fault_model,RsqSimMultiFault), "Fault model required"
         if isinstance(event_number, (int, np.int)):
             ev_ls = [event_number]
         else:
@@ -440,8 +502,8 @@ class RsqSimCatalogue:
                                                            patch_time=patch_time_list,
                                                            fault_model=fault_model, min_patches=min_patches,
                                                            event_id=index)
-
                 out_events.append(event_i)
+
         else:
             # Using shared data between processes
             event_list = np.ctypeslib.as_ctypes(self.event_list)
@@ -502,9 +564,31 @@ class RsqSimCatalogue:
         """
         event_mean_slip = {}
         for event in self.all_events(fault_model):
-            event.find_mean_slip()
             event_mean_slip[event.event_id] = event.mean_slip
         self._event_mean_slip = event_mean_slip
+
+    def assign_event_mean_sdr(self, fault_model: RsqSimMultiFault):
+        """
+        Create dict of event ids with associated mean strike,dip and rake on the patches which slip in them.
+        Note that this overwrites any other value which could have been assigned to mean strike, mean dip or mean rake.
+        """
+        event_mean_sdr = {}
+        for event in self.all_events(fault_model):
+            event_mean_sdr[event.event_id] = [round(event.mean_strike),round(event.mean_dip),round(event.mean_rake)]
+        self._event_mean_sdr = event_mean_sdr
+
+
+    def assign_event_length(self, fault_model: RsqSimMultiFault):
+        """
+        Create dict of event ids with associated maximum horizontal straight line distances between patches which slip in them.
+        Note that this overwrites any other value which could have been assigned to event length.
+        """
+        event_lengths = {}
+        for event in self.all_events(fault_model):
+           event.find_length()
+           event_lengths[event.event_id] = event.length
+        self._event_length = event_lengths
+
 
     def plot_accumulated_slip_2d(self, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma",
                                  crustal_cmap: str = "viridis", show: bool = True,
@@ -658,9 +742,9 @@ class RsqSimCatalogue:
         return plots
 
     def plot_gr(self, fault_model: RsqSimMultiFault, show: bool = True,
-                write: str = None):
+                write: str = None, best_fit: bool = True, interval: float = 0.25):
         """
-        Plot Gutenburg-Richter distribution for a given catalogue.
+        Plot Gutenburg-Richter distribution for a given catalogue with Aki b-value at reference mag.
         y-axis: log(annual frequency of events with M>Mw)
         x axis: Mw
 
@@ -669,21 +753,25 @@ class RsqSimCatalogue:
         fault_model : RsqSimMultiFault object
         show : bool to indicate whether to display plot
         write : file (if any) to write plot to
+        best_fit : whether to plot best fit linear trend w/b value
         """
         mag_freq: dict[int, float | Any] = {}
         # find min magnitude of catalogue
         mws = np.array([ev.mw for ev in self.all_events(fault_model)])
-        min_mag = np.floor(np.min(mws))
-        max_mag = np.ceil(np.max(mws))
-
-        for mag in np.arange(min_mag, max_mag, 0.5):
+        min_mag = interval*round(np.min(mws)/interval)
+        max_mag = np.max(mws)
+        print(f"Filtering")
+        tot_time = (np.max(self.catalogue_df['t0']) - np.min(self.catalogue_df['t0'])) / csts.seconds_per_year
+        for mag in np.arange(min_mag, max_mag, interval):
 
             filt_cat = self.filter_whole_catalogue(min_mw=mag)
 
             if filt_cat.event_list.size != 0:
+
                 nevents = len(filt_cat.all_events(fault_model))
+
                 times = np.array([ev.t0 for ev in filt_cat.all_events(fault_model)])
-                tot_time = (np.max(times) - np.min(times)) / seconds_per_year
+
                 freq = nevents / tot_time
             else:
                 freq = 0
@@ -692,9 +780,16 @@ class RsqSimCatalogue:
         mf_dict = pd.DataFrame.from_dict(mag_freq, orient='index', columns=['freq'])
         mf_dict.reset_index(inplace=True)
         mf_dict.rename(columns={"index": "mag"}, inplace=True)
-        # mf_dict["log_freq"] = np.log10(mf_dict["freq"])
+        mf_dict["log_freq"] = np.log10(mf_dict["freq"])
+
         # plot
+        print("plotting")
         ax = mf_dict.plot.scatter(x="mag", y="freq")
+        if best_fit:
+            gr_fit=np.polyfit(mf_dict['mag'],mf_dict['log_freq'],1)
+            gr_trend=np.poly1d(gr_fit)
+            plt.plot(mf_dict["mag"],10**gr_trend(mf_dict["mag"]),'r--',label="b="+str(round(abs(gr_trend.c[0]),2)))
+            ax.legend()
         ax.set_yscale('log')
         ax.set_xticks(np.arange(min_mag, 10, 1))
         plt.xlabel("Mw")
@@ -708,7 +803,7 @@ class RsqSimCatalogue:
             plt.close()
 
     def plot_mean_slip_vs_mag(self, fault_model: RsqSimMultiFault, show: bool = True,
-                              write: str = None):
+                              write: str = None, plot_rel: bool = True):
         """
         Plot the mean slip on each patch against the moment magnitude of the earthquake for each event in catalogue.
 
@@ -717,6 +812,7 @@ class RsqSimCatalogue:
         fault_model : RsqSimMultiFault object
         show : bool to indicate whether to display plot
         write : file (if any) to write plot to
+        plot_rel : plot expected analytic relationship best on scaling laws
         """
         # check mean slip is assigned
         if self.event_mean_slip is None:
@@ -733,11 +829,19 @@ class RsqSimCatalogue:
         slip_dict = pd.DataFrame.from_dict(mag_mean_slip, orient='index', columns=['Mean Slip'])
         slip_dict.reset_index(inplace=True)
         slip_dict.rename(columns={"index": "mag"}, inplace=True)
-
+        slip_dict["log_slip"] = np.log10(slip_dict["Mean Slip"])
         # plot
-        ax = slip_dict.plot.scatter(x="mag", y="Mean Slip")
+        ax = slip_dict.plot.scatter(x="mag", y="log_slip")
+        if plot_rel:
+            trend_func=np.polyfit(slip_dict["mag"],slip_dict["log_slip"],1)
+            trend_fit=np.poly1d(trend_func)
+            plt.plot(slip_dict["mag"],trend_fit(slip_dict["mag"]),"r--",label="y = {}".format(trend_fit))
+            offset=(1./3.)*(slip_dict["mag"][0])-slip_dict["log_slip"][0]
+            plt.plot(slip_dict["mag"],(1./3.)*(slip_dict["mag"])-offset
+                     ,"b--",label="y = 1/3 x - {:.2f}".format(offset))
+            plt.legend()
         plt.xlabel("M$_W$")
-        plt.ylabel("Mean Slip (m)")
+        plt.ylabel("log$_1$$_0$ (Mean Slip (m))")
         if write is not None:
             plt.savefig(write, dpi=300)
         if show:
@@ -746,15 +850,17 @@ class RsqSimCatalogue:
             plt.close()
 
     def plot_area_vs_mag(self, fault_model: RsqSimMultiFault, show: bool = True,
-                         write: str = None):
+                         write: str = None, plot_rel: bool = True):
         """
         Plot the area of each event against the seismic moment of the earthquake for each event in catalogue.
 
         Parameters
         -------
+
         fault_model : RsqSimMultiFault object
         show : bool to indicate whether to display plot
         write : file (if any) to write plot to
+        plot_rel : plot best fit logarithmic trend
 
         """
         # create dictionary of magnitudes and areas
@@ -767,17 +873,41 @@ class RsqSimCatalogue:
         area_dict = pd.DataFrame.from_dict(mag_area, orient='index', columns=['Area'])
         area_dict.reset_index(inplace=True)
         area_dict.rename(columns={"index": "mag"}, inplace=True)
-
+        area_dict["log_area"] = np.log10(area_dict["Area"])
         # plot
-        ax = area_dict.plot.scatter(x="mag", y="Area")
+        ax = area_dict.plot.scatter(x="mag", y="log_area")
+        if plot_rel:
+            log_fit=np.polyfit(area_dict["mag"],area_dict["log_area"],1)
+            log_func=np.poly1d(log_fit)
+            plt.plot(area_dict["mag"], log_func(area_dict["mag"]), 'r--',
+                     label="y = {}".format(log_func))
+            plt.legend()
         plt.xlabel("M$_W$")
-        plt.ylabel("Area (m$^2$)")
+        plt.ylabel("log$_1$$_0$ (Area (m$^2$))")
         if write is not None:
             plt.savefig(write, dpi=300)
         if show:
             plt.show()
         else:
             plt.close()
+
+    def all_slip_distributions_to_vtk(self, fault_model: RsqSimMultiFault, output_directory: str,
+                                      include_zeros: bool = False, min_slip_value: float = None):
+        """
+
+        @param fault_model:
+        @param output_directory:
+        @param include_zeros:
+        @return:
+        """
+        assert os.path.exists(output_directory), "Make directory before writing VTK"
+        for event in self.all_events(fault_model):
+            outfile_path = os.path.join(output_directory, f"event{event.event_id}.vtk")
+            event.slip_dist_to_vtk(outfile_path, include_zeros=include_zeros,min_slip_value=min_slip_value)
+
+
+
+
 
 
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627",

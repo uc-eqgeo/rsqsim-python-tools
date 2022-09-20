@@ -8,7 +8,6 @@ import math
 from numba import njit
 from pyproj import Transformer
 from shapely.geometry import Polygon
-from tde.tde import calc_tri_displacements
 
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
@@ -165,7 +164,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         assert vertex_array.ndim == 2, "2D array expected"
         # Check that at least 3 vertices supplied
         assert vertex_array.shape[0] >= 3, "At least 3 vertices (rows in array) expected"
-        assert vertex_array.shape[1] == 3, "Three coordinates (x,y,z expected for each vertex"
+        assert vertex_array.shape[1] == 3, "Three coordinates (x,y,z) expected for each vertex"
 
         if vertex_array.shape[0] > 4:
             print("{}, patch {:d}: more patches than expected".format(self.segment.name, self.patch_number))
@@ -177,6 +176,11 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
     def vertices_lonlat(self):
 
         return np.array(transformer_nztm2wgs.transform(*self.vertices.T)).T
+
+    @property
+    def centre_lonlat(self):
+
+        return np.array(transformer_nztm2wgs.transform(*self.centre.T)).T
 
     @staticmethod
     @njit(cache=True)
@@ -204,10 +208,10 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
     def calculate_down_dip_vector(normal_vector):
         dx, dy, dz = normal_vector
         if dz == 0:
-            return np.array([0., 0., np.nan])
+            dd_vec = np.array([0., 0., -1.])
         else:
             dd_vec = np.array([dx, dy, -1 / dz])
-            return dd_vec / norm_3d(dd_vec)
+        return dd_vec / norm_3d(dd_vec)
 
     @property
     def dip(self):
@@ -220,8 +224,11 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
             return np.nan
         else:
             horizontal = norm_3d(down_dip_vector[:-1])
-            vertical = -1 * down_dip_vector[-1]
-            return np.degrees(np.arctan(vertical / horizontal))
+            if horizontal < 1e-10 :
+                return 90.
+            else:
+                vertical = -1 * down_dip_vector[-1]
+                return np.degrees(np.arctan(vertical / horizontal))
 
     @property
     def along_strike_vector(self):
@@ -229,11 +236,12 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
 
     @property
     def strike(self):
-        if self.along_strike_vector is not None:
-            strike = 90. - np.degrees(np.arctan2(self.along_strike_vector[1], self.along_strike_vector[0]))
-            return normalize_bearing(strike)
-        else:
-            return None
+        if any([self.normal_vector is None, self.down_dip_vector is None, self.along_strike_vector is None]):
+            self.calculate_normal_vector()
+            self.calculate_down_dip_vector()
+            self.calculate_along_strike_vector()
+        strike = 90. - np.degrees(np.arctan2(self.along_strike_vector[1], self.along_strike_vector[0]))
+        return normalize_bearing(strike)
 
     @staticmethod
     @njit(cache=True)
@@ -273,11 +281,17 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
 
     def horizontal_sv_to_ds_ss(self, slipvec, magnitude: Union[float, int] = 1):
         """
-        Program to perform the 'inverse' of slipvec.
-        Arguments: strike, dip azimuth of slip vector (all degrees)
-        Returns rake (degrees)
+        Function to perform the 'inverse' of slipvec.
+        Requires strike and dip of patch to be set (degrees)
+        Returns strike perpendicular & strike parallel components of rake vector and rake (degrees)
+
+        Parameters
+        ----------
+        slipvec :  azimuth of slip vector (degrees)
+        magnitude : magnitude of slip vector (results are normalised)
         """
-        assert isinstance(slipvec, ())
+        #assert isinstance(slipvec, ())
+        # angle is the angle between the horizontal azimuth of the slip vector and the strike
         angle = self.strike - slipvec
         if angle < -180.:
             angle = 360. + angle
@@ -292,49 +306,43 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
             strike_par = 0
         else:
             strike_par = np.cos(np.radians(angle))
-            strike_perp = np.cos(np.radians(angle)) / np.cos(np.radians(self.dip))
+            strike_perp = np.sin(np.radians(angle)) / np.cos(np.radians(self.dip))
             normalizer = magnitude / np.linalg.norm(np.array([strike_par, strike_perp]))
             strike_par *= normalizer
             strike_perp *= normalizer
+            rake = np.rad2deg(np.arctan2(strike_perp,strike_par))
 
-        return strike_perp, strike_par
+        return strike_perp, strike_par, rake
+
+    def rake_from_stress_tensor(self, sigma1: np.ndarray):
+        """
+        Calculate rake for motion in direction of shear stress resolved on to fault patch. Assumes sigma2=sigma3=0.
+        Parameters
+        ----------
+        sigma1 : maximum principle stress as vector (might need to change this to include multiple principle stresses and/or different ways of writing the principal stresses) 
+        
+        """
+
+        assert len(sigma1) == 3
+
+        assert all([ a is not None for a in (self.along_strike_vector,self.normal_vector)])
+
+        if norm_3d(self.normal_vector == 1.) :
+            unit_norm=self.normal_vector
+        else:
+            unit_norm=self.normal_vector/norm_3d(self.normal_vector)
+
+        normalStress=np.dot(sigma1,unit_norm)*unit_norm
+        shearStress=sigma1 - normalStress
+
+        self.rake = np.rad2deg(np.arccos(np.dot(shearStress,self.along_strike_vector)/(norm_3d(shearStress)*norm_3d(self.along_strike_vector))))
+
+
+
+
 
     def as_polygon(self):
         return Polygon(self.vertices)
-
-    def calculate_tsunami_greens_functions(self, x_array: np.ndarray, y_array: np.ndarray, z_array: np.ndarray,
-                                           grid_shape: tuple, poisson_ratio: float = 0.25):
-        assert all([isinstance(a, np.ndarray) for a in [x_array, y_array]])
-        assert x_array.shape == y_array.shape == z_array.shape
-        assert x_array.ndim == 1
-
-        assert all([a is not None for a in (self.dip_slip, self.strike_slip)])
-
-        xv, yv, zv = [self.vertices.T[i] for i in range(3)]
-        gf = calc_tri_displacements(x_array, y_array, z_array, xv, yv, -1. * zv,
-                                       poisson_ratio, self.strike_slip, 0., self.dip_slip)
-
-        vert_disp = np.array(gf["z"])
-        vert_grid = vert_disp.reshape(grid_shape[1:])
-        return vert_grid
-
-    def calculate_3d_greens_functions(self, x_array: np.ndarray, y_array: np.ndarray, z_array: np.ndarray = None,
-                                      poisson_ratio: float = 0.25):
-        assert all([isinstance(a, np.ndarray) for a in [x_array, y_array]])
-        assert x_array.shape == y_array.shape
-        assert x_array.ndim == 1
-        if z_array is None:
-            z_array = np.zeros(x_array.shape)
-        else:
-            assert z_array.shape == x_array.shape
-
-        assert all([a is not None for a in (self.dip_slip, self.strike_slip)])
-
-        xv, yv, zv = [self.vertices.T[i] for i in range(3)]
-        gf = calc_tri_displacements(x_array, y_array, z_array, xv, yv, -1. * zv,
-                                    poisson_ratio, self.strike_slip, 0., self.dip_slip)
-
-        return gf
 
 class OpenQuakeRectangularPatch(RsqSimGenericPatch):
     def __init__(self, segment, patch_number: int = 0,
