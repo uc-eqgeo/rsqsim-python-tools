@@ -4,6 +4,7 @@ import os.path
 import fnmatch
 import meshio
 import geopandas as gpd
+import difflib
 
 data_dir = "/home/UOCNT/cpe88/PycharmProjects/rsqsim-python-tools/data/shaw_new_catalogue/NewZealand/rundir5382"
 

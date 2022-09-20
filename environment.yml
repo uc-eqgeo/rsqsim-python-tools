@@ -23,6 +23,5 @@ dependencies:
   - git-lfs
   - pip:
     - src/rsqsim_api
-    - src/tri_dislocations
     - ezdxf
     - meshio

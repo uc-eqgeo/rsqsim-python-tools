@@ -1,4 +1,7 @@
 import numpy as np
+from rsqsim_api.fault.patch import RsqSimTriangularPatch
+
+
 def array_to_patch(arg_ls: list):
     patch_num, triangle, fault, strike_slip, dip_slip = arg_ls
     triangle3 = triangle.reshape(3, 3)

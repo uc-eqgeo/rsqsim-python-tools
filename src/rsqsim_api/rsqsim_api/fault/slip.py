@@ -50,10 +50,10 @@ convergence_end = Point(-174.162, -27.508)
 
 
 
-def point_dist(point: Point):
+def point_dist(point: Point, along_overall: np.ndarray):
     return np.dot(along_overall, np.array(transformer.transform(point.x, point.y)))
 
-def point_dist_nztm(point: Point):
+def point_dist_nztm(point: Point, along_overall: np.ndarray):
     return float(np.dot(along_overall, np.array([point.x, point.y])))
 
 east_cape_dist = point_dist(east_cape)
