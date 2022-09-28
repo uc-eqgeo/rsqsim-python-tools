@@ -10,7 +10,7 @@ Welcome to rsqsim-python-tools's documentation!
    :maxdepth: 4
    :caption: Contents:
 
-
+help/intro.md
 
 Indices and tables
 ==================
