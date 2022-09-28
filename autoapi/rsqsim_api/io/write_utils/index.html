@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.io.write_utils &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">rsqsim_api.io.write_utils</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/io/write_utils/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.io.write_utils">
+<span id="rsqsim-api-io-write-utils"></span><h1><a class="reference internal" href="#module-rsqsim_api.io.write_utils" title="rsqsim_api.io.write_utils"><code class="xref py py-mod docutils literal notranslate"><span class="pre">rsqsim_api.io.write_utils</span></code></a><a class="headerlink" href="#module-rsqsim_api.io.write_utils" title="Permalink to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading"></a></h2>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.write_utils.create_quad_mesh_from_fault" title="rsqsim_api.io.write_utils.create_quad_mesh_from_fault"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_quad_mesh_from_fault</span></code></a>(points, edges, triangles)</p></td>
+<td><p>Create a quad mesh, given triangular mesh information.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.write_utils.fit_plane_to_points" title="rsqsim_api.io.write_utils.fit_plane_to_points"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_plane_to_points</span></code></a>(points[, eps])</p></td>
+<td><p>Find best-fit plane through a set of points, after first insuring the plane goes through</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.write_utils.get_fault_rotation_matrix" title="rsqsim_api.io.write_utils.get_fault_rotation_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_fault_rotation_matrix</span></code></a>(plane_normal[, cutoff_vecmag])</p></td>
+<td><p>Compute rotation matrix, given the normal to the plane. If the normal is nearly</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.write_utils.fault_global_to_local" title="rsqsim_api.io.write_utils.fault_global_to_local"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fault_global_to_local</span></code></a>(points, edges, rotation_matrix, ...)</p></td>
+<td><p>Convert global fault surface coordinates to local coordinates, referenced to given origin.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.write_utils.fault_local_to_global" title="rsqsim_api.io.write_utils.fault_local_to_global"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fault_local_to_global</span></code></a>(points, edges, rotation_matrix, ...)</p></td>
+<td><p>Convert local fault surface coordinates to global coordinates.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.write_utils.get_quad_mesh_edges" title="rsqsim_api.io.write_utils.get_quad_mesh_edges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_quad_mesh_edges</span></code></a>(edges[, corner_separation])</p></td>
+<td><p>Determine 4 sets of edges, assuming a semi-quadrilateral layout.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.write_utils.get_edge" title="rsqsim_api.io.write_utils.get_edge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_edge</span></code></a>(edges, ind1, ind2, ind_min, ind_max, sort_ind)</p></td>
+<td><p>Extract edge from edges array, given the indices to use.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.write_utils.create_local_grid" title="rsqsim_api.io.write_utils.create_local_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_local_grid</span></code></a>(points, edge_sides, triangles, ...)</p></td>
+<td><p>Create a grid of points in local coordinates. If the fault is a plane, z-coordinate is</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.write_utils.create_cells_from_dims" title="rsqsim_api.io.write_utils.create_cells_from_dims"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_cells_from_dims</span></code></a>(num_verts_x, num_verts_y)</p></td>
+<td><p>Create simple quad cell connectivity array given the vertical and horizontal dimensions.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.write_utils.tri_interpolate_zcoords" title="rsqsim_api.io.write_utils.tri_interpolate_zcoords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tri_interpolate_zcoords</span></code></a>(points, triangles, ...[, ...])</p></td>
+<td><p>Interpolate z-coordinates to a set of 2D points using 3D point coordinates and a triangular mesh.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.write_utils.project_2d_coords" title="rsqsim_api.io.write_utils.project_2d_coords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">project_2d_coords</span></code></a>(tri_coords, coord, tree[, ...])</p></td>
+<td><p>Project z-coordinate for triangle coordinates.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.write_utils.find_projected_coords" title="rsqsim_api.io.write_utils.find_projected_coords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_projected_coords</span></code></a>(tri_coord, point)</p></td>
+<td><p>Find whether a point projects within a triangle, and if so compute the</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.write_utils.get_mesh_boundary" title="rsqsim_api.io.write_utils.get_mesh_boundary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_mesh_boundary</span></code></a>(triangles)</p></td>
+<td><p>Find outer boundary of a triangulated mesh, assuming no holes.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.write_utils.create_quad_mesh_from_fault">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.write_utils.</span></span><span class="sig-name descname"><span class="pre">create_quad_mesh_from_fault</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">triangles</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_search_tris</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_plane_epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff_rotation_vecmag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.98</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_plane_epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.io.write_utils.create_quad_mesh_from_fault" title="Permalink to this definition"></a></dt>
+<dd><p>Create a quad mesh, given triangular mesh information.
+Returned values are all in the fault_mesh_info dictionary:</p>
+<blockquote>
+<div><p>plane_normal: Normal vector for best-fit plane through original points
+plane_origin: Reference point for best-fit plane through original points
+rotation_matrix: Rotation matrix based on plane_normal
+points_local: Original points transformed to local coordinates
+edges_local: Original edges transformed to local coordinates
+fault_is_plane: Boolean determining whether fault is a plane within given tolerance
+quad_edges: Dictionary containing the 4 edges composing the mesh boundary
+mesh_points_local: The generated mesh points (structured mesh) in local fault coordinates
+num_horiz_points: The number of mesh points in the horizontal direction
+num_vert_points: The number of mesh points in the vertical direction
+mesh_points_global: The generated mesh points (structured mesh) in global coordinates</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>edges</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>triangles</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>resolution</strong> (<em>float</em>) – </p></li>
+<li><p><strong>num_search_tris</strong> (<em>int</em>) – </p></li>
+<li><p><strong>fit_plane_epsilon</strong> (<em>float</em>) – </p></li>
+<li><p><strong>cutoff_rotation_vecmag</strong> (<em>float</em>) – </p></li>
+<li><p><strong>is_plane_epsilon</strong> (<em>float</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.write_utils.fit_plane_to_points">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.write_utils.</span></span><span class="sig-name descname"><span class="pre">fit_plane_to_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.io.write_utils.fit_plane_to_points" title="Permalink to this definition"></a></dt>
+<dd><p>Find best-fit plane through a set of points, after first insuring the plane goes through
+the mean (centroid) of all the points in the array. This is probably better than my
+initial method, since the SVD is only over a 3x3 array (rather than the num_pointsxnum_points
+array).
+Returned values are:</p>
+<blockquote>
+<div><p>plane_normal:  Normal vector to plane (A, B, C)
+plane_origin:  Point on plane that may be considered as the plane origin</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>eps</strong> (<em>float</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.write_utils.get_fault_rotation_matrix">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.write_utils.</span></span><span class="sig-name descname"><span class="pre">get_fault_rotation_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plane_normal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff_vecmag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.98</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.io.write_utils.get_fault_rotation_matrix" title="Permalink to this definition"></a></dt>
+<dd><p>Compute rotation matrix, given the normal to the plane. If the normal is nearly
+vertical an alternate reference direction is used to compute the two tangential
+directions.
+Returned values are:</p>
+<blockquote>
+<div><p>rotation_matrix: 3x3 rotation matrix with columns (tan_dir1, tan_dir2, plane_normal).</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>plane_normal</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>cutoff_vecmag</strong> (<em>float</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.write_utils.fault_global_to_local">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.write_utils.</span></span><span class="sig-name descname"><span class="pre">fault_global_to_local</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotation_matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plane_origin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plane_epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.io.write_utils.fault_global_to_local" title="Permalink to this definition"></a></dt>
+<dd><p>Convert global fault surface coordinates to local coordinates, referenced to given origin.
+If plane z-values are below epsilon value, surface is assumed to be a plane.
+Returned values are:</p>
+<blockquote>
+<div><p>points_local: Point coordinates referenced to origin and rotated to local orientation.
+edges_local: Edge coordinates referenced to origin and rotated to local orientation.
+fault_is_plane: Boolean variable that is true if the fault is planar within the given tolerance.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>edges</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>rotation_matrix</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>plane_origin</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>plane_epsilon</strong> (<em>float</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.write_utils.fault_local_to_global">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.write_utils.</span></span><span class="sig-name descname"><span class="pre">fault_local_to_global</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotation_matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plane_origin</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.io.write_utils.fault_local_to_global" title="Permalink to this definition"></a></dt>
+<dd><p>Convert local fault surface coordinates to global coordinates.
+Returned values are:</p>
+<blockquote>
+<div><p>points_global: Point coordinates rotated to global orientation and with origin added back in.
+edges_global: Edge coordinates rotated to global orientation and with origin added back in.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>edges</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>rotation_matrix</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>plane_origin</strong> (<em>numpy.ndarray</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.write_utils.get_quad_mesh_edges">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.write_utils.</span></span><span class="sig-name descname"><span class="pre">get_quad_mesh_edges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">edges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">corner_separation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3000.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.io.write_utils.get_quad_mesh_edges" title="Permalink to this definition"></a></dt>
+<dd><p>Determine 4 sets of edges, assuming a semi-quadrilateral layout.
+Note that all coordinates are assumed to be fault-local coordinates.
+Uses dot products of line segments with the next segment to determine 4 smallest dot products.
+In the future, we will use the corner_separation parameter to work around ‘chopped-off’ corners.
+Returned values are contained in the edge_sides dictionary:</p>
+<blockquote>
+<div><p>left_edge: Coordinates of edge corresponding to leftmost edge
+right_edge: Coordinates of edge corresponding to rightmost edge
+bottom_edge: Coordinates of edge corresponding to bottommost edge
+top_edge: Coordinates of edge corresponding to topmost edge</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>edges</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>corner_separation</strong> (<em>float</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.write_utils.get_edge">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.write_utils.</span></span><span class="sig-name descname"><span class="pre">get_edge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">edges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ind1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ind2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ind_min</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ind_max</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sort_ind</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.io.write_utils.get_edge" title="Permalink to this definition"></a></dt>
+<dd><p>Extract edge from edges array, given the indices to use.
+Returned value:</p>
+<blockquote>
+<div><p>edge:  Edge coordinates, sorted according to the given sorting index</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>edges</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>ind1</strong> (<em>int</em>) – </p></li>
+<li><p><strong>ind2</strong> (<em>int</em>) – </p></li>
+<li><p><strong>ind_min</strong> (<em>int</em>) – </p></li>
+<li><p><strong>ind_max</strong> (<em>int</em>) – </p></li>
+<li><p><strong>sort_ind</strong> (<em>int</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.write_utils.create_local_grid">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.write_utils.</span></span><span class="sig-name descname"><span class="pre">create_local_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_sides</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">triangles</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fault_is_plane</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_search_tris</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.io.write_utils.create_local_grid" title="Permalink to this definition"></a></dt>
+<dd><p>Create a grid of points in local coordinates. If the fault is a plane, z-coordinate is
+always zero. Otherwise, points are interpolated from the enclosing triangle vertices.
+Returned values are:</p>
+<blockquote>
+<div><p>mesh_points: The computed mesh points in the local coordinate system
+num_horiz_points: The number of points in the horzontal direction
+num_vert_points: The number of points in the vertical direction</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>edge_sides</strong> (<em>dict</em>) – </p></li>
+<li><p><strong>triangles</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>fault_is_plane</strong> (<em>bool</em>) – </p></li>
+<li><p><strong>resolution</strong> (<em>float</em>) – </p></li>
+<li><p><strong>num_search_tris</strong> (<em>int</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.write_utils.create_cells_from_dims">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.write_utils.</span></span><span class="sig-name descname"><span class="pre">create_cells_from_dims</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_verts_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_verts_y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.io.write_utils.create_cells_from_dims" title="Permalink to this definition"></a></dt>
+<dd><p>Create simple quad cell connectivity array given the vertical and horizontal dimensions.
+Returned values are:</p>
+<blockquote>
+<div><p>cell_array: A num_cellsx4 array describing vertices composing each cell</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_verts_x</strong> (<em>int</em>) – </p></li>
+<li><p><strong>num_verts_y</strong> (<em>int</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.write_utils.tri_interpolate_zcoords">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.write_utils.</span></span><span class="sig-name descname"><span class="pre">tri_interpolate_zcoords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">triangles</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mesh_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_mesh_edge</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_search_tris</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.io.write_utils.tri_interpolate_zcoords" title="Permalink to this definition"></a></dt>
+<dd><p>Interpolate z-coordinates to a set of 2D points using 3D point coordinates and a triangular mesh.
+If point is along a mesh boundary, the boundary values are used instead.
+Returned values are:</p>
+<blockquote>
+<div><p>z: The interpolated z-values</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>triangles</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>mesh_points</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>is_mesh_edge</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>num_search_tris</strong> (<em>int</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.write_utils.project_2d_coords">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.write_utils.</span></span><span class="sig-name descname"><span class="pre">project_2d_coords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tri_coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coord</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tree</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_search_tris</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.io.write_utils.project_2d_coords" title="Permalink to this definition"></a></dt>
+<dd><p>Project z-coordinate for triangle coordinates.
+Returned values are:</p>
+<blockquote>
+<div><p>projected_coords[2]: The z-value interpolated from values at triangle vertices</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tri_coords</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>coord</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>tree</strong> (<em>scipy.spatial.ckdtree.cKDTree</em>) – </p></li>
+<li><p><strong>num_search_tris</strong> (<em>int</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.write_utils.find_projected_coords">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.write_utils.</span></span><span class="sig-name descname"><span class="pre">find_projected_coords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tri_coord</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">point</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.io.write_utils.find_projected_coords" title="Permalink to this definition"></a></dt>
+<dd><p>Find whether a point projects within a triangle, and if so compute the
+projected coordinates.
+Returned values are:</p>
+<blockquote>
+<div><p>in_tri: Boolean indicating whether the point is contained in the triangle
+projected_coords: The (x,y,z) coordinates of the point inferred from the triangle values</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.write_utils.get_mesh_boundary">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.write_utils.</span></span><span class="sig-name descname"><span class="pre">get_mesh_boundary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">triangles</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.io.write_utils.get_mesh_boundary" title="Permalink to this definition"></a></dt>
+<dd><p>Find outer boundary of a triangulated mesh, assuming no holes.
+Boundary is determined based purely on connectivity.
+Returned values are:</p>
+<blockquote>
+<div><p>vert_inds: The indices of the vertices composing the mesh boundary, ordered to be continuous</p>
+</div></blockquote>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

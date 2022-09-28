@@ -1,0 +1,11 @@
+:py:mod:`rsqsim_api.catalogue.event`
+====================================
+
+.. py:module:: rsqsim_api.catalogue.event
+
+.. autoapi-nested-parse::
+
+   Event class for RSQSim Catalogue
+
+
+

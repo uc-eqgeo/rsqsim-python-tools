@@ -1,0 +1,20 @@
+:py:mod:`rsqsim_api`
+====================
+
+.. py:module:: rsqsim_api
+
+.. autoapi-nested-parse::
+
+   Tools for creating, reading and plotting RSQSim input and output files
+
+
+
+Subpackages
+-----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 3
+
+   catalogue/index.rst
+
+

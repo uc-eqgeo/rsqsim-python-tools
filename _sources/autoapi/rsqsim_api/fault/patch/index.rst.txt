@@ -1,0 +1,66 @@
+:orphan:
+
+:py:mod:`rsqsim_api.fault.patch`
+================================
+
+.. py:module:: rsqsim_api.fault.patch
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   rsqsim_api.fault.patch.RsqSimTriangularPatch
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   rsqsim_api.fault.patch.norm_3d
+   rsqsim_api.fault.patch.cross_3d
+
+
+
+.. py:function:: norm_3d(a)
+
+   Calculates the 2-norm of a 3-dimensional vector.
+
+
+.. py:function:: cross_3d(a, b)
+
+   Calculates cross product of two 3-dimensional vectors.
+
+
+.. py:class:: RsqSimTriangularPatch(segment, vertices, patch_number = 0, dip_slip = None, strike_slip = None, patch_data = None, rake = None, total_slip = None)
+
+   Bases: :py:obj:`RsqSimGenericPatch`
+
+   class to store information on an individual triangular patch of a fault
+
+   .. py:method:: horizontal_sv_to_ds_ss(slipvec, magnitude = 1)
+
+      Function to perform the 'inverse' of slipvec.
+      Requires strike and dip of patch to be set (degrees)
+      Returns strike perpendicular & strike parallel components of rake vector and rake (degrees)
+
+      :param slipvec:
+      :type slipvec: azimuth of slip vector (degrees)
+      :param magnitude:
+      :type magnitude: magnitude of slip vector (results are normalised)
+
+
+   .. py:method:: rake_from_stress_tensor(sigma1)
+
+      Calculate rake for motion in direction of shear stress resolved on to fault patch. Assumes sigma2=sigma3=0.
+      :param sigma1:
+      :type sigma1: maximum principle stress as vector (might need to change this to include multiple principle stresses and/or different ways of writing the principal stresses)
+
+
+

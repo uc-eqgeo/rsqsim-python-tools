@@ -1,0 +1,68 @@
+:orphan:
+
+:py:mod:`rsqsim_api.visualisation.animation`
+============================================
+
+.. py:module:: rsqsim_api.visualisation.animation
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   rsqsim_api.visualisation.animation.AxesSequence
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   rsqsim_api.visualisation.animation.AnimateSequence
+
+
+
+.. py:function:: AnimateSequence(catalogue, fault_model, subduction_cmap = 'plasma', crustal_cmap = 'viridis', global_max_slip = 10, global_max_sub_slip = 40, step_size = 5, interval = 50, write = None, fps = 20, file_format = 'gif', figsize = (9.6, 7.2), hillshading_intensity = 0.0, bounds = None, pickled_background = None, fading_increment = 2.0, plot_log = False, log_min = 1.0, log_max = 100.0, plot_subduction_cbar = True, plot_crustal_cbar = True)
+
+   Shows an animation of a sequence of earthquake events over time
+
+   :param catalogue: Catalogue of events to animate
+   :type catalogue: RsqSimCatalogue
+   :param fault_model: Fault model for events
+   :type fault_model: RsqSimMultiFault
+   :param subduction_cmap: Colourmap for subduction colorbar
+   :type subduction_cmap: str
+   :param crustal_cmap: Colourmap for crustal_cmap colorbar
+   :type crustal_cmap: str
+   :param global_max_slip: Max slip to use for the colorscale
+   :type global_max_slip: int
+   :param global_max_sub_slip: Max subduction slip to use for the colorscale
+   :type global_max_sub_slip: int
+   :param step_size: Step size to advance every interval
+   :type step_size: int
+   :param interval: Time (ms) between each frame
+   :type interval: int
+   :param write: Write animation to file with given filename.
+   :type write: str
+   :param fps: Frames per second.
+   :type fps: int
+   :param file_format: File extension for animation. Accepted values: gif, mp4, mov, avi.
+   :type file_format: str
+   :param figsize: Width, height in inches.
+   :type figsize: float, float
+   :param hillshading_intensity: Intensity of hillshading, value between 0-1.
+   :type hillshading_intensity: float
+
+
+.. py:class:: AxesSequence(fig, timestamps, plots, coast_ax, fading_increment = 2.0)
+
+   Bases: :py:obj:`object`
+
+   Controls a series of plots on the screen and when they are visible
+
+

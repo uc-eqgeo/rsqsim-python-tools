@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.visualisation.animation &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">rsqsim_api.visualisation.animation</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/visualisation/animation/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.visualisation.animation">
+<span id="rsqsim-api-visualisation-animation"></span><h1><a class="reference internal" href="#module-rsqsim_api.visualisation.animation" title="rsqsim_api.visualisation.animation"><code class="xref py py-mod docutils literal notranslate"><span class="pre">rsqsim_api.visualisation.animation</span></code></a><a class="headerlink" href="#module-rsqsim_api.visualisation.animation" title="Permalink to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.animation.AxesSequence" title="rsqsim_api.visualisation.animation.AxesSequence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AxesSequence</span></code></a></p></td>
+<td><p>Controls a series of plots on the screen and when they are visible</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.animation.AnimateSequence" title="rsqsim_api.visualisation.animation.AnimateSequence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AnimateSequence</span></code></a>(catalogue, fault_model[, ...])</p></td>
+<td><p>Shows an animation of a sequence of earthquake events over time</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.animation.AnimateSequence">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.animation.</span></span><span class="sig-name descname"><span class="pre">AnimateSequence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">catalogue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subduction_cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'plasma'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crustal_cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'viridis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_max_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_max_sub_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">40</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(9.6,</span> <span class="pre">7.2)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hillshading_intensity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pickled_background</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fading_increment</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_subduction_cbar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_crustal_cbar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.visualisation.animation.AnimateSequence" title="Permalink to this definition"></a></dt>
+<dd><p>Shows an animation of a sequence of earthquake events over time</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>catalogue</strong> (<em>RsqSimCatalogue</em>) – Catalogue of events to animate</p></li>
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model for events</p></li>
+<li><p><strong>subduction_cmap</strong> (<em>str</em>) – Colourmap for subduction colorbar</p></li>
+<li><p><strong>crustal_cmap</strong> (<em>str</em>) – Colourmap for crustal_cmap colorbar</p></li>
+<li><p><strong>global_max_slip</strong> (<em>int</em>) – Max slip to use for the colorscale</p></li>
+<li><p><strong>global_max_sub_slip</strong> (<em>int</em>) – Max subduction slip to use for the colorscale</p></li>
+<li><p><strong>step_size</strong> (<em>int</em>) – Step size to advance every interval</p></li>
+<li><p><strong>interval</strong> (<em>int</em>) – Time (ms) between each frame</p></li>
+<li><p><strong>write</strong> (<em>str</em>) – Write animation to file with given filename.</p></li>
+<li><p><strong>fps</strong> (<em>int</em>) – Frames per second.</p></li>
+<li><p><strong>file_format</strong> (<em>str</em>) – File extension for animation. Accepted values: gif, mp4, mov, avi.</p></li>
+<li><p><strong>figsize</strong> (<em>float</em><em>, </em><em>float</em>) – Width, height in inches.</p></li>
+<li><p><strong>hillshading_intensity</strong> (<em>float</em>) – Intensity of hillshading, value between 0-1.</p></li>
+<li><p><strong>bounds</strong> (<em>tuple</em>) – </p></li>
+<li><p><strong>pickled_background</strong> (<em>str</em>) – </p></li>
+<li><p><strong>fading_increment</strong> (<em>float</em>) – </p></li>
+<li><p><strong>plot_log</strong> (<em>bool</em>) – </p></li>
+<li><p><strong>log_min</strong> (<em>float</em>) – </p></li>
+<li><p><strong>log_max</strong> (<em>float</em>) – </p></li>
+<li><p><strong>plot_subduction_cbar</strong> (<em>bool</em>) – </p></li>
+<li><p><strong>plot_crustal_cbar</strong> (<em>bool</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.animation.AxesSequence">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.animation.</span></span><span class="sig-name descname"><span class="pre">AxesSequence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coast_ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fading_increment</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.visualisation.animation.AxesSequence" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Controls a series of plots on the screen and when they are visible</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fading_increment</strong> (<em>float</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

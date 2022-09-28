@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.fault.patch &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">rsqsim_api.fault.patch</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/fault/patch/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.fault.patch">
+<span id="rsqsim-api-fault-patch"></span><h1><a class="reference internal" href="#module-rsqsim_api.fault.patch" title="rsqsim_api.fault.patch"><code class="xref py py-mod docutils literal notranslate"><span class="pre">rsqsim_api.fault.patch</span></code></a><a class="headerlink" href="#module-rsqsim_api.fault.patch" title="Permalink to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.patch.RsqSimTriangularPatch" title="rsqsim_api.fault.patch.RsqSimTriangularPatch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RsqSimTriangularPatch</span></code></a></p></td>
+<td><p>class to store information on an individual triangular patch of a fault</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.patch.norm_3d" title="rsqsim_api.fault.patch.norm_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">norm_3d</span></code></a>(a)</p></td>
+<td><p>Calculates the 2-norm of a 3-dimensional vector.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.patch.cross_3d" title="rsqsim_api.fault.patch.cross_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cross_3d</span></code></a>(a, b)</p></td>
+<td><p>Calculates cross product of two 3-dimensional vectors.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.patch.norm_3d">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.patch.</span></span><span class="sig-name descname"><span class="pre">norm_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.fault.patch.norm_3d" title="Permalink to this definition"></a></dt>
+<dd><p>Calculates the 2-norm of a 3-dimensional vector.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.patch.cross_3d">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.patch.</span></span><span class="sig-name descname"><span class="pre">cross_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.fault.patch.cross_3d" title="Permalink to this definition"></a></dt>
+<dd><p>Calculates cross product of two 3-dimensional vectors.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="rsqsim_api.fault.patch.RsqSimTriangularPatch">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.patch.</span></span><span class="sig-name descname"><span class="pre">RsqSimTriangularPatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">segment</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vertices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_number</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dip_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strike_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rake</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.fault.patch.RsqSimTriangularPatch" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">RsqSimGenericPatch</span></code></p>
+<p>class to store information on an individual triangular patch of a fault</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vertices</strong> (<em>Union</em><em>[</em><em>list</em><em>, </em><em>numpy.ndarray</em><em>, </em><em>tuple</em><em>]</em>) – </p></li>
+<li><p><strong>patch_number</strong> (<em>int</em>) – </p></li>
+<li><p><strong>dip_slip</strong> (<em>float</em>) – </p></li>
+<li><p><strong>strike_slip</strong> (<em>float</em>) – </p></li>
+<li><p><strong>patch_data</strong> (<em>Union</em><em>[</em><em>list</em><em>, </em><em>numpy.ndarray</em><em>, </em><em>tuple</em><em>]</em>) – </p></li>
+<li><p><strong>rake</strong> (<em>float</em>) – </p></li>
+<li><p><strong>total_slip</strong> (<em>float</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.patch.RsqSimTriangularPatch.horizontal_sv_to_ds_ss">
+<span class="sig-name descname"><span class="pre">horizontal_sv_to_ds_ss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slipvec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">magnitude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.fault.patch.RsqSimTriangularPatch.horizontal_sv_to_ds_ss" title="Permalink to this definition"></a></dt>
+<dd><p>Function to perform the ‘inverse’ of slipvec.
+Requires strike and dip of patch to be set (degrees)
+Returns strike perpendicular &amp; strike parallel components of rake vector and rake (degrees)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>slipvec</strong> (<em>azimuth</em><em> of </em><em>slip vector</em><em> (</em><em>degrees</em><em>)</em>) – </p></li>
+<li><p><strong>magnitude</strong> (<em>magnitude</em><em> of </em><em>slip vector</em><em> (</em><em>results are normalised</em><em>)</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.patch.RsqSimTriangularPatch.rake_from_stress_tensor">
+<span class="sig-name descname"><span class="pre">rake_from_stress_tensor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.fault.patch.RsqSimTriangularPatch.rake_from_stress_tensor" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate rake for motion in direction of shear stress resolved on to fault patch. Assumes sigma2=sigma3=0.
+:param sigma1:
+:type sigma1: maximum principle stress as vector (might need to change this to include multiple principle stresses and/or different ways of writing the principal stresses)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>sigma1</strong> (<em>numpy.ndarray</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

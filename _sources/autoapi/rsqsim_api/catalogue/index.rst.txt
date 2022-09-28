@@ -1,0 +1,24 @@
+:py:mod:`rsqsim_api.catalogue`
+==============================
+
+.. py:module:: rsqsim_api.catalogue
+
+.. autoapi-nested-parse::
+
+   Module supporting storage and manipulation of RSQSim catalogue data.
+   Modules:
+       * catalogue - A module for reading and manipulating RSQSim catalogue data
+       * event - A module for storing and manipulating individual events
+
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   catalogue/index.rst
+   event/index.rst
+
+

@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`rsqsim_api.fault`
+==========================
+
+.. py:module:: rsqsim_api.fault
+
+

@@ -1,0 +1,30 @@
+:orphan:
+
+:py:mod:`rsqsim_api.fault.multifault`
+=====================================
+
+.. py:module:: rsqsim_api.fault.multifault
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   rsqsim_api.fault.multifault.check_unique_vertices
+
+
+
+.. py:function:: check_unique_vertices(vertex_array, tolerance = 1)
+
+   Efficiently checks whether vertices (3D point coordinates) may be duplicates by (1) sorting them,
+   ans (2) finding distances between adjacent points in the sorted array
+   :param vertex_array: Numpy array with 3 columns representing 3D vertex coordinates
+   :param tolerance: distance (in metres) below which points are reported as possible duplicates
+   :return:
+
+

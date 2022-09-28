@@ -1,0 +1,34 @@
+:orphan:
+
+:py:mod:`rsqsim_api.io.mesh_utils`
+==================================
+
+.. py:module:: rsqsim_api.io.mesh_utils
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   rsqsim_api.io.mesh_utils.array_to_mesh
+   rsqsim_api.io.mesh_utils.tri_slip_rake_to_mesh
+
+
+
+.. py:function:: array_to_mesh(triangle_array)
+
+   Turns an array with 9 columns representing triangle vertices into a meshio mesh object
+   :param triangle_array: X,Y,Z coordinates of each vertex of each triangle
+
+
+.. py:function:: tri_slip_rake_to_mesh(in_array)
+
+   Turns an array with 9 columns representing triangle vertices into a meshio mesh object
+   :param in_array: X,Y,Z coordinates of each vertex of each triangle, slip rate (in m/s) and rake (degrees)
+
+

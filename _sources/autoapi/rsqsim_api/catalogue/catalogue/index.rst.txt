@@ -1,0 +1,11 @@
+:py:mod:`rsqsim_api.catalogue.catalogue`
+========================================
+
+.. py:module:: rsqsim_api.catalogue.catalogue
+
+.. autoapi-nested-parse::
+
+   Catalogue class
+
+
+

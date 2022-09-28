@@ -1,0 +1,48 @@
+:orphan:
+
+:py:mod:`rsqsim_api.visualisation.utilities`
+============================================
+
+.. py:module:: rsqsim_api.visualisation.utilities
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   rsqsim_api.visualisation.utilities.clip_coast_with_trim
+   rsqsim_api.visualisation.utilities.clip_coast
+   rsqsim_api.visualisation.utilities.format_label_text_wgs
+
+
+
+.. py:function:: clip_coast_with_trim(x1, y1, x2, y2, wgs = False, coarse = False, fine = False)
+
+   To clip coastline into area of interest
+   :param x1: Bottom-left easting (NZTM, metres)
+   :param y1: Bottom-left northing
+   :param x2: Top-right easting
+   :param y2: Top-right northing
+   :return:
+
+
+.. py:function:: clip_coast(x1, y1, x2, y2, wgs = False, coarse = False, fine = False)
+
+   To clip coastline into area of interest
+   :param x1: Bottom-left easting (NZTM, metres)
+   :param y1: Bottom-left northing
+   :param x2: Top-right easting
+   :param y2: Top-right northing
+   :return:
+
+
+.. py:function:: format_label_text_wgs(ax, xspacing = 5, yspacing = 5, y_only = False)
+
+   Plots latlon labels for plots in wgs, like in Shaw et al., 2021
+
+
