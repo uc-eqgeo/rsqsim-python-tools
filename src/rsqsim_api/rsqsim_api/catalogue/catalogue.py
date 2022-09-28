@@ -1,3 +1,6 @@
+"""
+Catalogue class
+"""
 from typing import Union, Iterable, List, Any
 from collections import abc, Counter, defaultdict
 import os

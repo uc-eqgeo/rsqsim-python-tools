@@ -1,3 +1,6 @@
+"""
+Event class for RSQSim Catalogue
+"""
 import fnmatch
 import json
 import operator
