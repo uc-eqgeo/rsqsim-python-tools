@@ -28,3 +28,4 @@ dependencies:
     - ezdxf
     - meshio
     - sphinx-rtd-theme
+    - git+https://github.com/uc-eqgeo/fault-mesh-tools#subdirectory=src
