@@ -2,7 +2,8 @@ import unittest
 from unittest.mock import patch
 import numpy as np
 import pandas as pd
-from rsqsim_api.fault.segment import RsqSimTriangularPatch, RsqSimSegment, RsqSimMultiFault
+from rsqsim_api.fault.segment import RsqSimTriangularPatch, RsqSimSegment
+from rsqsim_api.fault.multifault import RsqSimMultiFault
 test_vertices = np.array([[0., 0., 0.],
                           [1., 1., 0.],
                           [0., 1., -1]])
@@ -15,8 +16,8 @@ faults_in = pd.DataFrame([[0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, -1.0, 180.0, 
 
 
 class TestMultiFault(unittest.TestCase):
-    @patch('rsqsim_api.catalogue.fault.pd.read_csv')
-    @patch('rsqsim_api.catalogue.fault.all')
+    @patch('rsqsim_api.fault.multifault.pd.read_csv')
+    @patch('rsqsim_api.fault.multifault.all')
     def setUp(self, mock_all, mock_read_csv):
         mock_read_csv.side_effect = [fault_names, faults_in]
         mock_all.return_value = True

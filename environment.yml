@@ -21,7 +21,10 @@ dependencies:
   - pip
   - git
   - git-lfs
+  - sphinx
+  - sphinx-autoapi
   - pip:
     - src/rsqsim_api
     - ezdxf
     - meshio
+    - sphinx-rtd-theme
