@@ -1,9 +1,10 @@
 import unittest
-from unittest.mock import patch
 import numpy as np
 import pandas as pd
 from rsqsim_api.fault.segment import RsqSimTriangularPatch, RsqSimSegment
 from rsqsim_api.fault.multifault import RsqSimMultiFault
+import os
+
 test_vertices = np.array([[0., 0., 0.],
                           [1., 1., 0.],
                           [0., 1., -1]])
@@ -16,28 +17,27 @@ faults_in = pd.DataFrame([[0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, -1.0, 180.0, 
 
 
 class TestMultiFault(unittest.TestCase):
-    @patch('rsqsim_api.fault.multifault.pd.read_csv')
-    @patch('rsqsim_api.fault.multifault.all')
-    def setUp(self, mock_all, mock_read_csv):
-        mock_read_csv.side_effect = [fault_names, faults_in]
-        mock_all.return_value = True
-        self.multifault = RsqSimMultiFault.read_fault_file_bruce("path/to/fault", "path/to/names")
+    def setUp(self):
+        self.multifault = RsqSimMultiFault.read_fault_file_keith(os.path.join(os.path.dirname(__file__),
+                                                                              "data/test_fault_keith.flt"))
 
     def test_return_faults(self):
         segments = self.multifault.faults
-        self.assertTrue(len(segments) == 1)
+        self.assertTrue(len(segments) == 2)
         self.assertIsInstance(segments[0], RsqSimSegment)
 
     def test_return_names(self):
         names = self.multifault.names
-        self.assertTrue(len(names) == 1)
-        self.assertEqual(names[0], "test")
+        self.assertTrue(len(names) == 2)
+        self.assertEqual(names[0], "hikurangi0")
 
     def test_return_name_dic(self):
-        self.assertDictEqual(self.multifault.name_dic, {'test': self.multifault.faults[0]})
+        self.assertDictEqual(self.multifault.name_dic, {'hikurangi0': self.multifault.faults[0],
+                                                        'hikurangi1': self.multifault.faults[1]})
 
     def test_return_bounds(self):
-        np.testing.assert_array_equal(self.multifault.bounds, np.array([0, 0, 1, 1]))
+        np.testing.assert_array_almost_equal(self.multifault.bounds, np.array([724300.821675, 5206243.353544,
+                                                                               840261.391107, 5360639.504934]))
 
     def test_return_patch_dic(self):
         self.assertIsInstance(self.multifault.patch_dic[0], RsqSimTriangularPatch)
@@ -48,9 +48,20 @@ class TestMultiFault(unittest.TestCase):
         self.assertEqual(faults_with_patches[0], self.multifault.faults[0])
 
     def test_filter_faults_by_patch_numbers(self):
-        patch = self.multifault.filter_faults_by_patch_numbers(0)
-        self.assertIsInstance(patch, RsqSimTriangularPatch)
-        self.assertEqual(patch.patch_number, 0)
+        patch = self.multifault.filter_faults_by_patch_numbers(np.array([0], dtype=np.int32))
+        self.assertIsInstance(patch, RsqSimMultiFault)
+        self.assertEqual(patch.faults[0], self.multifault.faults[0])
+        self.assertEqual(len(patch.faults), 1)
+
+    def test_read_bruce_fault_file(self):
+        multifault = RsqSimMultiFault.read_fault_file_bruce(os.path.join(os.path.dirname(__file__),
+                                                                        "data/test_fault_bruce.in"),
+                                                            os.path.join(os.path.dirname(__file__),
+                                                            "data/test_names_bruce.in"))
+
+        self.assertIsInstance(multifault, RsqSimMultiFault)
+        self.assertIsInstance(multifault.faults[0], RsqSimSegment)
+        self.assertEqual(len(multifault.faults), 2)
 
 
 class TestSegment(unittest.TestCase):

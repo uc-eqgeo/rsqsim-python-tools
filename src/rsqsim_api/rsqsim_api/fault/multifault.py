@@ -68,7 +68,7 @@ class RsqSimMultiFault:
                 return self.patch_dic[patch_ls]
         else:
             assert isinstance(patch_ls, (tuple, list, np.ndarray))
-            assert all([isinstance(x, np.integer) for x in patch_ls])
+            assert all([isinstance(x, (np.integer, int)) for x in patch_ls])
             fault_ls = list(set([self.patch_dic[patch_number].segment for patch_number in patch_ls]))
             return RsqSimMultiFault(fault_ls)
 
@@ -531,6 +531,10 @@ class RsqSimMultiFault:
         mesh = self.slip_rate_to_mesh(include_zeros=include_zeros,
                                       min_slip_rate=min_slip_rate, nztm_to_lonlat=nztm_to_lonlat)
         mesh.write(vtk_file, file_format="vtk")
+
+    def write_rsqsim_input_file(self, output_file: str):
+        combined_array = pd.concat([fault.to_rsqsim_fault_array() for fault in self.faults])
+        combined_array.to_csv(output_file, sep=" ", header=False, index=False)
 
     def search_name(self, search_string: str):
         """
