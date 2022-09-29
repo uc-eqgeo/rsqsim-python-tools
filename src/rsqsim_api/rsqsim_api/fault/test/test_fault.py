@@ -56,6 +56,7 @@ class TestMultiFault(unittest.TestCase):
 class TestSegment(unittest.TestCase):
     def setUp(self) -> None:
         self.fault = RsqSimSegment.from_pandas(faults_in, 0, [0], "test")
+        self.fault.strike_slip = -1. *np.ones((self.fault.patch_numbers.size,))
 
     def test_return_vertices(self):
         np.testing.assert_array_equal(np.sort(self.fault.vertices.flat), np.sort(test_vertices.flat))

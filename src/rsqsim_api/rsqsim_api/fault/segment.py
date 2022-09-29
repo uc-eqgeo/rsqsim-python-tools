@@ -630,7 +630,7 @@ class RsqSimSegment:
 
         tris.to_csv(flt_name, index=False, header=False, sep="\t", encoding='ascii')
 
-    def to_rsqsim_fault_array(self, flt_name):
+    def to_rsqsim_fault_array(self):
         tris = pd.DataFrame(self.patch_triangle_rows)
         if self.rake is not None:
             rakes = pd.Series(self.rake)
