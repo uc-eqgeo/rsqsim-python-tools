@@ -1,9 +1,9 @@
 :orphan:
 
-:py:mod:`rsqsim_api.fault.test.test_fault`
-==========================================
+:py:mod:`test_fault`
+====================
 
-.. py:module:: rsqsim_api.fault.test.test_fault
+.. py:module:: test_fault
 
 
 Module Contents
@@ -14,9 +14,9 @@ Classes
 
 .. autoapisummary::
 
-   rsqsim_api.fault.test.test_fault.TestMultiFault
-   rsqsim_api.fault.test.test_fault.TestSegment
-   rsqsim_api.fault.test.test_fault.TestTriangularPatch
+   test_fault.TestMultiFault
+   test_fault.TestSegment
+   test_fault.TestTriangularPatch
 
 
 
@@ -56,7 +56,7 @@ Classes
        by assert methods using difflib. It is looked up as an instance
        attribute so can be configured by individual tests if required.
 
-   .. py:method:: setUp(mock_all, mock_read_csv)
+   .. py:method:: setUp()
 
       Hook method for setting up the test fixture before exercising it.
 
