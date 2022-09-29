@@ -1,3 +1,4 @@
+![Linux test](https://github.com/uc-eqgeo/rsqsim-python-tools/actions/workflows/linux-test.yml/badge.svg)
 # rsqsim-python-tools
 
 Python code for analysis of RSQSim outputs.
