@@ -70,6 +70,7 @@ class RsqSimSegment:
         self._patch_type = None
         self._adjacency_map = None
         self._laplacian = None
+        self._laplacian_sing = None
         self._boundary = None
         self._mean_slip_rate = None
         self._dip_dir = None
@@ -481,20 +482,19 @@ class RsqSimSegment:
                     adjacent_triangles.append(j)
             self._adjacency_map.append(adjacent_triangles)
 
-    def build_laplacian_matrix(self):
+    def build_laplacian_matrix(self,double=True):
 
         """
         Build a discrete Laplacian smoothing matrix.
-
         :Args:
             * verbose       : if True, displays stuff.
             * method        : Method to estimate the Laplacian operator
-
-                - 'count'   : The diagonal is 2-times the number of surrounding nodes. Off diagonals are -2/(number of surrounding nodes) for the surrounding nodes, 0 otherwise.
-                - 'distance': Computes the scale-dependent operator based on Desbrun et al 1999. (Mathieu Desbrun, Mark Meyer, Peter Schr\"oder, and Alan Barr, 1999. Implicit Fairing of Irregular Meshes using Diffusion and Curvature Flow, Proceedings of SIGGRAPH).
-
+                - 'count'   : The diagonal is 2-times the number of surrounding nodes. Off diagonals are -2/(number of
+                surrounding nodes) for the surrounding nodes, 0 otherwise.
+                - 'distance': Computes the scale-dependent operator based on Desbrun et al 1999. (Mathieu Desbrun, Mark
+                Meyer, Peter Schr\"oder, and Alan Barr, 1999. Implicit Fairing of Irregular Meshes using Diffusion and Curvature Flow, Proceedings of SIGGRAPH).
             * irregular     : Not used, here for consistency purposes
-
+            * double : True if want a repeated Laplacian (for slip inversions) False for NxN
         :Returns:
             * Laplacian     : 2D array
         """
@@ -514,23 +514,41 @@ class RsqSimSegment:
             patch_centre = patch.centre
             distances = np.array([np.linalg.norm(self.patch_outlines[a].centre - patch_centre) for a in adjacents])
             all_distances.append(distances)
-        normalizer = np.max([np.max(d) for d in all_distances])
 
         # Iterate over the vertices
         for i, (adjacents, distances) in enumerate(zip(self.adjacency_map, all_distances)):
-            # Distance-based
-            distances_normalized = distances / normalizer
-            e = np.sum(distances_normalized)
-            laplacian_matrix[i, i] = float(len(adjacents)) * 2. / e * np.sum(1. / distances_normalized)
-            laplacian_matrix[i, adjacents] = -2. / e * 1. / distances_normalized
+            if len(adjacents) == 3:
+                h12, h13, h14 = distances
+                laplacian_matrix[i, adjacents[0]] = -h13 * h14
+                laplacian_matrix[i, adjacents[1]] = -h12 * h14
+                laplacian_matrix[i, adjacents[2]] = -h12 * h13
+                laplacian_matrix[i, i] = h13 * h14 + h12 * h14 + h12 * h13
 
-        self._laplacian = np.hstack((laplacian_matrix, laplacian_matrix))
+            elif len(adjacents) == 2:
+                h12, h13 = distances
+                h14 = max(h12, h13)
+                laplacian_matrix[i, adjacents[0]] = -h13 * h14
+                laplacian_matrix[i, adjacents[1]] = -h12 * h14
+                laplacian_matrix[i, i] = h13 * h14 + h12 * h14
+
+        laplacian_matrix = laplacian_matrix / np.max(np.abs(np.diag(laplacian_matrix)))
+        if double:
+            self._laplacian = np.hstack((laplacian_matrix, laplacian_matrix))
+        else:
+            self._laplacian_sing = laplacian_matrix
+
 
     @property
     def laplacian(self):
         if self._laplacian is None:
             self.build_laplacian_matrix()
         return self._laplacian
+
+    @property
+    def laplacian_sing(self):
+        if self._laplacian_sing is None:
+            self.build_laplacian_matrix(double=False)
+        return self._laplacian_sing
 
     def find_top_vertex_indices(self, depth_tolerance: Union[float, int] = 100):
         top_vertex_depth = max(self.vertices[:, -1])
@@ -596,6 +614,10 @@ class RsqSimSegment:
         return np.array([patch.strike_slip for patch in self.patch_outlines]).flatten()
 
     @property
+    def total_slip(self):
+        return np.array([patch.total_slip for patch in self.patch_outlines]).flatten()
+
+    @property
     def rake(self):
         return np.array([patch.rake for patch in self.patch_outlines]).flatten()
 
@@ -610,6 +632,7 @@ class RsqSimSegment:
         assert len(ss_array) == len(self.patch_outlines)
         for patch, ss in zip(self.patch_outlines, ss_array):
             patch.strike_slip = ss
+
 
     def to_rsqsim_fault_file(self, flt_name):
         tris = pd.DataFrame(self.patch_triangle_rows)
