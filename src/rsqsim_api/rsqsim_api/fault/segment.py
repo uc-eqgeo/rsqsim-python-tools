@@ -270,7 +270,7 @@ class RsqSimSegment:
     def from_triangles(cls, triangles: Union[np.ndarray, list, tuple], segment_number: int = 0,
                        patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None,
                        strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None,
-                       rake: Union[int, float] = None, total_slip: np.ndarray = None, min_patch_area: float = 1.):
+                       rake: Union[int, float, np.ndarray] = None, total_slip: np.ndarray = None, min_patch_area: float = 1.):
         """
         Create a segment from triangle vertices and (if appropriate) populate it with strike-slip/dip-slip values
         either specified separately or (if total_slip and rake are given) calculated from total slip + rake.
@@ -287,6 +287,7 @@ class RsqSimSegment:
         # Test shape of input array is appropriate
         triangle_array = np.array(triangles)
         assert triangle_array.shape[1] == 9, "Expecting 3d coordinates of 3 vertices each"
+
         # check no patches have 0 area
         triangle_verts = np.reshape(triangle_array, [len(triangle_array), 3, 3])
         for i, triangle in enumerate(triangle_verts):
@@ -304,6 +305,8 @@ class RsqSimSegment:
             patch_numbers = np.arange(len(triangle_array))
         else:
             assert len(patch_numbers) == triangle_array.shape[0], "Need one patch for each triangle"
+        if isinstance(rake,np.ndarray):
+            assert len(rake) == triangle_array.shape[0], "Need one rake value for each triangle (or specify single value)"
 
         # Create empty segment object
         fault = cls(patch_type="triangle", segment_number=segment_number, fault_name=fault_name)
@@ -318,10 +321,14 @@ class RsqSimSegment:
                 if strike_slip is not None:
                     print('Both total slip rate and strike slip rate specified '
                           '- strike slip and dip slip rates will be recalculated based on total slip and rake')
-
-                patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
+                if isinstance(rake,np.ndarray):
+                    patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
                                               strike_slip=strike_slip,
-                                              dip_slip=dip_slip, rake=rake, total_slip=total_slip[i])
+                                              dip_slip=dip_slip, rake=rake[i], total_slip=total_slip[i])
+                else:
+                    patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
+                                                  strike_slip=strike_slip,
+                                                  dip_slip=dip_slip, rake=rake, total_slip=total_slip[i])
             else:
                 patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
                                               strike_slip=strike_slip,
