@@ -70,6 +70,7 @@ class RsqSimSegment:
         self._patch_type = None
         self._adjacency_map = None
         self._laplacian = None
+        self._laplacian_sing = None
         self._boundary = None
         self._mean_slip_rate = None
         self._dip_dir = None
@@ -269,7 +270,7 @@ class RsqSimSegment:
     def from_triangles(cls, triangles: Union[np.ndarray, list, tuple], segment_number: int = 0,
                        patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None,
                        strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None,
-                       rake: Union[int, float] = None, total_slip: np.ndarray = None, min_patch_area: float = 1.):
+                       rake: Union[int, float, np.ndarray] = None, total_slip: np.ndarray = None, min_patch_area: float = 1.):
         """
         Create a segment from triangle vertices and (if appropriate) populate it with strike-slip/dip-slip values
         either specified separately or (if total_slip and rake are given) calculated from total slip + rake.
@@ -286,6 +287,7 @@ class RsqSimSegment:
         # Test shape of input array is appropriate
         triangle_array = np.array(triangles)
         assert triangle_array.shape[1] == 9, "Expecting 3d coordinates of 3 vertices each"
+
         # check no patches have 0 area
         triangle_verts = np.reshape(triangle_array, [len(triangle_array), 3, 3])
         for i, triangle in enumerate(triangle_verts):
@@ -303,6 +305,8 @@ class RsqSimSegment:
             patch_numbers = np.arange(len(triangle_array))
         else:
             assert len(patch_numbers) == triangle_array.shape[0], "Need one patch for each triangle"
+        if isinstance(rake,np.ndarray):
+            assert len(rake) == triangle_array.shape[0], "Need one rake value for each triangle (or specify single value)"
 
         # Create empty segment object
         fault = cls(patch_type="triangle", segment_number=segment_number, fault_name=fault_name)
@@ -317,10 +321,14 @@ class RsqSimSegment:
                 if strike_slip is not None:
                     print('Both total slip rate and strike slip rate specified '
                           '- strike slip and dip slip rates will be recalculated based on total slip and rake')
-
-                patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
+                if isinstance(rake,np.ndarray):
+                    patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
                                               strike_slip=strike_slip,
-                                              dip_slip=dip_slip, rake=rake, total_slip=total_slip[i])
+                                              dip_slip=dip_slip, rake=rake[i], total_slip=total_slip[i])
+                else:
+                    patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
+                                                  strike_slip=strike_slip,
+                                                  dip_slip=dip_slip, rake=rake, total_slip=total_slip[i])
             else:
                 patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
                                               strike_slip=strike_slip,
@@ -481,20 +489,19 @@ class RsqSimSegment:
                     adjacent_triangles.append(j)
             self._adjacency_map.append(adjacent_triangles)
 
-    def build_laplacian_matrix(self):
+    def build_laplacian_matrix(self,double=True):
 
         """
         Build a discrete Laplacian smoothing matrix.
-
         :Args:
             * verbose       : if True, displays stuff.
             * method        : Method to estimate the Laplacian operator
-
-                - 'count'   : The diagonal is 2-times the number of surrounding nodes. Off diagonals are -2/(number of surrounding nodes) for the surrounding nodes, 0 otherwise.
-                - 'distance': Computes the scale-dependent operator based on Desbrun et al 1999. (Mathieu Desbrun, Mark Meyer, Peter Schr\"oder, and Alan Barr, 1999. Implicit Fairing of Irregular Meshes using Diffusion and Curvature Flow, Proceedings of SIGGRAPH).
-
+                - 'count'   : The diagonal is 2-times the number of surrounding nodes. Off diagonals are -2/(number of
+                surrounding nodes) for the surrounding nodes, 0 otherwise.
+                - 'distance': Computes the scale-dependent operator based on Desbrun et al 1999. (Mathieu Desbrun, Mark
+                Meyer, Peter Schr\"oder, and Alan Barr, 1999. Implicit Fairing of Irregular Meshes using Diffusion and Curvature Flow, Proceedings of SIGGRAPH).
             * irregular     : Not used, here for consistency purposes
-
+            * double : True if want a repeated Laplacian (for slip inversions) False for NxN
         :Returns:
             * Laplacian     : 2D array
         """
@@ -514,23 +521,41 @@ class RsqSimSegment:
             patch_centre = patch.centre
             distances = np.array([np.linalg.norm(self.patch_outlines[a].centre - patch_centre) for a in adjacents])
             all_distances.append(distances)
-        normalizer = np.max([np.max(d) for d in all_distances])
 
         # Iterate over the vertices
         for i, (adjacents, distances) in enumerate(zip(self.adjacency_map, all_distances)):
-            # Distance-based
-            distances_normalized = distances / normalizer
-            e = np.sum(distances_normalized)
-            laplacian_matrix[i, i] = float(len(adjacents)) * 2. / e * np.sum(1. / distances_normalized)
-            laplacian_matrix[i, adjacents] = -2. / e * 1. / distances_normalized
+            if len(adjacents) == 3:
+                h12, h13, h14 = distances
+                laplacian_matrix[i, adjacents[0]] = -h13 * h14
+                laplacian_matrix[i, adjacents[1]] = -h12 * h14
+                laplacian_matrix[i, adjacents[2]] = -h12 * h13
+                laplacian_matrix[i, i] = h13 * h14 + h12 * h14 + h12 * h13
 
-        self._laplacian = np.hstack((laplacian_matrix, laplacian_matrix))
+            elif len(adjacents) == 2:
+                h12, h13 = distances
+                h14 = max(h12, h13)
+                laplacian_matrix[i, adjacents[0]] = -h13 * h14
+                laplacian_matrix[i, adjacents[1]] = -h12 * h14
+                laplacian_matrix[i, i] = h13 * h14 + h12 * h14
+
+        laplacian_matrix = laplacian_matrix / np.max(np.abs(np.diag(laplacian_matrix)))
+        if double:
+            self._laplacian = np.hstack((laplacian_matrix, laplacian_matrix))
+        else:
+            self._laplacian_sing = laplacian_matrix
+
 
     @property
     def laplacian(self):
         if self._laplacian is None:
             self.build_laplacian_matrix()
         return self._laplacian
+
+    @property
+    def laplacian_sing(self):
+        if self._laplacian_sing is None:
+            self.build_laplacian_matrix(double=False)
+        return self._laplacian_sing
 
     def find_top_vertex_indices(self, depth_tolerance: Union[float, int] = 100):
         top_vertex_depth = max(self.vertices[:, -1])
@@ -596,6 +621,10 @@ class RsqSimSegment:
         return np.array([patch.strike_slip for patch in self.patch_outlines]).flatten()
 
     @property
+    def total_slip(self):
+        return np.array([patch.total_slip for patch in self.patch_outlines]).flatten()
+
+    @property
     def rake(self):
         return np.array([patch.rake for patch in self.patch_outlines]).flatten()
 
@@ -610,6 +639,7 @@ class RsqSimSegment:
         assert len(ss_array) == len(self.patch_outlines)
         for patch, ss in zip(self.patch_outlines, ss_array):
             patch.strike_slip = ss
+
 
     def to_rsqsim_fault_file(self, flt_name):
         tris = pd.DataFrame(self.patch_triangle_rows)
