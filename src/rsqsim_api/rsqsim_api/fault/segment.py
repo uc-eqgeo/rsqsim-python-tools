@@ -76,6 +76,7 @@ class RsqSimSegment:
         self._dip_dir = None
         self._trace = None
         self._mean_dip = None
+        self._patch_dic = None
 
         self.patch_type = patch_type
         self.name = fault_name
@@ -127,6 +128,14 @@ class RsqSimSegment:
     @property
     def patch_outlines(self):
         return self._patch_outlines
+
+    @property
+    def patch_dic(self):
+        return self._patch_dic
+
+    @patch_dic.setter
+    def patch_dic(self, patch_dict):
+        self._patch_dic = patch_dict
 
     @property
     def patch_vertices(self):
@@ -570,6 +579,26 @@ class RsqSimSegment:
         shallow_indices = self.find_top_vertex_indices(depth_tolerance)
         top_edges = self.edge_lines[np.all(np.isin(self.edge_lines, shallow_indices), axis=1)]
         return top_edges
+
+    def find_top_patch_numbers(self, depth_tolerance: Union[float, int] = 100):
+        shallow_indices = self.find_top_vertex_indices(depth_tolerance)
+        top_patch_numbers = [patch_i for patch_i, triangle in zip(self.patch_numbers, self.triangles)
+                             if any([shallow_index in triangle for shallow_index in shallow_indices])]
+        return top_patch_numbers
+
+    def find_edge_patch_numbers(self, top: bool = True, depth_tolerance: Union[float, int] = 100):
+        all_vertices = np.vstack(self.patch_vertices)
+        unique_vertices, n_occ = np.unique(all_vertices, axis=0, return_counts=True)
+        edge_vertices = unique_vertices[n_occ <=3]
+        edge_patch_numbers = np.array([patch_i for patch_i in
+                                       self.patch_numbers if (edge_vertices == self.patch_dic[patch_i].vertices[:,None]).all(-1).any()])
+        if not top:
+            top_patches = self.find_top_patch_numbers(depth_tolerance=depth_tolerance)
+            edge_patch_numbers = np.setdiff1d(edge_patch_numbers, top_patches)
+        return edge_patch_numbers
+
+
+
 
     @property
     def trace(self):
