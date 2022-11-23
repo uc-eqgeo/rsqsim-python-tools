@@ -10,6 +10,9 @@ from matplotlib import cm, colors
 from matplotlib import pyplot as plt
 import matplotlib.ticker as plticker
 import pickle
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import LogNorm
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import rioxarray
 
@@ -281,7 +284,9 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                     plot_rivers: bool = True, plot_lakes: bool = True, hillshade_fine: bool = False,
                     plot_highways: bool = True, plot_boundaries: bool = False, subplots=None,
                     pickle_name: str = None, hillshade_cmap: colors.LinearSegmentedColormap = cm.terrain,plot_edge_label: bool = True,
-                    plot_hk: bool = False, plot_fault_outlines: bool = True, wgs: bool =  False, land_color: str ='antiquewhite'):
+                    plot_hk: bool = False, plot_fault_outlines: bool = True, wgs: bool =  False, land_color: str ='antiquewhite',
+                    plot_sub_cbar: bool = False, sub_slip_max: float = 20., plot_crust_cbar: bool = False, crust_slip_max: float = 10.,
+                    subduction_cmap: colors.LinearSegmentedColormap = cm.plasma, crust_cmap: colors.LinearSegmentedColormap = cm.viridis):
 
         if subplots is not None:
             fig, ax = subplots
@@ -331,6 +336,24 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
         if not plot_edge_label:
             ax.set_xticks([])
             ax.set_yticks([])
+
+        sub_mappable = ScalarMappable(cmap=subduction_cmap)
+        sub_mappable.set_clim(vmin=0, vmax=sub_slip_max)
+        crust_mappable = ScalarMappable(cmap=crust_cmap)
+        crust_mappable.set_clim(vmin=0, vmax=crust_slip_max)
+        coast_ax_divider = make_axes_locatable(ax)
+        if plot_sub_cbar:
+            sub_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.25)
+            if plot_crust_cbar:
+                crust_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.5)
+            sub_cbar = fig.colorbar(
+                sub_mappable, cax=sub_ax, extend='max')
+            sub_cbar.set_label("Subduction slip (m)")
+        else:
+            crust_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.25)
+        crust_cbar = fig.colorbar(
+            crust_mappable, cax=crust_ax, extend='max')
+        crust_cbar.set_label("Crustal slip (m)")
 
         if pickle_name is not None:
             with open(pickle_name, "wb") as pfile:

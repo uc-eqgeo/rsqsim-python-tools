@@ -323,7 +323,7 @@ class RsqSimEvent:
                      land_color: str = 'antiquewhite',
                      min_slip_percentile: float = None, min_slip_value: float = None, plot_zeros: bool = True,
                      wgs: bool = False, title: str = None,
-                     plot_edge_label: bool = True):
+                     plot_edge_label: bool = True, plot_cbars: bool = True):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
 
@@ -456,6 +456,7 @@ class RsqSimEvent:
                                                     facecolors=colour_dic[f_i],
                                                     cmap=crustal_cmap, vmin=0., vmax=max_slip)
                     plots.append(crustal_plot)
+
         elif len(self.faults) == 1:
             fault = self.faults[0]
             f_i = 0
@@ -504,26 +505,27 @@ class RsqSimEvent:
                                                         cmap=crustal_cmap, vmin=0., vmax=max_slip)
                         plots.append(crustal_plot)
 
-        if any([subplots is None, isinstance(subplots, str)]):
-            if plot_log_scale:
-                if subduction_list:
-                    sub_cbar = fig.colorbar(subduction_plot, ax=ax)
-                    sub_cbar.set_label("Slip (m)")
-                elif crustal_plot is not None:
-                    crust_cbar = fig.colorbar(crustal_plot, ax=ax)
-                    crust_cbar.set_label("Slip (m)")
-            else:
-                if subduction_list:
-                    sub_cbar = fig.colorbar(subduction_plot, ax=ax)
-                    sub_cbar.set_label("Subduction slip (m)")
-                if crustal_plot is not None:
-                    crust_cbar = fig.colorbar(crustal_plot, ax=ax)
-                    crust_cbar.set_label("Slip (m)")
+        if plot_cbars:
+            if any([subplots is None, isinstance(subplots, str)]):
+                if plot_log_scale:
+                    if subduction_list:
+                        sub_cbar = fig.colorbar(subduction_plot, ax=ax)
+                        sub_cbar.set_label("Slip (m)")
+                    elif crustal_plot is not None:
+                        crust_cbar = fig.colorbar(crustal_plot, ax=ax)
+                        crust_cbar.set_label("Crustal slip (m)")
+                else:
+                    if subduction_list:
+                        sub_cbar = fig.colorbar(subduction_plot, ax=ax)
+                        sub_cbar.set_label("Subduction slip (m)")
+                    if crustal_plot is not None:
+                        crust_cbar = fig.colorbar(crustal_plot, ax=ax)
+                        crust_cbar.set_label("Crustal slip (m)")
 
-        plot_coast(ax=ax, wgs=wgs)
+        plot_coast(ax=ax, wgs=wgs, linewidth=0.5, edgecolor='k')
 
         if title:
-            plt.title(title)
+            plt.suptitle(title)
         if write is not None:
             fig.savefig(write, dpi=300)
             if show:

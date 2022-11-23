@@ -18,7 +18,8 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
                     figsize: tuple = (9.6, 7.2), hillshading_intensity: float = 0.0, bounds: tuple = None,
                     pickled_background : str = None, fading_increment: float = 2.0, plot_log: bool= False,
                     log_min: float = 1., log_max: float = 100., plot_subduction_cbar: bool = True,
-                    plot_crustal_cbar: bool = True):
+                    plot_crustal_cbar: bool = True, min_slip_value: float = None, plot_zeros: bool = True,
+                    extra_sub_list: list = None, plot_cbars: bool = False, title: str = None, **kwargs):
     """Shows an animation of a sequence of earthquake events over time
 
     Args:
@@ -68,7 +69,9 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     for i, e in enumerate(events):
         plots = e.plot_slip_2d(
             subplots=(fig, coast_ax), global_max_slip=global_max_slip, global_max_sub_slip=global_max_sub_slip,
-            bounds=bounds, plot_log_scale=plot_log, log_min=log_min, log_max=log_max)
+            bounds=bounds, plot_log_scale=plot_log, log_min=log_min, log_max=log_max, min_slip_value=min_slip_value,
+            plot_zeros=plot_zeros, extra_sub_list=extra_sub_list, plot_cbars=plot_cbars,
+            title=f"Event {e.event_id:d} (Mw {e.mw:.1f}, year {int((e.t0 - 1.e12) / 3.154e7):d})")
         for p in plots:
             p.set_visible(False)
         years = math.floor(e.t0 / 3.154e7)
@@ -87,30 +90,30 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     coast_ax_divider = make_axes_locatable(coast_ax)
 
     # Build colorbars
-    if plot_log:
-        log_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.25)
-        log_mappable = plots[0]
-        log_cbar = fig.colorbar(
-        log_mappable, cax=log_ax, extend='max')
-        log_cbar.set_label("Slip (m)")
-
-    else:
-        sub_mappable = ScalarMappable(cmap=subduction_cmap)
-        sub_mappable.set_clim(vmin=0, vmax=global_max_sub_slip)
-        crust_mappable = ScalarMappable(cmap=crustal_cmap)
-        crust_mappable.set_clim(vmin=0, vmax=global_max_slip)
-        if plot_subduction_cbar:
-            sub_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.25)
-            if plot_crustal_cbar:
-                crust_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.5)
-            sub_cbar = fig.colorbar(
-                sub_mappable, cax=sub_ax, extend='max')
-            sub_cbar.set_label("Subduction slip (m)")
-        else:
-            crust_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.25)
-        crust_cbar = fig.colorbar(
-            crust_mappable, cax=crust_ax, extend='max')
-        crust_cbar.set_label("Slip (m)")
+    # if plot_log:
+    #     log_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.25)
+    #     log_mappable = plots[0]
+    #     log_cbar = fig.colorbar(
+    #     log_mappable, cax=log_ax, extend='max')
+    #     log_cbar.set_label("Slip (m)")
+    #
+    # else:
+    #     sub_mappable = ScalarMappable(cmap=subduction_cmap)
+    #     sub_mappable.set_clim(vmin=0, vmax=global_max_sub_slip)
+    #     crust_mappable = ScalarMappable(cmap=crustal_cmap)
+    #     crust_mappable.set_clim(vmin=0, vmax=global_max_slip)
+    #     if plot_subduction_cbar:
+    #         sub_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.25)
+    #         if plot_crustal_cbar:
+    #             crust_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.5)
+    #         sub_cbar = fig.colorbar(
+    #             sub_mappable, cax=sub_ax, extend='max')
+    #         sub_cbar.set_label("Subduction slip (m)")
+    #     else:
+    #         crust_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.25)
+    #     crust_cbar = fig.colorbar(
+    #         crust_mappable, cax=crust_ax, extend='max')
+    #     crust_cbar.set_label("Slip (m)")
 
     # Slider to represent time progression
     axtime = coast_ax_divider.append_axes(
