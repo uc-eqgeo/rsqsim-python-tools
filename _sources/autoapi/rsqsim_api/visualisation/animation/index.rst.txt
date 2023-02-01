@@ -27,7 +27,7 @@ Functions
 
 
 
-.. py:function:: AnimateSequence(catalogue, fault_model, subduction_cmap = 'plasma', crustal_cmap = 'viridis', global_max_slip = 10, global_max_sub_slip = 40, step_size = 5, interval = 50, write = None, fps = 20, file_format = 'gif', figsize = (9.6, 7.2), hillshading_intensity = 0.0, bounds = None, pickled_background = None, fading_increment = 2.0, plot_log = False, log_min = 1.0, log_max = 100.0, plot_subduction_cbar = True, plot_crustal_cbar = True)
+.. py:function:: AnimateSequence(catalogue, fault_model, subduction_cmap = 'plasma', crustal_cmap = 'viridis', global_max_slip = 10, global_max_sub_slip = 40, step_size = 1, interval = 50, write = None, fps = 20, file_format = 'gif', figsize = (9.6, 7.2), hillshading_intensity = 0.0, bounds = None, pickled_background = None, fading_increment = 2.0, plot_log = False, log_min = 1.0, log_max = 100.0, plot_subduction_cbar = True, plot_crustal_cbar = True, min_slip_value = None, plot_zeros = True, extra_sub_list = None, plot_cbars = False, **kwargs)
 
    Shows an animation of a sequence of earthquake events over time
 
