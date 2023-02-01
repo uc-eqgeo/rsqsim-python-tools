@@ -340,7 +340,9 @@ class RsqSimEvent:
                 # Assume pickled figure
                 with open(subplots, "rb") as pfile:
                     loaded_subplots = pickle.load(pfile)
-                fig, ax = loaded_subplots
+                fig, background_ax = loaded_subplots
+                ax = background_ax["main_figure"]
+
             else:
                 # Assume matplotlib objects
                 fig, ax = subplots
@@ -737,6 +739,34 @@ class RsqSimEvent:
         slip_dist_array = self.slip_dist_array(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
                                                min_slip_value=min_slip_value, nztm_to_lonlat=nztm_to_lonlat)
         np.savetxt(txt_file, slip_dist_array, fmt="%.6f", delimiter=" ", header=header)
+
+    def slip_dist_to_gdf(self, gdf_file: str, include_zeros: bool = True, min_slip_percentile: float = None,
+                         min_slip_value: float = None, nztm_to_lonlat: bool = False, crs="2193"):
+        slip_dist_array = self.slip_dist_array(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
+                                               min_slip_value=min_slip_value, nztm_to_lonlat=nztm_to_lonlat)
+        geometry = [Polygon([(slip_dist_array[i, 0], slip_dist_array[i, 1]),
+                             (slip_dist_array[i, 3], slip_dist_array[i, 4]),
+                             (slip_dist_array[i, 6], slip_dist_array[i, 7])]) for i in range(len(slip_dist_array))]
+        gdf = gpd.GeoDataFrame(slip_dist_array[:, 9:], columns=["slip", "rake", "time"], geometry=geometry, crs=crs)
+        if nztm_to_lonlat:
+            assert crs == "2193"
+            gdf.to_crs("EPSG:4326", inplace=True)
+
+        return gdf
+
+    def slip_dist_to_geojson(self, geojson_file: str, include_zeros: bool = True, min_slip_percentile: float = None,
+                                min_slip_value: float = None, nztm_to_lonlat: bool = False):
+        gdf = self.slip_dist_to_gdf(gdf_file=None, include_zeros=include_zeros,
+                                    min_slip_percentile=min_slip_percentile, min_slip_value=min_slip_value,
+                                    nztm_to_lonlat=nztm_to_lonlat)
+        gdf.to_file(geojson_file, driver="GeoJSON")
+
+    def slip_dist_to_shapefile(self, shapefile_file: str, include_zeros: bool = True, min_slip_percentile: float = None,
+                                 min_slip_value: float = None, nztm_to_lonlat: bool = False):
+        gdf = self.slip_dist_to_gdf(gdf_file=None, include_zeros=include_zeros,
+                                    min_slip_percentile=min_slip_percentile, min_slip_value=min_slip_value,
+                                    nztm_to_lonlat=nztm_to_lonlat)
+        gdf.to_file(shapefile_file)
 
     def discretize_tiles(self, tile_list: List[Polygon], probability: float, rake: float):
         included_tiles = []

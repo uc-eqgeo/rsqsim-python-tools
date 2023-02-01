@@ -218,8 +218,9 @@ class RsqSimCatalogue:
 
     def write_csv_and_arrays(self, prefix: str, directory: str = None, write_index: bool = True):
         assert prefix, "Empty prefix!"
-        if not any([os.path.exists(directory),directory is None]):
-            os.mkdir(directory)
+        if directory is not None:
+            if not os.path.exists(directory):
+                os.mkdir(directory)
 
         write_catalogue_dataframe_and_arrays(prefix, self, directory=directory, write_index=write_index)
 
