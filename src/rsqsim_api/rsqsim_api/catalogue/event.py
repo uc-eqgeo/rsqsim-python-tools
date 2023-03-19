@@ -256,7 +256,7 @@ class RsqSimEvent:
         ----------
         fault_model: RsqSimMultiFault
         by_cfm_names: boolean, default= True Divide faults by the CFM segment names rather than the further segmentation in the V2 catalogue
-        mu: lame paramter, default value is 30GPa
+        mu: lame parameter, default value is 30GPa
         """
         assert self.faults is not None, "Event has no faults, can't calculate moment"
         m0_dict = {}

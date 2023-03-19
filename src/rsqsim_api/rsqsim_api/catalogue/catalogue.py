@@ -15,6 +15,7 @@ from matplotlib import pyplot as plt
 from matplotlib import cm, colors
 from shapely.geometry import Polygon
 import geopandas as gpd
+import pylab
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault, RsqSimSegment
 from rsqsim_api.catalogue.event import RsqSimEvent
@@ -320,12 +321,12 @@ class RsqSimCatalogue:
         return rcat
 
     def filter_by_events(self, event_number: Union[int, np.int, Iterable[int]], reset_index: bool = False):
-        if isinstance(event_number, (int, np.int)):
+        if isinstance(event_number, (int, np.int,np.int32,np.int64)):
             ev_ls = [event_number]
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
             ev_ls = list(event_number)
-            assert all([isinstance(a, (int, np.int)) for a in ev_ls])
+            assert all([isinstance(a, (int, np.int,np.int32,np.int64)) for a in ev_ls])
         trimmed_df = self.catalogue_df.loc[ev_ls]
         event_indices = np.where(np.in1d(self.event_list, np.array(trimmed_df.index)))[0]
         trimmed_event_ls = self.event_list[event_indices]
@@ -474,12 +475,12 @@ class RsqSimCatalogue:
     def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault,
                          child_processes: int = 0, min_patches: int = 1):
         assert isinstance(fault_model,RsqSimMultiFault), "Fault model required"
-        if isinstance(event_number, (int, np.int)):
+        if isinstance(event_number, (int, np.int, np.int32)):
             ev_ls = [event_number]
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
             ev_ls = list(event_number)
-            assert all([isinstance(a, (int, np.int)) for a in ev_ls])
+            assert all([isinstance(a, (int, np.int, np.int32)) for a in ev_ls])
 
         out_events = []
 
@@ -745,66 +746,136 @@ class RsqSimCatalogue:
 
         return plots
 
-    def plot_gr(self, fault_model: RsqSimMultiFault, show: bool = True,
-                write: str = None, best_fit: bool = True, interval: float = 0.25):
+    def plot_mfd(self, plot_type: str = 'differential' , nSamp: int = 1000,
+                 window: float = 80.*csts.seconds_per_year, n_bins: int=50, instrumental_path: str = None, inst_year_min: float = 1940, show: bool = True,
+                write: str = None, tmin: float = None, tmax: float = None, depth_min: float = None, depth_max: float =None, mmin: float = 4.5, mmax: float = 9.5):
         """
-        Plot Gutenburg-Richter distribution for a given catalogue with Aki b-value at reference mag.
+        Plot cumulative or differential Gutenburg-Richter distribution for a given catalogue with Aki b-value at reference mag.
         y-axis: log(annual frequency of events with M>Mw)
         x axis: Mw
 
         Parameters
         ----------
-        fault_model : RsqSimMultiFault object
+
         show : bool to indicate whether to display plot
         write : file (if any) to write plot to
         best_fit : whether to plot best fit linear trend w/b value
         """
-        mag_freq: dict[int, float | Any] = {}
-        # find min magnitude of catalogue
-        mws = np.array([ev.mw for ev in self.all_events(fault_model)])
-        min_mag = interval*round(np.min(mws)/interval)
-        max_mag = np.max(mws)
-        print(f"Filtering")
-        tot_time = (np.max(self.catalogue_df['t0']) - np.min(self.catalogue_df['t0'])) / csts.seconds_per_year
-        for mag in np.arange(min_mag, max_mag, interval):
 
-            filt_cat = self.filter_whole_catalogue(min_mw=mag)
+        assert plot_type in ['differential','cumulative'], "plot_type must be one of cumulative or differential"
+        if instrumental_path is not None:
+            assert os.path.exists(instrumental_path), "Path to instrumental catalogue not found"
+            # Read in instrumental seismicity
+            seismicity = pd.read_csv(instrumental_path, converters={0: lambda s: str(s)}, infer_datetime_format=True)
 
-            if filt_cat.event_list.size != 0:
+        #check for parameters and find them from catalogue if not specified
+        if tmin is None:
+           tmin=self.catalogue_df['t0'].min(axis=0)
+        if tmax is None:
+           tmax = self.catalogue_df['t0'].max(axis=0)
+        if depth_min is None:
+            depth_min = -0.001 * no_inf_cat.catalogue_df['z'].max(axis=0)
+        if depth_max is None:
+            depth_max = -0.001 * no_inf_cat.catalogue_df['z'].min(axis=0)
 
-                nevents = len(filt_cat.all_events(fault_model))
+        # find magnitudes for whole catalogue
+        rsqsim_mags = self.catalogue_df["mw"]
+        weightsyrs2 = np.ones(len(rsqsim_mags)) * csts.seconds_per_year / (tmax - tmin)
 
-                times = np.array([ev.t0 for ev in filt_cat.all_events(fault_model)])
+        pylab.figure()
+        if plot_type == "differential":
+            tints = []
+            for i in np.arange(1, nSamp, 1):
+                tinit = tmin + (np.random.rand() * (tmax - tmin - window))
+                tints.append(tinit)
+                tfin = tinit + window
+                mags = self.catalogue_df["mw"].loc[
+                    (self.catalogue_df['t0'] > tinit) & (self.catalogue_df['t0'] <= tfin)]
+                weightsyrs = np.ones(len(mags)) * csts.seconds_per_year / window
 
-                freq = nevents / tot_time
-            else:
-                freq = 0
-            mag_freq[mag] = freq
-        # convert to dataframe for plotting
-        mf_dict = pd.DataFrame.from_dict(mag_freq, orient='index', columns=['freq'])
-        mf_dict.reset_index(inplace=True)
-        mf_dict.rename(columns={"index": "mag"}, inplace=True)
-        mf_dict["log_freq"] = np.log10(mf_dict["freq"])
+                plt.hist(mags, n_bins, weights=weightsyrs, range=(mmin, mmax), histtype='stepfilled', log=True,
+                         edgecolor='lightgray', facecolor='lightgray', alpha=0.1)
+            # plot last sample with legend
+            plt.hist(mags, n_bins, weights=weightsyrs, range=(mmin, mmax), histtype='stepfilled', log=True, edgecolor='lightgray',
+                     facecolor='lightgray', alpha=0.1, label=f"{window / csts.seconds_per_year:.0f} yr RSQsim samples")
+            # plot full histogram
+            plt.hist(rsqsim_mags, n_bins, weights=weightsyrs2, range=(mmin, mmax), histtype='step', log=True, label="RSQsim",
+                     edgecolor='grey')
 
-        # plot
-        print("plotting")
-        ax = mf_dict.plot.scatter(x="mag", y="freq")
-        if best_fit:
-            gr_fit=np.polyfit(mf_dict['mag'],mf_dict['log_freq'],1)
-            gr_trend=np.poly1d(gr_fit)
-            plt.plot(mf_dict["mag"],10**gr_trend(mf_dict["mag"]),'r--',label="b="+str(round(abs(gr_trend.c[0]),2)))
-            ax.legend()
-        ax.set_yscale('log')
-        ax.set_xticks(np.arange(min_mag, 10, 1))
-        plt.xlabel("Mw")
-        plt.ylabel("# events with M>Mw per year")
+            if instrumental_path is not None:
+                #trim to region of interest
+                x1 = self.catalogue_df['x'].min()
+                y1 = self.catalogue_df['y'].min()
+                x2 = self.catalogue_df['x'].max()
+                y2 = self.catalogue_df['y'].max()
 
-        if write is not None:
-            plt.savefig(write, dpi=300)
+                maskmag = ((seismicity['Mpref'] >= mmin) & (seismicity['lons'] > x1) & (seismicity['lons'] < x2) & (
+                            seismicity['lats'] > y1) & (seismicity['lats'] < y2) & (seismicity['year'] >= inst_year_min) & (
+                                       seismicity['depths'] > depth_min) & (seismicity['depths'] <= depth_max))
+                latest_year = np.max(seismicity['year'].loc[seismicity['year'] >= inst_year_min])
+                instrumental_mags = seismicity["Mpref"].loc[maskmag]
+                weightsyrs_IM = np.ones(np.size(instrumental_mags)) / np.ptp(
+                    seismicity['year'].loc[seismicity['year'] >= inst_year_min])
+                plt.hist(instrumental_mags, n_bins, weights=weightsyrs_IM, range=(mmin, mmax), histtype='step',
+                         log=True, label=f"{str(inst_year_min)}-{str(latest_year)}, Mw>{mmin:.1f}", edgecolor='b',
+                         linewidth=1.5)
+
+            plt.ylim([0.001, 1000])
+
+        elif plot_type == "cumulative":
+            for i in np.arange(1, nSamp, 1):
+                tinit = tmin + (np.random.rand() * (tmax - tmin - window))
+                tfin = tinit + window
+                mags = self.catalogue_df["mw"].loc[
+                    (self.catalogue_df['t0'] > tinit) & (self.catalogue_df['t0'] <= tfin)]
+                mag_sort = np.sort(mags)[::-1]
+                mag_cum = np.ones(shape=np.size(mag_sort))
+                mag_cum = np.cumsum(mag_cum)
+                weightsyrs = np.ones(len(mags)) * csts.seconds_per_year / (tfin - tinit)
+                pylab.semilogy(mag_sort, mag_cum * weightsyrs, c='lightgray', alpha=0.6, linewidth=0.5)
+            pylab.semilogy(mag_sort, mag_cum * weightsyrs, c='lightgray', alpha=0.6, linewidth=0.5,
+                           label=f"{window / csts.seconds_per_year:.0f} yr samples")
+            new_sort = np.sort(rsqsim_mags)[::-1]
+            new_cum = np.ones(shape=np.size(new_sort))
+            new_cum = np.cumsum(new_cum)
+            pylab.semilogy(new_sort, new_cum * weightsyrs2, c='grey', linewidth=1, label="RSQsim")
+
+            if instrumental_path is not None:
+                # trim to region of interest
+                x1 = self.catalogue_df['x'].min()
+                y1 = self.catalogue_df['y'].min()
+                x2 = self.catalogue_df['x'].max()
+                y2 = self.catalogue_df['y'].max()
+
+                maskmag = ((seismicity['Mpref'] >= mmin) & (seismicity['lons'] > x1) & (seismicity['lons'] < x2) & (
+                        seismicity['lats'] > y1) & (seismicity['lats'] < y2) & (seismicity['year'] >= inst_year_min) & (
+                                   seismicity['depths'] > depth_min) & (seismicity['depths'] <= depth_max))
+                latest_year = np.max(seismicity['year'].loc[seismicity['year'] >= inst_year_min])
+                instrumental_mags = seismicity["Mpref"].loc[maskmag]
+                weightsyrs_IM = np.ones(np.size(instrumental_mags)) / np.ptp(
+                    seismicity['year'].loc[seismicity['year'] >= inst_year_min])
+                IMsort = np.sort(instrumental_mags)[::-1]
+                IMcum = np.ones(shape=np.size(IMsort))
+                IMcum = np.cumsum(IMcum)
+                pylab.semilogy(IMsort, IMcum * weightsyrs_IM[0], c='b', linewidth=1,
+                               label=f'{inst_year_min} - {latest_year}, Mw>{mmin:.1f}')
+                correctionFactor = 2 / 3.0 * 1 / 1.5
+                pylab.semilogy(IMsort, IMcum * weightsyrs_IM[0] * correctionFactor, c='b', linestyle=':', linewidth=1,
+                               label=f'{inst_year_min} - {latest_year}, Mw>{mmin:.1f} corr')
+                xsortNZFull = IMsort[:]
+                ysortNZFull = IMcum * weightsyrs_IM[0]
+            plt.ylim([0.001, 100])
+
+        plt.ylabel('N [$yr^{-1}$]')
+        plt.xlabel('M')
+        plt.tight_layout()
+        plt.legend()
         if show:
             plt.show()
-        else:
-            plt.close()
+        if os.path.exists(write):
+            plt.savefig(write, dpi=450)
+
+
 
     def plot_mean_slip_vs_mag(self, fault_model: RsqSimMultiFault, show: bool = True,
                               write: str = None, plot_rel: bool = True):

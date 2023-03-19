@@ -75,6 +75,7 @@ class RsqSimSegment:
         self._mean_slip_rate = None
         self._dip_dir = None
         self._trace = None
+        self._complicated_trace = None
         self._mean_dip = None
         self._patch_dic = None
 
@@ -566,17 +567,33 @@ class RsqSimSegment:
             self.build_laplacian_matrix(double=False)
         return self._laplacian_sing
 
-    def find_top_vertex_indices(self, depth_tolerance: Union[float, int] = 100):
-        top_vertex_depth = max(self.vertices[:, -1])
-        shallow_indices = np.where(self.vertices[:, -1] >= top_vertex_depth - depth_tolerance)[0]
+    def find_top_vertex_indices(self, depth_tolerance: Union[float, int] = 100., complicated_faults: bool =False ):
+        if complicated_faults:
+            all_vertices = np.reshape(self.patch_vertices, (3 * len(self.patch_vertices), 3))
+            verts, n_occ = np.unique(all_vertices, axis=0, return_counts=True)
+            vertices = np.array([[index,value[0],value[1],value[2]] for index,value in enumerate(verts)])
+            edgeverts = vertices[np.where(n_occ <= 3)[0]]
+            shallow_indices = []
+            for x, y in np.unique(edgeverts[:, 1:3], axis=0):
+                vert_indices = np.where(edgeverts[:, 1:3] == [x, y])[0]
+                zs = edgeverts[vert_indices, -1]
+
+                top_vertex_depth = max(zs)
+                if top_vertex_depth > -5000.:
+                    matching_depth_verts = np.where(edgeverts[:, -1] == top_vertex_depth)
+                    shallow_index = np.intersect1d(vert_indices, matching_depth_verts[0])
+                    shallow_indices.append(shallow_index)
+        else:
+            top_vertex_depth = max(self.vertices[:, -1])
+            shallow_indices = np.where(self.vertices[:, -1] >= top_vertex_depth - depth_tolerance)[0]
         return shallow_indices
 
-    def find_top_vertices(self, depth_tolerance: Union[float, int] = 100):
-        shallow_indices = self.find_top_vertex_indices(depth_tolerance)
+    def find_top_vertices(self, depth_tolerance: Union[float, int] = 100, complicated_faults: bool =False ):
+        shallow_indices = self.find_top_vertex_indices(depth_tolerance, complicated_faults=complicated_faults)
         return self.vertices[shallow_indices]
 
-    def find_top_edges(self, depth_tolerance: Union[float, int] = 100):
-        shallow_indices = self.find_top_vertex_indices(depth_tolerance)
+    def find_top_edges(self, depth_tolerance: Union[float, int] = 100, complicated_faults: bool =False):
+        shallow_indices = self.find_top_vertex_indices(depth_tolerance, complicated_faults=complicated_faults)
         top_edges = self.edge_lines[np.all(np.isin(self.edge_lines, shallow_indices), axis=1)]
         return top_edges
 
@@ -618,6 +635,25 @@ class RsqSimSegment:
     def trace(self, trace: LineString):
         assert isinstance(trace, LineString)
         self._trace = trace
+
+    @property
+    def complicated_trace(self):
+        if self._complicated_trace is None:
+            top_edges = self.find_top_edges(complicated_faults=True)
+            line_list = []
+            for edge in top_edges:
+                v1 = self.vertices[edge[0]]
+                v2 = self.vertices[edge[1]]
+                line = LineString([v1[:-1], v2[:-1]])
+                line_list.append(line)
+            return linemerge(line_list)
+        else:
+            return self._complicated_trace
+
+    @complicated_trace.setter
+    def complicated_trace(self, complicated_trace: LineString):
+        assert isinstance(complicated_trace, LineString)
+        self._complicated_trace = complicated_trace
 
     @property
     def fault_outline(self):
