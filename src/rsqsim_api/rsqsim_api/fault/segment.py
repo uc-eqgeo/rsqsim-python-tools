@@ -78,6 +78,7 @@ class RsqSimSegment:
         self._complicated_trace = None
         self._mean_dip = None
         self._patch_dic = None
+        self._max_depth = None
 
         self.patch_type = patch_type
         self.name = fault_name
@@ -183,6 +184,17 @@ class RsqSimSegment:
     @property
     def boundary(self):
         return self._boundary
+
+    @property
+    def max_depth(self):
+        if self._max_depth is None:
+            self.get_max_depth()
+        return self._max_depth
+
+
+    def get_max_depth(self):
+
+        self._max_depth=np.min(self.vertices[:,-1])
 
     @boundary.setter
     def boundary(self, boundary_array: np.ndarray):

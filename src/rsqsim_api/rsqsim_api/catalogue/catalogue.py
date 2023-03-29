@@ -870,13 +870,48 @@ class RsqSimCatalogue:
         plt.xlabel('M')
         plt.tight_layout()
         plt.legend()
+
+        if os.path.exists(os.path.dirname(write)):
+            plt.savefig(write, dpi=450)
+        else:
+            print("write directory not found")
         if show:
             plt.show()
-        if os.path.exists(write):
-            plt.savefig(write, dpi=450)
 
+    def plot_depth_hist(self,fault_model: RsqSimMultiFault, n_bins: int = 10, depth_min: float=None, depth_max: float=None, write: str = None, show: bool = True):
 
+        """
+        Plot histogram of synthetic earthquake hypocentral depths and depths to base of faults.
 
+        Parameters
+        ----------
+        fault_model: RsqSimMultiFault fault network
+        depth_min: minimum depth of synthetic seismicity (km)
+        depth_max: maximum depth of synthetic seismicity (km)
+        write: path to outputfile file to write to
+        show: boolean
+        """
+        if depth_min is None:
+            depth_min=-0.001 * self.catalogue_df['z'].max(axis=0)
+        if depth_max is None:
+            depth_max = -0.001 * self.catalogue_df['z'].min(axis=0)
+
+        fig, ax = plt.subplots(1, 1)
+        depths = self.catalogue_df['z'] * -0.001
+        ax.hist(depths, n_bins, range=(depth_min, depth_max), orientation="horizontal", label="Hypocentral depths")
+        fault_depths = [fault.max_depth * -0.001 for fault in fault_model.faults]
+        ax.set_ylim([depth_max, depth_min])
+        plt.ylabel("Depth (km)")
+        ax.set_xlabel("# earthquakes")
+        ax2 = ax.twiny()
+        ax2.hist(fault_depths, orientation="horizontal", histtype='step', edgecolor='b',
+                            label='Base of faults')
+        ax2.set_xlabel("# faults")
+        fig.legend(loc="lower right", bbox_to_anchor=(1, 0), bbox_transform=ax2.transAxes)
+        if os.path.exists(os.path.dirname(write)):
+            fig.savefig(write,dpi=450)
+        if show:
+            fig.show()
     def plot_mean_slip_vs_mag(self, fault_model: RsqSimMultiFault, show: bool = True,
                               write: str = None, plot_rel: bool = True):
         """
