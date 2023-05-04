@@ -19,7 +19,7 @@ import pylab
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault, RsqSimSegment
 from rsqsim_api.catalogue.event import RsqSimEvent
-from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, catalogue_columns, read_csv_and_array
+from rsqsim_api.io.read_utils import read_earthquake_catalogue, read_binary, catalogue_columns, read_csv_and_array, read_text
 from rsqsim_api.io.write_utils import write_catalogue_dataframe_and_arrays
 from rsqsim_api.tsunami.tsunami import SeaSurfaceDisplacements
 from rsqsim_api.visualisation.utilities import plot_coast, plot_background, plot_hillshade_niwa, plot_lake_polygons, \
@@ -182,7 +182,7 @@ class RsqSimCatalogue:
 
     @classmethod
     def from_catalogue_file_and_lists(cls, catalogue_file: str, list_file_directory: str,
-                                      list_file_prefix: str, read_extra_lists: bool = False, reproject: List = None):
+                                      list_file_prefix: str, read_extra_lists: bool = False, reproject: List = None, serial: bool =  False):
         assert os.path.exists(catalogue_file)
         assert os.path.exists(list_file_directory)
 
@@ -194,12 +194,22 @@ class RsqSimCatalogue:
 
         # Read in catalogue to dataframe and initiate class instance
         rcat = cls.from_catalogue_file(catalogue_file, reproject=reproject)
-        rcat.patch_list = read_binary(standard_list_files[0], format="i") - 1
-        # indices start from 1, change so that it is zero instead
-        rcat.event_list = read_binary(standard_list_files[1], format="i") - 1
-        rcat.patch_slip, rcat.patch_time_list = [read_binary(fname, format="d") for fname in standard_list_files[2:]]
+
+        if serial:
+            rcat.patch_list = read_text(standard_list_files[0], format="i") - 1
+            # indices start from 1, change so that it is zero instead
+            rcat.event_list = read_text(standard_list_files[1], format="i") - 1
+            rcat.patch_slip, rcat.patch_time_list = [read_text(fname, format="d") for fname in
+                                                     standard_list_files[2:]]
+        else:
+            rcat.patch_list = read_binary(standard_list_files[0], format="i") - 1
+            # indices start from 1, change so that it is zero instead
+            rcat.event_list = read_binary(standard_list_files[1], format="i") - 1
+            rcat.patch_slip, rcat.patch_time_list = [read_binary(fname, format="d") for fname in standard_list_files[2:]]
 
         return rcat
+
+
 
     @classmethod
     def from_dataframe_and_arrays(cls, dataframe: pd.DataFrame, event_list: np.ndarray, patch_list: np.ndarray,
