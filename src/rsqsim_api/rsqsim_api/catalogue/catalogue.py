@@ -87,7 +87,7 @@ class RsqSimCatalogue:
     @catalogue_df.setter
     def catalogue_df(self, dataframe: pd.DataFrame):
         assert dataframe.columns.size == 8, "Should have 8 columns"
-        assert all([col.dtype in ("float", "int") for i, col in dataframe.iteritems()])
+        assert all([col.dtype in ("float", "int") for i, col in dataframe.items()])
         dataframe.columns = catalogue_columns
         self._catalogue_df = dataframe
 
@@ -110,6 +110,7 @@ class RsqSimCatalogue:
     def event_list(self, data_list: np.ndarray):
         self.check_list(data_list, data_type="i")
         if not len(np.unique(data_list)) == len(self.catalogue_df):
+            print(len(np.unique(data_list)),len(self.catalogue_df))
             raise ValueError("Numbers of events in catalogue and supplied list are different!")
         self._event_list = data_list
 
