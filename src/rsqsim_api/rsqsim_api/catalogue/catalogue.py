@@ -86,7 +86,7 @@ class RsqSimCatalogue:
     @catalogue_df.setter
     def catalogue_df(self, dataframe: pd.DataFrame):
         assert dataframe.columns.size == 8, "Should have 8 columns"
-        assert all([col.dtype in ("float", "int") for i, col in dataframe.iteritems()])
+        assert all([col.dtype in ("float", "int") for i, col in dataframe.items()])
         dataframe.columns = catalogue_columns
         self._catalogue_df = dataframe
 
