@@ -15,11 +15,22 @@ Functions
 
 .. autoapisummary::
 
+   rsqsim_api.io.read_utils.read_text
    rsqsim_api.io.read_utils.read_binary
    rsqsim_api.io.read_utils.read_earthquakes
    rsqsim_api.io.read_utils.read_ts_coords
    rsqsim_api.io.read_utils.read_dxf
 
+
+
+.. py:function:: read_text(file, format)
+
+   Reads scalar values from text files that are output of RSQSim.
+   Note that these files are produced if the code is compiled with
+   serial output.
+   :param file: file to read
+   :param format: either "d" (double) or "i" (integer)
+   :return:
 
 
 .. py:function:: read_binary(file, format, endian = 'little')
