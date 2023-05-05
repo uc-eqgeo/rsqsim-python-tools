@@ -463,7 +463,7 @@ class RsqSimSegment:
             self.build_adjacency_map()
         return self._adjacency_map
 
-    def build_adjacency_map(self):
+    def build_adjacency_map(self,verbose: bool =True):
         """
         For each triangle vertex, find the indices of the adjacent triangles.
         This function overwrites that from the parent class TriangularPatches.
@@ -484,12 +484,16 @@ class RsqSimSegment:
         for vertex_numbers in self.triangles:
             adjacent_triangles = []
             for j, triangle in enumerate(self.triangles):
+
+
                 common_vertices = [a for a in vertex_numbers if a in triangle]
                 if len(common_vertices) == 2:
                     adjacent_triangles.append(j)
+                    if verbose:
+                        print(f"appending {j}")
             self._adjacency_map.append(adjacent_triangles)
 
-    def build_laplacian_matrix(self,double=True):
+    def build_laplacian_matrix(self,double=True, verbose:bool=True):
 
         """
         Build a discrete Laplacian smoothing matrix.
@@ -517,12 +521,16 @@ class RsqSimSegment:
 
         # Normalize the distances
         all_distances = []
+        if verbose:
+            print("Normalizing distances")
         for i, (patch, adjacents) in enumerate(zip(self.patch_outlines, self.adjacency_map)):
             patch_centre = patch.centre
             distances = np.array([np.linalg.norm(self.patch_outlines[a].centre - patch_centre) for a in adjacents])
             all_distances.append(distances)
 
         # Iterate over the vertices
+        if verbose:
+            print("iterating over vertices")
         for i, (adjacents, distances) in enumerate(zip(self.adjacency_map, all_distances)):
             if len(adjacents) == 3:
                 h12, h13, h14 = distances
