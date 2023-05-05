@@ -14,11 +14,12 @@ import pickle
 
 def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma",
                     crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40,
-                    step_size: int = 5, interval: int = 50, write: str = None, fps: int = 20, file_format: str = "gif",
+                    step_size: int = 1, interval: int = 50, write: str = None, fps: int = 20, file_format: str = "gif",
                     figsize: tuple = (9.6, 7.2), hillshading_intensity: float = 0.0, bounds: tuple = None,
                     pickled_background : str = None, fading_increment: float = 2.0, plot_log: bool= False,
                     log_min: float = 1., log_max: float = 100., plot_subduction_cbar: bool = True,
-                    plot_crustal_cbar: bool = True):
+                    plot_crustal_cbar: bool = True, min_slip_value: float = None, plot_zeros: bool = True,
+                    extra_sub_list: list = None, plot_cbars: bool = False, **kwargs):
     """Shows an animation of a sequence of earthquake events over time
 
     Args:
@@ -46,7 +47,11 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     if pickled_background is not None:
         with open(pickled_background, "rb") as pfile:
             loaded_subplots = pickle.load(pfile)
-        fig, coast_ax = loaded_subplots
+        fig, background_ax = loaded_subplots
+        coast_ax = background_ax["main_figure"]
+        slider_ax = background_ax["slider"]
+        year_ax = background_ax["year"]
+        year_text = year_ax.text(0.5, 0.5, str(int(0)), horizontalalignment='center', verticalalignment='center', fontsize=12)
     else:
         fig = plt.figure(figsize=figsize)
 
@@ -68,10 +73,11 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
     for i, e in enumerate(events):
         plots = e.plot_slip_2d(
             subplots=(fig, coast_ax), global_max_slip=global_max_slip, global_max_sub_slip=global_max_sub_slip,
-            bounds=bounds, plot_log_scale=plot_log, log_min=log_min, log_max=log_max)
+            bounds=bounds, plot_log_scale=plot_log, log_min=log_min, log_max=log_max, min_slip_value=min_slip_value,
+            plot_zeros=plot_zeros, extra_sub_list=extra_sub_list, plot_cbars=plot_cbars)
         for p in plots:
             p.set_visible(False)
-        years = math.floor(e.t0 / 3.154e7)
+        years = math.floor(e.t0 / (3.154e7))
         all_plots.append(plots)
         timestamps.append(step_size * round(years/step_size))
         print("Plotting: " + str(i + 1) + "/" + str(num_events))
@@ -84,39 +90,9 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
             coast_ax.set_xlim(x_lim)
             coast_ax.set_ylim(y_lim)
 
-    coast_ax_divider = make_axes_locatable(coast_ax)
-
-    # Build colorbars
-    if plot_log:
-        log_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.25)
-        log_mappable = plots[0]
-        log_cbar = fig.colorbar(
-        log_mappable, cax=log_ax, extend='max')
-        log_cbar.set_label("Slip (m)")
-
-    else:
-        sub_mappable = ScalarMappable(cmap=subduction_cmap)
-        sub_mappable.set_clim(vmin=0, vmax=global_max_sub_slip)
-        crust_mappable = ScalarMappable(cmap=crustal_cmap)
-        crust_mappable.set_clim(vmin=0, vmax=global_max_slip)
-        if plot_subduction_cbar:
-            sub_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.25)
-            if plot_crustal_cbar:
-                crust_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.5)
-            sub_cbar = fig.colorbar(
-                sub_mappable, cax=sub_ax, extend='max')
-            sub_cbar.set_label("Subduction slip (m)")
-        else:
-            crust_ax = coast_ax_divider.append_axes("right", size="5%", pad=0.25)
-        crust_cbar = fig.colorbar(
-            crust_mappable, cax=crust_ax, extend='max')
-        crust_cbar.set_label("Slip (m)")
-
-    # Slider to represent time progression
-    axtime = coast_ax_divider.append_axes(
-        "bottom", size="3%", pad=0.5)
     time_slider = Slider(
-        axtime, 'Year', timestamps[0] - step_size, timestamps[-1] + step_size, valinit=timestamps[0] - step_size, valstep=step_size)
+        slider_ax, 'Year', timestamps[0] - step_size, timestamps[-1] + step_size, valinit=timestamps[0] - step_size, valstep=step_size)
+    time_slider.valtext.set_visible(False)
 
     axes = AxesSequence(fig, timestamps, all_plots, coast_ax, fading_increment=fading_increment)
 
@@ -125,6 +101,7 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
         axes.set_plot(time)
         if val == time_slider.valmax:
             axes.stop()
+        year_text.set_text(str(int(time)))
         fig.canvas.draw_idle()
 
     time_slider.on_changed(update)
@@ -139,7 +116,7 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
 
     if write is not None:
         writer = PillowWriter(fps=fps) if file_format == "gif" else FFMpegWriter(fps=fps)
-        animation.save(f"{write}.{file_format}", writer)
+        animation.save(f"{write}.{file_format}", writer, dpi=300)
     else:
         axes.show()
 

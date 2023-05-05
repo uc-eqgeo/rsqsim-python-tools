@@ -8,6 +8,25 @@ import ezdxf
 catalogue_columns = ["t0", "m0", "mw", "x", "y", "z", "area", "dt"]
 
 
+def read_text(file: str, format: str):
+    """
+    Reads scalar values from text files that are output of RSQSim.
+    Note that these files are produced if the code is compiled with
+    serial output.
+    :param file: file to read
+    :param format: either "d" (double) or "i" (integer)
+    :return:
+    """
+    # Check file existence and that parameter supplied for format makes sense.
+    assert format in ("d", "i")
+    assert os.path.exists(file)
+    if format == "d":
+        numbers = np.loadtxt(file, dtype=np.float64).flatten()
+    else:
+        numbers = np.loadtxt(file, dtype=np.int32).flatten()
+
+    return numbers
+
 def read_binary(file: str, format: str, endian: str = "little"):
     """
     Reads integer values from binary files that are output of RSQSim

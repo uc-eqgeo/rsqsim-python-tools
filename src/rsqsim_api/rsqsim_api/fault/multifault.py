@@ -171,10 +171,17 @@ class RsqSimMultiFault:
                         "slip_rate", "fault_num", "fault_name"]
 
         # Read in data
-        data = np.genfromtxt(fault_file, dtype=column_dtypes, names=column_names).T
+        try:
+            data = np.genfromtxt(fault_file, dtype=column_dtypes, names=column_names).T
+        except ValueError:
+            data = np.genfromtxt(fault_file, dtype=column_dtypes[:-1], names=column_names[:-1]).T
+
         all_fault_nums = np.unique(data["fault_num"])
         num_faults = len(all_fault_nums)
-        all_fault_names = np.unique(data["fault_name"])
+        if len(data.dtype.names) == 13:
+            all_fault_names = np.unique(data["fault_name"])
+        else:
+            all_fault_names = []
 
         if not len(all_fault_names) == num_faults:
             print("Warning: not every fault has a corresponding name")
@@ -186,12 +193,15 @@ class RsqSimMultiFault:
         for number in all_fault_nums:
             fault_data = data[data["fault_num"] == number]
             # Check that fault number has only one name associated with it
-            associated_names = np.unique(fault_data["fault_name"])
+            if "fault_name" in data.dtype.names:
+                associated_names = np.unique(fault_data["fault_name"])
+            else:
+                associated_names = np.array([])
             associated_rakes = np.unique(fault_data["rake"])
             associated_slip_rates = np.array(fault_data["slip_rate"])
 
             fault_name = associated_names[0] if associated_names.size > 0 else None
-            fault_rake = associated_rakes[0] if associated_rakes.size > 0 else None
+            fault_rake = fault_data["rake"] if associated_rakes.size > 0 else None
 
             if len(associated_names) > 1:
                 print("More than one name provided for fault {:d}".format(number))

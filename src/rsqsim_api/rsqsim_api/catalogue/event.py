@@ -62,6 +62,7 @@ class RsqSimEvent:
         self._mean_strike = None
         self._mean_dip = None
         self._mean_rake = None
+        self._first_fault = None
 
     @property
     def num_faults(self):
@@ -102,6 +103,14 @@ class RsqSimEvent:
         if self._mean_rake is None:
             self.find_mean_rake()
         return self._mean_rake
+
+    def find_first_fault(self, fault_model: RsqSimMultiFault, name: bool = True):
+        first_patch = self.patches[np.where(self.patch_time == np.min(self.patch_time))[0][0]]
+        first_fault = fault_model.faults_with_patches[first_patch.patch_number]
+        if name:
+            return first_fault.name
+        else:
+            return first_fault
 
     @classmethod
     def from_catalogue_array(cls, t0: float, m0: float, mw: float, x: float,
@@ -256,7 +265,7 @@ class RsqSimEvent:
         ----------
         fault_model: RsqSimMultiFault
         by_cfm_names: boolean, default= True Divide faults by the CFM segment names rather than the further segmentation in the V2 catalogue
-        mu: lame paramter, default value is 30GPa
+        mu: lame parameter, default value is 30GPa
         """
         assert self.faults is not None, "Event has no faults, can't calculate moment"
         m0_dict = {}
@@ -323,7 +332,7 @@ class RsqSimEvent:
                      land_color: str = 'antiquewhite',
                      min_slip_percentile: float = None, min_slip_value: float = None, plot_zeros: bool = True,
                      wgs: bool = False, title: str = None,
-                     plot_edge_label: bool = True):
+                     plot_edge_label: bool = True, plot_cbars: bool = True):
         # TODO: Plot coast (and major rivers?)
         assert self.patches is not None, "Need to populate object with patches!"
 
@@ -340,7 +349,9 @@ class RsqSimEvent:
                 # Assume pickled figure
                 with open(subplots, "rb") as pfile:
                     loaded_subplots = pickle.load(pfile)
-                fig, ax = loaded_subplots
+                fig, background_ax = loaded_subplots
+                ax = background_ax["main_figure"]
+
             else:
                 # Assume matplotlib objects
                 fig, ax = subplots
@@ -456,6 +467,7 @@ class RsqSimEvent:
                                                     facecolors=colour_dic[f_i],
                                                     cmap=crustal_cmap, vmin=0., vmax=max_slip)
                     plots.append(crustal_plot)
+
         elif len(self.faults) == 1:
             fault = self.faults[0]
             f_i = 0
@@ -504,26 +516,27 @@ class RsqSimEvent:
                                                         cmap=crustal_cmap, vmin=0., vmax=max_slip)
                         plots.append(crustal_plot)
 
-        if any([subplots is None, isinstance(subplots, str)]):
-            if plot_log_scale:
-                if subduction_list:
-                    sub_cbar = fig.colorbar(subduction_plot, ax=ax)
-                    sub_cbar.set_label("Slip (m)")
-                elif crustal_plot is not None:
-                    crust_cbar = fig.colorbar(crustal_plot, ax=ax)
-                    crust_cbar.set_label("Slip (m)")
-            else:
-                if subduction_list:
-                    sub_cbar = fig.colorbar(subduction_plot, ax=ax)
-                    sub_cbar.set_label("Subduction slip (m)")
-                if crustal_plot is not None:
-                    crust_cbar = fig.colorbar(crustal_plot, ax=ax)
-                    crust_cbar.set_label("Slip (m)")
+        if plot_cbars:
+            if any([subplots is None, isinstance(subplots, str)]):
+                if plot_log_scale:
+                    if subduction_list:
+                        sub_cbar = fig.colorbar(subduction_plot, ax=ax)
+                        sub_cbar.set_label("Slip (m)")
+                    elif crustal_plot is not None:
+                        crust_cbar = fig.colorbar(crustal_plot, ax=ax)
+                        crust_cbar.set_label("Crustal slip (m)")
+                else:
+                    if subduction_list:
+                        sub_cbar = fig.colorbar(subduction_plot, ax=ax)
+                        sub_cbar.set_label("Subduction slip (m)")
+                    if crustal_plot is not None:
+                        crust_cbar = fig.colorbar(crustal_plot, ax=ax)
+                        crust_cbar.set_label("Crustal slip (m)")
 
-        plot_coast(ax=ax, wgs=wgs)
+        plot_coast(ax=ax, wgs=wgs, linewidth=0.5, edgecolor='k')
 
         if title:
-            plt.title(title)
+            plt.suptitle(title)
         if write is not None:
             fig.savefig(write, dpi=300)
             if show:
@@ -736,6 +749,34 @@ class RsqSimEvent:
                                                min_slip_value=min_slip_value, nztm_to_lonlat=nztm_to_lonlat)
         np.savetxt(txt_file, slip_dist_array, fmt="%.6f", delimiter=" ", header=header)
 
+    def slip_dist_to_gdf(self, gdf_file: str, include_zeros: bool = True, min_slip_percentile: float = None,
+                         min_slip_value: float = None, nztm_to_lonlat: bool = False, crs="2193"):
+        slip_dist_array = self.slip_dist_array(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
+                                               min_slip_value=min_slip_value, nztm_to_lonlat=nztm_to_lonlat)
+        geometry = [Polygon([(slip_dist_array[i, 0], slip_dist_array[i, 1]),
+                             (slip_dist_array[i, 3], slip_dist_array[i, 4]),
+                             (slip_dist_array[i, 6], slip_dist_array[i, 7])]) for i in range(len(slip_dist_array))]
+        gdf = gpd.GeoDataFrame(slip_dist_array[:, 9:], columns=["slip", "rake", "time"], geometry=geometry, crs=crs)
+        if nztm_to_lonlat:
+            assert crs == "2193"
+            gdf.to_crs("EPSG:4326", inplace=True)
+
+        return gdf
+
+    def slip_dist_to_geojson(self, geojson_file: str, include_zeros: bool = True, min_slip_percentile: float = None,
+                             min_slip_value: float = None, nztm_to_lonlat: bool = False):
+        gdf = self.slip_dist_to_gdf(gdf_file=None, include_zeros=include_zeros,
+                                    min_slip_percentile=min_slip_percentile, min_slip_value=min_slip_value,
+                                    nztm_to_lonlat=nztm_to_lonlat)
+        gdf.to_file(geojson_file, driver="GeoJSON")
+
+    def slip_dist_to_shapefile(self, shapefile_file: str, include_zeros: bool = True, min_slip_percentile: float = None,
+                               min_slip_value: float = None, nztm_to_lonlat: bool = False):
+        gdf = self.slip_dist_to_gdf(gdf_file=None, include_zeros=include_zeros,
+                                    min_slip_percentile=min_slip_percentile, min_slip_value=min_slip_value,
+                                    nztm_to_lonlat=nztm_to_lonlat)
+        gdf.to_file(shapefile_file)
+
     def discretize_tiles(self, tile_list: List[Polygon], probability: float, rake: float):
         included_tiles = []
 
@@ -921,7 +962,7 @@ class RsqSimEvent:
     def event_to_OQ_xml(self, fault_model: RsqSimMultiFault, path2cfm: str, catalogue_version: str = 'v2',
                         xml_dir: str = 'OQ_events',
                         subd_tile_size: float = 15000., tile_size: float = 5000., probability: float = 0.9,
-                        tectonic_region: str = 'NZ'):
+                        tectonic_region: str = 'NZ',min_mag: float=6.0,hypocentre: list = None,nztm2wgs: bool = True):
         assert os.path.exists(path2cfm), "Path to CFM does not exist"
         if catalogue_version == 'v2':
             fault_model.make_v2_name_dic(path2cfm=path2cfm)
@@ -931,14 +972,19 @@ class RsqSimEvent:
         unique_names = set(name_dict.values())
 
         # which faults are involved in this event?
-        faults = RsqSimMultiFault(self.faults)
-        faultNames = faults.names
-        # find corresponding larger/cfm faults
-        allFaults = np.unique([name_dict[name] for name in faultNames])
+        M0s = self.make_fault_moment_dict(fault_model=fault_model, by_cfm_names=False)
+        min_M0=10.**(1.5*(min_mag+6.03))
+        faultNames = [fault.name for fault in self.faults]
+        allFaults = []
+        for fault in faultNames:
+            print(fault, M0s[fault])
+            if M0s[fault] > min_M0:
+                allFaults.append(fault)
+
         subdFaults = np.unique([name_dict[name] for name in faultNames if
                                 fnmatch.fnmatch(name, "*puysegar*") or fnmatch.fnmatch(name, "*hikurangi*")])
 
-        outdir = os.path.join(xml_dir, f'event_{self.event_id}')
+        outdir = os.path.join(xml_dir, f'{self.event_id}')
         if not os.path.exists(outdir):
             os.makedirs(outdir)
 
@@ -987,11 +1033,13 @@ class RsqSimEvent:
 
             # set parameters for OQ
             # parameters for openquake
-            hypocentre = np.array([self.x, self.y, self.z])
+            if hypocentre is None:
+                hypocentre = np.array([self.x, self.y, self.z])
+                print(f"Check hypocentre: {hypocentre}")
             evname = f'event_{self.event_id}_OQ'
             event_asOQ = OpenQuakeMultiSquareRupture(tile_list=poly_list, probability=probability, magnitude=self.mw,
                                                      rake=self.mean_rake, hypocentre=hypocentre, event_id=self.event_id,
-                                                     name=evname, tectonic_region=tectonic_region)
+                                                     name=evname, tectonic_region=tectonic_region,nztm2wgs=nztm2wgs)
             event_asOQ.to_oq_xml(write=os.path.join(outdir, f'event_{self.event_id}.xml'))
 
             return
@@ -1074,7 +1122,7 @@ class RsqSimEvent:
 class OpenQuakeMultiSquareRupture:
     def __init__(self, tile_list: List[Polygon], probability: float, magnitude: float, rake: float,
                  hypocentre: np.ndarray, event_id: int, name: str = "Subduction earthquake",
-                 tectonic_region: str = "subduction"):
+                 tectonic_region: str = "subduction", nztm2wgs: bool = True):
         self.patches = [OpenQuakeRectangularPatch.from_polygon(tile) for tile in tile_list]
         self.prob = probability
         self.magnitude = magnitude
@@ -1083,7 +1131,10 @@ class OpenQuakeMultiSquareRupture:
         self.inv_prob = 1. - probability
 
         self.hyp_depth = -1.e-3 * hypocentre[-1]
-        self.hyp_lon, self.hyp_lat = transformer_nztm2wgs.transform(hypocentre[0], hypocentre[1])
+        if nztm2wgs:
+            self.hyp_lon, self.hyp_lat = transformer_nztm2wgs.transform(hypocentre[0], hypocentre[1])
+        else:
+            self.hyp_lon, self.hyp_lat = hypocentre[0:2]
         self.event_id = event_id
         self.name = name
         self.tectonic_region = tectonic_region
