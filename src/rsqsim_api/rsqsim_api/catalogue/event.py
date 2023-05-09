@@ -974,8 +974,10 @@ class RsqSimEvent:
         # which faults are involved in this event?
         M0s = self.make_fault_moment_dict(fault_model=fault_model, by_cfm_names=False)
         min_M0=10.**(1.5*(min_mag+6.03))
+        faults = RsqSimMultiFault(self.faults)
         faultNames = [fault.name for fault in self.faults]
         allFaults = []
+
         for fault in faultNames:
             print(fault, M0s[fault])
             if M0s[fault] > min_M0:

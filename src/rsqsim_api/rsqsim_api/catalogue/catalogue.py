@@ -15,7 +15,6 @@ from matplotlib import pyplot as plt
 from matplotlib import cm, colors
 from shapely.geometry import Polygon
 import geopandas as gpd
-import pylab
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault, RsqSimSegment
 from rsqsim_api.catalogue.event import RsqSimEvent
@@ -796,16 +795,12 @@ class RsqSimCatalogue:
            tmin=self.catalogue_df['t0'].min(axis=0)
         if tmax is None:
            tmax = self.catalogue_df['t0'].max(axis=0)
-        if depth_min is None:
-            depth_min = -0.001 * no_inf_cat.catalogue_df['z'].max(axis=0)
-        if depth_max is None:
-            depth_max = -0.001 * no_inf_cat.catalogue_df['z'].min(axis=0)
 
         # find magnitudes for whole catalogue
         rsqsim_mags = self.catalogue_df["mw"]
         weightsyrs2 = np.ones(len(rsqsim_mags)) * csts.seconds_per_year / (tmax - tmin)
 
-        pylab.figure()
+        plt.figure()
         if plot_type == "differential":
             tints = []
             for i in np.arange(1, nSamp, 1):
@@ -855,13 +850,13 @@ class RsqSimCatalogue:
                 mag_cum = np.ones(shape=np.size(mag_sort))
                 mag_cum = np.cumsum(mag_cum)
                 weightsyrs = np.ones(len(mags)) * csts.seconds_per_year / (tfin - tinit)
-                pylab.semilogy(mag_sort, mag_cum * weightsyrs, c='lightgray', alpha=0.6, linewidth=0.5)
-            pylab.semilogy(mag_sort, mag_cum * weightsyrs, c='lightgray', alpha=0.6, linewidth=0.5,
+                plt.semilogy(mag_sort, mag_cum * weightsyrs, c='lightgray', alpha=0.6, linewidth=0.5)
+            plt.semilogy(mag_sort, mag_cum * weightsyrs, c='lightgray', alpha=0.6, linewidth=0.5,
                            label=f"{window / csts.seconds_per_year:.0f} yr samples")
             new_sort = np.sort(rsqsim_mags)[::-1]
             new_cum = np.ones(shape=np.size(new_sort))
             new_cum = np.cumsum(new_cum)
-            pylab.semilogy(new_sort, new_cum * weightsyrs2, c='grey', linewidth=1, label="RSQsim")
+            plt.semilogy(new_sort, new_cum * weightsyrs2, c='grey', linewidth=1, label="RSQsim")
 
             if instrumental_path is not None:
                 # trim to region of interest
@@ -880,10 +875,10 @@ class RsqSimCatalogue:
                 IMsort = np.sort(instrumental_mags)[::-1]
                 IMcum = np.ones(shape=np.size(IMsort))
                 IMcum = np.cumsum(IMcum)
-                pylab.semilogy(IMsort, IMcum * weightsyrs_IM[0], c='b', linewidth=1,
+                plt.semilogy(IMsort, IMcum * weightsyrs_IM[0], c='b', linewidth=1,
                                label=f'{inst_year_min} - {latest_year}, Mw>{mmin:.1f}')
                 correctionFactor = 2 / 3.0 * 1 / 1.5
-                pylab.semilogy(IMsort, IMcum * weightsyrs_IM[0] * correctionFactor, c='b', linestyle=':', linewidth=1,
+                plt.semilogy(IMsort, IMcum * weightsyrs_IM[0] * correctionFactor, c='b', linestyle=':', linewidth=1,
                                label=f'{inst_year_min} - {latest_year}, Mw>{mmin:.1f} corr')
                 xsortNZFull = IMsort[:]
                 ysortNZFull = IMcum * weightsyrs_IM[0]
