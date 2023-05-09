@@ -194,7 +194,9 @@ class RsqSimCatalogue:
 
         # Read in catalogue to dataframe and initiate class instance
         rcat = cls.from_catalogue_file(catalogue_file, reproject=reproject)
+        print("Messing around with this 9/5/23 - check it still does what you want!")
 
+        print(rcat.catalogue_df.index)
         if serial:
             rcat.patch_list = read_text(standard_list_files[0], format="i") - 1
             # indices start from 1, change so that it is zero instead
@@ -204,8 +206,18 @@ class RsqSimCatalogue:
         else:
             rcat.patch_list = read_binary(standard_list_files[0], format="i") - 1
             # indices start from 1, change so that it is zero instead
-            rcat.event_list = read_binary(standard_list_files[1], format="i") - 1
-            rcat.patch_slip, rcat.patch_time_list = [read_binary(fname, format="d") for fname in standard_list_files[2:]]
+            #rcat.event_list = read_binary(standard_list_files[1], format="i") - 1
+            event_list=read_binary(standard_list_files[1], format="i") - 1
+            #rcat.patch_slip, rcat.patch_time_list = [read_binary(fname, format="d") for fname in standard_list_files[2:]]
+
+        cat_idx=np.array(rcat.catalogue_df.index)
+        ev_idx=np.unique(event_list)
+        bad_evs=cat_idx[~np.isin(cat_idx,ev_idx)]
+        rcat.catalogue_df.drop(bad_evs,axis=0,inplace=True)
+        rcat.event_list=event_list
+        # cat_idx = np.array(rcat.catalogue_df.index)
+        # ev_idx = np.unique(event_list)
+        # print(cat_idx[~np.isin(cat_idx, ev_idx)])
 
         return rcat
 
