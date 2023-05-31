@@ -481,8 +481,6 @@ class RsqSimSegment:
 
     @property
     def adjacency_map(self):
-        if self._adjacency_map is None:
-            self.build_adjacency_map()
         return self._adjacency_map
 
     def build_adjacency_map(self,verbose: bool =True):
@@ -577,14 +575,10 @@ class RsqSimSegment:
 
     @property
     def laplacian(self):
-        if self._laplacian is None:
-            self.build_laplacian_matrix()
         return self._laplacian
 
     @property
     def laplacian_sing(self):
-        if self._laplacian_sing is None:
-            self.build_laplacian_matrix(double=False)
         return self._laplacian_sing
 
     def find_top_vertex_indices(self, depth_tolerance: Union[float, int] = 100., complicated_faults: bool =False ):
@@ -686,7 +680,9 @@ class RsqSimSegment:
     def to_mesh(self, write_slip: bool = False):
         mesh = meshio.Mesh(points=self.vertices, cells=[("triangle", self.triangles)])
         if write_slip:
-            mesh.cell_data["slip"] = np.array([patch.total_slip for patch in self.patch_outlines])
+            mesh.cell_data["slip"] = self.total_slip
+            mesh.cell_data["rake"] = self.rake
+
         return mesh
 
     def to_stl(self, stl_name: str):
@@ -727,21 +723,7 @@ class RsqSimSegment:
 
 
     def to_rsqsim_fault_file(self, flt_name):
-        tris = pd.DataFrame(self.patch_triangle_rows)
-        if self.rake is not None:
-            rakes = pd.Series(self.rake)
-        else:
-            rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
-            print("Rake not set, writing out as 90")
-        tris.loc[:, 9] = rakes
-        # slip_rates = pd.Series(self.dip_slip * 1.e-3 / csts.seconds_per_year)
-        total_slip = [np.linalg.norm([self.dip_slip[i], self.strike_slip[i]]) for i in range(len(self.dip_slip))]
-        slip_rates = pd.Series([rate * 1.e-3 / csts.seconds_per_year for rate in total_slip])
-        tris.loc[:, 10] = slip_rates
-        segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=np.int)
-        tris.loc[:, 11] = segment_num
-        seg_names = pd.Series([self.name for i in range(len(self.patch_numbers))])
-        tris.loc[:, 12] = seg_names
+        tris = self.to_rsqsim_fault_array()
 
         tris.to_csv(flt_name, index=False, header=False, sep="\t", encoding='ascii')
 
@@ -753,18 +735,12 @@ class RsqSimSegment:
             rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
             print("Rake not set, writing out as 90")
         tris.loc[:, 9] = rakes
-        total_slip = [np.linalg.norm([self.dip_slip[i], self.strike_slip[i]]) for i in range(len(self.dip_slip))]
-        srs = [rate * 1.e-3 / csts.seconds_per_year for rate in total_slip]
-        try:
-            rates = [slip.item() for slip in srs]
-        except AttributeError:
-            rates = srs
-        slip_rates = pd.Series(rates)
+        slip_rates = pd.Series([rate * 1.e-3 / csts.seconds_per_year for rate in self.total_slip])
 
-        if any([rate < 1.e-15 and rate > 0. for rate in slip_rates]):
+        if any(np.abs(slip_rates) < 1.e-15):
             print("Non-zero slip rates less than 1e-15 - check your units (this function assumes mm/yr as input)")
         tris.loc[:, 10] = slip_rates
-        segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=np.int)
+        segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=int)
         tris.loc[:, 11] = segment_num
         seg_names = pd.Series([self.name for i in range(len(self.patch_numbers))])
         tris.loc[:, 12] = seg_names
@@ -800,6 +776,10 @@ class RsqSimSegment:
         strike_dir = self.dip_dir - 90.
         strike_dir_vec = np.array([np.sin(np.radians(strike_dir)), np.cos(np.radians(strike_dir)), 0.])
         return strike_dir_vec
+
+    def get_patch_centres(self):
+        centres = np.array([patch.centre for patch in self.patch_outlines])
+        return centres
 
     def get_average_dip(self, approx_spacing: float = 5000.0):
         centre_points, width = optimize_point_spacing(self.trace, approx_spacing)
