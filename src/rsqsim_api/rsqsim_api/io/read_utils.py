@@ -211,4 +211,17 @@ def read_stl(stl_file: str):
     mesh_as_array = np.array([np.hstack([point_dict[vertex] for vertex in tri]) for tri in triangles])
     return mesh_as_array
 
+def read_vtk(vtk_file: str):
+    assert os.path.exists(vtk_file)
+
+    mesh = meshio.read(vtk_file)
+
+    assert "triangle" in mesh.cells_dict.keys()
+    assert all([data in mesh.cell_data.keys() for data in ("slip", "rake")])
+    triangles = mesh.cells_dict["triangle"]
+    point_dict = {i: point for i, point in enumerate(mesh.points)}
+    mesh_as_array = np.array([np.hstack([point_dict[vertex] for vertex in tri]) for tri in triangles])
+    slip = mesh.cell_data["slip"][0]
+    rake = mesh.cell_data["rake"][0]
+    return mesh_as_array, slip, rake
 
