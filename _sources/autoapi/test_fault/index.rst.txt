@@ -23,6 +23,7 @@ Classes
 
 .. py:class:: TestMultiFault(methodName='runTest')
 
+
    Bases: :py:obj:`unittest.TestCase`
 
    A class whose instances are single test cases.
@@ -64,6 +65,7 @@ Classes
 
 .. py:class:: TestSegment(methodName='runTest')
 
+
    Bases: :py:obj:`unittest.TestCase`
 
    A class whose instances are single test cases.
@@ -104,6 +106,7 @@ Classes
 
 
 .. py:class:: TestTriangularPatch(methodName='runTest')
+
 
    Bases: :py:obj:`unittest.TestCase`
 

@@ -21,6 +21,7 @@ Classes
 
 .. py:class:: RsqSimFault(segments)
 
+
    The idea is to allow a fault to have one or more segments
 
 

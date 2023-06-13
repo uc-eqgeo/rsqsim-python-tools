@@ -61,6 +61,7 @@ Functions
 
 .. py:class:: AxesSequence(fig, timestamps, plots, coast_ax, fading_increment = 2.0)
 
+
    Bases: :py:obj:`object`
 
    Controls a series of plots on the screen and when they are visible

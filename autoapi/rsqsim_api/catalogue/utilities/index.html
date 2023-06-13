@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.catalogue.utilities &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">rsqsim_api.catalogue.utilities</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/catalogue/utilities/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.catalogue.utilities">
+<span id="rsqsim-api-catalogue-utilities"></span><h1><a class="reference internal" href="#module-rsqsim_api.catalogue.utilities" title="rsqsim_api.catalogue.utilities"><code class="xref py py-mod docutils literal notranslate"><span class="pre">rsqsim_api.catalogue.utilities</span></code></a><a class="headerlink" href="#module-rsqsim_api.catalogue.utilities" title="Permalink to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading"></a></h2>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.utilities.calculate_b_value_kijko_smit" title="rsqsim_api.catalogue.utilities.calculate_b_value_kijko_smit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_b_value_kijko_smit</span></code></a>(magnitudes[, min_mw, max_mw])</p></td>
+<td><p>Calculate b-value from magnitudes using the Kijko and Smit (2012) method.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.utilities.calculate_scaling_c" title="rsqsim_api.catalogue.utilities.calculate_scaling_c"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_scaling_c</span></code></a>(magnitudes, areas)</p></td>
+<td><p>Calculate the scaling parameter c for the Gutenberg-Richter relation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.utilities.calculate_stress_drop" title="rsqsim_api.catalogue.utilities.calculate_stress_drop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_stress_drop</span></code></a>(seismic_moments, areas[, stress_c])</p></td>
+<td><p>Calculate the stress drop from magnitudes and areas.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.utilities.summary_statistics" title="rsqsim_api.catalogue.utilities.summary_statistics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">summary_statistics</span></code></a>(dataframe[, stress_c])</p></td>
+<td><p>Calculate summary statistics for a dataframe of events.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.utilities.mw_to_m0" title="rsqsim_api.catalogue.utilities.mw_to_m0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mw_to_m0</span></code></a>(magnitudes)</p></td>
+<td><p>Convert magnitudes to seismic moment.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.utilities.calculate_b_value_kijko_smit">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.utilities.</span></span><span class="sig-name descname"><span class="pre">calculate_b_value_kijko_smit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">magnitudes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_mw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_mw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.catalogue.utilities.calculate_b_value_kijko_smit" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate b-value from magnitudes using the Kijko and Smit (2012) method.
+:param magnitudes:
+:param min_mw:
+:param max_mw:
+:return:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>magnitudes</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>min_mw</strong> (<em>float</em>) – </p></li>
+<li><p><strong>max_mw</strong> (<em>float</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.utilities.calculate_scaling_c">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.utilities.</span></span><span class="sig-name descname"><span class="pre">calculate_scaling_c</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">magnitudes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areas</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.catalogue.utilities.calculate_scaling_c" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate the scaling parameter c for the Gutenberg-Richter relation.
+:param magnitudes:
+:param areas:
+:return:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>magnitudes</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>areas</strong> (<em>numpy.ndarray</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.utilities.calculate_stress_drop">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.utilities.</span></span><span class="sig-name descname"><span class="pre">calculate_stress_drop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seismic_moments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stress_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.44</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.catalogue.utilities.calculate_stress_drop" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate the stress drop from magnitudes and areas.
+C = 2.44 for a circular ruptured domain (or crack)
+C = 2.53, 3.02 and 5.21 for rectangular cracks with aspect ratios α = 1, 4 and 16, respectively
+:param seismic_moments:
+:param areas:
+:param mu:
+:param stress_c:
+:return:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seismic_moments</strong> (<em>numpy.ndarray</em>) – </p></li>
+<li><p><strong>areas</strong> (<em>numpy.ndarray</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.utilities.summary_statistics">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.utilities.</span></span><span class="sig-name descname"><span class="pre">summary_statistics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stress_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.44</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.catalogue.utilities.summary_statistics" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate summary statistics for a dataframe of events.
+:param dataframe:
+:param min_mw:
+:param max_mw:
+:param stress_c:
+:return:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> (<em>pandas.DataFrame</em>) – </p></li>
+<li><p><strong>stress_c</strong> (<em>float</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.utilities.mw_to_m0">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.utilities.</span></span><span class="sig-name descname"><span class="pre">mw_to_m0</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">magnitudes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rsqsim_api.catalogue.utilities.mw_to_m0" title="Permalink to this definition"></a></dt>
+<dd><p>Convert magnitudes to seismic moment.
+:param magnitudes:
+:return:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>magnitudes</strong> (<em>numpy.ndarray</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

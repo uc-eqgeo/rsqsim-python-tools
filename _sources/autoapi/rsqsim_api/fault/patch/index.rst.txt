@@ -40,6 +40,7 @@ Functions
 
 .. py:class:: RsqSimTriangularPatch(segment, vertices, patch_number = 0, dip_slip = None, strike_slip = None, patch_data = None, rake = None, total_slip = None)
 
+
    Bases: :py:obj:`RsqSimGenericPatch`
 
    class to store information on an individual triangular patch of a fault
