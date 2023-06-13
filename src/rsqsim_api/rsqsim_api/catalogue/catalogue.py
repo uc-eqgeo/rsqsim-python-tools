@@ -25,6 +25,8 @@ from rsqsim_api.visualisation.utilities import plot_coast, plot_background, plot
     plot_river_lines, plot_highway_lines, plot_boundary_polygons
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
 import rsqsim_api.io.rsqsim_constants as csts
+from rsqsim_api.catalogue.utilities import calculate_scaling_c, calculate_stress_drop, \
+    summary_statistics
 
 fint = Union[int, float]
 sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
@@ -1007,6 +1009,15 @@ class RsqSimCatalogue:
         else:
             plt.close()
 
+    def stress_drops(self, stress_c: float = 2.44):
+        return calculate_stress_drop(self.m0, self.area, stress_c=stress_c)
+
+    def scaling_c(self):
+        return calculate_scaling_c(self.mw, self.area)
+
+    def scaling_summary_statistics(self, stress_c: float = 2.44):
+        return summary_statistics(self.catalogue_df, stress_c=stress_c)
+
     def all_slip_distributions_to_vtk(self, fault_model: RsqSimMultiFault, output_directory: str,
                                       include_zeros: bool = False, min_slip_value: float = None):
         """
@@ -1020,9 +1031,6 @@ class RsqSimCatalogue:
         for event in self.all_events(fault_model):
             outfile_path = os.path.join(output_directory, f"event{event.event_id}.vtk")
             event.slip_dist_to_vtk(outfile_path, include_zeros=include_zeros,min_slip_value=min_slip_value)
-
-
-
 
 
 

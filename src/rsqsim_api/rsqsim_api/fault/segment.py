@@ -8,13 +8,14 @@ import pandas as pd
 from fault_mesh_tools.faultmeshops.faultmeshops import fit_plane_to_points
 from matplotlib import pyplot as plt
 from pyproj import Transformer
-from shapely.geometry import LineString, MultiPolygon
+from shapely.geometry import LineString, MultiPolygon, Polygon
 from shapely.ops import linemerge, unary_union
+from scipy.interpolate import RBFInterpolator
 
 import rsqsim_api.io.rsqsim_constants as csts
 from rsqsim_api.fault.patch import RsqSimTriangularPatch, RsqSimGenericPatch, cross_3d, norm_3d
 from rsqsim_api.fault.utilities import optimize_point_spacing, calculate_dip_direction, reverse_bearing, fit_2d_line
-from rsqsim_api.io.read_utils import read_dxf, read_stl
+from rsqsim_api.io.read_utils import read_dxf, read_stl, read_vtk
 from rsqsim_api.io.tsurf import tsurf
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
@@ -72,6 +73,7 @@ class RsqSimSegment:
         self._laplacian = None
         self._laplacian_sing = None
         self._boundary = None
+        self._boundary_polygon = None
         self._mean_slip_rate = None
         self._dip_dir = None
         self._trace = None
@@ -159,6 +161,7 @@ class RsqSimSegment:
         self._patch_outlines = patches
         self._patch_vertices = [patch.vertices for patch in patches]
 
+
     @property
     def patch_triangle_rows(self):
         return np.array([triangle.flatten() for triangle in self.patch_vertices])
@@ -168,6 +171,10 @@ class RsqSimSegment:
         if self._vertices is None:
             self.get_unique_vertices()
         return self._vertices
+
+    @property
+    def patch_polygons(self):
+        return [Polygon(patch) for patch in self.patch_vertices]
 
     @property
     def bounds(self):
@@ -479,11 +486,19 @@ class RsqSimSegment:
         return cls.from_triangles(triangles, segment_number=segment_number, patch_numbers=patch_numbers,
                                   fault_name=fault_name, strike_slip=strike_slip, dip_slip=dip_slip, rake=rake)
 
+    @classmethod
+    def from_vtk(cls, vtk_file: str, segment_number: int = 0,
+                 patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None):
+
+        triangles, slip, rake = read_vtk(vtk_file)
+        return cls.from_triangles(triangles, segment_number=segment_number, patch_numbers=patch_numbers,
+                                  fault_name=fault_name, total_slip=slip, rake=rake)
+
     @property
     def adjacency_map(self):
         return self._adjacency_map
 
-    def build_adjacency_map(self,verbose: bool =True):
+    def build_adjacency_map(self,verbose: bool =False):
         """
         For each triangle vertex, find the indices of the adjacent triangles.
         This function overwrites that from the parent class TriangularPatches.
@@ -627,6 +642,24 @@ class RsqSimSegment:
             top_patches = self.find_top_patch_numbers(depth_tolerance=depth_tolerance)
             edge_patch_numbers = np.setdiff1d(edge_patch_numbers, top_patches)
         return edge_patch_numbers
+
+    def grid_surface_rbf(self, resolution):
+        """
+        Won't work for vertical faults
+        @param resolution:
+        @return:
+        """
+        bounds = np.array(self.fault_outline.bounds)
+        x = np.arange(bounds[0], bounds[2] + resolution, resolution)
+        y = np.arange(bounds[1], bounds[3] + resolution, resolution)
+        xx, yy = np.meshgrid(x, y)
+        points = np.vstack((xx.flatten(), yy.flatten())).T
+
+        rbf = RBFInterpolator(self.vertices[:, :-1], self.vertices[:, -1])
+        z = rbf(points)
+
+        return xx, yy, z.reshape(xx.shape)
+
 
 
 

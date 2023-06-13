@@ -258,7 +258,8 @@ class RsqSimEvent:
 
         self.length = rupture_length
 
-    def make_fault_moment_dict(self, fault_model: RsqSimMultiFault, mu: float = 3.0e10, by_cfm_names: bool = True):
+    def make_fault_moment_dict(self, fault_model: RsqSimMultiFault, mu: float = 3.0e10, by_cfm_names: bool = True,
+                               min_m0: float = 0.):
         """
         make a dictionary of faults involved in event and the moment released on them
         Parameters
@@ -266,6 +267,7 @@ class RsqSimEvent:
         fault_model: RsqSimMultiFault
         by_cfm_names: boolean, default= True Divide faults by the CFM segment names rather than the further segmentation in the V2 catalogue
         mu: lame parameter, default value is 30GPa
+        min_m0: float, default=0. Minimum moment to include a fault in the dictionary
         """
         assert self.faults is not None, "Event has no faults, can't calculate moment"
         m0_dict = {}
@@ -275,7 +277,8 @@ class RsqSimEvent:
             fault_patch_slip = self.patch_slip[np.in1d(self.patch_numbers, fault_patches)]
             areas = [fault.patch_dic[number].area for number in fault_patch_numbers]
             m0 = sum(fault_patch_slip * areas * mu)
-            m0_dict[fault.name] = m0
+            if m0 > min_m0:
+                m0_dict[fault.name] = m0
 
         if by_cfm_names:
             # make lookup for fault segment names
