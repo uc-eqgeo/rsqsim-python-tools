@@ -322,7 +322,7 @@ class RsqSimCatalogue:
         if reset_index:
             trimmed_df.reset_index(inplace=True, drop=True)
             unique_indices = np.unique(trimmed_event_ls)
-            index_array = np.zeros(trimmed_event_ls.shape, dtype=np.int)
+            index_array = np.zeros(trimmed_event_ls.shape, dtype=int)
             for new_i, old_i in enumerate(unique_indices):
                 index_array[np.where(trimmed_event_ls == old_i)] = new_i
         else:
@@ -332,13 +332,13 @@ class RsqSimCatalogue:
                                               patch_slip=trimmed_patch_slip, patch_time_list=trimmed_patch_time)
         return rcat
 
-    def filter_by_events(self, event_number: Union[int, np.int, Iterable[int]], reset_index: bool = False):
-        if isinstance(event_number, (int, np.int,np.int32,np.int64)):
+    def filter_by_events(self, event_number: Union[int, Iterable[int]], reset_index: bool = False):
+        if isinstance(event_number, (int, np.int32,np.int64)):
             ev_ls = [event_number]
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
             ev_ls = list(event_number)
-            assert all([isinstance(a, (int, np.int,np.int32,np.int64)) for a in ev_ls])
+            assert all([isinstance(a, (int, np.int32,np.int64)) for a in ev_ls])
         trimmed_df = self.catalogue_df.loc[ev_ls]
         event_indices = np.where(np.in1d(self.event_list, np.array(trimmed_df.index)))[0]
         trimmed_event_ls = self.event_list[event_indices]
@@ -349,7 +349,7 @@ class RsqSimCatalogue:
         if reset_index:
             trimmed_df.reset_index(inplace=True, drop=True)
             unique_indices = np.unique(trimmed_event_ls)
-            index_array = np.zeros(trimmed_event_ls.shape, dtype=np.int)
+            index_array = np.zeros(trimmed_event_ls.shape, dtype=int)
             for new_i, old_i in enumerate(unique_indices):
                 index_array[np.where(trimmed_event_ls == old_i)] = new_i
             print(index_array)
@@ -484,15 +484,15 @@ class RsqSimCatalogue:
             print("No events found!")
             return
 
-    def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault,
+    def events_by_number(self, event_number: Union[int, Iterable[np.integer]], fault_model: RsqSimMultiFault,
                          child_processes: int = 0, min_patches: int = 1):
         assert isinstance(fault_model,RsqSimMultiFault), "Fault model required"
-        if isinstance(event_number, (int, np.int, np.int32)):
+        if isinstance(event_number, (int, np.int32)):
             ev_ls = [event_number]
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
             ev_ls = list(event_number)
-            assert all([isinstance(a, (int, np.int, np.int32)) for a in ev_ls])
+            assert all([isinstance(a, (int, np.int32)) for a in ev_ls])
 
         out_events = []
 

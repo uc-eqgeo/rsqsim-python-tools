@@ -90,6 +90,8 @@ class RsqSimGenericPatch:
 
     @dip_slip.setter
     def dip_slip(self, slip: float):
+        if self._strike_slip is not None:
+            self.rake = self.calculate_rake(self._strike_slip, slip)
         self._dip_slip = slip
 
     @property
@@ -98,6 +100,8 @@ class RsqSimGenericPatch:
 
     @strike_slip.setter
     def strike_slip(self, slip: float):
+        if self.dip_slip is not None:
+            self.rake = self.calculate_rake(self.dip_slip, slip)
         self._strike_slip = slip
 
     @property
@@ -120,6 +124,10 @@ class RsqSimGenericPatch:
         ss = self.strike_slip if self.strike_slip is not None else 0.
         ds = self.dip_slip if self.dip_slip is not None else 0.
         return np.linalg.norm(np.array([ss, ds]))
+
+    @staticmethod
+    def calculate_rake(strike_slip: float, dip_slip: float):
+        return normalize_bearing(np.degrees(np.arctan2(dip_slip, strike_slip)))
 
 
 

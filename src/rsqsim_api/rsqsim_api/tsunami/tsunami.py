@@ -9,7 +9,7 @@ from rsqsim_api.visualisation.utilities import plot_coast
 
 class SeaSurfaceDisplacements:
     def __init__(self, event_number: int, x_range: np.ndarray, y_range: np.ndarray, disps: np.ndarray):
-        assert isinstance(event_number, np.int)
+        assert isinstance(event_number, np.integer)
         self.event_number = event_number
         self.x_range = np.array(x_range, dtype=np.float32)
         self.y_range = np.array(y_range, dtype=np.float32)

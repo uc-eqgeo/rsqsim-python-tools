@@ -357,7 +357,7 @@ def create_cells_from_dims(num_verts_x: int, num_verts_y: int):
     num_cells_x = num_verts_x - 1
     num_cells_y = num_verts_y - 1
     num_cells = num_cells_x*num_cells_y
-    cell_array = np.zeros((num_cells, 4), dtype=np.int)
+    cell_array = np.zeros((num_cells, 4), dtype=int)
     cell_num = 0
 
     # I am sure this could be done in a more efficient way.
@@ -475,7 +475,7 @@ def get_mesh_boundary(triangles):
 
     # Get unique edges that are only present once.
     (uniq, uniq_ids, counts) = np.unique(edge_sort, axis=0, return_index=True, return_counts=True)
-    edge_inds = np.arange(edge_sort.shape[0], dtype=np.int)
+    edge_inds = np.arange(edge_sort.shape[0], dtype=int)
     outer_edge_ids = edge_inds[np.in1d(edge_inds, uniq_ids[counts==1])]
     outer_edges = edge_sort[outer_edge_ids,:]
     num_outer_edges = outer_edges.shape[0]
@@ -486,7 +486,7 @@ def get_mesh_boundary(triangles):
     # Loop over outer edges and use traversal method to get ordered vertices.
     v_start = outer_edges[0,0]
     v_end = outer_edges[0,1]
-    vert_inds = -1*np.ones(num_outer_verts, dtype=np.int)
+    vert_inds = -1*np.ones(num_outer_verts, dtype=int)
     vert_inds[0] = v_start
     vert_inds[1] = v_end
     vert_num = 2
