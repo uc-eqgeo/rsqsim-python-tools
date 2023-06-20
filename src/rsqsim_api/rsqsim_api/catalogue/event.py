@@ -25,6 +25,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pyproj import Transformer
 from shapely.geometry import LineString, Polygon, MultiPolygon, Point
 from shapely.ops import unary_union
+from scipy.spatial import KDTree
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault
 from rsqsim_api.fault.patch import OpenQuakeRectangularPatch
@@ -1048,6 +1049,24 @@ class RsqSimEvent:
             event_asOQ.to_oq_xml(write=os.path.join(outdir, f'event_{self.event_id}.xml'))
 
             return
+
+    def slip_dist_quads_ktree(self, fault_model: RsqSimMultiFault, min_moment: float = 1.e+18, tile_size: float = 5000.,
+                              min_slip: float = 0., exclude_faults: list = None):
+        moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_moment)
+        fault_patches = np.array(list(fault_model.patch_dic.keys()))
+        for name in moment_dict.keys():
+            segment = fault_model.name_dic[name]
+            segment_quads = segment.discretize_rectangular_tiles(tile_size=tile_size)
+            segment_quad_centroids = np.array([np.mean(np.array(quad.coords), axis=0) for quad in segment_quads])
+            ruptured_patch_numbers = self.patch_numbers[np.in1d(self.patch_numbers, fault_patches) & (self.patch_slip > min_slip)]
+            segment_patch_centroids = segment.get_patch_centres()
+            tree = KDTree(segment_quad_centroids)
+            indices, _ = tree.query(segment_patch_centroids)
+
+
+
+
+
 
     def slip_dist_to_quads(self, fault_model: RsqSimMultiFault, path2cfm: str, catalogue_version: str = 'v2',
                            vtk_dir: str = 'fault_vtks',

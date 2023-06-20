@@ -159,7 +159,7 @@ class tsurf(object):
     def _init_from_xyz(self, x, y, z, cells):
         points = numpy.array(list(zip(x, y, z)), dtype=numpy.float64)
         self.x, self.y, self.z = x, y, z
-        cells = cells
+        cells = {"triangle": cells}
         self.solid_color = self.default_solid_color
         self.name = self.default_name
         self.visible = self.default_visible

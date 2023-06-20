@@ -542,9 +542,29 @@ class RsqSimMultiFault:
                                       min_slip_rate=min_slip_rate, nztm_to_lonlat=nztm_to_lonlat)
         mesh.write(vtk_file, file_format="vtk")
 
-    def write_rsqsim_input_file(self, output_file: str):
-        combined_array = pd.concat([fault.to_rsqsim_fault_array() for fault in self.faults])
+    def write_rsqsim_input_file(self, output_file: str, mm_yr: bool = True):
+        combined_array = pd.concat([fault.to_rsqsim_fault_array(mm_yr=mm_yr) for fault in self.faults])
         combined_array.to_csv(output_file, sep=" ", header=False, index=False)
+
+    def write_b_value_file(self, a_value: float, default_a_b: float, difference_dict: dict, output_file: str):
+        assert isinstance(difference_dict, dict)
+        assert all([name in self.names for name in difference_dict.keys()])
+        assert all([isinstance(value, float) for value in difference_dict.values()])
+        assert isinstance(a_value, float)
+        assert a_value > 0.
+        assert a_value < 1.
+        assert isinstance(default_a_b, float)
+        assert default_a_b < 0.
+        assert isinstance(output_file, str)
+        combined_array = pd.concat([fault.to_rsqsim_fault_array() for fault in self.faults])
+        default_b = a_value - default_a_b
+        default_b_array = np.ones(len(combined_array)) * default_b
+        for fault_name, difference in difference_dict.items():
+            fault_index = np.where(combined_array.iloc[:, 12] == fault_name)
+            default_b_array[fault_index] = a_value - difference
+        np.savetxt(output_file, default_b_array.T, fmt="%.5f")
+
+
 
     def search_name(self, search_string: str):
         """

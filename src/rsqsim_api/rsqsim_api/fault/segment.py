@@ -755,12 +755,12 @@ class RsqSimSegment:
             patch.strike_slip = ss
 
 
-    def to_rsqsim_fault_file(self, flt_name):
-        tris = self.to_rsqsim_fault_array()
+    def to_rsqsim_fault_file(self, flt_name, mm_yr: bool = True):
+        tris = self.to_rsqsim_fault_array(mm_yr=mm_yr)
 
         tris.to_csv(flt_name, index=False, header=False, sep="\t", encoding='ascii')
 
-    def to_rsqsim_fault_array(self):
+    def to_rsqsim_fault_array(self, mm_yr: bool = True):
         tris = pd.DataFrame(self.patch_triangle_rows)
         if self.rake is not None:
             rakes = pd.Series(self.rake)
@@ -768,10 +768,14 @@ class RsqSimSegment:
             rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
             print("Rake not set, writing out as 90")
         tris.loc[:, 9] = rakes
-        slip_rates = pd.Series([rate * 1.e-3 / csts.seconds_per_year for rate in self.total_slip])
-
-        if any(np.abs(slip_rates) < 1.e-15):
-            print("Non-zero slip rates less than 1e-15 - check your units (this function assumes mm/yr as input)")
+        if mm_yr:
+            slip_rates = pd.Series([rate * 1.e-3 / csts.seconds_per_year for rate in self.total_slip])
+            if any(np.abs(slip_rates) < 1.e-15):
+                print("Non-zero slip rates less than 1e-15 - check your units (this function assumes mm/yr as input)")
+        else:
+            slip_rates = pd.Series(self.total_slip)
+            if any(np.abs(slip_rates) > 3.e-9):
+                print("Non-zero slip rates greater than 3e-9 m/s - check your units (mm_yr=False assumes m/s as input)")
         tris.loc[:, 10] = slip_rates
         segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=int)
         tris.loc[:, 11] = segment_num
