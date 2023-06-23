@@ -487,13 +487,12 @@ class RsqSimCatalogue:
     def events_by_number(self, event_number: Union[int, Iterable[np.integer]], fault_model: RsqSimMultiFault,
                          child_processes: int = 0, min_patches: int = 1):
         assert isinstance(fault_model,RsqSimMultiFault), "Fault model required"
-        if isinstance(event_number, (int, np.int32)):
+        if isinstance(event_number, (int, np.int32, np.int64)):
             ev_ls = [event_number]
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
             ev_ls = list(event_number)
-            assert all([isinstance(a, (int, np.int32)) for a in ev_ls])
-
+            assert all([isinstance(a, (int, np.int32, np.int64)) for a in ev_ls])
         out_events = []
 
         cat_dict = self.catalogue_df.to_dict(orient='index')

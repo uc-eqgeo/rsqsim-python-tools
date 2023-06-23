@@ -3,6 +3,7 @@ import os
 from collections.abc import Iterable
 from typing import Union
 import fnmatch
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -17,7 +18,7 @@ import rsqsim_api.io.rsqsim_constants as csts
 from rsqsim_api.fault.utilities import merge_multiple_nearly_adjacent_segments
 
 from shapely.ops import linemerge,split
-from shapely.geometry import LineString,MultiLineString
+from shapely.geometry import LineString,MultiLineString, Polygon
 
 def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float] = 1):
     """
@@ -563,6 +564,46 @@ class RsqSimMultiFault:
             fault_index = np.where(combined_array.iloc[:, 12] == fault_name)
             default_b_array[fault_index] = a_value - difference
         np.savetxt(output_file, default_b_array.T, fmt="%.5f")
+
+    def tile_quads(self, tile_size: float = 5000., interpolation_distance: float = 1000.,
+                         manual_tiles: dict = None, output_file: str = None):
+        if output_file is not None:
+            assert isinstance(output_file, str)
+        assert isinstance(tile_size, float)
+        assert isinstance(interpolation_distance, float)
+        assert isinstance(manual_tiles, dict) or manual_tiles is None
+
+        quads_dict = {}
+        if manual_tiles is not None:
+            assert all([key in self.names for key in manual_tiles.keys()])
+            for fault_name, file_name in manual_tiles.items():
+                assert os.path.exists(file_name)
+                tiles_array = np.load(file_name)
+                quads_dict[fault_name] = tiles_array
+
+
+        for fault in self.faults:
+            if not fault.name in manual_tiles.keys():
+                try:
+                    quads = fault.discretize_rectangular_tiles(tile_size=tile_size,
+                                                               interpolation_distance=interpolation_distance)
+                    quads = np.array(quads)
+
+                except Exception as e:
+                    print("Failed to merge", fault.name)
+                    print(e)
+                    quads = np.array([])
+
+                quads_dict[fault.name] = quads
+        if output_file is not None:
+            with open(output_file, "wb") as f:
+                pickle.dump(quads_dict, f)
+
+        return quads_dict
+
+
+
+
 
 
 

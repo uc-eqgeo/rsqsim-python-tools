@@ -69,4 +69,18 @@ def mw_to_m0(magnitudes: np.ndarray):
     :param magnitudes:
     :return:
     """
-    return 10 ** (1.5 * (magnitudes + 6.03))
+    return 10 ** (1.5 * magnitudes + 9.05)
+
+def m0_to_mw(seismic_moment: float):
+    """
+    Convert seismic moment to magnitudes.
+    :param seismic_moments:
+    :return:
+    """
+    return (np.log10(seismic_moment) - 9.05) / 1.5
+
+def weighted_circular_mean(azimuths: np.ndarray, weights: np.ndarray):
+    mean_sin = np.average(np.sin(np.radians(azimuths)), weights=weights)
+    mean_cos = np.average(np.cos(np.radians(azimuths)), weights=weights)
+    mean_az = np.degrees(np.arctan2(mean_sin, mean_cos))
+    return mean_az

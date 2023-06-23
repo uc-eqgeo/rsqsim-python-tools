@@ -742,6 +742,16 @@ class RsqSimSegment:
     def rake(self):
         return np.array([patch.rake for patch in self.patch_outlines]).flatten()
 
+    @property
+    def patch_areas(self):
+        return np.array([patch.area for patch in self.patch_outlines]).flatten()
+
+
+    @property
+    def patch_moments(self):
+        return self.total_slip * self.patch_areas * 3e10
+
+
     @dip_slip.setter
     def dip_slip(self, ds_array: np.ndarray):
         assert len(ds_array) == len(self.patch_outlines)

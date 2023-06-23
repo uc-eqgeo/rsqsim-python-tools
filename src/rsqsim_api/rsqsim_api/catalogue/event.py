@@ -32,6 +32,7 @@ from rsqsim_api.fault.patch import OpenQuakeRectangularPatch
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
 from rsqsim_api.io.mesh_utils import array_to_mesh
 from rsqsim_api.visualisation.utilities import plot_coast, plot_background
+from rsqsim_api.catalogue.utilities import weighted_circular_mean, m0_to_mw
 
 transformer_nztm2wgs = Transformer.from_crs(2193, 4326, always_xy=True)
 
@@ -1050,18 +1051,97 @@ class RsqSimEvent:
 
             return
 
-    def slip_dist_quads_ktree(self, fault_model: RsqSimMultiFault, min_moment: float = 1.e+18, tile_size: float = 5000.,
-                              min_slip: float = 0., exclude_faults: list = None):
+    def slip_dist_quads_ktree(self, fault_model: RsqSimMultiFault, quads_dict: dict, min_moment: float = 1.e+18, tile_size: float = 5000.,
+                              min_slip: float = 0.,threshold_for_inclusion: float = 0.5):
         moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_moment)
+        moment_quads = [key for key in moment_dict.keys() if key in quads_dict.keys()]
+        missing_quads = [key for key in moment_dict.keys() if key not in moment_quads]
+        if missing_quads:
+            print("Warning: some fault segments have no associated quads")
+            print(missing_quads)
+
         fault_patches = np.array(list(fault_model.patch_dic.keys()))
-        for name in moment_dict.keys():
+        ruptured_quads_dict = {}
+        for name in moment_quads:
+            segment_quads = quads_dict[name]
             segment = fault_model.name_dic[name]
-            segment_quads = segment.discretize_rectangular_tiles(tile_size=tile_size)
-            segment_quad_centroids = np.array([np.mean(np.array(quad.coords), axis=0) for quad in segment_quads])
+            segment_quad_centroids = segment_quads.mean(axis=1)
             ruptured_patch_numbers = self.patch_numbers[np.in1d(self.patch_numbers, fault_patches) & (self.patch_slip > min_slip)]
             segment_patch_centroids = segment.get_patch_centres()
+            ruptured_patch_centroids = segment_patch_centroids[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
             tree = KDTree(segment_quad_centroids)
-            indices, _ = tree.query(segment_patch_centroids)
+            _, all_patch_indices = tree.query(segment_patch_centroids)
+            _, ruptured_patch_indices = tree.query(ruptured_patch_centroids)
+            ruptured_quads = []
+            for i, quad in enumerate(segment_quads):
+                num_triangles = (all_patch_indices == i).sum()
+                num_ruptured_triangles = (ruptured_patch_indices == i).sum()
+                if num_ruptured_triangles / num_triangles > threshold_for_inclusion:
+                    ruptured_quads.append(quad)
+            ruptured_quads_dict[name] = np.array(ruptured_quads)
+
+        return ruptured_quads_dict
+
+    def get_crustal_component(self, fault_model: RsqSimMultiFault, subduction_names: list, min_moment: float = 1.e+18,
+                              min_slip: float = 0.):
+        moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_moment)
+        if any([name not in subduction_names for name in moment_dict.keys()]):
+            crustal_moment = 0.
+            fault_patches = np.array(list(fault_model.patch_dic.keys()))
+            rake_list = []
+            moment_list = []
+            for name, moment in moment_dict.items():
+                if name not in subduction_names:
+                    crustal_moment += moment
+                    segment = fault_model.name_dic[name]
+                    ruptured_patch_numbers = self.patch_numbers[
+                    np.in1d(self.patch_numbers, fault_patches) & (self.patch_slip > min_slip)]
+                    rakes = segment.rakes[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
+                    rake_list.append(rakes)
+                    patch_moment = segment.patch_moments[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
+                    moment_list.append(patch_moment)
+            patch_moment_array = np.hstack(moment_list)
+            rake_array = np.hstack(rake_list)
+            mean_rake = weighted_circular_mean(rake_array, patch_moment_array)
+            crustal_mw = m0_to_mw(crustal_moment)
+
+            return crustal_mw, mean_rake
+        else:
+            return None, None
+
+    def get_subduction_component(self, fault_model: RsqSimMultiFault, subduction_names: list, min_moment: float = 1.e+18,
+                                    min_slip: float = 0.):
+        moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_moment)
+        if any([name in subduction_names for name in moment_dict.keys()]):
+            subduction_moment = 0.
+            fault_patches = np.array(list(fault_model.patch_dic.keys()))
+            rake_list = []
+            moment_list = []
+            for name, moment in moment_dict.items():
+                if name in subduction_names:
+                    subduction_moment += moment
+                    segment = fault_model.name_dic[name]
+                    ruptured_patch_numbers = self.patch_numbers[
+                    np.in1d(self.patch_numbers, fault_patches) & (self.patch_slip > min_slip)]
+                    rakes = segment.rakes[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
+                    rake_list.append(rakes)
+                    patch_moment = segment.patch_moments[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
+                    moment_list.append(patch_moment)
+            patch_moment_array = np.hstack(moment_list)
+            rake_array = np.hstack(rake_list)
+            mean_rake = weighted_circular_mean(rake_array, patch_moment_array)
+            subduction_mw = m0_to_mw(subduction_moment)
+
+            return subduction_mw, mean_rake
+        else:
+            return None, None
+
+
+
+
+
+
+
 
 
 
