@@ -8,6 +8,7 @@ import os
 import pickle
 import xml.etree.ElementTree as ElemTree
 from collections import defaultdict
+from collections.abc import Iterable
 from math import isclose
 from string import digits
 from typing import Union, List
@@ -30,7 +31,7 @@ from scipy.spatial import KDTree
 from rsqsim_api.fault.multifault import RsqSimMultiFault
 from rsqsim_api.fault.patch import OpenQuakeRectangularPatch
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
-from rsqsim_api.io.mesh_utils import array_to_mesh
+from rsqsim_api.io.mesh_utils import array_to_mesh, quads_to_vtk
 from rsqsim_api.visualisation.utilities import plot_coast, plot_background
 from rsqsim_api.catalogue.utilities import weighted_circular_mean, m0_to_mw
 
@@ -816,6 +817,83 @@ class RsqSimEvent:
         else:
             return
 
+    def discretize_openquake_ktree(self, fault_model: RsqSimMultiFault, quads_dict: dict, probability: float,
+                                   subduction_names: Iterable = ("hikurangi", "puysegur"), min_moment = 1.e18,
+                                   min_slip = 0.1, tile_size: float = 5000., write_mesh: bool = False,
+                                   write_geojson: bool = False, xml_dir: str = None):
+        tiles_dict = self.slip_dist_quads_ktree(quads_dict=quads_dict, fault_model=fault_model,min_moment=min_moment,
+                                                min_slip=min_slip, tile_size=tile_size)
+        crustal_faults = [key for key in tiles_dict.keys() if key not in subduction_names]
+        subduction_faults = [key for key in tiles_dict.keys() if key in subduction_names]
+
+        if subduction_faults:
+            subduction_tiles = np.vstack([tiles_dict[key] for key in subduction_faults])
+            if write_mesh:
+                mesh = quads_to_vtk(subduction_tiles)
+                vtk_name = f"event_{self.event_id}_subduction.vtk"
+                if xml_dir is not None:
+                    vtk_name = os.path.join(xml_dir, vtk_name)
+                mesh.write(vtk_name, file_format="vtk")
+
+            subduction_tiles_gs = gpd.GeoSeries([Polygon(subduction_tile) for subduction_tile in subduction_tiles], crs=2193)
+            if write_geojson:
+                geojson_name = f"event_{self.event_id}_subduction.geojson"
+                if xml_dir is not None:
+                    geojson_name = os.path.join(xml_dir, geojson_name)
+                subduction_tiles_gs.to_file(geojson_name, driver="GeoJSON")
+            subduction_component = self.get_subduction_component(fault_model=fault_model, subduction_names=subduction_names,
+                                                                 min_moment=min_moment, min_slip=min_slip)
+            if subduction_component is not None:
+                subduction_mw, subduction_rake, subduction_centroid = subduction_component
+                oq_rup = OpenQuakeMultiSquareRupture(list(subduction_tiles_gs.geometry), magnitude=subduction_mw,
+                                                        rake=subduction_rake, hypocentre=subduction_centroid,
+                                                        event_id=self.event_id, probability=probability)
+                out_name = f"event_{self.event_id}_subduction.xml"
+                if xml_dir is not None:
+                    out_file = os.path.join(xml_dir, out_name)
+                else:
+                    out_file = out_name
+
+                oq_rup.to_oq_xml(out_file)
+
+        if crustal_faults:
+            crustal_tiles = np.vstack([tiles_dict[key] for key in crustal_faults])
+            if write_mesh:
+                mesh = quads_to_vtk(crustal_tiles)
+                vtk_name = f"event_{self.event_id}_crustal.vtk"
+                if xml_dir is not None:
+                    vtk_name = os.path.join(xml_dir, vtk_name)
+                mesh.write(vtk_name, file_format="vtk")
+
+            crustal_tiles_gs = gpd.GeoSeries([Polygon(crustal_tile) for crustal_tile in crustal_tiles], crs=2193)
+            if write_geojson:
+                geojson_name = f"event_{self.event_id}_crustal.geojson"
+                if xml_dir is not None:
+                    geojson_name = os.path.join(xml_dir, geojson_name)
+                crustal_tiles_gs.to_file(geojson_name, driver="GeoJSON")
+            crustal_component = self.get_crustal_component(fault_model=fault_model, crustal_names=crustal_faults,
+                                                           min_moment=min_moment, min_slip=min_slip)
+            if crustal_component is not None:
+                crustal_mw, crustal_rake, crustal_centroid = crustal_component
+                oq_rup = OpenQuakeMultiSquareRupture(list(crustal_tiles_gs.geometry), magnitude=crustal_mw,
+                                                        rake=crustal_rake, hypocentre=crustal_centroid,
+                                                        event_id=self.event_id, probability=probability)
+                out_name = f"event_{self.event_id}_crustal.xml"
+                if xml_dir is not None:
+                    out_file = os.path.join(xml_dir, out_name)
+                else:
+                    out_file = out_name
+
+                oq_rup.to_oq_xml(out_file)
+
+
+
+
+
+
+
+
+
     def event_to_json(self, fault_model: RsqSimMultiFault, path2cfm: str, catalogue_version: str = 'v1',
                       xml_dir: str = 'OQ-events', wgs84: bool = False, subd_tile_size: float = 15000.,
                       tile_size: float = 5000., tectonic_region: str = "NZ"):
@@ -1082,32 +1160,46 @@ class RsqSimEvent:
 
         return ruptured_quads_dict
 
-    def get_crustal_component(self, fault_model: RsqSimMultiFault, subduction_names: list, min_moment: float = 1.e+18,
+    def get_crustal_component(self, fault_model: RsqSimMultiFault, crustal_names: list, min_moment: float = 1.e+18,
                               min_slip: float = 0.):
         moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_moment)
-        if any([name not in subduction_names for name in moment_dict.keys()]):
+        if any([name in crustal_names for name in moment_dict.keys()]):
             crustal_moment = 0.
             fault_patches = np.array(list(fault_model.patch_dic.keys()))
             rake_list = []
             moment_list = []
+            hypocentre_time = 1.e20
+            hypocentre = None
             for name, moment in moment_dict.items():
-                if name not in subduction_names:
+                if name in crustal_names:
                     crustal_moment += moment
                     segment = fault_model.name_dic[name]
                     ruptured_patch_numbers = self.patch_numbers[
                     np.in1d(self.patch_numbers, fault_patches) & (self.patch_slip > min_slip)]
-                    rakes = segment.rakes[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
+                    rakes = segment.rake[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
                     rake_list.append(rakes)
                     patch_moment = segment.patch_moments[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
                     moment_list.append(patch_moment)
+                    patch_numbers_this_segment = segment.patch_numbers[
+                        np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
+                    patch_times_this_segment = self.patch_time[np.in1d(self.patch_numbers, patch_numbers_this_segment)]
+                    segment_first_patch = fault_model.patch_dic[
+                        patch_numbers_this_segment[np.argmin(patch_times_this_segment)]]
+                    if patch_times_this_segment.min() < hypocentre_time:
+                        hypocentre_time = patch_times_this_segment.min()
+                        hypocentre = segment_first_patch.centre
+
             patch_moment_array = np.hstack(moment_list)
             rake_array = np.hstack(rake_list)
             mean_rake = weighted_circular_mean(rake_array, patch_moment_array)
             crustal_mw = m0_to_mw(crustal_moment)
+            crustal_hypocentre = hypocentre
 
-            return crustal_mw, mean_rake
+            hyp_x, hyp_y, hyp_z = crustal_hypocentre
+
+            return crustal_mw, mean_rake, np.array([hyp_x, hyp_y, hyp_z])
         else:
-            return None, None
+            return None
 
     def get_subduction_component(self, fault_model: RsqSimMultiFault, subduction_names: list, min_moment: float = 1.e+18,
                                     min_slip: float = 0.):
@@ -1117,24 +1209,35 @@ class RsqSimEvent:
             fault_patches = np.array(list(fault_model.patch_dic.keys()))
             rake_list = []
             moment_list = []
+            hypocentre_time = 1.e20
+            hypocentre = None
             for name, moment in moment_dict.items():
                 if name in subduction_names:
                     subduction_moment += moment
                     segment = fault_model.name_dic[name]
                     ruptured_patch_numbers = self.patch_numbers[
                     np.in1d(self.patch_numbers, fault_patches) & (self.patch_slip > min_slip)]
-                    rakes = segment.rakes[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
+                    rakes = segment.rake[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
                     rake_list.append(rakes)
                     patch_moment = segment.patch_moments[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
                     moment_list.append(patch_moment)
+                    patch_numbers_this_segment = segment.patch_numbers[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
+                    patch_times_this_segment = self.patch_time[np.in1d(self.patch_numbers, patch_numbers_this_segment)]
+                    segment_first_patch = fault_model.patch_dic[patch_numbers_this_segment[np.argmin(patch_times_this_segment)]]
+                    if patch_times_this_segment.min() < hypocentre_time:
+                        hypocentre_time = patch_times_this_segment.min()
+                        hypocentre = segment_first_patch.centre
             patch_moment_array = np.hstack(moment_list)
             rake_array = np.hstack(rake_list)
             mean_rake = weighted_circular_mean(rake_array, patch_moment_array)
             subduction_mw = m0_to_mw(subduction_moment)
+            subduction_hypocentre = hypocentre
 
-            return subduction_mw, mean_rake
+            hyp_x, hyp_y, hyp_z = subduction_hypocentre
+
+            return subduction_mw, mean_rake, np.array([hyp_x, hyp_y, hyp_z])
         else:
-            return None, None
+            return None
 
 
 

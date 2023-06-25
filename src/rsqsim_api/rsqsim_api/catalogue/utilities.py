@@ -84,3 +84,4 @@ def weighted_circular_mean(azimuths: np.ndarray, weights: np.ndarray):
     mean_cos = np.average(np.cos(np.radians(azimuths)), weights=weights)
     mean_az = np.degrees(np.arctan2(mean_sin, mean_cos))
     return mean_az
+

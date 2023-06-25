@@ -83,3 +83,12 @@ def tri_slip_rake_to_mesh(in_array: np.ndarray):
     mesh.cell_data = data_dict
 
     return mesh
+
+
+def quads_to_vtk(quads):
+    vertices = np.unique(np.vstack([rect for rect in quads]), axis=0)
+    vertex_dict = {tuple(vertex): i for i, vertex in enumerate(vertices)}
+    new_fault_rect_indices = [[vertex_dict[tuple(vertex)] for vertex in quad] for quad in
+                              quads]
+    mesh = meshio.Mesh(points=vertices, cells={"quad": new_fault_rect_indices})
+    return mesh
