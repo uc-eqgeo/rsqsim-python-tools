@@ -296,7 +296,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
             if plot_sub_cbar or plot_crust_cbar:
                 if not all([plot_sub_cbar, plot_crust_cbar]):
                     if not slider_axis:
-                        [["main_figure", "cbar"]]
+                        mosaic = [["main_figure", "cbar"]]
                     else:
                         mosaic = [["main_figure", "cbar"],
                                   ["slider", "year"]]
