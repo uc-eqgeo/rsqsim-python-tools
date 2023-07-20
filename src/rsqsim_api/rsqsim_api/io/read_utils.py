@@ -86,7 +86,9 @@ def read_binary(file: str, format: str, endian: str = "little"):
 
 def read_binary_time_plus_values(file: str, format: str, endian: str = "little", num_patches: int):
     """
-    Reads integer values from binary files that are output of RSQSim
+    Reads time plus values from binary files that are output of RSQSim.
+    These are files created when writeTau, writeSigma, etc., are set to
+    nonzero values.
 
     :param file: file to read
     :param format: either "d" (double) or "i" (integer)
