@@ -49,6 +49,35 @@ def read_binary(file: str, format: str, endian: str = "little"):
     return numbers
 
 
+def read_binary_time_plus_values(file: str, format: str, endian: str = "little", num_patches: int):
+    """
+    Reads integer values from binary files that are output of RSQSim
+
+    :param file: file to read
+    :param format: either "d" (double) or "i" (integer)
+    :param endian: usually "little" unless we end up running on a non-standard system
+    :param num_patches: number of fault patches
+    :return:
+    """
+    
+    # Check that parameter supplied for endianness makes sense
+    assert endian in ("little", "big"), "Must specify either 'big' or 'little' endian"
+    endian_sign = "<" if endian == "little" else ">"
+    assert format in ("d", "i")
+    assert os.path.exists(file)
+    time_type = endian_sign + "f8"
+    if format == "d":
+        val_type = endian_sign + "f8"
+    else:
+        val_type = endian_sign + "i4"
+    dtype = [('time', time_type), ('val', val_type, (num_patches))]
+    data = np.fromfile(file, dtype)
+    time = data['time']
+    numbers = data['val']
+
+    return (time, numbers)
+
+
 def read_text(file: str, format: str):
     """
     Reads scalar values from text files that are output of RSQSim.
