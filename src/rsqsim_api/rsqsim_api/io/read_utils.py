@@ -49,7 +49,7 @@ def read_binary(file: str, format: str, endian: str = "little"):
     return numbers
 
 
-def read_binary_time_plus_values(file: str, format: str, endian: str = "little", num_patches: int):
+def read_binary_time_plus_values(file: str, format: str, num_patches: int, endian: str = "little"):
     """
     Reads time plus values from binary files that are output of RSQSim.
     These are files created when writeTau, writeSigma, etc., are set to
