@@ -140,7 +140,7 @@ def handle_output_netcdf(output_queue: mp.Queue, patch_indices: np.ndarray, outp
     dset.set_always_mask(False)
     for dim, dim_len in zip(("npatch", "y", "x"), dset_shape):
         dset.createDimension(dim, dim_len)
-    patch_var = dset.createVariable("index", np.int, ("npatch",))
+    patch_var = dset.createVariable("index", int, ("npatch",))
     dset.createVariable("x", np.float32, ("x",))
     dset.createVariable("y", np.float32, ("y",))
     dset["x"][:] = x_range

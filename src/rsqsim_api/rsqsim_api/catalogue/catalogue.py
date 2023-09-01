@@ -25,6 +25,8 @@ from rsqsim_api.visualisation.utilities import plot_coast, plot_background, plot
     plot_river_lines, plot_highway_lines, plot_boundary_polygons
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
 import rsqsim_api.io.rsqsim_constants as csts
+from rsqsim_api.catalogue.utilities import calculate_scaling_c, calculate_stress_drop, \
+    summary_statistics
 
 fint = Union[int, float]
 sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
@@ -322,7 +324,7 @@ class RsqSimCatalogue:
         if reset_index:
             trimmed_df.reset_index(inplace=True, drop=True)
             unique_indices = np.unique(trimmed_event_ls)
-            index_array = np.zeros(trimmed_event_ls.shape, dtype=np.int)
+            index_array = np.zeros(trimmed_event_ls.shape, dtype=int)
             for new_i, old_i in enumerate(unique_indices):
                 index_array[np.where(trimmed_event_ls == old_i)] = new_i
         else:
@@ -332,13 +334,13 @@ class RsqSimCatalogue:
                                               patch_slip=trimmed_patch_slip, patch_time_list=trimmed_patch_time)
         return rcat
 
-    def filter_by_events(self, event_number: Union[int, np.int, Iterable[int]], reset_index: bool = False):
-        if isinstance(event_number, (int, np.int,np.int32,np.int64)):
+    def filter_by_events(self, event_number: Union[int, Iterable[int]], reset_index: bool = False):
+        if isinstance(event_number, (int, np.int32,np.int64)):
             ev_ls = [event_number]
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
             ev_ls = list(event_number)
-            assert all([isinstance(a, (int, np.int,np.int32,np.int64)) for a in ev_ls])
+            assert all([isinstance(a, (int, np.int32,np.int64)) for a in ev_ls])
         trimmed_df = self.catalogue_df.loc[ev_ls]
         event_indices = np.where(np.in1d(self.event_list, np.array(trimmed_df.index)))[0]
         trimmed_event_ls = self.event_list[event_indices]
@@ -349,7 +351,7 @@ class RsqSimCatalogue:
         if reset_index:
             trimmed_df.reset_index(inplace=True, drop=True)
             unique_indices = np.unique(trimmed_event_ls)
-            index_array = np.zeros(trimmed_event_ls.shape, dtype=np.int)
+            index_array = np.zeros(trimmed_event_ls.shape, dtype=int)
             for new_i, old_i in enumerate(unique_indices):
                 index_array[np.where(trimmed_event_ls == old_i)] = new_i
             print(index_array)
@@ -505,15 +507,15 @@ class RsqSimCatalogue:
             print("No events found!")
             return
 
-    def events_by_number(self, event_number: Union[int, np.int, Iterable[np.int]], fault_model: RsqSimMultiFault,
+    def events_by_number(self, event_number: Union[int, Iterable[np.integer]], fault_model: RsqSimMultiFault,
                          child_processes: int = 0, min_patches: int = 1):
         assert isinstance(fault_model,RsqSimMultiFault), "Fault model required"
-        if isinstance(event_number, (int, np.int, np.int32)):
+        if isinstance(event_number, (int, np.int32)):
             ev_ls = [event_number]
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
             ev_ls = list(event_number)
-            assert all([isinstance(a, (int, np.int, np.int32)) for a in ev_ls])
+            assert all([isinstance(a, (int, np.int32)) for a in ev_ls])
 
         out_events = []
 
@@ -1030,6 +1032,15 @@ class RsqSimCatalogue:
         else:
             plt.close()
 
+    def stress_drops(self, stress_c: float = 2.44):
+        return calculate_stress_drop(self.m0, self.area, stress_c=stress_c)
+
+    def scaling_c(self):
+        return calculate_scaling_c(self.mw, self.area)
+
+    def scaling_summary_statistics(self, stress_c: float = 2.44):
+        return summary_statistics(self.catalogue_df, stress_c=stress_c)
+
     def all_slip_distributions_to_vtk(self, fault_model: RsqSimMultiFault, output_directory: str,
                                       include_zeros: bool = False, min_slip_value: float = None):
         """
@@ -1043,9 +1054,6 @@ class RsqSimCatalogue:
         for event in self.all_events(fault_model):
             outfile_path = os.path.join(output_directory, f"event{event.event_id}.vtk")
             event.slip_dist_to_vtk(outfile_path, include_zeros=include_zeros,min_slip_value=min_slip_value)
-
-
-
 
 
 

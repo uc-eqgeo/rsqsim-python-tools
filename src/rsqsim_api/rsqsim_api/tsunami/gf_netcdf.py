@@ -60,7 +60,7 @@ def sea_surface_displacements_multi(event_ls: list, lookup: dict, out_netcdf: st
     out_dset.createVariable("y", np.float32, ("y",))
     out_dset["x"][:] = x_data
     out_dset["y"][:] = y_data
-    out_dset.createVariable("event_id", np.int, ("event_id",))
+    out_dset.createVariable("event_id", int, ("event_id",))
     out_dset.createVariable("ssd", np.float32, ("event_id", "y", "x"), zlib=True)
 
     result_list = list(results)

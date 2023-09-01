@@ -8,13 +8,14 @@ import pandas as pd
 from fault_mesh_tools.faultmeshops.faultmeshops import fit_plane_to_points
 from matplotlib import pyplot as plt
 from pyproj import Transformer
-from shapely.geometry import LineString, MultiPolygon
+from shapely.geometry import LineString, MultiPolygon, Polygon
 from shapely.ops import linemerge, unary_union
+from scipy.interpolate import RBFInterpolator
 
 import rsqsim_api.io.rsqsim_constants as csts
 from rsqsim_api.fault.patch import RsqSimTriangularPatch, RsqSimGenericPatch, cross_3d, norm_3d
 from rsqsim_api.fault.utilities import optimize_point_spacing, calculate_dip_direction, reverse_bearing, fit_2d_line
-from rsqsim_api.io.read_utils import read_dxf, read_stl
+from rsqsim_api.io.read_utils import read_dxf, read_stl, read_vtk
 from rsqsim_api.io.tsurf import tsurf
 
 transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
@@ -72,6 +73,7 @@ class RsqSimSegment:
         self._laplacian = None
         self._laplacian_sing = None
         self._boundary = None
+        self._boundary_polygon = None
         self._mean_slip_rate = None
         self._dip_dir = None
         self._trace = None
@@ -159,6 +161,7 @@ class RsqSimSegment:
         self._patch_outlines = patches
         self._patch_vertices = [patch.vertices for patch in patches]
 
+
     @property
     def patch_triangle_rows(self):
         return np.array([triangle.flatten() for triangle in self.patch_vertices])
@@ -168,6 +171,10 @@ class RsqSimSegment:
         if self._vertices is None:
             self.get_unique_vertices()
         return self._vertices
+
+    @property
+    def patch_polygons(self):
+        return [Polygon(patch) for patch in self.patch_vertices]
 
     @property
     def bounds(self):
@@ -509,10 +516,16 @@ class RsqSimSegment:
         return cls.from_triangles(triangles, segment_number=segment_number, patch_numbers=patch_numbers,
                                   fault_name=fault_name, strike_slip=strike_slip, dip_slip=dip_slip, rake=rake)
 
+    @classmethod
+    def from_vtk(cls, vtk_file: str, segment_number: int = 0,
+                 patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None):
+
+        triangles, slip, rake = read_vtk(vtk_file)
+        return cls.from_triangles(triangles, segment_number=segment_number, patch_numbers=patch_numbers,
+                                  fault_name=fault_name, total_slip=slip, rake=rake)
+
     @property
     def adjacency_map(self):
-        if self._adjacency_map is None:
-            self.build_adjacency_map()
         return self._adjacency_map
 
     def build_adjacency_map(self,verbose: bool =False):
@@ -607,14 +620,10 @@ class RsqSimSegment:
 
     @property
     def laplacian(self):
-        if self._laplacian is None:
-            self.build_laplacian_matrix()
         return self._laplacian
 
     @property
     def laplacian_sing(self):
-        if self._laplacian_sing is None:
-            self.build_laplacian_matrix(double=False)
         return self._laplacian_sing
 
     def find_top_vertex_indices(self, depth_tolerance: Union[float, int] = 100., complicated_faults: bool =False ):
@@ -663,6 +672,24 @@ class RsqSimSegment:
             top_patches = self.find_top_patch_numbers(depth_tolerance=depth_tolerance)
             edge_patch_numbers = np.setdiff1d(edge_patch_numbers, top_patches)
         return edge_patch_numbers
+
+    def grid_surface_rbf(self, resolution):
+        """
+        Won't work for vertical faults
+        @param resolution:
+        @return:
+        """
+        bounds = np.array(self.fault_outline.bounds)
+        x = np.arange(bounds[0], bounds[2] + resolution, resolution)
+        y = np.arange(bounds[1], bounds[3] + resolution, resolution)
+        xx, yy = np.meshgrid(x, y)
+        points = np.vstack((xx.flatten(), yy.flatten())).T
+
+        rbf = RBFInterpolator(self.vertices[:, :-1], self.vertices[:, -1])
+        z = rbf(points)
+
+        return xx, yy, z.reshape(xx.shape)
+
 
 
 
@@ -716,7 +743,9 @@ class RsqSimSegment:
     def to_mesh(self, write_slip: bool = False):
         mesh = meshio.Mesh(points=self.vertices, cells=[("triangle", self.triangles)])
         if write_slip:
-            mesh.cell_data["slip"] = np.array([patch.total_slip for patch in self.patch_outlines])
+            mesh.cell_data["slip"] = self.total_slip
+            mesh.cell_data["rake"] = self.rake
+
         return mesh
 
     def to_stl(self, stl_name: str):
@@ -757,21 +786,7 @@ class RsqSimSegment:
 
 
     def to_rsqsim_fault_file(self, flt_name):
-        tris = pd.DataFrame(self.patch_triangle_rows)
-        if self.rake is not None:
-            rakes = pd.Series(self.rake)
-        else:
-            rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
-            print("Rake not set, writing out as 90")
-        tris.loc[:, 9] = rakes
-        # slip_rates = pd.Series(self.dip_slip * 1.e-3 / csts.seconds_per_year)
-        total_slip = [np.linalg.norm([self.dip_slip[i], self.strike_slip[i]]) for i in range(len(self.dip_slip))]
-        slip_rates = pd.Series([rate * 1.e-3 / csts.seconds_per_year for rate in total_slip])
-        tris.loc[:, 10] = slip_rates
-        segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=np.int)
-        tris.loc[:, 11] = segment_num
-        seg_names = pd.Series([self.name for i in range(len(self.patch_numbers))])
-        tris.loc[:, 12] = seg_names
+        tris = self.to_rsqsim_fault_array()
 
         tris.to_csv(flt_name, index=False, header=False, sep="\t", encoding='ascii')
 
@@ -783,18 +798,12 @@ class RsqSimSegment:
             rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
             print("Rake not set, writing out as 90")
         tris.loc[:, 9] = rakes
-        total_slip = [np.linalg.norm([self.dip_slip[i], self.strike_slip[i]]) for i in range(len(self.dip_slip))]
-        srs = [rate * 1.e-3 / csts.seconds_per_year for rate in total_slip]
-        try:
-            rates = [slip.item() for slip in srs]
-        except AttributeError:
-            rates = srs
-        slip_rates = pd.Series(rates)
+        slip_rates = pd.Series([rate * 1.e-3 / csts.seconds_per_year for rate in self.total_slip])
 
-        if any([rate < 1.e-15 and rate > 0. for rate in slip_rates]):
+        if any(np.abs(slip_rates) < 1.e-15):
             print("Non-zero slip rates less than 1e-15 - check your units (this function assumes mm/yr as input)")
         tris.loc[:, 10] = slip_rates
-        segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=np.int)
+        segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=int)
         tris.loc[:, 11] = segment_num
         seg_names = pd.Series([self.name for i in range(len(self.patch_numbers))])
         tris.loc[:, 12] = seg_names
@@ -830,6 +839,10 @@ class RsqSimSegment:
         strike_dir = self.dip_dir - 90.
         strike_dir_vec = np.array([np.sin(np.radians(strike_dir)), np.cos(np.radians(strike_dir)), 0.])
         return strike_dir_vec
+
+    def get_patch_centres(self):
+        centres = np.array([patch.centre for patch in self.patch_outlines])
+        return centres
 
     def get_average_dip(self, approx_spacing: float = 5000.0):
         centre_points, width = optimize_point_spacing(self.trace, approx_spacing)
