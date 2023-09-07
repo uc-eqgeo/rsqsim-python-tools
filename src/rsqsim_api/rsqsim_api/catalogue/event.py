@@ -822,7 +822,7 @@ class RsqSimEvent:
                                    min_slip = 0.1, tile_size: float = 5000., write_mesh: bool = False,
                                    write_geojson: bool = False, xml_dir: str = None):
         tiles_dict = self.slip_dist_quads_ktree(quads_dict=quads_dict, fault_model=fault_model,min_moment=min_moment,
-                                                min_slip=min_slip, tile_size=tile_size)
+                                                min_slip=min_slip)
         crustal_faults = [key for key in tiles_dict.keys() if key not in subduction_names]
         subduction_faults = [key for key in tiles_dict.keys() if key in subduction_names]
 
@@ -857,7 +857,7 @@ class RsqSimEvent:
                 oq_rup.to_oq_xml(out_file)
 
         if crustal_faults:
-            crustal_tiles = np.vstack([tiles_dict[key] for key in crustal_faults])
+            crustal_tiles = np.vstack([tiles_dict[key] for key in crustal_faults if tiles_dict[key].size > 0])
             if write_mesh:
                 mesh = quads_to_vtk(crustal_tiles)
                 vtk_name = f"event_{self.event_id}_crustal.vtk"
@@ -873,7 +873,7 @@ class RsqSimEvent:
                 crustal_tiles_gs.to_file(geojson_name, driver="GeoJSON")
             crustal_component = self.get_crustal_component(fault_model=fault_model, crustal_names=crustal_faults,
                                                            min_moment=min_moment, min_slip=min_slip)
-            if crustal_component is not None:
+            if crustal_component is not None and not crustal_tiles_gs.is_empty.all():
                 crustal_mw, crustal_rake, crustal_centroid = crustal_component
                 oq_rup = OpenQuakeMultiSquareRupture(list(crustal_tiles_gs.geometry), magnitude=crustal_mw,
                                                         rake=crustal_rake, hypocentre=crustal_centroid,
@@ -1129,9 +1129,9 @@ class RsqSimEvent:
 
             return
 
-    def slip_dist_quads_ktree(self, fault_model: RsqSimMultiFault, quads_dict: dict, min_moment: float = 1.e+18, tile_size: float = 5000.,
+    def slip_dist_quads_ktree(self, fault_model: RsqSimMultiFault, quads_dict: dict, min_moment: float = 1.e+18,
                               min_slip: float = 0.,threshold_for_inclusion: float = 0.5):
-        moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_moment)
+        moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_moment, by_cfm_names=False)
         moment_quads = [key for key in moment_dict.keys() if key in quads_dict.keys()]
         missing_quads = [key for key in moment_dict.keys() if key not in moment_quads]
         if missing_quads:
@@ -1162,7 +1162,7 @@ class RsqSimEvent:
 
     def get_crustal_component(self, fault_model: RsqSimMultiFault, crustal_names: list, min_moment: float = 1.e+18,
                               min_slip: float = 0.):
-        moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_moment)
+        moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_moment, by_cfm_names=False)
         if any([name in crustal_names for name in moment_dict.keys()]):
             crustal_moment = 0.
             fault_patches = np.array(list(fault_model.patch_dic.keys()))
@@ -1203,7 +1203,7 @@ class RsqSimEvent:
 
     def get_subduction_component(self, fault_model: RsqSimMultiFault, subduction_names: list, min_moment: float = 1.e+18,
                                     min_slip: float = 0.):
-        moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_moment)
+        moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_moment, by_cfm_names=False)
         if any([name in subduction_names for name in moment_dict.keys()]):
             subduction_moment = 0.
             fault_patches = np.array(list(fault_model.patch_dic.keys()))

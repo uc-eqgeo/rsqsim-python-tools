@@ -302,7 +302,7 @@ class RsqSimMultiFault:
             patch_numbers = np.arange(patch_start, patch_start + num_triangles)
 
             if from_pickle:
-                assert read_slip_rate, "from pickle may not read sip rates correctly"
+                assert read_slip_rate, "from pickle may not read slip rates correctly"
                 fault_i = RsqSimSegment.from_pickle(fault_data, fault_num, patch_numbers, fault_name_stripped)
             else:
                 fault_i = RsqSimSegment.from_pandas(fault_data, fault_num, patch_numbers, fault_name_stripped,
@@ -499,7 +499,8 @@ class RsqSimMultiFault:
 
 
     def slip_rate_array(self, include_zeros: bool = True,
-                        min_slip_rate: float = None, nztm_to_lonlat: bool = False):
+                        min_slip_rate: float = None, nztm_to_lonlat: bool = False,
+                        mm_per_year: bool = True):
         all_patches = []
 
         for fault in self.faults:
@@ -510,6 +511,8 @@ class RsqSimMultiFault:
                 else:
                     triangle_corners = patch.vertices.flatten()
                 slip_rate = patch.total_slip
+                if mm_per_year:
+                    slip_rate = slip_rate * csts.seconds_per_year * 1000.
                 if min_slip_rate is not None:
                     if slip_rate >= min_slip_rate:
                         patch_line = np.hstack([triangle_corners, np.array([slip_rate, patch.rake])])
@@ -524,10 +527,11 @@ class RsqSimMultiFault:
         return np.array(all_patches)
 
     def slip_rate_to_mesh(self, include_zeros: bool = True,
-                          min_slip_rate: float = None, nztm_to_lonlat: bool = False):
+                          min_slip_rate: float = None, nztm_to_lonlat: bool = False, mm_per_year: bool = True):
 
         slip_rate_array = self.slip_rate_array(include_zeros=include_zeros,
-                                               min_slip_rate=min_slip_rate, nztm_to_lonlat=nztm_to_lonlat)
+                                               min_slip_rate=min_slip_rate, nztm_to_lonlat=nztm_to_lonlat,
+                                               mm_per_year=mm_per_year)
 
         mesh = array_to_mesh(slip_rate_array[:, :9])
         data_dic = {}
@@ -538,9 +542,11 @@ class RsqSimMultiFault:
         return mesh
 
     def slip_rate_to_vtk(self, vtk_file: str, include_zeros: bool = True,
-                         min_slip_rate: float = None, nztm_to_lonlat: bool = False):
+                         min_slip_rate: float = None, nztm_to_lonlat: bool = False,
+                         mm_per_year: bool = True):
         mesh = self.slip_rate_to_mesh(include_zeros=include_zeros,
-                                      min_slip_rate=min_slip_rate, nztm_to_lonlat=nztm_to_lonlat)
+                                      min_slip_rate=min_slip_rate, nztm_to_lonlat=nztm_to_lonlat,
+                                      mm_per_year=mm_per_year)
         mesh.write(vtk_file, file_format="vtk")
 
     def write_rsqsim_input_file(self, output_file: str, mm_yr: bool = True):

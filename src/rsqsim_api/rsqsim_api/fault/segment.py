@@ -5,6 +5,7 @@ from typing import Union, List
 import meshio
 import numpy as np
 import pandas as pd
+import geopandas as gpd
 from fault_mesh_tools.faultmeshops.faultmeshops import fit_plane_to_points
 from matplotlib import pyplot as plt
 from pyproj import Transformer
@@ -443,7 +444,7 @@ class RsqSimSegment:
 
             patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
                                           strike_slip=strike_slip,
-                                          dip_slip=dip_slip, total_slip=slip_rate[i], rake=rake[i])
+                                          dip_slip=dip_slip, rake = rake[i])
             triangle_ls.append(patch)
 
         fault.patch_outlines = triangle_ls
@@ -617,6 +618,9 @@ class RsqSimSegment:
             shallow_indices = np.where(self.vertices[:, -1] >= top_vertex_depth - depth_tolerance)[0]
         return shallow_indices
 
+    def find_vertex_indices(self, depth_tolerance: Union[float, int] = 100., complicated_faults: bool =False ):
+        pass
+
     def find_top_vertices(self, depth_tolerance: Union[float, int] = 100, complicated_faults: bool =False ):
         shallow_indices = self.find_top_vertex_indices(depth_tolerance, complicated_faults=complicated_faults)
         return self.vertices[shallow_indices]
@@ -642,6 +646,15 @@ class RsqSimSegment:
             top_patches = self.find_top_patch_numbers(depth_tolerance=depth_tolerance)
             edge_patch_numbers = np.setdiff1d(edge_patch_numbers, top_patches)
         return edge_patch_numbers
+
+    def find_edge_patch_vertex_indices(self, depth_tolerance: Union[float, int] = 100):
+        all_vertices = np.vstack(self.patch_vertices)
+        unique_vertices, n_occ = np.unique(all_vertices, axis=0, return_counts=True)
+        vertices = np.array([[index, value[0], value[1], value[2]] for index, value in enumerate(unique_vertices)])
+        edgeverts = vertices[np.where(n_occ <= 3)[0]]
+        outside_edge_lines = self.edge_lines[np.all(np.isin(self.edge_lines, edgeverts[:, 0]), axis=1)]
+
+        return
 
     def grid_surface_rbf(self, resolution):
         """
@@ -726,6 +739,13 @@ class RsqSimSegment:
         mesh = self.to_mesh(write_slip=write_slip)
         mesh.write(vtk_name, file_format="vtk")
 
+    def to_gpd(self, write_slip: bool = False, crs: int = 2193):
+        if write_slip:
+            gdf = gpd.GeoDataFrame({"slip": self.total_slip, "rake": self.rake}, geometry=[Polygon(patch) for patch in self.patch_vertices], crs=crs)
+        else:
+            gdf = gpd.GeoDataFrame(geometry=[Polygon(patch) for patch in self.patch_vertices], crs=crs)
+        return gdf
+
     @property
     def dip_slip(self):
         return np.array([patch.dip_slip for patch in self.patch_outlines]).flatten()
@@ -763,6 +783,12 @@ class RsqSimSegment:
         assert len(ss_array) == len(self.patch_outlines)
         for patch, ss in zip(self.patch_outlines, ss_array):
             patch.strike_slip = ss
+
+    @rake.setter
+    def rake(self, rake_array: np.ndarray):
+        assert len(rake_array) == len(self.patch_outlines)
+        for patch, rake in zip(self.patch_outlines, rake_array):
+            patch.rake = rake
 
 
     def to_rsqsim_fault_file(self, flt_name, mm_yr: bool = True):
