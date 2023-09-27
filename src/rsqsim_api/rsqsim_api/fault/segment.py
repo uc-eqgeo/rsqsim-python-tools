@@ -620,10 +620,14 @@ class RsqSimSegment:
 
     @property
     def laplacian(self):
+        if self._laplacian is None:
+            self.build_laplacian_matrix()
         return self._laplacian
 
     @property
     def laplacian_sing(self):
+        if self._laplacian_sing is None:
+            self.build_laplacian_matrix(double=False)
         return self._laplacian_sing
 
     def find_top_vertex_indices(self, depth_tolerance: Union[float, int] = 100., complicated_faults: bool =False ):

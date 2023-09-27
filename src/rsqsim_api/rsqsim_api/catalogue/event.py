@@ -713,6 +713,7 @@ class RsqSimEvent:
             if len(surface_patches) >= n_patches:
                 surface_faults.append(fault.name)
 
+
         return surface_faults
     def slip_dist_array(self, include_zeros: bool = True, min_slip_percentile: float = None,
                         min_slip_value: float = None, nztm_to_lonlat: bool = False):

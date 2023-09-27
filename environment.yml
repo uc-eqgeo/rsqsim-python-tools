@@ -21,6 +21,7 @@ dependencies:
   - pip
   - git
   - git-lfs
+  - seaborn
 
   - pip:
     - src/rsqsim_api

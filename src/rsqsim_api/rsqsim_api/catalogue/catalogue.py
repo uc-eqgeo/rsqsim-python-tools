@@ -335,7 +335,7 @@ class RsqSimCatalogue:
         return rcat
 
     def filter_by_events(self, event_number: Union[int, Iterable[int]], reset_index: bool = False):
-        if isinstance(event_number, (int, np.int32,np.int64)):
+        if isinstance(event_number, (int,np.int32,np.int64)):
             ev_ls = [event_number]
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
@@ -449,7 +449,7 @@ class RsqSimCatalogue:
 
 
     def find_surface_rupturing_events(self,fault_model: RsqSimMultiFault,min_slip: float =0.1, method: str = 'vertex',
-                                      n_patches: int = 1, max_depth: float = -1000., n_faults: int =1):
+                                      n_patches: int = 1, max_depth: float = -1000., n_faults: int =1, write_flt_dict: bool = False):
 
         """
         min_slip = 0.1  # min slip on a surface patch in m
@@ -460,14 +460,21 @@ class RsqSimCatalogue:
 
         assert method in ['centroid','vertex'],"Method must be centroid or vertex"
         assert max_depth < 0., "depths should be negative"
+        if write_flt_dict:
+            flt_dict = {}
         surface_ev_ids = []
         for event in self.all_events(fault_model=fault_model):
-            surface_faults = event.find_surface_faults(fault_model,min_slip = min_slip, method = method,
-                                      n_patches = n_patches, max_depth = max_depth)
-
+            surface_faults = event.find_surface_faults(fault_model, min_slip=min_slip, method=method,
+                                                       n_patches=n_patches, max_depth=max_depth)
             if len(surface_faults) >= n_faults:
                 surface_ev_ids.append(event.event_id)
-        return surface_ev_ids
+                if write_flt_dict:
+                    flt_dict[event.event_id] = surface_faults
+
+        if write_flt_dict:
+            return surface_ev_ids, flt_dict
+        else:
+            return surface_ev_ids
     def find_multi_fault(self,fault_model: RsqSimMultiFault):
         """
         Identify events involving more than 1 fault. Note that this is based on named fault segments so might not
@@ -507,7 +514,7 @@ class RsqSimCatalogue:
             print("No events found!")
             return
 
-    def events_by_number(self, event_number: Union[int, Iterable[np.integer]], fault_model: RsqSimMultiFault,
+    def events_by_number(self, event_number: Union[int, Iterable[int]], fault_model: RsqSimMultiFault,
                          child_processes: int = 0, min_patches: int = 1):
         assert isinstance(fault_model,RsqSimMultiFault), "Fault model required"
         if isinstance(event_number, (int, np.int32)):
@@ -515,7 +522,7 @@ class RsqSimCatalogue:
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
             ev_ls = list(event_number)
-            assert all([isinstance(a, (int, np.int32)) for a in ev_ls])
+            assert all([isinstance(a, (int,np.int32)) for a in ev_ls])
 
         out_events = []
 
