@@ -391,36 +391,6 @@ class RsqSimSegment:
         segment.boundary = boundary
 
         return segment
-    @classmethod
-    def from_triangle_file(cls,fault_file: str):
-        """
-    just read in triangles (no slip rates / rake) from RSQsim input mesh
-        Parameters
-        ----------
-        fault_file
-        """
-        assert os.path.exists(fault_file), "Fault file not found"
-
-        # Prepare info (types and headers) about columns
-        column_dtypes= [float] *9
-        column_names = ["x1", "y1", "z1", "x2", "y2", "z2", "x3", "y3", "z3"]
-
-        # Read in data
-        try:
-            data = np.genfromtxt(fault_file, dtype=column_dtypes, names=column_names).T
-        except ValueError:
-            data = np.genfromtxt(fault_file, dtype=column_dtypes[:-1], names=column_names[:-1]).T
-
-        # Extract data relevant for making triangles
-        triangles = np.array([data[name] for name in column_names[:9]]).T
-        num_triangles = triangles.shape[0]
-        # Reshape for creation of triangular patches
-        all_vertices = triangles.reshape(triangles.shape[0] * 3, int(triangles.shape[1] / 3))
-
-        patch_numbers = np.arange(0, num_triangles)
-        cls.from_triangles(triangles=triangles, patch_numbers=patch_numbers,
-                                     segment_number=number, fault_name=fault_name, rake=fault_rake)
-
 
     @classmethod
     def from_pandas(cls, dataframe: pd.DataFrame, segment_number: int,
