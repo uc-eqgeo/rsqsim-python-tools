@@ -4,6 +4,7 @@ import meshio
 import numpy as np
 import pandas as pd
 import ezdxf
+from scipy.spatial import KDTree
 
 catalogue_columns = ["t0", "m0", "mw", "x", "y", "z", "area", "dt"]
 
@@ -200,18 +201,26 @@ def read_dxf(dxf_file: str):
     return triangle_array, boundary_array
 
 
-def read_stl(stl_file: str):
+def read_stl(stl_file: str, min_point_sep=100.):
     assert os.path.exists(stl_file)
 
     mesh = meshio.read(stl_file)
 
     assert "triangle" in mesh.cells_dict.keys()
     triangles = mesh.cells_dict["triangle"]
-    point_dict = {i: point for i, point in enumerate(mesh.points)}
+    mesh_points = mesh.points[:]
+    point_tree = KDTree(mesh.points)
+    distances, indices = point_tree.query(mesh.points, k=[2])
+    problem_indices = indices[distances < min_point_sep]
+    for i1, i2 in zip(problem_indices[::2], problem_indices[1::2]):
+        mesh_points[i2] = 0.5 * (mesh.points[i1] + mesh.points[i2])
+        mesh_points[i1] = 0.5 * (mesh.points[i1] + mesh.points[i2])
+        triangles[triangles == i1] = i2
+    point_dict = {i: point for i, point in enumerate(mesh_points)}
     mesh_as_array = np.array([np.hstack([point_dict[vertex] for vertex in tri]) for tri in triangles])
     return mesh_as_array
 
-def read_vtk(vtk_file: str):
+def read_vtk(vtk_file: str, min_point_sep=100.):
     assert os.path.exists(vtk_file)
 
     mesh = meshio.read(vtk_file)
@@ -219,7 +228,15 @@ def read_vtk(vtk_file: str):
     assert "triangle" in mesh.cells_dict.keys()
     assert all([data in mesh.cell_data.keys() for data in ("slip", "rake")])
     triangles = mesh.cells_dict["triangle"]
-    point_dict = {i: point for i, point in enumerate(mesh.points)}
+    mesh_points = mesh.points[:]
+    point_tree = KDTree(mesh.points)
+    distances, indices = point_tree.query(mesh.points, k=[2])
+    problem_indices = indices[distances < min_point_sep]
+    for i1, i2 in zip(problem_indices[::2], problem_indices[1::2]):
+        mesh_points[i2] = 0.5 * (mesh.points[i1] + mesh.points[i2])
+        mesh_points[i1] = 0.5 * (mesh.points[i1] + mesh.points[i2])
+        triangles[triangles == i1] = i2
+    point_dict = {i: point for i, point in enumerate(mesh_points)}
     mesh_as_array = np.array([np.hstack([point_dict[vertex] for vertex in tri]) for tri in triangles])
     slip = mesh.cell_data["slip"][0]
     rake = mesh.cell_data["rake"][0]

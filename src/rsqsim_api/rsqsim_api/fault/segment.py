@@ -647,14 +647,14 @@ class RsqSimSegment:
             edge_patch_numbers = np.setdiff1d(edge_patch_numbers, top_patches)
         return edge_patch_numbers
 
-    def find_edge_patch_vertex_indices(self, depth_tolerance: Union[float, int] = 100):
+    def find_edge_patch_vertex_indices(self, include_surface: bool = True, depth_tolerance: Union[float, int] = 100):
         all_vertices = np.vstack(self.patch_vertices)
         unique_vertices, n_occ = np.unique(all_vertices, axis=0, return_counts=True)
         vertices = np.array([[index, value[0], value[1], value[2]] for index, value in enumerate(unique_vertices)])
         edgeverts = vertices[np.where(n_occ <= 3)[0]]
         outside_edge_lines = self.edge_lines[np.all(np.isin(self.edge_lines, edgeverts[:, 0]), axis=1)]
 
-        return
+        return outside_edge_lines
 
     def grid_surface_rbf(self, resolution):
         """
