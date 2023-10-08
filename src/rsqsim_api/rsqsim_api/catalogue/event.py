@@ -679,6 +679,45 @@ class RsqSimEvent:
         if show:
             plt.show()
 
+    def find_surface_faults(self,fault_model: RsqSimMultiFault,min_slip: float =0.1, method: str = 'vertex',
+                                      n_patches: int = 1, max_depth: float = -1000.):
+        """
+               min_slip = 0.1  # min slip on a surface patch in m
+               method = 'centroid'  # specify vertex or centroid
+               n_patches = 1  # number of surface rupturing patches needed
+               max_depth = -2000.  # max depth for a 'surface' patch vertex or centroid - about 1000 for vertex or 2000 for centroid
+               """
+
+        assert method in ['centroid', 'vertex'], "Method must be centroid or vertex"
+        assert max_depth < 0., "depths should be negative"
+
+        surface_faults = []
+        for fault in self.faults:
+
+            surface_patches = []
+            for patch_id in fault.patch_numbers:
+                if patch_id in self.patch_numbers:
+                    patch = fault.patch_dic[patch_id]
+
+                    if method == 'vertex':
+                        patch_zs = patch.vertices.flatten()[[2, 5, 8]]
+                        patch_z = np.max(patch_zs)  # use max because depths are negative
+                    elif method == 'centroid':
+                        patch_z = patch.centre[2]
+                    else:
+                        AssertionError('method must be vertex or centroid')
+
+                    if patch_z > max_depth:
+                        patch_ev_index = np.searchsorted(self.patch_numbers, patch_id)
+                        patch_slip = self.patch_slip[patch_ev_index]
+                        if patch_slip >= min_slip:
+                            surface_patches.append(patch_ev_index)
+
+            if len(surface_patches) >= n_patches:
+                surface_faults.append(fault.name)
+
+
+        return surface_faults
     def slip_dist_array(self, include_zeros: bool = True, min_slip_percentile: float = None,
                         min_slip_value: float = None, nztm_to_lonlat: bool = False):
         all_patches = []

@@ -183,7 +183,7 @@ class RsqSimCatalogue:
 
     @classmethod
     def from_catalogue_file_and_lists(cls, catalogue_file: str, list_file_directory: str,
-                                      list_file_prefix: str, read_extra_lists: bool = False, reproject: List = None, serial: bool =  False):
+                                      list_file_prefix: str, read_extra_lists: bool = False, reproject: List = None, serial: bool = False, endian: str = "little"):
         assert os.path.exists(catalogue_file)
         assert os.path.exists(list_file_directory)
 
@@ -203,10 +203,10 @@ class RsqSimCatalogue:
             rcat.patch_slip, rcat.patch_time_list = [read_text(fname, format="d") for fname in
                                                      standard_list_files[2:]]
         else:
-            rcat.patch_list = read_binary(standard_list_files[0], format="i") - 1
+            rcat.patch_list = read_binary(standard_list_files[0], format="i",endian=endian) - 1
             # indices start from 1, change so that it is zero instead
-            rcat.event_list = read_binary(standard_list_files[1], format="i") - 1
-            rcat.patch_slip, rcat.patch_time_list = [read_binary(fname, format="d") for fname in standard_list_files[2:]]
+            rcat.event_list = read_binary(standard_list_files[1], format="i",endian=endian) - 1
+            rcat.patch_slip, rcat.patch_time_list = [read_binary(fname, format="d",endian=endian) for fname in standard_list_files[2:]]
 
         return rcat
 
@@ -333,7 +333,7 @@ class RsqSimCatalogue:
         return rcat
 
     def filter_by_events(self, event_number: Union[int, Iterable[int]], reset_index: bool = False):
-        if isinstance(event_number, (int, np.int32,np.int64)):
+        if isinstance(event_number, (int,np.int32,np.int64)):
             ev_ls = [event_number]
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
@@ -445,6 +445,34 @@ class RsqSimCatalogue:
 
             return None
 
+
+    def find_surface_rupturing_events(self,fault_model: RsqSimMultiFault,min_slip: float =0.1, method: str = 'vertex',
+                                      n_patches: int = 1, max_depth: float = -1000., n_faults: int =1, write_flt_dict: bool = False):
+
+        """
+        min_slip = 0.1  # min slip on a surface patch in m
+        method = 'centroid'  # specify vertex or centroid
+        n_patches = 1  # number of surface rupturing patches needed
+        max_depth = -2000.  # max depth for a 'surface' patch vertex or centroid - about 1000 for vertex or 2000 for centroid
+        n_faults = 1  # number of surface rupturing faults required (intended for sorting multifault events later)"""
+
+        assert method in ['centroid','vertex'],"Method must be centroid or vertex"
+        assert max_depth < 0., "depths should be negative"
+        if write_flt_dict:
+            flt_dict = {}
+        surface_ev_ids = []
+        for event in self.all_events(fault_model=fault_model):
+            surface_faults = event.find_surface_faults(fault_model, min_slip=min_slip, method=method,
+                                                       n_patches=n_patches, max_depth=max_depth)
+            if len(surface_faults) >= n_faults:
+                surface_ev_ids.append(event.event_id)
+                if write_flt_dict:
+                    flt_dict[event.event_id] = surface_faults
+
+        if write_flt_dict:
+            return surface_ev_ids, flt_dict
+        else:
+            return surface_ev_ids
     def find_multi_fault(self,fault_model: RsqSimMultiFault):
         """
         Identify events involving more than 1 fault. Note that this is based on named fault segments so might not
@@ -484,7 +512,7 @@ class RsqSimCatalogue:
             print("No events found!")
             return
 
-    def events_by_number(self, event_number: Union[int, Iterable[np.integer]], fault_model: RsqSimMultiFault,
+    def events_by_number(self, event_number: Union[int, Iterable[int]], fault_model: RsqSimMultiFault,
                          child_processes: int = 0, min_patches: int = 1):
         assert isinstance(fault_model,RsqSimMultiFault), "Fault model required"
         if isinstance(event_number, (int, np.int32, np.int64)):
