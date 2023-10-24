@@ -155,6 +155,8 @@ class RsqSimMultiFault:
         assert os.path.exists(fault_file)
         # Read first 10 lines of file
 
+
+
     @classmethod
     def read_fault_file_keith(cls, fault_file: str, verbose: bool = False, crs: int = 2193,
                               read_slip_rate: bool = True):
