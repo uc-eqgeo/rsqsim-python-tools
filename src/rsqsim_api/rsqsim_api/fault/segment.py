@@ -12,6 +12,7 @@ from pyproj import Transformer
 from shapely.geometry import LineString, MultiPolygon, Polygon
 from shapely.ops import linemerge, unary_union
 from scipy.interpolate import RBFInterpolator
+from itertools import combinations
 
 import rsqsim_api.io.rsqsim_constants as csts
 from rsqsim_api.fault.patch import RsqSimTriangularPatch, RsqSimGenericPatch, cross_3d, norm_3d
@@ -591,14 +592,10 @@ class RsqSimSegment:
 
     @property
     def laplacian(self):
-        if self._laplacian is None:
-            self.build_laplacian_matrix()
         return self._laplacian
 
     @property
     def laplacian_sing(self):
-        if self._laplacian_sing is None:
-            self.build_laplacian_matrix(double=False)
         return self._laplacian_sing
 
     def find_top_vertex_indices(self, depth_tolerance: Union[float, int] = 100., complicated_faults: bool =False ):
@@ -651,14 +648,82 @@ class RsqSimSegment:
             edge_patch_numbers = np.setdiff1d(edge_patch_numbers, top_patches)
         return edge_patch_numbers
 
-    def find_edge_patch_vertex_indices(self, include_surface: bool = True, depth_tolerance: Union[float, int] = 100):
-        all_vertices = np.vstack(self.patch_vertices)
-        unique_vertices, n_occ = np.unique(all_vertices, axis=0, return_counts=True)
-        vertices = np.array([[index, value[0], value[1], value[2]] for index, value in enumerate(unique_vertices)])
-        edgeverts = vertices[np.where(n_occ <= 3)[0]]
-        outside_edge_lines = self.edge_lines[np.all(np.isin(self.edge_lines, edgeverts[:, 0]), axis=1)]
+    def find_all_outside_edges(self):
+        triangle_edges = np.array([np.sort(np.array(list(combinations(tri, 2))), axis=1) for tri in self.triangles])
+        unique_edges, edge_counts = np.unique(triangle_edges.reshape(-1, 2), axis=0, return_counts=True)
+        outside_edges = unique_edges[edge_counts == 1]
+        return outside_edges
 
-        return outside_edge_lines
+    def find_all_outside_vertex_indices(self):
+        outside_edges = self.find_all_outside_edges()
+        outside_vertex_indices = np.unique(outside_edges.reshape(-1, 2))
+        return outside_vertex_indices
+
+    def find_all_outside_vertices(self):
+        outside_vertex_indices = self.find_all_outside_vertex_indices()
+        return self.vertices[outside_vertex_indices]
+
+    def find_top_outside_vertices(self, depth_tolerance: Union[float, int] = 100):
+        outside_vertices = self.find_all_outside_vertices()
+        top_vertex_indices = self.find_top_outside_vertex_indices(depth_tolerance=depth_tolerance)
+        top_vertices = self.vertices[top_vertex_indices]
+        return top_vertices
+
+    def find_top_outside_vertex_indices(self, depth_tolerance: Union[float, int] = 100):
+        outside_vertex_indices = self.find_all_outside_vertex_indices()
+        outside_vertices = self.vertices[outside_vertex_indices]
+        top_vertex_indices = outside_vertex_indices[np.where(outside_vertices[:, -1] >= max(outside_vertices[:, -1]) - depth_tolerance)[0]]
+
+        return top_vertex_indices
+
+    def find_top_outside_edges(self, depth_tolerance: Union[float, int] = 100):
+        all_outside_edges = self.find_all_outside_edges()
+        top_outside_vertex_indices = self.find_top_outside_vertex_indices(depth_tolerance=depth_tolerance)
+        top_outside_edges = np.array([edge for edge in all_outside_edges if np.in1d(edge, top_outside_vertex_indices).all()])
+        return top_outside_edges
+
+    def find_bottom_outside_edges(self, depth_tolerance: Union[float, int] = 100):
+        all_outside_edges = self.find_all_outside_edges()
+        top_outside_edges = self.find_top_outside_edges(depth_tolerance=depth_tolerance)
+        bottom_outside_edges = np.array([edge for edge in all_outside_edges if not np.in1d(edge, top_outside_edges).all()])
+
+        return bottom_outside_edges
+
+    def find_bottom_outside_vertex_indices(self, depth_tolerance: Union[float, int] = 100):
+        bottom_outside_edges = self.find_bottom_outside_edges(depth_tolerance=depth_tolerance)
+        bottom_outside_vertex_indices = np.unique(bottom_outside_edges.reshape(-1, 2))
+        return bottom_outside_vertex_indices
+
+    def find_bottom_outside_vertices(self, depth_tolerance: Union[float, int] = 100):
+        bottom_outside_vertex_indices = self.find_bottom_outside_vertex_indices(depth_tolerance=depth_tolerance)
+        return self.vertices[bottom_outside_vertex_indices]
+
+    def bottom_edge_point_cloud(self, depth_tolerance: Union[float, int] = 100, num_interp: int = 25):
+        bottom_outside_edges = self.find_bottom_outside_edges(depth_tolerance=depth_tolerance)
+        bottom_edge = self.vertices[bottom_outside_edges]
+        interp_steps = np.linspace(0, 1, num_interp)
+        interpolated = []
+        for edge in bottom_edge:
+            interp_points = edge[0, :] + interp_steps[:, None] * np.tile((edge[1, :]  - edge[0, :]), (num_interp, 1))
+            interpolated.append(interp_points)
+        interpolated = np.vstack(interpolated)
+
+        return interpolated
+
+    def all_edge_point_cloud(self, num_interp: int = 25):
+        outside_edges = self.find_all_outside_edges()
+        edges = self.vertices[outside_edges]
+        interp_steps = np.linspace(0, 1, num_interp)
+        interpolated = []
+        for edge in edges:
+            interp_points = edge[0, :] + interp_steps[:, None] * np.tile((edge[1, :] - edge[0, :]), (num_interp, 1))
+            interpolated.append(interp_points)
+        interpolated = np.vstack(interpolated)
+
+        return interpolated
+
+
+
 
     def grid_surface_rbf(self, resolution):
         """
