@@ -196,17 +196,39 @@ class RsqSimCatalogue:
         # Read in catalogue to dataframe and initiate class instance
         rcat = cls.from_catalogue_file(catalogue_file, reproject=reproject)
 
+        num_events = len(rcat.catalogue_df)
+
         if serial:
-            rcat.patch_list = read_text(standard_list_files[0], format="i") - 1
-            # indices start from 1, change so that it is zero instead
-            rcat.event_list = read_text(standard_list_files[1], format="i") - 1
-            rcat.patch_slip, rcat.patch_time_list = [read_text(fname, format="d") for fname in
-                                                     standard_list_files[2:]]
+
+            event_list = read_text(standard_list_files[1], format="i") - 1
+            patch_list = read_text(standard_list_files[0], format="i") - 1
+            patch_slip, patch_time_list = [read_text(fname, format="d") for fname in
+                                           standard_list_files[2:]]
+            
         else:
-            rcat.patch_list = read_binary(standard_list_files[0], format="i",endian=endian) - 1
-            # indices start from 1, change so that it is zero instead
-            rcat.event_list = read_binary(standard_list_files[1], format="i",endian=endian) - 1
-            rcat.patch_slip, rcat.patch_time_list = [read_binary(fname, format="d",endian=endian) for fname in standard_list_files[2:]]
+            patch_list = read_binary(standard_list_files[0], format="i",endian=endian) - 1
+            event_list = read_binary(standard_list_files[1], format="i",endian=endian) - 1
+            patch_slip, patch_time_list = [read_binary(fname, format="d",endian=endian) for fname in standard_list_files[2:]]
+
+        unique_events = np.unique(event_list)
+        if len(unique_events) == num_events:
+                rcat.event_list = event_list
+                rcat.patch_list = patch_list
+                rcat.patch_slip, rcat.patch_time_list = patch_slip, patch_time_list
+        else:
+            print("Event list does not match catalogue length. Trying to fix...")
+            if not len(unique_events) > num_events:
+                raise ValueError("Event list is too short!")
+            last_event = rcat.catalogue_df.index[-1]
+            short_events = event_list[event_list <= last_event]
+            short_patches = patch_list[:len(short_events)]
+            short_slip = patch_slip[:len(short_events)]
+            short_time = patch_time_list[:len(short_events)]
+            rcat.event_list = short_events
+            rcat.patch_list = short_patches
+            rcat.patch_slip, rcat.patch_time_list = short_slip, short_time
+            
+            print("Fixed!")
 
         return rcat
 
