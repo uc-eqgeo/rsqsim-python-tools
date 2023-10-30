@@ -204,7 +204,7 @@ class RsqSimCatalogue:
             patch_list = read_text(standard_list_files[0], format="i") - 1
             patch_slip, patch_time_list = [read_text(fname, format="d") for fname in
                                            standard_list_files[2:]]
-            
+
         else:
             patch_list = read_binary(standard_list_files[0], format="i",endian=endian) - 1
             event_list = read_binary(standard_list_files[1], format="i",endian=endian) - 1
@@ -227,7 +227,7 @@ class RsqSimCatalogue:
             rcat.event_list = short_events
             rcat.patch_list = short_patches
             rcat.patch_slip, rcat.patch_time_list = short_slip, short_time
-            
+
             print("Fixed!")
 
         return rcat
@@ -355,7 +355,7 @@ class RsqSimCatalogue:
         return rcat
 
     def filter_by_events(self, event_number: Union[int, Iterable[int]], reset_index: bool = False):
-        if isinstance(event_number, (int,np.int32,np.int64)):
+        if isinstance(event_number, (int, np.int32,np.int64)):
             ev_ls = [event_number]
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
