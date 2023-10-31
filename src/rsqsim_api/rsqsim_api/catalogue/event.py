@@ -60,6 +60,7 @@ class RsqSimEvent:
         self._mean_slip = None
         self.length = None
         self._mean_strike = None
+        self._mean_strike_180 = None
         self._mean_dip = None
         self._mean_rake = None
         self._first_fault = None
@@ -91,6 +92,12 @@ class RsqSimEvent:
         if self._mean_strike is None:
             self.find_mean_strike()
         return self._mean_strike
+
+    @property
+    def mean_strike_180(self):
+        if self._mean_strike_180 is None:
+            self.find_mean_strike_180()
+        return self._mean_strike_180
 
     @property
     def mean_dip(self):
@@ -223,6 +230,20 @@ class RsqSimEvent:
             npatches = len(self.patches)
             if npatches > 0:
                 self._mean_strike = cumstrike / npatches
+
+    def find_mean_strike_180(self):
+        if self.patches:
+            cumstrike = 0.
+            for patch in self.patches:
+                strike = patch.strike
+                if 0.<= strike <180:
+                    cumstrike += strike
+                else:
+                    assert(0.<= strike - 180 < 180), "strike not in range 0 - 360"
+                    cumstrike += (strike - 180.)
+            npatches = len(self.patches)
+            if npatches > 0:
+                self._mean_strike_180 = cumstrike / npatches
 
     def find_mean_dip(self):
         if self.patches:

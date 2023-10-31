@@ -566,6 +566,17 @@ class RsqSimMultiFault:
                    np.equal(closest_point, patch.vertices).all(axis=1).any()]
         return patches
 
+    def find_closest_patches_3d(self, x, y, z):
+        """
+        Finds the closest patches to specified coordinates.
+        """
+        sq_dist = [(fault, vertex, (x - vertex[0]) ** 2 + (y - vertex[1]) ** 2 + (z - vertex[2]) ** 2 ) for fault in self.faults for vertex in
+                   fault.vertices]
+        closest_fault, closest_point, min_dist = min(sq_dist, key=lambda t: t[2])
+        patches = [patch.patch_number for patch in closest_fault.patch_outlines if
+                   np.equal(closest_point, patch.vertices).all(axis=1).any()]
+        return patches
+
     @property
     def traces(self):
         if self._traces is None:
