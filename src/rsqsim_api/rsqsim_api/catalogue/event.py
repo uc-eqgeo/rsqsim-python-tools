@@ -338,8 +338,7 @@ class RsqSimEvent:
                      land_color: str = 'antiquewhite',
                      min_slip_percentile: float = None, min_slip_value: float = None, plot_zeros: bool = True,
                      wgs: bool = False, title: str = None,
-                     plot_edge_label: bool = True, plot_cbars: bool = True):
-        # TODO: Plot coast (and major rivers?)
+                     plot_edge_label: bool = True, plot_cbars: bool = True, alpha: float = 1.0):
         assert self.patches is not None, "Need to populate object with patches!"
 
         if all([bounds is None, self.bounds is not None]):
@@ -420,11 +419,12 @@ class RsqSimEvent:
                 if plot_log_scale:
                     subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
                                                    facecolors=colour_dic[f_i],
-                                                   cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
+                                                   cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max),
+                                                   alpha=alpha)
                 else:
                     subduction_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
                                                    facecolors=colour_dic[f_i],
-                                                   cmap=subduction_cmap, vmin=0., vmax=max_slip)
+                                                   cmap=subduction_cmap, vmin=0., vmax=max_slip, alpha=alpha)
                 plots.append(subduction_plot)
 
         max_slip = 0
@@ -467,11 +467,12 @@ class RsqSimEvent:
                     if plot_log_scale:
                         crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
                                                     facecolors=colour_dic[f_i],
-                                                    cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
+                                                    cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max),
+                                                    alpha=alpha)
                     else:
                         crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 1], fault.triangles,
                                                     facecolors=colour_dic[f_i],
-                                                    cmap=crustal_cmap, vmin=0., vmax=max_slip)
+                                                    cmap=crustal_cmap, vmin=0., vmax=max_slip, alpha=alpha)
                     plots.append(crustal_plot)
 
         elif len(self.faults) == 1:
@@ -490,11 +491,12 @@ class RsqSimEvent:
                 if plot_log_scale:
                     crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 2], fault.triangles,
                                                 facecolors=colour_dic[f_i],
-                                                cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max))
+                                                cmap=log_cmap, norm=colors.LogNorm(vmin=log_min, vmax=log_max),
+                                                alpha=alpha)
                 else:
                     crustal_plot = ax.tripcolor(fault.vertices[:, 0], fault.vertices[:, 2], fault.triangles,
                                                 facecolors=colour_dic[f_i],
-                                                cmap=crustal_cmap, vmin=0., vmax=max_slip)
+                                                cmap=crustal_cmap, vmin=0., vmax=max_slip, alpha=alpha)
                 plots.append(crustal_plot)
         else:
             for f_i, fault in enumerate(self.faults):
