@@ -284,7 +284,6 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
     Writes a single frame of an animation to file
 
     """
-    print("starting individual frame")
     loaded_subplots = pickle.load(open(pickled_background, "rb"))
     print(frame_num)
 
@@ -325,7 +324,6 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                                global_max_sub_slip=global_max_sub_slip, bounds=bounds, plot_log_scale=plot_log,
                                log_min=log_min, log_max=log_max, min_slip_value=min_slip_value, plot_zeros=plot_zeros,
                                extra_sub_list=extra_sub_list, alpha=alpha)
-            fig.savefig(f"frames/frame{frame_num:04d}.png", dpi=300)
         return frame_num, fig
 
 
@@ -356,10 +354,9 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
         with ProcessPoolExecutor(max_workers=num_threads_plot) as plot_executor:
             plotted_figs = [plot_executor.submit(write_animation_frame, frame_i, frame_time, start_time, end_time, step_size, **pool_kwargs) for frame_i, frame_time in enumerate(steps)]
 
-        # with ThreadPoolExecutor(max_workers=num_threads_write) as write_executor:
-        #     for plotted_fig in as_completed(plotted_figs):
-        #         frame_i, fig_i = plotted_fig.result()
-        #         fig_i.savefig(f"{frame_dir}/frame{frame_i:04d}.png", dpi=300)
+            for plotted_fig in as_completed(plotted_figs):
+                frame_i, fig_i = plotted_fig.result()
+                fig_i.savefig(f"{frame_dir}/frame{frame_i:04d}.png", dpi=300)
 
 
 def calculate_alpha(time_since_new, fading_increment):

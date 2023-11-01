@@ -338,7 +338,8 @@ class RsqSimEvent:
                      land_color: str = 'antiquewhite',
                      min_slip_percentile: float = None, min_slip_value: float = None, plot_zeros: bool = True,
                      wgs: bool = False, title: str = None,
-                     plot_edge_label: bool = True, plot_cbars: bool = True, alpha: float = 1.0):
+                     plot_edge_label: bool = True, plot_cbars: bool = True, alpha: float = 1.0,
+                     coast_on_top: bool = False):
         assert self.patches is not None, "Need to populate object with patches!"
 
         if all([bounds is None, self.bounds is not None]):
@@ -540,8 +541,8 @@ class RsqSimEvent:
                     if crustal_plot is not None:
                         crust_cbar = fig.colorbar(crustal_plot, ax=ax)
                         crust_cbar.set_label("Crustal slip (m)")
-
-        plot_coast(ax=ax, wgs=wgs, linewidth=0.5, edgecolor='k')
+        if coast_on_top:
+            plot_coast(ax=ax, wgs=wgs, linewidth=0.5, edgecolor='k')
 
         if title:
             plt.suptitle(title)
