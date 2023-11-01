@@ -309,8 +309,6 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
 
 
     if shortened_cat.empty:
-        fig.savefig(f"frames/frame{frame_num:04d}.png", dpi=300)
-        plot_coast(ax=axes["main_figure"], linewidth=0.5, edgecolor='k')
         return frame_num, fig
     else:
         shortened_cat["diff_t0"] = np.abs(shortened_cat["t0"] - frame_time_seconds)
@@ -351,7 +349,7 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
                        "min_slip_value": min_slip_value, "plot_zeros": plot_zeros,
                        "extra_sub_list": extra_sub_list, "min_mw": min_mw, "decimals": decimals,
                        "subplot_name": subplot_name}
-        with ProcessPoolExecutor(max_workers=num_threads_plot) as plot_executor:
+        with ThreadPoolExecutor(max_workers=num_threads_plot) as plot_executor:
             plotted_figs = [plot_executor.submit(write_animation_frame, frame_i, frame_time, start_time, end_time, step_size, **pool_kwargs) for frame_i, frame_time in enumerate(steps)]
 
             for plotted_fig in as_completed(plotted_figs):
