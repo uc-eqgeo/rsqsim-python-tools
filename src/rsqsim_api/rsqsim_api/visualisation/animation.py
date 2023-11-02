@@ -8,11 +8,12 @@ from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import LogNorm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor, wait, FIRST_COMPLETED
 import os.path
 import math
 import numpy as np
 import pickle
+from io import BytesIO
 
 from multiprocessing import Pool
 from functools import partial
@@ -284,23 +285,6 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
     Writes a single frame of an animation to file
 
     """
-    loaded_subplots = pickle.load(open(pickled_background, "rb"))
-    print(frame_num)
-
-    fig, axes = loaded_subplots
-    slider_ax = axes["slider"]
-    time_slider = Slider(
-        slider_ax, 'Year', start_time - step_size, end_time + step_size, valinit=start_time - step_size,
-        valstep=step_size)
-    time_slider.valtext.set_visible(False)
-    year_ax = axes["year"]
-    year_text = year_ax.text(0.5, 0.5, str(int(0)), horizontalalignment='center', verticalalignment='center',
-                             fontsize=12)
-    if decimals == 0:
-        year_text.set_text(str(int(round(frame_time, 0))))
-    else:
-        year_text.set_text(f"{frame_time:.{decimals}f}")
-    time_slider.set_val(frame_time)
     frame_time_seconds = frame_time * seconds_per_year
 
     shortened_cat = catalogue.filter_df(min_t0=frame_time_seconds - time_to_threshold * seconds_per_year,
@@ -309,8 +293,26 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
 
 
     if shortened_cat.empty:
-        return frame_num, fig
+        return frame_num, None
     else:
+        loaded_subplots = pickle.load(open(pickled_background, "rb"))
+        print(frame_num)
+
+        fig, axes = loaded_subplots
+        slider_ax = axes["slider"]
+        time_slider = Slider(
+            slider_ax, 'Year', start_time - step_size, end_time + step_size, valinit=start_time - step_size,
+            valstep=step_size)
+        time_slider.valtext.set_visible(False)
+        year_ax = axes["year"]
+        year_text = year_ax.text(0.5, 0.5, str(int(0)), horizontalalignment='center', verticalalignment='center',
+                                fontsize=12)
+        if decimals == 0:
+            year_text.set_text(str(int(round(frame_time, 0))))
+        else:
+            year_text.set_text(f"{frame_time:.{decimals}f}")
+        time_slider.set_val(frame_time)
+
         shortened_cat["diff_t0"] = np.abs(shortened_cat["t0"] - frame_time_seconds)
         sorted_indices = shortened_cat.sort_values(by="diff_t0", ascending=False).index
         events_for_plot = catalogue.events_by_number(sorted_indices.tolist(), fault_model)
@@ -322,6 +324,7 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                                global_max_sub_slip=global_max_sub_slip, bounds=bounds, plot_log_scale=plot_log,
                                log_min=log_min, log_max=log_max, min_slip_value=min_slip_value, plot_zeros=plot_zeros,
                                extra_sub_list=extra_sub_list, alpha=alpha)
+            
         return frame_num, fig
 
 
@@ -332,14 +335,14 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
                             plot_log: bool = False, log_min: float = 1., log_max: float = 100.,
                             min_slip_value: float = None, plot_zeros: bool = False, extra_sub_list: list = None,
                             min_mw: float = None, decimals: int = 1, subplot_name: str = "main_figure",
-                           num_threads_write: int = 2, num_threads_plot: int = 4, frame_dir: str = "frames",
+                            num_threads_plot: int = 4, frame_dir: str = "frames",
                            ):
         """
         Writes all the frames of an animation to file
 
         """
         steps = np.arange(start_time, end_time + step_size, step_size)
-        frames = len(steps)
+        frames = np.arange(len(steps))
         pool_kwargs = { "catalogue": catalogue, "fault_model": fault_model,
                        "pickled_background": pickled_background, "subduction_cmap": subduction_cmap,
                        "crustal_cmap": crustal_cmap, "global_max_slip": global_max_slip,
@@ -349,16 +352,61 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
                        "min_slip_value": min_slip_value, "plot_zeros": plot_zeros,
                        "extra_sub_list": extra_sub_list, "min_mw": min_mw, "decimals": decimals,
                        "subplot_name": subplot_name}
-        with ThreadPoolExecutor(max_workers=num_threads_plot) as plot_executor:
-            plotted_figs = [plot_executor.submit(write_animation_frame, frame_i, frame_time, start_time, end_time, step_size, **pool_kwargs) for frame_i, frame_time in enumerate(steps)]
+        
+        no_earthquakes = []
+        frame_time_dict = {frame_i: frame_time for frame_i, frame_time in enumerate(steps)}
+        frame_block_size = 500
+        block_starts = np.arange(0, len(steps), frame_block_size)
 
-            for plotted_fig in as_completed(plotted_figs):
-                frame_i, fig_i = plotted_fig.result()
-                fig_i.savefig(f"{frame_dir}/frame{frame_i:04d}.png", dpi=300)
+        def handle_output(future):
+            frame_i, fig_i = future.result()
+                    
+            if fig_i is not None:
+                fig_i.savefig(f"{frame_dir}/frame{frame_i:04d}.png", format="png", dpi=100)
+                print(f"Writing {frame_i}")
+                
+            else:
+                no_earthquakes.append(frame_i)
+
+        for start, end in zip(block_starts, block_starts + frame_block_size):
+            with ThreadPoolExecutor(max_workers=num_threads_plot) as plot_executor:
+                for frame_i, frame_time in zip(frames[start:end], steps[start:end]):
+                    if not os.path.exists(f"{frame_dir}/frame{frame_i:04d}.png"):
+                         submitted = plot_executor.submit(write_animation_frame, frame_i, frame_time, start_time, end_time, step_size, **pool_kwargs)
+                         submitted.add_done_callback(handle_output)
+                
+
+
+        for frame_num in no_earthquakes:
+            loaded_subplots = pickle.load(open(pickled_background, "rb"))
+            print(frame_num)
+            frame_time = frame_time_dict[frame_num]
+
+            fig, axes = loaded_subplots
+            slider_ax = axes["slider"]
+            time_slider = Slider(
+                slider_ax, 'Year', start_time - step_size, end_time + step_size, valinit=start_time - step_size,
+                valstep=step_size)
+            time_slider.valtext.set_visible(False)
+            year_ax = axes["year"]
+            year_text = year_ax.text(0.5, 0.5, str(int(0)), horizontalalignment='center', verticalalignment='center',
+                                    fontsize=12)
+            if decimals == 0:
+                year_text.set_text(str(int(round(frame_time, 0))))
+            else:
+                year_text.set_text(f"{frame_time:.{decimals}f}")
+            time_slider.set_val(frame_time)
+            fig.savefig(f"{frame_dir}/frame{frame_num:04d}.png", dpi=100)
+        
+
 
 
 def calculate_alpha(time_since_new, fading_increment):
-    return 1 / (fading_increment ** time_since_new)
+    alpha = 1 / (fading_increment ** time_since_new)
+    if alpha > 1:
+        alpha = 1.
+    return alpha
+
 
 def calculate_fading_increment(time_to_threshold, threshold):
     return (1 / threshold) ** (1 / time_to_threshold)
