@@ -427,7 +427,7 @@ class RsqSimCatalogue:
             return None
 
     def filter_not_on_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],
-                            fault_model: RsqSimMultiFault, minimum_patches_per_fault: int = None):
+                            minimum_patches_per_fault: int = None):
         if isinstance(fault_or_faults,RsqSimSegment):
             fault_ls = [fault_or_faults]
         elif isinstance(fault_or_faults,RsqSimMultiFault):
@@ -464,33 +464,35 @@ class RsqSimCatalogue:
                     events_gt_min += list(events_sufficient_patches)
 
                 event_numbers2reject = np.unique(np.array(events_gt_min))
-                event_numbers = np.unique(
-                    self.event_list[np.where(np.setdiff1d(self.event_list, event_numbers2reject))])
-                event_indices = np.where(np.in1d(self.event_list, event_numbers))[0]
+                event_indices = np.where(np.in1d(self.event_list, event_numbers2reject))[0]
 
             else:
                 event_numbers2reject = np.unique(selected_events)
-                event_numbers = np.unique(self.event_list[np.where(np.setdiff1d(self.event_list,event_numbers2reject))])
-                event_indices = np.where(np.in1d(self.event_list, event_numbers))[0]
-            trimmed_df = self.catalogue_df.loc[event_numbers]
+                event_indices = np.where(np.in1d(self.event_list, event_numbers2reject))[0]
+            if len(event_indices) > 0:
+                trimmed_df = self.catalogue_df.drop(event_numbers2reject)
 
-            filtered_cat = self.from_dataframe(trimmed_df)
-            filtered_cat.event_list = self.event_list[event_indices]
-            filtered_cat.patch_list = self.patch_list[event_indices]
-            filtered_cat.patch_slip = self.patch_slip[event_indices]
-            filtered_cat.patch_time_list = self.patch_time_list[event_indices]
+                filtered_cat = self.from_dataframe(trimmed_df)
+                filtered_cat.event_list = np.delete(self.event_list,event_indices)
+                filtered_cat.patch_list = np.delete(self.patch_list,event_indices)
+                filtered_cat.patch_slip = np.delete(self.patch_slip,event_indices)
+                filtered_cat.patch_time_list = np.delete(self.patch_time_list,event_indices)
 
-            return filtered_cat
+                return filtered_cat
+            else:
+                print("No remaining events")
+                return None
         else:
             print("No events found which include:")
             for fault in fault_ls:
                print(fault.name)
 
-            return None
+            return self
 
 
     def find_surface_rupturing_events(self,fault_model: RsqSimMultiFault,min_slip: float =0.1, method: str = 'vertex',
-                                      n_patches: int = 1, max_depth: float = -1000., n_faults: int =1, write_flt_dict: bool = False):
+                                      n_patches: int = 1, max_depth: float = -1000., n_faults: int =1, write_flt_dict: bool = False,
+                                      faults2ignore: [list,str] = 'hikurangi'):
 
         """
         min_slip = 0.1  # min slip on a surface patch in m
@@ -506,7 +508,7 @@ class RsqSimCatalogue:
         surface_ev_ids = []
         for event in self.all_events(fault_model=fault_model):
             surface_faults = event.find_surface_faults(fault_model, min_slip=min_slip, method=method,
-                                                       n_patches=n_patches, max_depth=max_depth)
+                                                       n_patches=n_patches, max_depth=max_depth, faults2ignore=faults2ignore)
             if len(surface_faults) >= n_faults:
                 surface_ev_ids.append(event.event_id)
                 if write_flt_dict:
