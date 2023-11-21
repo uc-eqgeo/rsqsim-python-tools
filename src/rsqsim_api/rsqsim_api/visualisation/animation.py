@@ -363,6 +363,7 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
                     
             if fig_i is not None:
                 fig_i.savefig(f"{frame_dir}/frame{frame_i:04d}.png", format="png", dpi=100)
+                plt.close(fig_i)
                 print(f"Writing {frame_i}")
                 
             else:
@@ -397,6 +398,7 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
                 year_text.set_text(f"{frame_time:.{decimals}f}")
             time_slider.set_val(frame_time)
             fig.savefig(f"{frame_dir}/frame{frame_num:04d}.png", dpi=100)
+            plt.close(fig)
         
 
 
