@@ -20,6 +20,7 @@ Functions
    rsqsim_api.catalogue.utilities.calculate_stress_drop
    rsqsim_api.catalogue.utilities.summary_statistics
    rsqsim_api.catalogue.utilities.mw_to_m0
+   rsqsim_api.catalogue.utilities.m0_to_mw
 
 
 
@@ -66,6 +67,13 @@ Functions
 
    Convert magnitudes to seismic moment.
    :param magnitudes:
+   :return:
+
+
+.. py:function:: m0_to_mw(seismic_moment)
+
+   Convert seismic moment to magnitudes.
+   :param seismic_moments:
    :return:
 
 

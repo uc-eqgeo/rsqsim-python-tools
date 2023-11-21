@@ -9,3 +9,24 @@
 
 
 
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   rsqsim_api.catalogue.catalogue.calculate_b_value
+
+
+
+.. py:function:: calculate_b_value(magnitudes, time_interval_years, min_mw = 0.0, max_mw = 10.0, interval=0.1)
+
+   Calculate b-value from magnitudes and completeness magnitude.
+   :param magnitudes:
+   :param mc:
+   :return:
+
+

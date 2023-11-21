@@ -1,0 +1,35 @@
+:orphan:
+
+:py:mod:`rsqsim_api.fault.splines`
+==================================
+
+.. py:module:: rsqsim_api.fault.splines
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   rsqsim_api.fault.splines.fault_edge_spline
+
+
+
+.. py:function:: fault_edge_spline(max_slip, distance_width, total_width, min_slip_fraction = 0.0, line_stop_fraction = 0.5, gradient_change = 1.2, spline_k = 3, spline_s = 0.0, resolution = 10.0)
+
+   Create a spline that can be used to create a slip distribution along the edge of a fault.
+   @param max_slip:
+   @param distance_width:
+   @param min_slip_fraction:
+   @param line_stop_fraction:
+   @param gradient_change:
+   @param spline_k:
+   @param spline_s:
+   @param resolution:
+   @return:
+
+
