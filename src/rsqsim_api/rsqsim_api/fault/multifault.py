@@ -17,8 +17,8 @@ from rsqsim_api.io.mesh_utils import array_to_mesh
 import rsqsim_api.io.rsqsim_constants as csts
 from rsqsim_api.fault.utilities import merge_multiple_nearly_adjacent_segments
 
-from shapely.ops import linemerge,split
-from shapely.geometry import LineString,MultiLineString, Polygon
+from shapely.ops import linemerge
+from shapely.geometry import LineString,MultiLineString
 
 def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float] = 1):
     """
