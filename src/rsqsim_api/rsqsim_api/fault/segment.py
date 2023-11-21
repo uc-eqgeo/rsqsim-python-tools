@@ -5,12 +5,14 @@ from typing import Union, List
 import meshio
 import numpy as np
 import pandas as pd
+import geopandas as gpd
 from fault_mesh_tools.faultmeshops.faultmeshops import fit_plane_to_points
 from matplotlib import pyplot as plt
 from pyproj import Transformer
 from shapely.geometry import LineString, MultiPolygon, Polygon
 from shapely.ops import linemerge, unary_union
 from scipy.interpolate import RBFInterpolator
+from itertools import combinations
 
 import rsqsim_api.io.rsqsim_constants as csts
 from rsqsim_api.fault.patch import RsqSimTriangularPatch, RsqSimGenericPatch, cross_3d, norm_3d
@@ -443,7 +445,7 @@ class RsqSimSegment:
 
             patch = RsqSimTriangularPatch(fault, vertices=triangle3, patch_number=patch_num,
                                           strike_slip=strike_slip,
-                                          dip_slip=dip_slip, total_slip=slip_rate[i], rake=rake[i])
+                                          dip_slip=dip_slip, rake = rake[i])
             triangle_ls.append(patch)
 
         fault.patch_outlines = triangle_ls
@@ -617,6 +619,9 @@ class RsqSimSegment:
             shallow_indices = np.where(self.vertices[:, -1] >= top_vertex_depth - depth_tolerance)[0]
         return shallow_indices
 
+    def find_vertex_indices(self, depth_tolerance: Union[float, int] = 100., complicated_faults: bool =False ):
+        pass
+
     def find_top_vertices(self, depth_tolerance: Union[float, int] = 100, complicated_faults: bool =False ):
         shallow_indices = self.find_top_vertex_indices(depth_tolerance, complicated_faults=complicated_faults)
         return self.vertices[shallow_indices]
@@ -642,6 +647,83 @@ class RsqSimSegment:
             top_patches = self.find_top_patch_numbers(depth_tolerance=depth_tolerance)
             edge_patch_numbers = np.setdiff1d(edge_patch_numbers, top_patches)
         return edge_patch_numbers
+
+    def find_all_outside_edges(self):
+        triangle_edges = np.array([np.sort(np.array(list(combinations(tri, 2))), axis=1) for tri in self.triangles])
+        unique_edges, edge_counts = np.unique(triangle_edges.reshape(-1, 2), axis=0, return_counts=True)
+        outside_edges = unique_edges[edge_counts == 1]
+        return outside_edges
+
+    def find_all_outside_vertex_indices(self):
+        outside_edges = self.find_all_outside_edges()
+        outside_vertex_indices = np.unique(outside_edges.reshape(-1, 2))
+        return outside_vertex_indices
+
+    def find_all_outside_vertices(self):
+        outside_vertex_indices = self.find_all_outside_vertex_indices()
+        return self.vertices[outside_vertex_indices]
+
+    def find_top_outside_vertices(self, depth_tolerance: Union[float, int] = 100):
+        outside_vertices = self.find_all_outside_vertices()
+        top_vertex_indices = self.find_top_outside_vertex_indices(depth_tolerance=depth_tolerance)
+        top_vertices = self.vertices[top_vertex_indices]
+        return top_vertices
+
+    def find_top_outside_vertex_indices(self, depth_tolerance: Union[float, int] = 100):
+        outside_vertex_indices = self.find_all_outside_vertex_indices()
+        outside_vertices = self.vertices[outside_vertex_indices]
+        top_vertex_indices = outside_vertex_indices[np.where(outside_vertices[:, -1] >= max(outside_vertices[:, -1]) - depth_tolerance)[0]]
+
+        return top_vertex_indices
+
+    def find_top_outside_edges(self, depth_tolerance: Union[float, int] = 100):
+        all_outside_edges = self.find_all_outside_edges()
+        top_outside_vertex_indices = self.find_top_outside_vertex_indices(depth_tolerance=depth_tolerance)
+        top_outside_edges = np.array([edge for edge in all_outside_edges if np.in1d(edge, top_outside_vertex_indices).all()])
+        return top_outside_edges
+
+    def find_bottom_outside_edges(self, depth_tolerance: Union[float, int] = 100):
+        all_outside_edges = self.find_all_outside_edges()
+        top_outside_edges = self.find_top_outside_edges(depth_tolerance=depth_tolerance)
+        bottom_outside_edges = np.array([edge for edge in all_outside_edges if not np.in1d(edge, top_outside_edges).all()])
+
+        return bottom_outside_edges
+
+    def find_bottom_outside_vertex_indices(self, depth_tolerance: Union[float, int] = 100):
+        bottom_outside_edges = self.find_bottom_outside_edges(depth_tolerance=depth_tolerance)
+        bottom_outside_vertex_indices = np.unique(bottom_outside_edges.reshape(-1, 2))
+        return bottom_outside_vertex_indices
+
+    def find_bottom_outside_vertices(self, depth_tolerance: Union[float, int] = 100):
+        bottom_outside_vertex_indices = self.find_bottom_outside_vertex_indices(depth_tolerance=depth_tolerance)
+        return self.vertices[bottom_outside_vertex_indices]
+
+    def bottom_edge_point_cloud(self, depth_tolerance: Union[float, int] = 100, num_interp: int = 25):
+        bottom_outside_edges = self.find_bottom_outside_edges(depth_tolerance=depth_tolerance)
+        bottom_edge = self.vertices[bottom_outside_edges]
+        interp_steps = np.linspace(0, 1, num_interp)
+        interpolated = []
+        for edge in bottom_edge:
+            interp_points = edge[0, :] + interp_steps[:, None] * np.tile((edge[1, :]  - edge[0, :]), (num_interp, 1))
+            interpolated.append(interp_points)
+        interpolated = np.vstack(interpolated)
+
+        return interpolated
+
+    def all_edge_point_cloud(self, num_interp: int = 25):
+        outside_edges = self.find_all_outside_edges()
+        edges = self.vertices[outside_edges]
+        interp_steps = np.linspace(0, 1, num_interp)
+        interpolated = []
+        for edge in edges:
+            interp_points = edge[0, :] + interp_steps[:, None] * np.tile((edge[1, :] - edge[0, :]), (num_interp, 1))
+            interpolated.append(interp_points)
+        interpolated = np.vstack(interpolated)
+
+        return interpolated
+
+
+
 
     def grid_surface_rbf(self, resolution):
         """
@@ -726,6 +808,13 @@ class RsqSimSegment:
         mesh = self.to_mesh(write_slip=write_slip)
         mesh.write(vtk_name, file_format="vtk")
 
+    def to_gpd(self, write_slip: bool = False, crs: int = 2193):
+        if write_slip:
+            gdf = gpd.GeoDataFrame({"slip": self.total_slip, "rake": self.rake}, geometry=[Polygon(patch) for patch in self.patch_vertices], crs=crs)
+        else:
+            gdf = gpd.GeoDataFrame(geometry=[Polygon(patch) for patch in self.patch_vertices], crs=crs)
+        return gdf
+
     @property
     def dip_slip(self):
         return np.array([patch.dip_slip for patch in self.patch_outlines]).flatten()
@@ -742,6 +831,16 @@ class RsqSimSegment:
     def rake(self):
         return np.array([patch.rake for patch in self.patch_outlines]).flatten()
 
+    @property
+    def patch_areas(self):
+        return np.array([patch.area for patch in self.patch_outlines]).flatten()
+
+
+    @property
+    def patch_moments(self):
+        return self.total_slip * self.patch_areas * 3e10
+
+
     @dip_slip.setter
     def dip_slip(self, ds_array: np.ndarray):
         assert len(ds_array) == len(self.patch_outlines)
@@ -754,13 +853,19 @@ class RsqSimSegment:
         for patch, ss in zip(self.patch_outlines, ss_array):
             patch.strike_slip = ss
 
+    @rake.setter
+    def rake(self, rake_array: np.ndarray):
+        assert len(rake_array) == len(self.patch_outlines)
+        for patch, rake in zip(self.patch_outlines, rake_array):
+            patch.rake = rake
 
-    def to_rsqsim_fault_file(self, flt_name):
-        tris = self.to_rsqsim_fault_array()
+
+    def to_rsqsim_fault_file(self, flt_name, mm_yr: bool = True):
+        tris = self.to_rsqsim_fault_array(mm_yr=mm_yr)
 
         tris.to_csv(flt_name, index=False, header=False, sep="\t", encoding='ascii')
 
-    def to_rsqsim_fault_array(self):
+    def to_rsqsim_fault_array(self, mm_yr: bool = True):
         tris = pd.DataFrame(self.patch_triangle_rows)
         if self.rake is not None:
             rakes = pd.Series(self.rake)
@@ -768,10 +873,14 @@ class RsqSimSegment:
             rakes = pd.Series(np.ones(self.dip_slip.shape) * 90.)
             print("Rake not set, writing out as 90")
         tris.loc[:, 9] = rakes
-        slip_rates = pd.Series([rate * 1.e-3 / csts.seconds_per_year for rate in self.total_slip])
-
-        if any(np.abs(slip_rates) < 1.e-15):
-            print("Non-zero slip rates less than 1e-15 - check your units (this function assumes mm/yr as input)")
+        if mm_yr:
+            slip_rates = pd.Series([rate * 1.e-3 / csts.seconds_per_year for rate in self.total_slip])
+            if any(np.abs(slip_rates) < 1.e-15):
+                print("Non-zero slip rates less than 1e-15 - check your units (this function assumes mm/yr as input)")
+        else:
+            slip_rates = pd.Series(self.total_slip)
+            if any(np.abs(slip_rates) > 3.e-9):
+                print("Non-zero slip rates greater than 3e-9 m/s - check your units (mm_yr=False assumes m/s as input)")
         tris.loc[:, 10] = slip_rates
         segment_num = pd.Series(np.ones(self.dip_slip.shape) * self.segment_number, dtype=int)
         tris.loc[:, 11] = segment_num

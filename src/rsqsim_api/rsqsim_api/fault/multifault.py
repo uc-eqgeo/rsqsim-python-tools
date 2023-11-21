@@ -3,6 +3,7 @@ import os
 from collections.abc import Iterable
 from typing import Union
 import fnmatch
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -16,7 +17,7 @@ from rsqsim_api.io.mesh_utils import array_to_mesh
 import rsqsim_api.io.rsqsim_constants as csts
 from rsqsim_api.fault.utilities import merge_multiple_nearly_adjacent_segments
 
-from shapely.ops import linemerge,split
+from shapely.ops import linemerge
 from shapely.geometry import LineString,MultiLineString
 
 def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float] = 1):
@@ -303,7 +304,7 @@ class RsqSimMultiFault:
             patch_numbers = np.arange(patch_start, patch_start + num_triangles)
 
             if from_pickle:
-                assert read_slip_rate, "from pickle may not read sip rates correctly"
+                assert read_slip_rate, "from pickle may not read slip rates correctly"
                 fault_i = RsqSimSegment.from_pickle(fault_data, fault_num, patch_numbers, fault_name_stripped)
             else:
                 fault_i = RsqSimSegment.from_pandas(fault_data, fault_num, patch_numbers, fault_name_stripped,
@@ -500,7 +501,8 @@ class RsqSimMultiFault:
 
 
     def slip_rate_array(self, include_zeros: bool = True,
-                        min_slip_rate: float = None, nztm_to_lonlat: bool = False):
+                        min_slip_rate: float = None, nztm_to_lonlat: bool = False,
+                        mm_per_year: bool = True):
         all_patches = []
 
         for fault in self.faults:
@@ -511,6 +513,8 @@ class RsqSimMultiFault:
                 else:
                     triangle_corners = patch.vertices.flatten()
                 slip_rate = patch.total_slip
+                if mm_per_year:
+                    slip_rate = slip_rate * csts.seconds_per_year * 1000.
                 if min_slip_rate is not None:
                     if slip_rate >= min_slip_rate:
                         patch_line = np.hstack([triangle_corners, np.array([slip_rate, patch.rake])])
@@ -525,10 +529,11 @@ class RsqSimMultiFault:
         return np.array(all_patches)
 
     def slip_rate_to_mesh(self, include_zeros: bool = True,
-                          min_slip_rate: float = None, nztm_to_lonlat: bool = False):
+                          min_slip_rate: float = None, nztm_to_lonlat: bool = False, mm_per_year: bool = True):
 
         slip_rate_array = self.slip_rate_array(include_zeros=include_zeros,
-                                               min_slip_rate=min_slip_rate, nztm_to_lonlat=nztm_to_lonlat)
+                                               min_slip_rate=min_slip_rate, nztm_to_lonlat=nztm_to_lonlat,
+                                               mm_per_year=mm_per_year)
 
         mesh = array_to_mesh(slip_rate_array[:, :9])
         data_dic = {}
@@ -539,14 +544,76 @@ class RsqSimMultiFault:
         return mesh
 
     def slip_rate_to_vtk(self, vtk_file: str, include_zeros: bool = True,
-                         min_slip_rate: float = None, nztm_to_lonlat: bool = False):
+                         min_slip_rate: float = None, nztm_to_lonlat: bool = False,
+                         mm_per_year: bool = True):
         mesh = self.slip_rate_to_mesh(include_zeros=include_zeros,
-                                      min_slip_rate=min_slip_rate, nztm_to_lonlat=nztm_to_lonlat)
+                                      min_slip_rate=min_slip_rate, nztm_to_lonlat=nztm_to_lonlat,
+                                      mm_per_year=mm_per_year)
         mesh.write(vtk_file, file_format="vtk")
 
-    def write_rsqsim_input_file(self, output_file: str):
-        combined_array = pd.concat([fault.to_rsqsim_fault_array() for fault in self.faults])
+    def write_rsqsim_input_file(self, output_file: str, mm_yr: bool = True):
+        combined_array = pd.concat([fault.to_rsqsim_fault_array(mm_yr=mm_yr) for fault in self.faults])
         combined_array.to_csv(output_file, sep=" ", header=False, index=False)
+
+    def write_b_value_file(self, a_value: float, default_a_b: float, difference_dict: dict, output_file: str):
+        assert isinstance(difference_dict, dict)
+        assert all([name in self.names for name in difference_dict.keys()])
+        assert all([isinstance(value, float) for value in difference_dict.values()])
+        assert isinstance(a_value, float)
+        assert a_value > 0.
+        assert a_value < 1.
+        assert isinstance(default_a_b, float)
+        assert default_a_b < 0.
+        assert isinstance(output_file, str)
+        combined_array = pd.concat([fault.to_rsqsim_fault_array() for fault in self.faults])
+        default_b = a_value - default_a_b
+        default_b_array = np.ones(len(combined_array)) * default_b
+        for fault_name, difference in difference_dict.items():
+            fault_index = np.where(combined_array.iloc[:, 12] == fault_name)
+            default_b_array[fault_index] = a_value - difference
+        np.savetxt(output_file, default_b_array.T, fmt="%.5f")
+
+    def tile_quads(self, tile_size: float = 5000., interpolation_distance: float = 1000.,
+                         manual_tiles: dict = None, output_file: str = None):
+        if output_file is not None:
+            assert isinstance(output_file, str)
+        assert isinstance(tile_size, float)
+        assert isinstance(interpolation_distance, float)
+        assert isinstance(manual_tiles, dict) or manual_tiles is None
+
+        quads_dict = {}
+        if manual_tiles is not None:
+            assert all([key in self.names for key in manual_tiles.keys()])
+            for fault_name, file_name in manual_tiles.items():
+                assert os.path.exists(file_name)
+                tiles_array = np.load(file_name)
+                quads_dict[fault_name] = tiles_array
+
+
+        for fault in self.faults:
+            if not fault.name in manual_tiles.keys():
+                try:
+                    quads = fault.discretize_rectangular_tiles(tile_size=tile_size,
+                                                               interpolation_distance=interpolation_distance)
+                    quads = np.array(quads)
+
+                except Exception as e:
+                    print("Failed to merge", fault.name)
+                    print(e)
+                    quads = np.array([])
+
+                quads_dict[fault.name] = quads
+        if output_file is not None:
+            with open(output_file, "wb") as f:
+                pickle.dump(quads_dict, f)
+
+        return quads_dict
+
+
+
+
+
+
 
     def search_name(self, search_string: str):
         """

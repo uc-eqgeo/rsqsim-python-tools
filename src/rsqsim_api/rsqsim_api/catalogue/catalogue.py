@@ -15,6 +15,7 @@ from matplotlib import pyplot as plt
 from matplotlib import cm, colors
 from shapely.geometry import Polygon
 import geopandas as gpd
+from numpy.random import default_rng
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault, RsqSimSegment
 from rsqsim_api.catalogue.event import RsqSimEvent
@@ -27,6 +28,8 @@ from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
 import rsqsim_api.io.rsqsim_constants as csts
 from rsqsim_api.catalogue.utilities import calculate_scaling_c, calculate_stress_drop, \
     summary_statistics
+
+rng = default_rng()
 
 fint = Union[int, float]
 sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
@@ -195,20 +198,40 @@ class RsqSimCatalogue:
 
         # Read in catalogue to dataframe and initiate class instance
         rcat = cls.from_catalogue_file(catalogue_file, reproject=reproject)
-        # print("Messing around with this 9/5/23 - check it still does what you want!")
-        #
-        # print(rcat.catalogue_df.index)
+
+        num_events = len(rcat.catalogue_df)
+
         if serial:
-            rcat.patch_list = read_text(standard_list_files[0], format="i") - 1
-            # indices start from 1, change so that it is zero instead
-            rcat.event_list = read_text(standard_list_files[1], format="i") - 1
-            rcat.patch_slip, rcat.patch_time_list = [read_text(fname, format="d") for fname in
-                                                     standard_list_files[2:]]
+
+            event_list = read_text(standard_list_files[1], format="i") - 1
+            patch_list = read_text(standard_list_files[0], format="i") - 1
+            patch_slip, patch_time_list = [read_text(fname, format="d") for fname in
+                                           standard_list_files[2:]]
+
         else:
-            rcat.patch_list = read_binary(standard_list_files[0], format="i",endian=endian) - 1
-            # indices start from 1, change so that it is zero instead
-            rcat.event_list = read_binary(standard_list_files[1], format="i",endian=endian) - 1
-            rcat.patch_slip, rcat.patch_time_list = [read_binary(fname, format="d",endian=endian) for fname in standard_list_files[2:]]
+            patch_list = read_binary(standard_list_files[0], format="i",endian=endian) - 1
+            event_list = read_binary(standard_list_files[1], format="i",endian=endian) - 1
+            patch_slip, patch_time_list = [read_binary(fname, format="d",endian=endian) for fname in standard_list_files[2:]]
+
+        unique_events = np.unique(event_list)
+        if len(unique_events) == num_events:
+                rcat.event_list = event_list
+                rcat.patch_list = patch_list
+                rcat.patch_slip, rcat.patch_time_list = patch_slip, patch_time_list
+        else:
+            print("Event list does not match catalogue length. Trying to fix...")
+            if not len(unique_events) > num_events:
+                raise ValueError("Event list is too short!")
+            last_event = rcat.catalogue_df.index[-1]
+            short_events = event_list[event_list <= last_event]
+            short_patches = patch_list[:len(short_events)]
+            short_slip = patch_slip[:len(short_events)]
+            short_time = patch_time_list[:len(short_events)]
+            rcat.event_list = short_events
+            rcat.patch_list = short_patches
+            rcat.patch_slip, rcat.patch_time_list = short_slip, short_time
+
+            print("Fixed!")
 
         return rcat
 
@@ -335,7 +358,7 @@ class RsqSimCatalogue:
         return rcat
 
     def filter_by_events(self, event_number: Union[int, Iterable[int]], reset_index: bool = False):
-        if isinstance(event_number, (int,np.int32,np.int64)):
+        if isinstance(event_number, (int, np.int32,np.int64)):
             ev_ls = [event_number]
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
@@ -560,13 +583,12 @@ class RsqSimCatalogue:
     def events_by_number(self, event_number: Union[int, Iterable[int]], fault_model: RsqSimMultiFault,
                          child_processes: int = 0, min_patches: int = 1):
         assert isinstance(fault_model,RsqSimMultiFault), "Fault model required"
-        if isinstance(event_number, (int, np.int32)):
+        if isinstance(event_number, (int, np.int32, np.int64)):
             ev_ls = [event_number]
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
             ev_ls = list(event_number)
-            assert all([isinstance(a, (int,np.int32)) for a in ev_ls])
-
+            assert all([isinstance(a, (int, np.int32, np.int64)) for a in ev_ls])
         out_events = []
 
         cat_dict = self.catalogue_df.to_dict(orient='index')
@@ -833,7 +855,8 @@ class RsqSimCatalogue:
 
     def plot_mfd(self, plot_type: str = 'differential' , nSamp: int = 1000,
                  window: float = 80.*csts.seconds_per_year, n_bins: int=50, instrumental_path: str = None, inst_year_min: float = 1940, show: bool = True,
-                write: str = None, tmin: float = None, tmax: float = None, depth_min: float = None, depth_max: float =None, mmin: float = 4.5, mmax: float = 9.5):
+                write: str = None, tmin: float = None, tmax: float = None, depth_min: float = None, depth_max: float =None, mmin: float = 4.5, mmax: float = 9.5,
+                 plot_corrected_instrumental: bool = True):
         """
         Plot cumulative or differential Gutenburg-Richter distribution for a given catalogue with Aki b-value at reference mag.
         y-axis: log(annual frequency of events with M>Mw)
@@ -900,12 +923,14 @@ class RsqSimCatalogue:
                 plt.hist(instrumental_mags, n_bins, weights=weightsyrs_IM, range=(mmin, mmax), histtype='step',
                          log=True, label=f"{str(inst_year_min)}-{str(latest_year)}, Mw>{mmin:.1f}", edgecolor='b',
                          linewidth=1.5)
+                instrumental_b_value = calculate_b_value(instrumental_mags, time_interval_years=(latest_year - inst_year_min), min_mw=4.5, max_mw=8.5)
+                print(f"b-value for instrumental catalogue: {instrumental_b_value[0]:.2f}")
 
             plt.ylim([0.001, 1000])
 
         elif plot_type == "cumulative":
             for i in np.arange(1, nSamp, 1):
-                tinit = tmin + (np.random.rand() * (tmax - tmin - window))
+                tinit = tmin + (rng.uniform() * (tmax - tmin - window))
                 tfin = tinit + window
                 mags = self.catalogue_df["mw"].loc[
                     (self.catalogue_df['t0'] > tinit) & (self.catalogue_df['t0'] <= tfin)]
@@ -939,10 +964,11 @@ class RsqSimCatalogue:
                 IMcum = np.ones(shape=np.size(IMsort))
                 IMcum = np.cumsum(IMcum)
                 plt.semilogy(IMsort, IMcum * weightsyrs_IM[0], c='b', linewidth=1,
-                               label=f'{inst_year_min} - {latest_year}, Mw>{mmin:.1f}')
-                correctionFactor = 2 / 3.0 * 1 / 1.5
-                plt.semilogy(IMsort, IMcum * weightsyrs_IM[0] * correctionFactor, c='b', linestyle=':', linewidth=1,
-                               label=f'{inst_year_min} - {latest_year}, Mw>{mmin:.1f} corr')
+                               label=f'{inst_year_min} - {int(latest_year)}, Mw>{mmin:.1f}')
+                if plot_corrected_instrumental:
+                    correctionFactor = 2 / 3.0 * 1 / 1.5
+                    plt.semilogy(IMsort, IMcum * weightsyrs_IM[0] * correctionFactor, c='b', linestyle=':', linewidth=1,
+                                   label=f'{inst_year_min} - {int(latest_year)}, Mw>{mmin:.1f} corr')
                 xsortNZFull = IMsort[:]
                 ysortNZFull = IMcum * weightsyrs_IM[0]
             plt.ylim([0.001, 100])
@@ -993,6 +1019,7 @@ class RsqSimCatalogue:
             fig.savefig(write,dpi=450)
         if show:
             fig.show()
+
     def plot_mean_slip_vs_mag(self, fault_model: RsqSimMultiFault, show: bool = True,
                               write: str = None, plot_rel: bool = True):
         """
@@ -1105,7 +1132,15 @@ class RsqSimCatalogue:
             outfile_path = os.path.join(output_directory, f"event{event.event_id}.vtk")
             event.slip_dist_to_vtk(outfile_path, include_zeros=include_zeros,min_slip_value=min_slip_value)
 
-
+    def calculate_b_value(self, min_mw: float = 0.0, max_mw: float = 10.0, interval=0.1):
+        """
+        Calculate b-value from magnitudes and completeness magnitude.
+        :param magnitudes:
+        :param mc:
+        :return:
+        """
+        time_interval = (self.catalogue_df['t0'].max() - self.catalogue_df['t0'].min())/csts.seconds_per_year
+        return calculate_b_value(self.catalogue_df["mw"], time_interval, min_mw=min_mw, max_mw=max_mw, interval=interval)
 
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627",
                fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in",
@@ -1144,3 +1179,23 @@ def combine_boundaries(bounds1: list, bounds2: list):
     min_bounds = [min([a, b]) for a, b in zip(bounds1, bounds2)]
     max_bounds = [max([a, b]) for a, b in zip(bounds1, bounds2)]
     return min_bounds[:2] + max_bounds[2:]
+
+def calculate_b_value(magnitudes, time_interval_years, min_mw: float = 0.0, max_mw: float = 10.0, interval = 0.1):
+    """
+    Calculate b-value from magnitudes and completeness magnitude.
+    :param magnitudes:
+    :param mc:
+    :return:
+    """
+    magnitudes = np.array(magnitudes)
+    mfd_bins = np.arange(0., 10. + interval, interval)
+    mfd_hist = np.histogram(magnitudes, bins=mfd_bins)
+    bin_centres = mfd_bins[:-1] + interval/2
+    trimmed_bins = bin_centres[(bin_centres >= min_mw) & (bin_centres <= max_mw + interval)]
+    cumulative_mfd = np.array([sum(mfd_hist[0][i:]) for i in range(len(mfd_hist[0]))], dtype=float)
+    trimmed_mfd = cumulative_mfd[(bin_centres >= min_mw) & (bin_centres <= max_mw + interval)]
+    trimmed_mfd_no_zeros = trimmed_mfd[trimmed_mfd > 0.]
+    trimmed_mfd_no_zeros /= time_interval_years
+    trimmed_bins_no_zeros = trimmed_bins[trimmed_mfd > 0.]
+    grad, intercept = np.polyfit(trimmed_bins_no_zeros, np.log10(trimmed_mfd_no_zeros), 1)
+    return -1 * grad, intercept
