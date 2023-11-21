@@ -888,7 +888,7 @@ class RsqSimCatalogue:
 
         plt.figure()
         if plot_type == "differential":
-
+            tints = []
             for i in np.arange(1, nSamp, 1):
                 tinit = tmin + (rng.uniform() * (tmax - tmin - window))
                 tints.append(tinit)
@@ -929,8 +929,10 @@ class RsqSimCatalogue:
             plt.ylim([0.001, 1000])
 
         elif plot_type == "cumulative":
+            tints = []
             for i in np.arange(1, nSamp, 1):
                 tinit = tmin + (rng.uniform() * (tmax - tmin - window))
+                tints.append(tinit)
                 tfin = tinit + window
                 mags = self.catalogue_df["mw"].loc[
                     (self.catalogue_df['t0'] > tinit) & (self.catalogue_df['t0'] <= tfin)]
