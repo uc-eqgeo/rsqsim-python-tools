@@ -449,30 +449,73 @@ class RsqSimCatalogue:
 
             return None
 
-    def filter_not_on_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],fault_model: RsqSimMultiFault):
-        if isinstance(fault_or_faults, RsqSimSegment):
-            fault_ls = [fault_or_faults.name]
-        elif isinstance(fault_or_faults, RsqSimMultiFault):
-            fault_ls = [fault.name for fault in fault_or_faults.faults]
+    def filter_not_on_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],
+                            minimum_patches_per_fault: int = None):
+        if isinstance(fault_or_faults,RsqSimSegment):
+            fault_ls = [fault_or_faults]
+        elif isinstance(fault_or_faults,RsqSimMultiFault):
+            fault_ls=fault_or_faults.faults
         else:
             fault_ls = list(fault_or_faults)
 
-        ev_list=[]
-        for event in self.all_events(fault_model=fault_model):
-            fault_names=[fault.name for fault in event.faults]
-            if not any([name in fault_ls for name in fault_names]):
-                ev_list.append(event.event_id)
+        if minimum_patches_per_fault is not None:
+            assert isinstance(minimum_patches_per_fault, int)
+            assert minimum_patches_per_fault > 0
 
-        if len(ev_list) >0 :
-            return self.filter_by_events(ev_list)
+        # Collect all patches we don't want to be involved
+        all_patches = []
+        for fault in fault_ls:
+            all_patches += list(fault.patch_dic.keys())
+        patch_numbers = np.unique(np.array(all_patches))
+
+        #in1d will return true if any value in patch_numbers matches a value in patch_list
+        #i.e. don't have to rupture all faults in the list, only 1
+        # choose all events where this is the case, then remove them from the catalogue
+        patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
+        selected_events = self.event_list[patch_indices]
+        selected_patches = self.patch_list[patch_indices]
+        if selected_events.size > 0:
+            if minimum_patches_per_fault is not None:
+                events_gt_min = []
+                for fault in fault_ls:
+                    fault_patches = np.array(list(fault.patch_dic.keys()))
+                    fault_patch_indices = np.where(np.in1d(selected_patches, fault_patches))[0]
+                    fault_event_list = selected_events[fault_patch_indices]
+                    events_counter = Counter(fault_event_list)
+                    events_sufficient_patches = np.array([ev for ev, count in events_counter.items()
+                                                          if count >= minimum_patches_per_fault])
+                    events_gt_min += list(events_sufficient_patches)
+
+                event_numbers2reject = np.unique(np.array(events_gt_min))
+                event_indices = np.where(np.in1d(self.event_list, event_numbers2reject))[0]
+
+            else:
+                event_numbers2reject = np.unique(selected_events)
+                event_indices = np.where(np.in1d(self.event_list, event_numbers2reject))[0]
+            if len(event_indices) > 0:
+                trimmed_df = self.catalogue_df.drop(event_numbers2reject)
+
+                filtered_cat = self.from_dataframe(trimmed_df)
+                filtered_cat.event_list = np.delete(self.event_list,event_indices)
+                filtered_cat.patch_list = np.delete(self.patch_list,event_indices)
+                filtered_cat.patch_slip = np.delete(self.patch_slip,event_indices)
+                filtered_cat.patch_time_list = np.delete(self.patch_time_list,event_indices)
+
+                return filtered_cat
+            else:
+                print("No remaining events")
+                return None
         else:
-            print("All events include at least one of the specified faults.")
+            print("No events found which include:")
+            for fault in fault_ls:
+               print(fault.name)
 
-            return None
+            return self
 
 
     def find_surface_rupturing_events(self,fault_model: RsqSimMultiFault,min_slip: float =0.1, method: str = 'vertex',
-                                      n_patches: int = 1, max_depth: float = -1000., n_faults: int =1, write_flt_dict: bool = False):
+                                      n_patches: int = 1, max_depth: float = -1000., n_faults: int =1, write_flt_dict: bool = False,
+                                      faults2ignore: [list,str] = 'hikurangi'):
 
         """
         min_slip = 0.1  # min slip on a surface patch in m
@@ -488,7 +531,7 @@ class RsqSimCatalogue:
         surface_ev_ids = []
         for event in self.all_events(fault_model=fault_model):
             surface_faults = event.find_surface_faults(fault_model, min_slip=min_slip, method=method,
-                                                       n_patches=n_patches, max_depth=max_depth)
+                                                       n_patches=n_patches, max_depth=max_depth, faults2ignore=faults2ignore)
             if len(surface_faults) >= n_faults:
                 surface_ev_ids.append(event.event_id)
                 if write_flt_dict:
@@ -847,7 +890,7 @@ class RsqSimCatalogue:
         if plot_type == "differential":
             tints = []
             for i in np.arange(1, nSamp, 1):
-                tinit = tmin + (np.random.rand() * (tmax - tmin - window))
+                tinit = tmin + (rng.uniform() * (tmax - tmin - window))
                 tints.append(tinit)
                 tfin = tinit + window
                 mags = self.catalogue_df["mw"].loc[
@@ -886,8 +929,10 @@ class RsqSimCatalogue:
             plt.ylim([0.001, 1000])
 
         elif plot_type == "cumulative":
+            tints = []
             for i in np.arange(1, nSamp, 1):
                 tinit = tmin + (rng.uniform() * (tmax - tmin - window))
+                tints.append(tinit)
                 tfin = tinit + window
                 mags = self.catalogue_df["mw"].loc[
                     (self.catalogue_df['t0'] > tinit) & (self.catalogue_df['t0'] <= tfin)]

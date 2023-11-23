@@ -63,6 +63,7 @@ class RsqSimEvent:
         self._mean_slip = None
         self.length = None
         self._mean_strike = None
+        self._mean_strike_180 = None
         self._mean_dip = None
         self._mean_rake = None
         self._first_fault = None
@@ -85,26 +86,22 @@ class RsqSimEvent:
 
     @property
     def mean_slip(self):
-        if self._mean_slip is None:
-            self.find_mean_slip()
         return self._mean_slip
 
     @property
     def mean_strike(self):
-        if self._mean_strike is None:
-            self.find_mean_strike()
         return self._mean_strike
 
     @property
+    def mean_strike_180(self):
+        return self._mean_strike_180
+
+    @property
     def mean_dip(self):
-        if self._mean_dip is None:
-            self.find_mean_dip()
-        return self._mean_dip
+      return self._mean_dip
 
     @property
     def mean_rake(self):
-        if self._mean_rake is None:
-            self.find_mean_rake()
         return self._mean_rake
 
     def find_first_fault(self, fault_model: RsqSimMultiFault, name: bool = True):
@@ -226,6 +223,20 @@ class RsqSimEvent:
             npatches = len(self.patches)
             if npatches > 0:
                 self._mean_strike = cumstrike / npatches
+
+    def find_mean_strike_180(self):
+        if self.patches:
+            cumstrike = 0.
+            for patch in self.patches:
+                strike = patch.strike
+                if 0.<= strike <180:
+                    cumstrike += strike
+                else:
+                    assert(0.<= strike - 180 < 180), "strike not in range 0 - 360"
+                    cumstrike += (strike - 180.)
+            npatches = len(self.patches)
+            if npatches > 0:
+                self._mean_strike_180 = cumstrike / npatches
 
     def find_mean_dip(self):
         if self.patches:
@@ -683,7 +694,7 @@ class RsqSimEvent:
             plt.show()
 
     def find_surface_faults(self,fault_model: RsqSimMultiFault,min_slip: float =0.1, method: str = 'vertex',
-                                      n_patches: int = 1, max_depth: float = -1000.):
+                                      n_patches: int = 1, max_depth: float = -1000., faults2ignore: [list,str] ='hikurangi'):
         """
                min_slip = 0.1  # min slip on a surface patch in m
                method = 'centroid'  # specify vertex or centroid
@@ -693,31 +704,33 @@ class RsqSimEvent:
 
         assert method in ['centroid', 'vertex'], "Method must be centroid or vertex"
         assert max_depth < 0., "depths should be negative"
+        if issubclass(type(faults2ignore),str):
+            faults2ignore =[faults2ignore]
 
         surface_faults = []
         for fault in self.faults:
+            if not fault.name in faults2ignore:
+                surface_patches = []
+                for patch_id in fault.patch_numbers:
+                    if patch_id in self.patch_numbers:
+                        patch = fault.patch_dic[patch_id]
 
-            surface_patches = []
-            for patch_id in fault.patch_numbers:
-                if patch_id in self.patch_numbers:
-                    patch = fault.patch_dic[patch_id]
+                        if method == 'vertex':
+                            patch_zs = patch.vertices.flatten()[[2, 5, 8]]
+                            patch_z = np.max(patch_zs)  # use max because depths are negative
+                        elif method == 'centroid':
+                            patch_z = patch.centre[2]
+                        else:
+                            AssertionError('method must be vertex or centroid')
 
-                    if method == 'vertex':
-                        patch_zs = patch.vertices.flatten()[[2, 5, 8]]
-                        patch_z = np.max(patch_zs)  # use max because depths are negative
-                    elif method == 'centroid':
-                        patch_z = patch.centre[2]
-                    else:
-                        AssertionError('method must be vertex or centroid')
+                        if patch_z > max_depth:
+                            patch_ev_index = np.searchsorted(self.patch_numbers, patch_id)
+                            patch_slip = self.patch_slip[patch_ev_index]
+                            if patch_slip >= min_slip:
+                                surface_patches.append(patch_ev_index)
 
-                    if patch_z > max_depth:
-                        patch_ev_index = np.searchsorted(self.patch_numbers, patch_id)
-                        patch_slip = self.patch_slip[patch_ev_index]
-                        if patch_slip >= min_slip:
-                            surface_patches.append(patch_ev_index)
-
-            if len(surface_patches) >= n_patches:
-                surface_faults.append(fault.name)
+                if len(surface_patches) >= n_patches:
+                    surface_faults.append(fault.name)
 
 
         return surface_faults
