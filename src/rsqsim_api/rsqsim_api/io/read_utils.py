@@ -236,9 +236,23 @@ def read_vtk(vtk_file: str, min_point_sep=100.):
         mesh_points[i2] = 0.5 * (mesh.points[i1] + mesh.points[i2])
         mesh_points[i1] = 0.5 * (mesh.points[i1] + mesh.points[i2])
         triangles[triangles == i1] = i2
+    if len(problem_indices) > 0:
+        num_tris_pre = len(triangles)
+        tris_num_unique_vertices = np.unique(triangles, axis=1)
+        tri_lens = np.array([len(np.unique(tri)) for tri in tris_num_unique_vertices])
+        valid_tri_indices = np.where(tri_lens == 3)[0]
+        triangles = triangles[valid_tri_indices]
+        slip = mesh.cell_data["slip"][0][valid_tri_indices]
+        rake = mesh.cell_data["rake"][0][valid_tri_indices]
+        num_tris_post = len(triangles)
+        if num_tris_post < num_tris_pre:
+            print("Warning: {} triangles removed from mesh due to duplicate vertices".format(num_tris_pre - num_tris_post))
+    else:
+        slip = mesh.cell_data["slip"][0]
+        rake = mesh.cell_data["rake"][0]
     point_dict = {i: point for i, point in enumerate(mesh_points)}
     mesh_as_array = np.array([np.hstack([point_dict[vertex] for vertex in tri]) for tri in triangles])
-    slip = mesh.cell_data["slip"][0]
-    rake = mesh.cell_data["rake"][0]
+
+
     return mesh_as_array, slip, rake
 
