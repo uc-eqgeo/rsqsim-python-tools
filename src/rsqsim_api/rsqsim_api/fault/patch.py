@@ -101,7 +101,7 @@ class RsqSimGenericPatch:
     @strike_slip.setter
     def strike_slip(self, slip: float):
         if self.dip_slip is not None:
-            self.rake = self.calculate_rake(self.dip_slip, slip)
+            self.rake = self.calculate_rake(slip, self.dip_slip)
         self._strike_slip = slip
 
     @property

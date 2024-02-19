@@ -926,7 +926,7 @@ class RsqSimCatalogue:
                 instrumental_b_value = calculate_b_value(instrumental_mags, time_interval_years=(latest_year - inst_year_min), min_mw=4.5, max_mw=8.5)
                 print(f"b-value for instrumental catalogue: {instrumental_b_value[0]:.2f}")
 
-            plt.ylim([0.001, 1000])
+            plt.ylim([0.0001, 1000])
 
         elif plot_type == "cumulative":
             tints = []
@@ -973,7 +973,7 @@ class RsqSimCatalogue:
                                    label=f'{inst_year_min} - {int(latest_year)}, Mw>{mmin:.1f} corr')
                 xsortNZFull = IMsort[:]
                 ysortNZFull = IMcum * weightsyrs_IM[0]
-            plt.ylim([0.001, 100])
+            plt.ylim([0.0001, 100])
 
         plt.ylabel('N [$yr^{-1}$]')
         plt.xlabel('M')
