@@ -517,7 +517,7 @@ class RsqSimSegment:
         # Cache the vertices and faces arrays
 
         # First find adjacent triangles for all triangles
-        # Currently any triangle with a edge, could be a common vertex instead.
+        # Currently any triangle with a shared edge, could be a common vertex instead.
         for vertex_numbers in self.triangles:
             adjacent_triangles = []
             for j, triangle in enumerate(self.triangles):
@@ -529,6 +529,13 @@ class RsqSimSegment:
                     if verbose:
                         print(f"appending {j}")
             self._adjacency_map.append(adjacent_triangles)
+
+    def write_neighbour_file(self, filename: str):
+        with open(filename, "w") as f:
+            for i, row in enumerate(self.adjacency_map):
+                for item in row[:-1]:
+                    f.write(f"{item:d} ")
+                f.write(f"{row[-1]:d}\n")
 
     def build_laplacian_matrix(self,double=True, verbose:bool=True):
 
