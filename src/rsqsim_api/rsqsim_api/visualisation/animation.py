@@ -285,18 +285,40 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
     Writes a single frame of an animation to file
 
     """
-    frame_time_seconds = frame_time * seconds_per_year
+    if frame_time - time_to_threshold < 0:
+        print(frame_time, time_to_threshold)
+        time_to_threshold = frame_time  # Bodge to ensure that not searching catalogue for events before the start
 
+    frame_time_seconds = frame_time * seconds_per_year
     shortened_cat = catalogue.filter_df(min_t0=frame_time_seconds - time_to_threshold * seconds_per_year,
                                         max_t0=frame_time_seconds,
                                         min_mw=min_mw).copy(deep=True)
 
-
-    if shortened_cat.empty:
-        return frame_num, None
-    else:
+    if shortened_cat.empty:  # Plot boring frames
+    #    return frame_num, None
         loaded_subplots = pickle.load(open(pickled_background, "rb"))
-        print(frame_num)
+
+        fig, axes = loaded_subplots
+        slider_ax = axes["slider"]
+        time_slider = Slider(
+            slider_ax, 'Year', start_time - step_size, end_time + step_size, valinit=start_time - step_size,
+            valstep=step_size)
+        time_slider.valtext.set_visible(False)
+        year_ax = axes["year"]
+        year_text = year_ax.text(0.5, 0.5, str(int(0)), horizontalalignment='center', verticalalignment='center',
+                                fontsize=12)
+        if decimals == 0:
+            year_text.set_text(str(int(round(frame_time, 0))))
+        else:
+            year_text.set_text(f"{frame_time:.{decimals}f}")
+        time_slider.set_val(frame_time)
+
+        print('Frame: {}'.format(frame_num))
+
+        return frame_num, fig
+
+    else:  # Plot event frames
+        loaded_subplots = pickle.load(open(pickled_background, "rb"))
 
         fig, axes = loaded_subplots
         slider_ax = axes["slider"]
@@ -319,7 +341,7 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
         for event in events_for_plot:
 
             alpha = calculate_alpha((frame_time - event.t0  / seconds_per_year), fading_increment)
-            print(event.t0, alpha)
+            print('EQ Frame: {}, Event year: {:.2f}, alpha: {}'.format(frame_num, event.t0 / seconds_per_year, alpha))
             event.plot_slip_2d(subplots=(fig, axes[subplot_name]), global_max_slip=global_max_slip,
                                global_max_sub_slip=global_max_sub_slip, bounds=bounds, plot_log_scale=plot_log,
                                log_min=log_min, log_max=log_max, min_slip_value=min_slip_value, plot_zeros=plot_zeros,
@@ -357,18 +379,19 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
         frame_time_dict = {frame_i: frame_time for frame_i, frame_time in enumerate(steps)}
         frame_block_size = 500
         block_starts = np.arange(0, len(steps), frame_block_size)
-
+        
         def handle_output(future):
             frame_i, fig_i = future.result()
                     
             if fig_i is not None:
                 fig_i.savefig(f"{frame_dir}/frame{frame_i:04d}.png", format="png", dpi=100)
                 plt.close(fig_i)
-                print(f"Writing {frame_i}")
+                # print(f"Writing {frame_i}")
                 
             else:
                 no_earthquakes.append(frame_i)
 
+        print('Creating Earthquake Frames')
         for start, end in zip(block_starts, block_starts + frame_block_size):
             with ThreadPoolExecutor(max_workers=num_threads_plot) as plot_executor:
                 for frame_i, frame_time in zip(frames[start:end], steps[start:end]):
@@ -377,28 +400,28 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
                          submitted.add_done_callback(handle_output)
                 
 
+        # print('Creating Boring Frames')
+        # for frame_num in no_earthquakes:
+        #     loaded_subplots = pickle.load(open(pickled_background, "rb"))
+        #     print('{}/{}'.format(frame_num, len(steps)))
+        #     frame_time = frame_time_dict[frame_num]
 
-        for frame_num in no_earthquakes:
-            loaded_subplots = pickle.load(open(pickled_background, "rb"))
-            print(frame_num)
-            frame_time = frame_time_dict[frame_num]
-
-            fig, axes = loaded_subplots
-            slider_ax = axes["slider"]
-            time_slider = Slider(
-                slider_ax, 'Year', start_time - step_size, end_time + step_size, valinit=start_time - step_size,
-                valstep=step_size)
-            time_slider.valtext.set_visible(False)
-            year_ax = axes["year"]
-            year_text = year_ax.text(0.5, 0.5, str(int(0)), horizontalalignment='center', verticalalignment='center',
-                                    fontsize=12)
-            if decimals == 0:
-                year_text.set_text(str(int(round(frame_time, 0))))
-            else:
-                year_text.set_text(f"{frame_time:.{decimals}f}")
-            time_slider.set_val(frame_time)
-            fig.savefig(f"{frame_dir}/frame{frame_num:04d}.png", dpi=100)
-            plt.close(fig)
+        #     fig, axes = loaded_subplots
+        #     slider_ax = axes["slider"]
+        #     time_slider = Slider(
+        #         slider_ax, 'Year', start_time - step_size, end_time + step_size, valinit=start_time - step_size,
+        #         valstep=step_size)
+        #     time_slider.valtext.set_visible(False)
+        #     year_ax = axes["year"]
+        #     year_text = year_ax.text(0.5, 0.5, str(int(0)), horizontalalignment='center', verticalalignment='center',
+        #                             fontsize=12)
+        #     if decimals == 0:
+        #         year_text.set_text(str(int(round(frame_time, 0))))
+        #     else:
+        #         year_text.set_text(f"{frame_time:.{decimals}f}")
+        #     time_slider.set_val(frame_time)
+        #     fig.savefig(f"{frame_dir}/frame{frame_num:04d}.png", dpi=100)
+        #     plt.close(fig)
         
 
 
