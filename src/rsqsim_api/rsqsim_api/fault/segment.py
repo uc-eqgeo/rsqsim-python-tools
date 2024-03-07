@@ -500,7 +500,7 @@ class RsqSimSegment:
     def adjacency_map(self):
         return self._adjacency_map
 
-    def build_adjacency_map(self,verbose: bool =False):
+    def build_adjacency_map(self,verbose: bool =False,):
         """
         For each triangle vertex, find the indices of the adjacent triangles.
         This function overwrites that from the parent class TriangularPatches.
@@ -531,11 +531,13 @@ class RsqSimSegment:
             self._adjacency_map.append(adjacent_triangles)
 
     def write_neighbour_file(self, filename: str):
+        neighbours = [np.unique(np.vstack([np.argwhere((tri[i]==self.triangles).any(axis=1))
+                                           for i in range(3)])) for tri in self.triangles]
         with open(filename, "w") as f:
-            for i, row in enumerate(self.adjacency_map):
-                for item in row[:-1]:
-                    f.write(f"{item:d} ")
-                f.write(f"{row[-1]:d}\n")
+            for neighbour_list in neighbours:
+                for neighbour in neighbour_list:
+                    f.write(f"{neighbour:d} ")
+                f.write("\n")
 
     def build_laplacian_matrix(self,double=True, verbose:bool=True):
 
