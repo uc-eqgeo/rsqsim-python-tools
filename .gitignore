@@ -1,3 +1,5 @@
+run_cat_to_vtk.bash
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
