@@ -1131,7 +1131,7 @@ class RsqSimCatalogue:
         """
         assert os.path.exists(output_directory), "Make directory before writing VTK"
         for event in self.all_events(fault_model):
-            outfile_path = os.path.join(output_directory, f"event{event.event_id}.vtk")
+            outfile_path = os.path.join(output_directory, f"ev{event.event_id}.vtk")
             event.slip_dist_to_vtk(outfile_path, include_zeros=include_zeros,min_slip_value=min_slip_value)
 
     def calculate_b_value(self, min_mw: float = 0.0, max_mw: float = 10.0, interval=0.1):
