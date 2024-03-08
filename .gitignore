@@ -1,4 +1,4 @@
-run_cat_to_vtk.bash
+./examples/rsqsim_api/cli/run_cat_to_vtk.bash
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
