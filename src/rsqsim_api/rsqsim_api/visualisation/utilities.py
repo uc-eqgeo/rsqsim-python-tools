@@ -287,94 +287,128 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                     plot_hk: bool = False, plot_fault_outlines: bool = True, wgs: bool =  False, land_color: str ='antiquewhite',
                     plot_sub_cbar: bool = False, sub_slip_max: float = 20., plot_crust_cbar: bool = False, crust_slip_max: float = 10.,
                     subduction_cmap: colors.LinearSegmentedColormap = cm.plasma, crust_cmap: colors.LinearSegmentedColormap = cm.viridis,
-                    slider_axis: bool = False, aotearoa: bool = True):
+                    slider_axis: bool = False, aotearoa: bool = True, displace: bool = False, disp_cmap: colors.LinearSegmentedColormap = cm.bwr,
+                    disp_slip_max: float = 20.):
 
         if subplots is not None:
             fig, ax = subplots
             main_ax = ax
         else:
-            if plot_sub_cbar or plot_crust_cbar:
-                if not all([plot_sub_cbar, plot_crust_cbar]):
-                    if not slider_axis:
-                        mosaic = [["main_figure", "cbar"]]
-                    else:
-                        mosaic = [["main_figure", "cbar"],
-                                  ["slider", "year"]]
-                        height_ratio = [1, 0.1]
-                    width_ratio = [1, 0.05]
+            if not displace:
+                if plot_sub_cbar or plot_crust_cbar:
+                    if not all([plot_sub_cbar, plot_crust_cbar]):
+                        if not slider_axis:
+                            mosaic = [["main_figure", "cbar"]]
+                        else:
+                            mosaic = [["main_figure", "cbar"],
+                                    ["slider", "year"]]
+                            height_ratio = [1, 0.1]
+                        width_ratio = [1, 0.05]
 
+                    else:
+                        if not slider_axis:
+                            mosaic = [["main_figure", "sub_cbar", "crust_cbar"]]
+                        else:
+                            mosaic = [["main_figure", "sub_cbar", "crust_cbar"],
+                                    ["slider", "year", "year"]]
+                            height_ratio = [1, 0.1]
+                        width_ratio = [1, 0.05, 0.05]
                 else:
                     if not slider_axis:
-                        mosaic = [["main_figure", "sub_cbar", "crust_cbar"]]
+                        mosaic = [["main_figure"]]
                     else:
-                        mosaic = [["main_figure", "sub_cbar", "crust_cbar"],
-                                  ["slider", "year", "year"]]
-                        height_ratio = [1, 0.1]
-                    width_ratio = [1, 0.05, 0.05]
+                        mosaic =[["main_figure"],["slider","year","year"]]
+                        height_ratio = [1,0.1]
+                    width_ratio = [1]
+
+
+                if slider_axis:
+                    fig, ax = plt.subplot_mosaic(mosaic, gridspec_kw={"height_ratios": height_ratio,
+                                                                    "width_ratios": width_ratio},
+                                                layout="constrained")
+                    year_ax = ax["year"]
+                else:
+                    fig, ax = plt.subplot_mosaic(mosaic,
+                                                gridspec_kw={"width_ratios": width_ratio},
+                                                layout="constrained")
+                fig.set_size_inches(figsize)
+                main_ax_list = ax["main_figure"]
+
             else:
+                if not any([plot_sub_cbar, plot_crust_cbar]):
+                    print("Displacement plot requires subduction or crustal slip to be plotted")
+                    plot_crust_cbar = True
                 if not slider_axis:
-                    mosaic = [["main_figure"]]
+                    print("Displacement plot will plot year slider axis")
+                    slider_axis = True
+                if not all([plot_sub_cbar, plot_crust_cbar]):
+                    mosaic = [["main_figure", "cbar", "ud1", "ucbar1"],
+                            ["slider", "slider", "slider", "year"],
+                            ["ud2", "ucbar2", "ud3", "ucbar3"],
+                            ["tg", "tg", "tg", "tg"]]
+                    height_ratio = [1, 0.1, 1, 0.25]
+                    width_ratio = [1, 0.05, 1, 0.05]
                 else:
-                    mosaic =[["main_figure"],["slider","year","year"]]
-                    height_ratio = [1,0.1]
-                width_ratio = [1]
+                    mosaic = [["main_figure", "sub_cbar", "crust_cbar", "ud1", "ucbar1"],
+                            ["slider", "slider", "slider", "slider", "year"],
+                            ["ud2", "ucbar2", "cbar", "ud3", "ucbar3"],
+                            ["tg", "tg", "tg", "tg", "tg"]]
+                    height_ratio = [1, 0.1, 1, 0.25]
+                    width_ratio = [1, 0.05, 0.05, 1, 0.05]
 
-
-            if slider_axis:
                 fig, ax = plt.subplot_mosaic(mosaic, gridspec_kw={"height_ratios": height_ratio,
-                                                                  "width_ratios": width_ratio},
-                                             layout="constrained")
+                                                                "width_ratios": width_ratio},
+                                            layout="constrained")
                 year_ax = ax["year"]
-            else:
-                fig, ax = plt.subplot_mosaic(mosaic,
-                                             gridspec_kw={"width_ratios": width_ratio},
-                                             layout="constrained")
-            fig.set_size_inches(figsize)
-            main_ax = ax["main_figure"]
+                fig.set_size_inches(figsize)
+                main_ax_list = [ax["main_figure"], ax["ud1"], ax["ud2"], ax["ud3"]]
+                ud_cbar = [ax["ucbar1"], ax["ucbar2"], ax["ucbar3"]]
 
 
         plot_bounds = list(bounds)
-        if aotearoa:
-            if hillshading_intensity > 0:
-                plot_coast(main_ax, clip_boundary=plot_bounds, facecolor=land_color)
-                x_lim = main_ax.get_xlim()
-                y_lim = main_ax.get_ylim()
-                if hillshade_fine:
-                    plot_hillshade_niwa(main_ax, hillshading_intensity, clip_bounds=plot_bounds, cmap=hillshade_cmap)
+
+        for main_ax in main_ax_list:
+            if aotearoa:
+                if hillshading_intensity > 0:
+                    plot_coast(main_ax, clip_boundary=plot_bounds, facecolor=land_color)
+                    x_lim = main_ax.get_xlim()
+                    y_lim = main_ax.get_ylim()
+                    if hillshade_fine:
+                        plot_hillshade_niwa(main_ax, hillshading_intensity, clip_bounds=plot_bounds, cmap=hillshade_cmap)
+                    else:
+                        plot_hillshade(main_ax, hillshading_intensity, clip_bounds=plot_bounds, cmap=hillshade_cmap)
+                    main_ax.set_xlim(x_lim)
+                    main_ax.set_ylim(y_lim)
                 else:
-                    plot_hillshade(main_ax, hillshading_intensity, clip_bounds=plot_bounds, cmap=hillshade_cmap)
-                main_ax.set_xlim(x_lim)
-                main_ax.set_ylim(y_lim)
-            else:
-                plot_coast(main_ax, clip_boundary=plot_bounds,wgs=wgs, facecolor=land_color)
+                    plot_coast(main_ax, clip_boundary=plot_bounds,wgs=wgs, facecolor=land_color)
 
-            if plot_lakes:
-                plot_lake_polygons(ax=main_ax, clip_bounds=plot_bounds)
+                if plot_lakes:
+                    plot_lake_polygons(ax=main_ax, clip_bounds=plot_bounds)
 
-            if plot_rivers:
-                plot_river_lines(main_ax, clip_bounds=plot_bounds)
+                if plot_rivers:
+                    plot_river_lines(main_ax, clip_bounds=plot_bounds)
 
-            if plot_highways:
-                plot_highway_lines(main_ax, clip_bounds=plot_bounds)
+                if plot_highways:
+                    plot_highway_lines(main_ax, clip_bounds=plot_bounds)
 
-            if plot_boundaries:
-                plot_boundary_polygons(main_ax, clip_bounds=plot_bounds)
+                if plot_boundaries:
+                    plot_boundary_polygons(main_ax, clip_bounds=plot_bounds)
 
-            if plot_hk:
-                plot_hk_boundary(main_ax, clip_bounds=plot_bounds)
+                if plot_hk:
+                    plot_hk_boundary(main_ax, clip_bounds=plot_bounds)
 
-            if plot_fault_outlines:
-                pass
+                if plot_fault_outlines:
+                    pass
 
-        main_ax.set_aspect("equal")
-        x_lim = (plot_bounds[0], plot_bounds[2])
-        y_lim = (plot_bounds[1], plot_bounds[3])
-        main_ax.set_xlim(x_lim)
-        main_ax.set_ylim(y_lim)
+            main_ax.set_aspect("equal")
+            x_lim = (plot_bounds[0], plot_bounds[2])
+            y_lim = (plot_bounds[1], plot_bounds[3])
+            main_ax.set_xlim(x_lim)
+            main_ax.set_ylim(y_lim)
 
-        if not plot_edge_label:
-            main_ax.set_xticks([])
-            main_ax.set_yticks([])
+            if not plot_edge_label:
+                main_ax.set_xticks([])
+                main_ax.set_yticks([])
 
         if slider_axis:
             year_ax.set_xlim(0,1)
@@ -402,6 +436,14 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
             crust_cbar = fig.colorbar(
                 crust_mappable, cax=crust_ax, extend='max')
             crust_cbar.set_label("Crustal slip (m)")
+        
+        if displace:
+            disp_mappable = ScalarMappable(cmap=disp_cmap)
+            disp_mappable.set_clim(vmin=-disp_slip_max, vmax=disp_slip_max)
+            uix = []
+            for ix, uax in enumerate(ud_cbar):
+                uix.append(fig.colorbar(disp_mappable, cax=uax, extend='max'))
+                uix[ix].set_label("Uplift (m)")
 
         if pickle_name is not None:
             with open(pickle_name, "wb") as pfile:
