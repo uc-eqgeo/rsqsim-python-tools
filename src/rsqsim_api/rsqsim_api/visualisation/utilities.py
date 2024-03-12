@@ -288,7 +288,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                     plot_sub_cbar: bool = False, sub_slip_max: float = 20., plot_crust_cbar: bool = False, crust_slip_max: float = 10.,
                     subduction_cmap: colors.LinearSegmentedColormap = cm.plasma, crust_cmap: colors.LinearSegmentedColormap = cm.viridis,
                     slider_axis: bool = False, aotearoa: bool = True, displace: bool = False, disp_cmap: colors.LinearSegmentedColormap = cm.bwr,
-                    disp_slip_max: float = 20., step_size: list = None):
+                    disp_slip_max: float = 20., step_size: list = None, tide: dict = None):
 
         if subplots is not None:
             fig, ax = subplots
@@ -321,18 +321,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                         height_ratio = [1,0.1]
                     width_ratio = [1]
 
-
-                if slider_axis:
-                    fig, ax = plt.subplot_mosaic(mosaic, gridspec_kw={"height_ratios": height_ratio,
-                                                                    "width_ratios": width_ratio},
-                                                layout="constrained")
-                    year_ax = ax["year"]
-                else:
-                    fig, ax = plt.subplot_mosaic(mosaic,
-                                                gridspec_kw={"width_ratios": width_ratio},
-                                                layout="constrained")
-                fig.set_size_inches(figsize)
-                main_ax_list = ax["main_figure"]
+                main_ax_id = ["main_figure"]
                 main_ax_titles = ["Slip Distribution"]
 
             else:
@@ -345,25 +334,41 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                 if not all([plot_sub_cbar, plot_crust_cbar]):
                     mosaic = [["main_figure", "cbar", "ud1", "ucbar1"],
                             ["slider", "slider", "slider", "year"],
-                            ["ud2", "ucbar2", "ud3", "ucbar3"],
-                            ["tg", "tg", "tg", "tg"]]
-                    height_ratio = [1, 0.1, 1, 0.25]
+                            ["ud2", "ucbar2", "ud3", "ucbar3"]]
+                    height_ratio = [1, 0.1, 1]
                     width_ratio = [1, 0.05, 1, 0.05]
                 else:
                     mosaic = [["main_figure", "sub_cbar", "crust_cbar", "ud1", "ucbar1"],
                             ["slider", "slider", "slider", "slider", "year"],
-                            ["ud2", "ucbar2", "cbar", "ud3", "ucbar3"],
-                            ["tg", "tg", "tg", "tg", "tg"]]
-                    height_ratio = [1, 0.1, 1, 0.25]
+                            ["ud2", "ucbar2", "cbar", "ud3", "ucbar3"]]
+                    height_ratio = [1, 0.1, 1]
                     width_ratio = [1, 0.05, 0.05, 1, 0.05]
 
-                fig, ax = plt.subplot_mosaic(mosaic, gridspec_kw={"height_ratios": height_ratio,
-                                                                "width_ratios": width_ratio},
-                                            layout="constrained")
-                year_ax = ax["year"]
-                fig.set_size_inches(figsize)
-                main_ax_list = [ax["main_figure"], ax["ud1"], ax["ud2"], ax["ud3"]]
+                main_ax_id = ["main_figure", "ud1", "ud2", "ud3"]
                 main_ax_titles = ["Slip Distribution", "Coseismic Uplift", f"{step_size[1]:.0f} yrs", f"{step_size[2]:.0f} yrs"]
+            
+            if tide['time'] != 0:
+                tg = []
+                for i in range(len(mosaic[0])):
+                    tg.append('tg')
+                mosaic.append(tg)
+                height_ratio.append(0.25)
+
+            if slider_axis:
+                    fig, ax = plt.subplot_mosaic(mosaic, gridspec_kw={"height_ratios": height_ratio,
+                                                                    "width_ratios": width_ratio},
+                                                layout="constrained")
+                    year_ax = ax["year"]
+            else:
+                fig, ax = plt.subplot_mosaic(mosaic,
+                                            gridspec_kw={"width_ratios": width_ratio},
+                                            layout="constrained")
+            fig.set_size_inches(figsize)
+            main_ax_list = []
+            for id in main_ax_id:
+                main_ax_list.append(ax[id])
+
+            if displace:
                 ud_cbar = [ax["ucbar1"], ax["ucbar2"], ax["ucbar3"]]
 
 
@@ -454,5 +459,32 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
 
         return fig, ax
 
+def plot_tide_gauge(subplots, tide, frame_time, start_time, step_size):
 
+    fig, axU1, axTG = subplots
+    axU1.scatter(tide['x'], tide['y'], c='black', s=10, zorder=3)
+    
+    iterations = int((frame_time - start_time) // tide['time'])
+    part_time = int(((frame_time - start_time) % tide['time']) / step_size)
+    data = tide['data']
+    years = (data[:, 1] - start_time)
+
+    for run in range(iterations):
+        ix1 = run * tide['entries']
+        ix2 = (run + 1) * tide['entries'] + 1
+        ix0 = ix1 - 1 if ix1 > 0 else 0
+        axTG.plot(years[ix1:ix2] - years[ix0], data[ix1:ix2, 2] - data[ix0, 2], color='gray', alpha=0.5)
+
+    if part_time == 0 and frame_time != start_time:
+        iterations -= 1 # Extend red trend to end of full timespan when resetting
+        part_time = tide['entries']
+    ix1 = iterations * tide['entries']
+    ix2 = (iterations * tide['entries']) + part_time + 1
+    ix0 = ix1 - 1 if ix1 > 0 else 0
+
+    axTG.plot(years[ix1:ix2] - years[ix1], data[ix1:ix2, 2] - data[ix0, 2], color='red')
+    axTG.set_xlim([0, tide['time']])
+    axTG.set_ylim([-np.ceil(np.max(np.abs(data[:, 2]))), np.ceil(np.max(np.abs(data[:, 2])))])
+
+    return
 
