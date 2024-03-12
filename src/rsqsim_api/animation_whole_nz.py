@@ -10,6 +10,8 @@ import numpy as np
 import shutil
 from matplotlib import cm
 import geopandas as gpd
+import pandas as pd
+import netCDF4 as nc
 
 
 # Run Name
@@ -17,7 +19,6 @@ rsqsim_list_file_prefix = 'otago_1e6yr'
 
 # Define Variables
 procDir = os.path.join('/mnt', 'c', 'Users', 'jmc753', 'Work', 'RSQSim', 'Otago', 'otago-rsqsim-runs', 'otago_240214')  # Main processing directory
-
 flt_file = 'otago_faults_2500_tapered_slip.flt'
 
 trimname = []  # Name for trimmed EQ files
@@ -25,18 +26,26 @@ serial = False
 
 # Trim Catalogue Variables
 min_t0 = 1e5 # Start Time (yrs)
-max_t0 = 2e5 # End Time (yrs)
-min_mw = 7.0 # Minimum Magnitude
+max_t0 = 1.1e5 # End Time (yrs)
+min_mw = 6.5 # Minimum Magnitude
 min_patches = 1
 
 # Plotting variables
 step_size = 50  # Years between frames
 max_crust_slip = 10  # Max colourbar limit
 max_sub_slip = 25  # Max colourbar limit
-framerate = 100  # Frames per second
+max_disp_slip = 1  # Max colourbar limit
+min_disp_slip = 0.01  # Min colourbar limit
+framerate = 25  # Frames per second
 remake_frames = True  # Remake frames if they already exist
 hires_dem = True  # Use high resolution DEM
 
+disp_map_dir = os.path.join(procDir, 'grds')  # Directory containing displacement maps
+displace = True  # Include cumulative vertical displacements in the animation
+cum_times = [2475, 10000] # Times at which to plot cumulative displacements
+
+tide_gauge_time = 1000 # Time span of tide gauge data. Set to 0 for no tide gauge. Will be rounded up to be divisible by step_size
+tide_gauge_location = [1406510, 4917008]  # Location of tide gauge
 
 # Fading variables
 fadingTime = 1  # number of seconds over which an earthquake will fade
@@ -45,8 +54,15 @@ fadeFrames = int(np.ceil(fadingTime * framerate))  # number of frames over which
 time_to_threshold = fadeFrames * step_size  # Time in years for fading to occur
 fading = np.power(100/fadingPercent, 1/time_to_threshold)  # Fading rate required for plotting
 
-aniName = '{}_{:.0e}-{:.0e}_Mw{:.1f}_{}yr'.format(rsqsim_list_file_prefix,min_t0, max_t0, min_mw, step_size)
+aniName = '{}_{:.1e}-{:.1e}_Mw{:.1f}_{}yr'.format(rsqsim_list_file_prefix,min_t0, max_t0, min_mw, step_size)
 aniName = aniName.replace('+', '')
+
+if displace:
+    step_size = [step_size] + cum_times
+else:
+    step_size = [step_size]
+
+tide = {'time': int(step_size[0] * np.ceil(tide_gauge_time / step_size[0])), 'x': tide_gauge_location[0], 'y': tide_gauge_location[1]}
 
 print('Earthquakes over Mw {} to fade over {} seconds (i.e. {} frames covering {} years at {} fps)'.format(min_mw, fadingTime, fadeFrames, time_to_threshold, framerate))
 print('Movie Name: {}.mp4\n'.format(aniName))
@@ -95,26 +111,58 @@ if __name__ == "__main__":
     trimmed_catalogue = RsqSimCatalogue.from_csv_and_arrays(os.path.join(animationDir,trimname))
     filtered_events = trimmed_catalogue.events_by_number(trimmed_catalogue.catalogue_df.index, trimmed_faults, min_patches=min_patches)
 
+    print('Calculating synthetic tide gauge')
+    if tide['time'] > 0:
+        frame_times = np.arange(min_t0, max_t0 + step_size[0], step_size[0])
+        event_df = pd.read_csv(os.path.join(animationDir,trimname + '_catalogue.csv'))
+        TG = np.zeros((len(frame_times), 3))  # Frame ID, Year, Tide Level
+        TG[:, 0] = np.arange(len(frame_times))
+        TG[:, 1] = frame_times
+        frame_times = frame_times * seconds_per_year
+        for frame in range(1, len(frame_times)):
+            events = event_df[event_df['t0'].between(frame_times[frame - 1], frame_times[frame])]
+            disp = TG[frame - 1, 2]
+            if events.shape[0] > 0:
+                for ix, event in enumerate(events['Unnamed: 0'].values):
+                    disp_grd = nc.Dataset(os.path.join(disp_map_dir, f"ev{event:.0f}.grd"))
+                    if ix == 0:
+                        dispX = disp_grd['x'][:].data
+                        dispY = disp_grd['y'][:].data
+                        dx = np.diff(dispX)[0]
+                        dy = np.diff(dispY)[0]
+                        gridX = np.round((tide['x'] - dispX[0]) / dx)
+                        gridY = np.round((tide['y'] - dispY[0]) / dy)
+                    disp = np.nansum([disp, disp_grd['z'][int(gridY), int(gridX)].data])
+            TG[frame, 2] = disp
+        tide['entries'] = int(tide['time'] / step_size[0])
+        tide['file'] = os.path.join(animationDir, 'tide_gauge.npy')
+        tide['data'] = TG
+        np.save(tide['file'], TG)   
+        
     print('Plotting Background')
     background = plot_background(plot_lakes=False, bounds=bounds,
                                 plot_highways=False, plot_rivers=False, hillshading_intensity=0.3,
-                                 pickle_name=os.path.join(animationDir,'temp.pkl'), hillshade_cmap=cm.Greys, hillshade_fine=hires_dem,
-                                 plot_edge_label=False, figsize=(10, 10), plot_sub_cbar=subd_plot, plot_crust_cbar=True,
-                                 slider_axis=True, crust_slip_max=max_crust_slip, sub_slip_max=max_sub_slip)
+                                pickle_name=os.path.join(animationDir,'temp.pkl'), hillshade_cmap=cm.Greys, hillshade_fine=hires_dem,
+                                plot_edge_label=False, figsize=(10, 10), plot_sub_cbar=subd_plot, plot_crust_cbar=True,
+                                slider_axis=True, crust_slip_max=max_crust_slip, sub_slip_max=max_sub_slip,
+                                displace=displace, disp_slip_max=max_disp_slip, step_size=step_size, tide=tide)
 
     if remake_frames:
         print('Plotting animation frames')
         write_animation_frames(min_t0, max_t0, step_size, trimmed_catalogue, trimmed_faults,
-                           pickled_background=os.path.join(animationDir,'temp.pkl'), bounds=bounds,
-                           extra_sub_list=["hikurangi", "hikkerm", "puysegur"], time_to_threshold=time_to_threshold,
-                           global_max_sub_slip=max_sub_slip, global_max_slip=max_crust_slip, min_mw=min_mw, decimals=0,
-                           fading_increment=fading, frame_dir=frameDir, num_threads_plot=None, min_slip_value=0.2)
+                        pickled_background=os.path.join(animationDir,'temp.pkl'), bounds=bounds,
+                        extra_sub_list=["hikurangi", "hikkerm", "puysegur"], time_to_threshold=time_to_threshold,
+                        global_max_sub_slip=max_sub_slip, global_max_slip=max_crust_slip, min_mw=min_mw, decimals=0,
+                        fading_increment=fading, frame_dir=frameDir, num_threads_plot=None, min_slip_value=0.2,
+                        displace=displace, disp_slip_max=max_disp_slip, disp_slip_min=min_disp_slip, 
+                        disp_map_dir=disp_map_dir, tide=tide)
     else:
         print('Reusing previous frames')
 
+
     print('\nStitching frames into animation')
 
-    aniName = '{}_{:.0e}-{:.0e}_Mw{:.1f}_{}yr'.format(rsqsim_list_file_prefix,min_t0, max_t0, min_mw, step_size)
+    aniName = '{}_{:.0e}-{:.0e}_Mw{:.1f}_{}yr'.format(rsqsim_list_file_prefix,min_t0, max_t0, min_mw, step_size[0])
     aniName = aniName.replace('+', '')
 
     ffmpeg = "ffmpeg -framerate {2} -i '{0:s}/frame%04d.png' -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -y '{1:s}/{3:s}.mp4'".format(frameDir, animationDir, framerate, aniName)
@@ -127,4 +175,4 @@ if __name__ == "__main__":
     if tidy:
         os.remove(os.path.join(animationDir,'temp.pkl'))
         for junk in filesuffixes:
-           os.remove(os.path.join(animationDir,'{}_{}.npy'.format(trimname, junk)))
+            os.remove(os.path.join(animationDir,'{}_{}.npy'.format(trimname, junk)))

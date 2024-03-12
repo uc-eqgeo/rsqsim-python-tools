@@ -1,6 +1,6 @@
 from rsqsim_api.catalogue.catalogue import RsqSimCatalogue
 from rsqsim_api.fault.multifault import RsqSimMultiFault
-from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade
+from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade, plot_tide_gauge
 from rsqsim_api.io.rsqsim_constants import seconds_per_year
 from matplotlib import pyplot as plt
 from matplotlib.widgets import Slider
@@ -13,6 +13,7 @@ import os.path
 import math
 import numpy as np
 import pickle
+import netCDF4 as nc
 from io import BytesIO
 
 from multiprocessing import Pool
@@ -280,7 +281,8 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                            bounds: tuple = None, fading_increment: float = 2.0, time_to_threshold: float = 10.,
                            plot_log: bool = False, log_min: float = 1., log_max: float = 100.,
                            min_slip_value: float = None, plot_zeros: bool = True, extra_sub_list: list = None,
-                           min_mw: float = None, decimals: int = 1, subplot_name: str = "main_figure"):
+                           min_mw: float = None, decimals: int = 1, subplot_name: str = "main_figure",
+                           displace: bool = False, disp_slip_max: float = 10., disp_slip_min: float = 0.01, disp_map_dir: str = None, tide: dict = None):
     """
     Writes a single frame of an animation to file
 
@@ -294,6 +296,17 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                                         max_t0=frame_time_seconds,
                                         min_mw=min_mw).copy(deep=True)
 
+    disp_cats = []
+    if displace:    # Create Catalogue of events for cumulative displacements
+        cum_ax = ['ud2', 'ud3']
+        for cum_time in step_size[1:]:
+            if frame_time - cum_time < 0:
+                cum_time = frame_time
+        
+            disp_cats.append(catalogue.filter_df(min_t0=frame_time_seconds - cum_time * seconds_per_year,
+                                            max_t0=frame_time_seconds,
+                                            min_mw=min_mw).copy(deep=True))
+        
     if shortened_cat.empty:  # Plot boring frames
     #    return frame_num, None
         loaded_subplots = pickle.load(open(pickled_background, "rb"))
@@ -301,8 +314,8 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
         fig, axes = loaded_subplots
         slider_ax = axes["slider"]
         time_slider = Slider(
-            slider_ax, 'Year', start_time - step_size, end_time + step_size, valinit=start_time - step_size,
-            valstep=step_size)
+            slider_ax, 'Year', start_time - step_size[0], end_time + step_size[0], valinit=start_time - step_size[0],
+            valstep=step_size[0])
         time_slider.valtext.set_visible(False)
         year_ax = axes["year"]
         year_text = year_ax.text(0.5, 0.5, str(int(0)), horizontalalignment='center', verticalalignment='center',
@@ -313,6 +326,27 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
             year_text.set_text(f"{frame_time:.{decimals}f}")
         time_slider.set_val(frame_time)
 
+        if displace: # Plot cumulative displacements (Check needed as cumulative window can be larger than earthquake fading time)
+            for ix, disp_cat in enumerate(disp_cats):
+                if not disp_cat.empty:
+                    disp_cat["diff_t0"] = np.abs(disp_cat["t0"] - frame_time_seconds)
+                    sorted_indices = disp_cat.sort_values(by="diff_t0", ascending=False).index
+                    events_for_plot = catalogue.events_by_number(sorted_indices.tolist(), fault_model)
+                    temp_disp = nc.Dataset(os.path.join(disp_map_dir, "ev"+str(events_for_plot[0].event_id)+".grd"))
+                    dispX = temp_disp['x'][:].data
+                    dispY = temp_disp['y'][:].data
+                    disp_cum = np.zeros_like(np.array(temp_disp["z"])) * np.nan
+
+                    for event in events_for_plot:
+                        event_disp = np.array(nc.Dataset(os.path.join(disp_map_dir, "ev"+str(event.event_id)+".grd"))["z"])
+                        no_nan = np.where(~np.isnan(event_disp))
+                        disp_cum[no_nan] = np.nansum([disp_cum[no_nan], event_disp[no_nan]], axis=0)
+
+                    event.plot_uplift(subplots=(fig, axes[cum_ax[ix]]), disp_max=disp_slip_max, bounds=bounds, disp=np.flipud(disp_cum), Lon=dispX, Lat=dispY)
+
+        if tide['time'] > 0:
+            plot_tide_gauge((fig, axes['ud1'], axes['tg']), tide, frame_time, start_time, step_size[0])
+        
         print('Frame: {}'.format(frame_num))
 
         return frame_num, fig
@@ -323,8 +357,8 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
         fig, axes = loaded_subplots
         slider_ax = axes["slider"]
         time_slider = Slider(
-            slider_ax, 'Year', start_time - step_size, end_time + step_size, valinit=start_time - step_size,
-            valstep=step_size)
+            slider_ax, 'Year', start_time - step_size[0], end_time + step_size[0], valinit=start_time - step_size[0],
+            valstep=step_size[0])
         time_slider.valtext.set_visible(False)
         year_ax = axes["year"]
         year_text = year_ax.text(0.5, 0.5, str(int(0)), horizontalalignment='center', verticalalignment='center',
@@ -338,15 +372,50 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
         shortened_cat["diff_t0"] = np.abs(shortened_cat["t0"] - frame_time_seconds)
         sorted_indices = shortened_cat.sort_values(by="diff_t0", ascending=False).index
         events_for_plot = catalogue.events_by_number(sorted_indices.tolist(), fault_model)
-        for event in events_for_plot:
 
+        if displace: # Prepare array of cumulative displacements
+            temp_disp = nc.Dataset(os.path.join(disp_map_dir, "ev"+str(events_for_plot[0].event_id)+".grd"))
+            dispX = temp_disp['x'][:].data
+            dispY = temp_disp['y'][:].data
+            disp_cum = np.zeros_like(np.array(temp_disp["z"])) * np.nan
+
+        for event in events_for_plot:
             alpha = calculate_alpha((frame_time - event.t0  / seconds_per_year), fading_increment)
+
             print('EQ Frame: {}, Event year: {:.2f}, alpha: {}'.format(frame_num, event.t0 / seconds_per_year, alpha))
             event.plot_slip_2d(subplots=(fig, axes[subplot_name]), global_max_slip=global_max_slip,
-                               global_max_sub_slip=global_max_sub_slip, bounds=bounds, plot_log_scale=plot_log,
-                               log_min=log_min, log_max=log_max, min_slip_value=min_slip_value, plot_zeros=plot_zeros,
-                               extra_sub_list=extra_sub_list, alpha=alpha)
-            
+                            global_max_sub_slip=global_max_sub_slip, bounds=bounds, plot_log_scale=plot_log,
+                            log_min=log_min, log_max=log_max, min_slip_value=min_slip_value, plot_zeros=plot_zeros,
+                            extra_sub_list=extra_sub_list, alpha=alpha)
+            if displace:  # Create frame displacement map, with fading alpha
+                event_disp = np.array(nc.Dataset(os.path.join(disp_map_dir, "ev"+str(event.event_id)+".grd"))["z"])
+                no_nan = np.where(~np.isnan(event_disp))
+                disp_cum[no_nan] = np.nansum([disp_cum[no_nan], alpha * event_disp[no_nan]], axis=0)
+
+        
+        if displace:  # Plot displacement map of events shown in slip rate plot
+            event.plot_uplift(subplots=(fig, axes['ud1']), disp_max=disp_slip_max, bounds=bounds, disp=np.flipud(disp_cum), Lon=dispX, Lat=dispY)
+
+            for ix, disp_cat in enumerate(disp_cats): # Plot cumulative displacements, without fading
+                if not disp_cat.empty:
+                    disp_cat["diff_t0"] = np.abs(disp_cat["t0"] - frame_time_seconds)
+                    sorted_indices = disp_cat.sort_values(by="diff_t0", ascending=False).index
+                    events_for_plot = catalogue.events_by_number(sorted_indices.tolist(), fault_model)
+                    temp_disp = nc.Dataset(os.path.join(disp_map_dir, "ev"+str(events_for_plot[0].event_id)+".grd"))
+                    dispX = temp_disp['x'][:].data
+                    dispY = temp_disp['y'][:].data
+                    disp_cum = np.zeros_like(np.array(temp_disp["z"])) * np.nan
+
+                    for event in events_for_plot:
+                        event_disp = np.array(nc.Dataset(os.path.join(disp_map_dir, "ev"+str(event.event_id)+".grd"))["z"])
+                        no_nan = np.where(~np.isnan(event_disp))
+                        disp_cum[no_nan] = np.nansum([disp_cum[no_nan], event_disp[no_nan]], axis=0)
+
+                    event.plot_uplift(subplots=(fig, axes[cum_ax[ix]]), disp_max=disp_slip_max, bounds=bounds, disp=np.flipud(disp_cum), Lon=dispX, Lat=dispY, min_trans=0.2)
+
+        if tide['time'] > 0:
+            plot_tide_gauge((fig, axes['ud1'], axes['tg']), tide, frame_time, start_time, step_size[0])
+        
         return frame_num, fig
 
 
@@ -358,12 +427,13 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
                             min_slip_value: float = None, plot_zeros: bool = False, extra_sub_list: list = None,
                             min_mw: float = None, decimals: int = 1, subplot_name: str = "main_figure",
                             num_threads_plot: int = 4, frame_dir: str = "frames",
-                           ):
+                            displace: bool = False, disp_slip_max: float = 10.0, disp_slip_min: float = 0.01,
+                            disp_map_dir: str = None, tide: dict = None):
         """
         Writes all the frames of an animation to file
 
         """
-        steps = np.arange(start_time, end_time + step_size, step_size)
+        steps = np.arange(start_time, end_time + step_size[0], step_size[0])
         frames = np.arange(len(steps))
         pool_kwargs = { "catalogue": catalogue, "fault_model": fault_model,
                        "pickled_background": pickled_background, "subduction_cmap": subduction_cmap,
@@ -373,7 +443,8 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
                        "plot_log": plot_log, "log_min": log_min, "log_max": log_max,
                        "min_slip_value": min_slip_value, "plot_zeros": plot_zeros,
                        "extra_sub_list": extra_sub_list, "min_mw": min_mw, "decimals": decimals,
-                       "subplot_name": subplot_name}
+                       "subplot_name": subplot_name, "displace": displace, "disp_slip_max": disp_slip_max,
+                       "disp_slip_min": disp_slip_min, "disp_map_dir": disp_map_dir, "tide": tide}
         
         no_earthquakes = []
         frame_time_dict = {frame_i: frame_time for frame_i, frame_time in enumerate(steps)}

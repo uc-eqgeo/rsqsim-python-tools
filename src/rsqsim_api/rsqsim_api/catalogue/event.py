@@ -568,7 +568,7 @@ class RsqSimEvent:
         return plots
 
     def plot_uplift(self, disp_cmap: str = "bwr", disp_max: float = 10., subplots=None, bounds: tuple = None, disp: list = None,
-                    Lon: list = None, Lat: list = None):
+                    Lon: list = None, Lat: list = None, min_trans = 0):
 
         # Assume matplotlib objects
         fig, ax = subplots
@@ -582,11 +582,12 @@ class RsqSimEvent:
 
         transparencies = abs(disp) / disp_max
         transparencies[transparencies > 1] = 1
+        transparencies[transparencies < min_trans] = min_trans
         transparencies[np.isnan(transparencies)] = 1
 
         disp_plot = ax.imshow(disp, vmin=-disp_max, vmax=disp_max, cmap=disp_cmap,
-                              extent=[Lon[0] - dx, Lon[-1] + dx, Lat[0] - dy, Lat[-1] + dy], zorder=1,
-                              alpha=transparencies)
+                              extent=[Lon[0] - dx, Lon[-1] + dx, Lat[0] - dy, Lat[-1] + dy],
+                              zorder=1, alpha=transparencies)
         plots.append(disp_plot)
 
         return plots

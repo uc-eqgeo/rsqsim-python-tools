@@ -473,7 +473,7 @@ def plot_tide_gauge(subplots, tide, frame_time, start_time, step_size):
         ix1 = run * tide['entries']
         ix2 = (run + 1) * tide['entries'] + 1
         ix0 = ix1 - 1 if ix1 > 0 else 0
-        axTG.plot(years[ix1:ix2] - years[ix0], data[ix1:ix2, 2] - data[ix0, 2], color='gray', alpha=0.5)
+        axTG.plot(years[ix1:ix2] - years[ix1], data[ix1:ix2, 2] - data[ix0, 2], color='gray', alpha=0.5)
 
     if part_time == 0 and frame_time != start_time:
         iterations -= 1 # Extend red trend to end of full timespan when resetting
@@ -482,7 +482,7 @@ def plot_tide_gauge(subplots, tide, frame_time, start_time, step_size):
     ix2 = (iterations * tide['entries']) + part_time + 1
     ix0 = ix1 - 1 if ix1 > 0 else 0
 
-    axTG.plot(years[ix1:ix2] - years[ix1], data[ix1:ix2, 2] - data[ix0, 2], color='red')
+    axTG.plot(years[ix1:ix2] - years[ix1], data[ix1:ix2, 2] - data[ix0, 2], 'o-', color='red')
     axTG.set_xlim([0, tide['time']])
     axTG.set_ylim([-np.ceil(np.max(np.abs(data[:, 2]))), np.ceil(np.max(np.abs(data[:, 2])))])
 
