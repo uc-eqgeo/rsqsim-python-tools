@@ -288,7 +288,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                     plot_sub_cbar: bool = False, sub_slip_max: float = 20., plot_crust_cbar: bool = False, crust_slip_max: float = 10.,
                     subduction_cmap: colors.LinearSegmentedColormap = cm.plasma, crust_cmap: colors.LinearSegmentedColormap = cm.viridis,
                     slider_axis: bool = False, aotearoa: bool = True, displace: bool = False, disp_cmap: colors.LinearSegmentedColormap = cm.bwr,
-                    disp_slip_max: float = 20.):
+                    disp_slip_max: float = 20., step_size: list = None):
 
         if subplots is not None:
             fig, ax = subplots
@@ -333,6 +333,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                                                 layout="constrained")
                 fig.set_size_inches(figsize)
                 main_ax_list = ax["main_figure"]
+                main_ax_titles = ["Slip Distribution"]
 
             else:
                 if not any([plot_sub_cbar, plot_crust_cbar]):
@@ -362,6 +363,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                 year_ax = ax["year"]
                 fig.set_size_inches(figsize)
                 main_ax_list = [ax["main_figure"], ax["ud1"], ax["ud2"], ax["ud3"]]
+                main_ax_titles = ["Slip Distribution", "Coseismic Uplift", f"{step_size[1]:.0f} yrs", f"{step_size[2]:.0f} yrs"]
                 ud_cbar = [ax["ucbar1"], ax["ucbar2"], ax["ucbar3"]]
 
 
@@ -405,6 +407,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
             y_lim = (plot_bounds[1], plot_bounds[3])
             main_ax.set_xlim(x_lim)
             main_ax.set_ylim(y_lim)
+            main_ax.title.set_text(main_ax_titles[main_ax_list.index(main_ax)])
 
             if not plot_edge_label:
                 main_ax.set_xticks([])
@@ -442,7 +445,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
             disp_mappable.set_clim(vmin=-disp_slip_max, vmax=disp_slip_max)
             uix = []
             for ix, uax in enumerate(ud_cbar):
-                uix.append(fig.colorbar(disp_mappable, cax=uax, extend='max'))
+                uix.append(fig.colorbar(disp_mappable, cax=uax, extend='both'))
                 uix[ix].set_label("Uplift (m)")
 
         if pickle_name is not None:
