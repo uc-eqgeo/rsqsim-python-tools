@@ -554,7 +554,6 @@ class RsqSimEvent:
                         crust_cbar.set_label("Crustal slip (m)")
         if coast_on_top:
             plot_coast(ax=ax, wgs=wgs, linewidth=0.5, edgecolor='k')
-
         if title:
             plt.suptitle(title)
         if write is not None:
@@ -566,6 +565,29 @@ class RsqSimEvent:
 
         if show and subplots is None:
             plt.show()
+        return plots
+
+    def plot_uplift(self, disp_cmap: str = "bwr", disp_max: float = 10., subplots=None, bounds: tuple = None, disp: list = None,
+                    Lon: list = None, Lat: list = None):
+
+        # Assume matplotlib objects
+        fig, ax = subplots
+        plots = []
+        dx = np.diff(Lon)[0] / 2
+        dy = np.diff(Lat)[0] / 2
+
+        for fault in self.faults:
+                    if isinstance(fault.trace, LineString):
+                        ax.plot(*fault.trace.coords.xy, color='black', linestyle='dashed', linewidth=0.1, zorder=2)
+
+        transparencies = abs(disp) / disp_max
+        transparencies[transparencies > 1] = 1
+        transparencies[np.isnan(transparencies)] = 1
+
+        disp_plot = ax.imshow(disp, vmin=-disp_max, vmax=disp_max, cmap=disp_cmap,
+                              extent=[Lon[0] - dx, Lon[-1] + dx, Lat[0] - dy, Lat[-1] + dy], zorder=1,
+                              alpha=transparencies)
+        plots.append(disp_plot)
 
         return plots
 
