@@ -338,9 +338,14 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                     disp_cum = np.zeros_like(np.array(temp_disp["z"])) * np.nan
 
                     for event in events_for_plot:
-                        event_disp = np.array(nc.Dataset(os.path.join(disp_map_dir, "ev"+str(event.event_id)+".grd"))["z"])
-                        no_nan = np.where(~np.isnan(event_disp))
-                        disp_cum[no_nan] = np.nansum([disp_cum[no_nan], event_disp[no_nan]], axis=0)
+                        grdfile = os.path.join(disp_map_dir, "ev"+str(event.event_id)+".grd")
+                        if os.path.exists(grdfile):
+                            event_disp = np.array(nc.Dataset(grdfile)["z"])
+                            no_nan = np.where(~np.isnan(event_disp))
+                            try:
+                                disp_cum[no_nan] = np.nansum([disp_cum[no_nan], event_disp[no_nan]], axis=0)
+                            except IndexError:
+                                raise IndexError(f'{grdfile} likely different resolution to other displacement maps')
 
                     event.plot_uplift(subplots=(fig, axes[cum_ax[ix]]), disp_max=disp_slip_max, bounds=bounds, disp=np.flipud(disp_cum), Lon=dispX, Lat=dispY)
 
@@ -374,10 +379,12 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
         events_for_plot = catalogue.events_by_number(sorted_indices.tolist(), fault_model)
 
         if displace: # Prepare array of cumulative displacements
-            temp_disp = nc.Dataset(os.path.join(disp_map_dir, "ev"+str(events_for_plot[0].event_id)+".grd"))
-            dispX = temp_disp['x'][:].data
-            dispY = temp_disp['y'][:].data
-            disp_cum = np.zeros_like(np.array(temp_disp["z"])) * np.nan
+            grdfile = os.path.join(disp_map_dir, "ev"+str(events_for_plot[0].event_id)+".grd")
+            if os.path.exists(grdfile):
+                temp_disp = nc.Dataset(grdfile)
+                dispX = temp_disp['x'][:].data
+                dispY = temp_disp['y'][:].data
+                disp_cum = np.zeros_like(np.array(temp_disp["z"])) * np.nan
 
         for event in events_for_plot:
             alpha = calculate_alpha((frame_time - event.t0  / seconds_per_year), fading_increment)
@@ -388,9 +395,11 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                             log_min=log_min, log_max=log_max, min_slip_value=min_slip_value, plot_zeros=plot_zeros,
                             extra_sub_list=extra_sub_list, alpha=alpha)
             if displace:  # Create frame displacement map, with fading alpha
-                event_disp = np.array(nc.Dataset(os.path.join(disp_map_dir, "ev"+str(event.event_id)+".grd"))["z"])
-                no_nan = np.where(~np.isnan(event_disp))
-                disp_cum[no_nan] = np.nansum([disp_cum[no_nan], alpha * event_disp[no_nan]], axis=0)
+                grdfile = os.path.join(disp_map_dir, "ev"+str(event.event_id)+".grd")
+                if os.path.exists(grdfile):
+                    event_disp = np.array(nc.Dataset(grdfile)["z"])
+                    no_nan = np.where(~np.isnan(event_disp))
+                    disp_cum[no_nan] = np.nansum([disp_cum[no_nan], alpha * event_disp[no_nan]], axis=0)
 
         
         if displace:  # Plot displacement map of events shown in slip rate plot
@@ -407,9 +416,11 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                     disp_cum = np.zeros_like(np.array(temp_disp["z"])) * np.nan
 
                     for event in events_for_plot:
-                        event_disp = np.array(nc.Dataset(os.path.join(disp_map_dir, "ev"+str(event.event_id)+".grd"))["z"])
-                        no_nan = np.where(~np.isnan(event_disp))
-                        disp_cum[no_nan] = np.nansum([disp_cum[no_nan], event_disp[no_nan]], axis=0)
+                        grdfile = os.path.join(disp_map_dir, "ev"+str(event.event_id)+".grd")
+                        if os.path.exists(grdfile):
+                            event_disp = np.array(nc.Dataset(grdfile)["z"])
+                            no_nan = np.where(~np.isnan(event_disp))
+                            disp_cum[no_nan] = np.nansum([disp_cum[no_nan], alpha * event_disp[no_nan]], axis=0)
 
                     event.plot_uplift(subplots=(fig, axes[cum_ax[ix]]), disp_max=disp_slip_max, bounds=bounds, disp=np.flipud(disp_cum), Lon=dispX, Lat=dispY, min_trans=0.2)
 
