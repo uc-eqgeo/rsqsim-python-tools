@@ -221,7 +221,7 @@ class RsqSimCatalogue:
         else:
             print("Event list does not match catalogue length. Trying to fix...")
             if not len(unique_events) > num_events:
-                raise ValueError("Event list is too short!")
+                raise ValueError("Event list is too short! Try changing serial flag")
             last_event = rcat.catalogue_df.index[-1]
             short_events = event_list[event_list <= last_event]
             short_patches = patch_list[:len(short_events)]
