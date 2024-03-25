@@ -14,6 +14,7 @@ from matplotlib.cm import ScalarMappable
 from matplotlib.colors import LogNorm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+import os
 import rioxarray
 
 coast_shp_fine_name = "data/coastline/nz-coastlines-and-islands-polygons-topo-150k.shp"
@@ -288,7 +289,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                     plot_sub_cbar: bool = False, sub_slip_max: float = 20., plot_crust_cbar: bool = False, crust_slip_max: float = 10.,
                     subduction_cmap: colors.LinearSegmentedColormap = cm.plasma, crust_cmap: colors.LinearSegmentedColormap = cm.viridis,
                     slider_axis: bool = False, aotearoa: bool = True, displace: bool = False, disp_cmap: colors.LinearSegmentedColormap = cm.bwr,
-                    disp_slip_max: float = 20., step_size: list = None, tide: dict = None):
+                    disp_slip_max: float = 1., cum_slip_max: float = 5., step_size: list = None, tide: dict = None):
 
         if subplots is not None:
             fig, ax = subplots
@@ -340,7 +341,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                 else:
                     mosaic = [["main_figure", "sub_cbar", "crust_cbar", "ud1", "ucbar1"],
                             ["slider", "slider", "slider", "slider", "year"],
-                            ["ud2", "ucbar2", "cbar", "ud3", "ucbar3"]]
+                            ["ud2", "ucbar2", ".", "ud3", "ucbar3"]]
                     height_ratio = [1, 0.1, 1]
                     width_ratio = [1, 0.05, 0.05, 1, 0.05]
 
@@ -357,12 +358,12 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
             if slider_axis:
                     fig, ax = plt.subplot_mosaic(mosaic, gridspec_kw={"height_ratios": height_ratio,
                                                                     "width_ratios": width_ratio},
-                                                layout="constrained")
+                                                layout="tight")
                     year_ax = ax["year"]
             else:
                 fig, ax = plt.subplot_mosaic(mosaic,
                                             gridspec_kw={"width_ratios": width_ratio},
-                                            layout="constrained")
+                                            layout="tight")
             fig.set_size_inches(figsize)
             main_ax_list = []
             for id in main_ax_id:
@@ -446,16 +447,19 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
             crust_cbar.set_label("Crustal slip (m)")
         
         if displace:
-            disp_mappable = ScalarMappable(cmap=disp_cmap)
-            disp_mappable.set_clim(vmin=-disp_slip_max, vmax=disp_slip_max)
+            slip_max = [disp_slip_max, cum_slip_max, cum_slip_max]
+            ulabel = ["Uplift (m)", "Cumulative Uplift (m)", "Uumulative Uplift (m)"]
             uix = []
             for ix, uax in enumerate(ud_cbar):
+                disp_mappable = ScalarMappable(cmap=disp_cmap)
+                disp_mappable.set_clim(vmin=-slip_max[ix], vmax=slip_max[ix])
                 uix.append(fig.colorbar(disp_mappable, cax=uax, extend='both'))
-                uix[ix].set_label("Uplift (m)")
+                uix[ix].set_label(ulabel[ix])
 
         if pickle_name is not None:
             with open(pickle_name, "wb") as pfile:
                 pickle.dump((fig, ax), pfile)
+            fig.savefig(os.path.join(os.path.dirname(pickle_name), 'background.png'), format="png", dpi=100)
 
         return fig, ax
 
@@ -484,7 +488,8 @@ def plot_tide_gauge(subplots, tide, frame_time, start_time, step_size):
 
     axTG.plot(years[ix1:ix2] - years[ix1], data[ix1:ix2, 2] - data[ix0, 2], 'o-', color='red')
     axTG.set_xlim([0, tide['time']])
-    axTG.set_ylim([-np.ceil(np.max(np.abs(data[:, 2]))), np.ceil(np.max(np.abs(data[:, 2])))])
-
+    axTG.set_ylim([-tide['ylim'], tide['ylim']])
+    axTG.set_ylabel('Sea Level Change (m)')
+    axTG.set_xlabel('Time (years)')
     return
 

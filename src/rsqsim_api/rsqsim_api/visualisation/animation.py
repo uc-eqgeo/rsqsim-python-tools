@@ -18,6 +18,7 @@ from io import BytesIO
 
 from multiprocessing import Pool
 from functools import partial
+from time import time
 
 
 def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma",
@@ -282,11 +283,12 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                            plot_log: bool = False, log_min: float = 1., log_max: float = 100.,
                            min_slip_value: float = None, plot_zeros: bool = True, extra_sub_list: list = None,
                            min_mw: float = None, decimals: int = 1, subplot_name: str = "main_figure",
-                           displace: bool = False, disp_slip_max: float = 10., disp_slip_min: float = 0.01, disp_map_dir: str = None, tide: dict = None):
+                           displace: bool = False, disp_slip_max: float = 10., cum_slip_max: float = 5., disp_map_dir: str = None, tide: dict = None):
     """
     Writes a single frame of an animation to file
 
     """
+    begin = time()
     if frame_time - time_to_threshold < 0:
         print(frame_time, time_to_threshold)
         time_to_threshold = frame_time  # Bodge to ensure that not searching catalogue for events before the start
@@ -347,16 +349,17 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                             except IndexError:
                                 raise IndexError(f'{grdfile} likely different resolution to other displacement maps')
 
-                    event.plot_uplift(subplots=(fig, axes[cum_ax[ix]]), disp_max=disp_slip_max, bounds=bounds, disp=np.flipud(disp_cum), Lon=dispX, Lat=dispY)
+                    event.plot_uplift(subplots=(fig, axes[cum_ax[ix]]), disp_max=cum_slip_max, bounds=bounds, disp=np.flipud(disp_cum), Lon=dispX, Lat=dispY)
 
         if tide['time'] > 0:
             plot_tide_gauge((fig, axes['ud1'], axes['tg']), tide, frame_time, start_time, step_size[0])
         
-        print('Frame: {}'.format(frame_num))
+        print('Frame {} Total Time: {:.5f} seconds\n\n'.format(frame_num, time() - begin))
 
         return frame_num, fig
 
     else:  # Plot event frames
+        print('EQ Frame: {}'.format(frame_num))
         loaded_subplots = pickle.load(open(pickled_background, "rb"))
 
         fig, axes = loaded_subplots
@@ -422,11 +425,11 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                             no_nan = np.where(~np.isnan(event_disp))
                             disp_cum[no_nan] = np.nansum([disp_cum[no_nan], alpha * event_disp[no_nan]], axis=0)
 
-                    event.plot_uplift(subplots=(fig, axes[cum_ax[ix]]), disp_max=disp_slip_max, bounds=bounds, disp=np.flipud(disp_cum), Lon=dispX, Lat=dispY, min_trans=0.2)
+                    event.plot_uplift(subplots=(fig, axes[cum_ax[ix]]), disp_max=cum_slip_max, bounds=bounds, disp=np.flipud(disp_cum), Lon=dispX, Lat=dispY, min_trans=0.2)
 
         if tide['time'] > 0:
             plot_tide_gauge((fig, axes['ud1'], axes['tg']), tide, frame_time, start_time, step_size[0])
-        
+        print('Frame {} Total Time: {:.5f} seconds\n\n'.format(frame_num, time() - begin))
         return frame_num, fig
 
 
@@ -438,7 +441,7 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
                             min_slip_value: float = None, plot_zeros: bool = False, extra_sub_list: list = None,
                             min_mw: float = None, decimals: int = 1, subplot_name: str = "main_figure",
                             num_threads_plot: int = 4, frame_dir: str = "frames",
-                            displace: bool = False, disp_slip_max: float = 10.0, disp_slip_min: float = 0.01,
+                            displace: bool = False, disp_slip_max: float = 10.0, cum_slip_max: float = 5.,
                             disp_map_dir: str = None, tide: dict = None):
         """
         Writes all the frames of an animation to file
@@ -455,7 +458,7 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
                        "min_slip_value": min_slip_value, "plot_zeros": plot_zeros,
                        "extra_sub_list": extra_sub_list, "min_mw": min_mw, "decimals": decimals,
                        "subplot_name": subplot_name, "displace": displace, "disp_slip_max": disp_slip_max,
-                       "disp_slip_min": disp_slip_min, "disp_map_dir": disp_map_dir, "tide": tide}
+                       "cum_slip_max": cum_slip_max, "disp_map_dir": disp_map_dir, "tide": tide}
         
         no_earthquakes = []
         frame_time_dict = {frame_i: frame_time for frame_i, frame_time in enumerate(steps)}
@@ -473,7 +476,7 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
             else:
                 no_earthquakes.append(frame_i)
 
-        print('Creating Earthquake Frames')
+        print('Creating Earthquake Frames', num_threads_plot)
         for start, end in zip(block_starts, block_starts + frame_block_size):
             with ThreadPoolExecutor(max_workers=num_threads_plot) as plot_executor:
                 for frame_i, frame_time in zip(frames[start:end], steps[start:end]):

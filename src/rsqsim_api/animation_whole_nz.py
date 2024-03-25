@@ -14,6 +14,7 @@ import geopandas as gpd
 import pandas as pd
 import netCDF4 as nc
 import argparse
+from time import time
 
 
 if __name__ == "__main__":
@@ -35,20 +36,22 @@ if __name__ == "__main__":
     parser.add_argument("--min_mw", help="Minimum Magnitude", default=7.0, type=float)
     parser.add_argument("--min_patches", help="Minimum number of patches", default=1, type=int)
     parser.add_argument("--hires_dem", help="Use high resolution DEM", default=False, action="store_true")
-    parser.add_argument("--frame_time", help="Time between frames (yrs)", default=10, type=float)
+    parser.add_argument("--frameTime", help="Time between frames (yrs)", default=10, type=float)
     parser.add_argument("--max_crust_slip", help="Max plotted slip for crustal earthquakes", default=10, type=float)
     parser.add_argument("--max_sub_slip", help="Max plotted slip for subduction earthquakes", default=25, type=float)
     parser.add_argument("--max_disp_slip", help="Max plotted slip for displacement maps", default=1, type=float)
-    parser.add_argument("--min_disp_slip", help="Min plotted slip for displacement maps", default=0.01, type=float)
-    parser.add_argument("--framerate", help="Frames per second", default=5, type=float)
+    parser.add_argument("--max_cum_slip", help="Max plotted slip for cumulative displacement maps", default=5, type=float)
+    parser.add_argument("--frameRate", help="Frames per second", default=5, type=float)
     parser.add_argument("--displace", help="Include cumulative vertical displacements in the animation", default=False, action="store_true")
     parser.add_argument("--dispTimes", help="Times at which to plot cumulative displacements (2475 for 2 percent in 50 yrs) time1/time2", default='100/2475', type=str, dest='cum_times')
     parser.add_argument("--tideTime", help="Time span of tide gauge data", default=0, type=float, dest='tide_gauge_time')
-    parser.add_argument("--tideLocation", help="Location of tide gauge x1/x2", default='1749192/5427448', type=str, dest='tide_gauge_location')
-    parser.add_argument("--fadingTime", help="Number of seconds over which earthquakes fade", default=1, type=float)
-    parser.add_argument("--fadingPercent", help="Saturation that ruptures fade to (100 no fading, must be > 0)", default=4, type=float)
-    parser.add_argument("--bounds", help="Grid Bounds x1/x2/y1/y2", default='1080000/4747500/2200000/6223500', type=str)
+    parser.add_argument("--tideLocation", help="Location of tide gauge x1/x2", default='wellington', type=str, dest='tide_gauge_location')
+    parser.add_argument("--fadeTime", help="Number of seconds over which earthquakes fade", default=1, type=float)
+    parser.add_argument("--fadePercent", help="Saturation that ruptures fade to (100 no fading, must be > 0)", default=4, type=float)
+    parser.add_argument("--bounds", help="Grid Bounds x1/y1/x2/y2", default='1080000/4747500/2200000/6223500', type=str)
     parser.add_argument("--subd_plot", help="Plot subduction slip", default=False, action="store_true")
+    parser.add_argument("--numThreads", help="Number of threads for plotting", default=1, type=int)
+    parser.add_argument("--tideLim", help="Y-Limit for tide gauge plotting (m)", default=0.1, type=float)
 
     args = parser.parse_args()
 
@@ -62,8 +65,8 @@ if __name__ == "__main__":
     else:
         cum_times = []
 
-    if args.cum_times.lower() in locations.keys():
-        tide_gauge_location = locations[args.cum_times.lower()]
+    if args.tide_gauge_location.lower() in locations.keys():
+        tide_gauge_location = locations[args.tide_gauge_location.lower()]
     else:
         tide_gauge_location = [int(i) for i in args.tide_gauge_location.split('/')]
 
@@ -73,21 +76,21 @@ if __name__ == "__main__":
         args.displace = True
 
     # Fading variables
-    fadeFrames = int(np.ceil(args.fadingTime * args.framerate))  # number of frames over which an earthquake will fade
-    time_to_threshold = fadeFrames * args.frame_time  # Time in years for fading to occur
-    fading = np.power(100 / args.fadingPercent, 1 / time_to_threshold)  # Fading rate required for plotting
+    fadeFrames = int(np.ceil(args.fadeTime * args.frameRate))  # number of frames over which an earthquake will fade
+    time_to_threshold = fadeFrames * args.frameTime  # Time in years for fading to occur
+    fading = np.power(100 / args.fadePercent, 1 / time_to_threshold)  # Fading rate required for plotting
 
-    aniName = '{}_{:.1e}-{:.1e}_Mw{:.1f}_{}yr'.format(args.rsqsim_prefix, args.min_t0, args.max_t0, args.min_mw, args.frame_time)
+    aniName = '{}_{:.1e}-{:.1e}_Mw{:.1f}_{}yr'.format(args.rsqsim_prefix, args.min_t0, args.max_t0, args.min_mw, args.frameTime)
     aniName = aniName.replace('+', '')
 
     if args.displace:
-        frame_time = [args.frame_time] + cum_times
+        frameTime = [args.frameTime] + cum_times
     else:
-        frame_time = [args.frame_time]
+        frameTime = [args.frameTime]
 
-    tide = {'time': int(frame_time[0] * np.ceil(args.tide_gauge_time / frame_time[0])), 'x': tide_gauge_location[0], 'y': tide_gauge_location[1]}
+    tide = {'time': int(frameTime[0] * np.ceil(args.tide_gauge_time / frameTime[0])), 'x': tide_gauge_location[0], 'y': tide_gauge_location[1], 'ylim': args.tideLim}
 
-    print('Earthquakes over Mw {} to fade over {} seconds (i.e. {} frames covering {} years at {} fps)'.format(args.min_mw, args.fadingTime, fadeFrames, time_to_threshold, args.framerate))
+    print('Earthquakes over Mw {} to fade over {} seconds (i.e. {} frames covering {} years at {} fps)'.format(args.min_mw, args.fadeTime, fadeFrames, time_to_threshold, args.frameRate))
     print('Movie Name: {}.mp4\n'.format(aniName))
 
     if args.subd_plot:
@@ -130,7 +133,7 @@ if __name__ == "__main__":
 
         if tide['time'] > 0:
             print('Calculating synthetic tide gauge')
-            frame_times = np.arange(args.min_t0, args.max_t0 + frame_time[0], frame_time[0])
+            frame_times = np.arange(args.min_t0, args.max_t0 + frameTime[0], frameTime[0])
             event_df = pd.read_csv(os.path.join(animationDir,trimname + '_catalogue.csv'))
             TG = np.zeros((len(frame_times), 3))  # Frame ID, Year, Tide Level
             TG[:, 0] = np.arange(len(frame_times))
@@ -154,39 +157,42 @@ if __name__ == "__main__":
                                 first_event = False
                             disp = np.nansum([disp, disp_grd['z'][int(gridY), int(gridX)].data])
                 TG[frame, 2] = disp
-            tide['entries'] = int(tide['time'] / frame_time[0])
+            tide['entries'] = int(tide['time'] / frameTime[0])  # Number of entries in each tide guage time series
             tide['file'] = os.path.join(animationDir, 'tide_gauge.npy')
             tide['data'] = TG
             np.save(tide['file'], TG)   
 
         if args.remake_frames:
+            begin = time()
             print('Plotting Background')
             background = plot_background(plot_lakes=False, bounds=bounds,
                                     plot_highways=False, plot_rivers=False, hillshading_intensity=0.3,
                                     pickle_name=os.path.join(animationDir,'temp.pkl'), hillshade_cmap=cm.Greys, hillshade_fine=args.hires_dem,
                                     plot_edge_label=False, figsize=(10, 10), plot_sub_cbar=args.subd_plot, plot_crust_cbar=True,
                                     slider_axis=True, crust_slip_max=args.max_crust_slip, sub_slip_max=max_sub_slip,
-                                    displace=args.displace, disp_slip_max=args.max_disp_slip, step_size=frame_time, tide=tide)
+                                    displace=args.displace, disp_slip_max=args.max_disp_slip, cum_slip_max=args.max_cum_slip, step_size=frameTime, tide=tide)
 
             print('Plotting animation frames')
-            write_animation_frames(args.min_t0, args.max_t0, frame_time, trimmed_catalogue, trimmed_faults,
+            write_animation_frames(args.min_t0, args.max_t0, frameTime, trimmed_catalogue, trimmed_faults,
                             pickled_background=os.path.join(animationDir,'temp.pkl'), bounds=bounds,
                             extra_sub_list=["hikurangi", "hikkerm", "puysegur"], time_to_threshold=time_to_threshold,
                             global_max_sub_slip=max_sub_slip, global_max_slip=args.max_crust_slip, min_mw=args.min_mw, decimals=0,
-                            fading_increment=fading, frame_dir=frameDir, num_threads_plot=None, min_slip_value=0.2,
-                            displace=args.displace, disp_slip_max=args.max_disp_slip, disp_slip_min=args.min_disp_slip, 
+                            fading_increment=fading, frame_dir=frameDir, num_threads_plot=args.numThreads, min_slip_value=0.2,
+                            displace=args.displace, disp_slip_max=args.max_disp_slip, cum_slip_max=args.max_cum_slip, 
                             disp_map_dir=disp_map_dir, tide=tide)
+            print('Frames plotted in {:.2f} seconds'.format(time() - begin))
         else:
             print('Reusing previous frames')
 
         print('\nStitching frames into animation')
 
-        aniName = '{}_{:.0e}-{:.0e}_Mw{:.1f}_{}yr'.format(args.rsqsim_prefix, args.min_t0, args.max_t0, args.min_mw, frame_time[0])
+        aniName = '{}_{:.0e}-{:.0e}_Mw{:.1f}_{}yr'.format(args.rsqsim_prefix, args.min_t0, args.max_t0, args.min_mw, frameTime[0])
         aniName = aniName.replace('+', '')
 
-        ffmpeg = "ffmpeg -framerate {2} -i '{0:s}/frame%04d.png' -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -y '{1:s}/{3:s}.mp4'".format(frameDir, animationDir, args.framerate, aniName)
+        ffmpeg = "ffmpeg -framerate {2} -i '{0:s}/frame%04d.png' -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -y '{1:s}/{3:s}.mp4'".format(frameDir, animationDir, args.frameRate, aniName)
         print(ffmpeg, '\n')
         os.system(ffmpeg)
+        os.system('cat {} > movieMakerCmd.txt'.format(ffmpeg))
 
         # Tidy up
         tidy = True
