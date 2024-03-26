@@ -10,6 +10,7 @@ import sys
 import numpy as np
 import shutil
 from matplotlib import cm
+import matplotlib.pyplot as plt
 import geopandas as gpd
 import pandas as pd
 import netCDF4 as nc
@@ -45,7 +46,7 @@ if __name__ == "__main__":
     parser.add_argument("--displace", help="Include cumulative vertical displacements in the animation", default=False, action="store_true")
     parser.add_argument("--dispTimes", help="Times at which to plot cumulative displacements (2475 for 2 percent in 50 yrs) time1/time2", default='100/2475', type=str, dest='cum_times')
     parser.add_argument("--tideTime", help="Time span of tide gauge data", default=0, type=float, dest='tide_gauge_time')
-    parser.add_argument("--tideLocation", help="Location of tide gauge x1/x2", default='wellington', type=str, dest='tide_gauge_location')
+    parser.add_argument("--tideLocation", help="Location of tide gauge x1/x2", default='Wellington', type=str, dest='tide_gauge_location')
     parser.add_argument("--fadeTime", help="Number of seconds over which earthquakes fade", default=1, type=float)
     parser.add_argument("--fadePercent", help="Saturation that ruptures fade to (100 no fading, must be > 0)", default=4, type=float)
     parser.add_argument("--bounds", help="Grid Bounds x1/y1/x2/y2", default='1080000/4747500/2200000/6223500', type=str)
@@ -131,38 +132,43 @@ if __name__ == "__main__":
         trimmed_catalogue = RsqSimCatalogue.from_csv_and_arrays(os.path.join(animationDir,trimname))
         filtered_events = trimmed_catalogue.events_by_number(trimmed_catalogue.catalogue_df.index, trimmed_faults, min_patches=args.min_patches)
 
-        if tide['time'] > 0:
-            print('Calculating synthetic tide gauge')
-            frame_times = np.arange(args.min_t0, args.max_t0 + frameTime[0], frameTime[0])
-            event_df = pd.read_csv(os.path.join(animationDir,trimname + '_catalogue.csv'))
-            TG = np.zeros((len(frame_times), 3))  # Frame ID, Year, Tide Level
-            TG[:, 0] = np.arange(len(frame_times))
-            TG[:, 1] = frame_times
-            frame_times = frame_times * seconds_per_year
-            for frame in range(1, len(frame_times)):
-                events = event_df[event_df['t0'].between(frame_times[frame - 1], frame_times[frame])]
-                disp = TG[frame - 1, 2]
-                if events.shape[0] > 0:
-                    first_event = True  # Flag for first event in time period - needed for searching for available displacement maps
-                    for ix, event in enumerate(events[events.columns[0]].values):
-                        if os.path.exists(os.path.join(disp_map_dir, f"ev{event:.0f}.grd")):
-                            disp_grd = nc.Dataset(os.path.join(disp_map_dir, f"ev{event:.0f}.grd"))
-                            if first_event:
-                                dispX = disp_grd['x'][:].data
-                                dispY = disp_grd['y'][:].data
-                                dx = np.diff(dispX)[0]
-                                dy = np.diff(dispY)[0]
-                                gridX = np.round((tide['x'] - dispX[0]) / dx)
-                                gridY = np.round((tide['y'] - dispY[0]) / dy)
-                                first_event = False
-                            disp = np.nansum([disp, disp_grd['z'][int(gridY), int(gridX)].data])
-                TG[frame, 2] = disp
-            tide['entries'] = int(tide['time'] / frameTime[0])  # Number of entries in each tide guage time series
-            tide['file'] = os.path.join(animationDir, 'tide_gauge.npy')
-            tide['data'] = TG
-            np.save(tide['file'], TG)   
-
         if args.remake_frames:
+            if tide['time'] > 0:
+                print('Calculating synthetic tide gauge')
+                frame_times = np.arange(args.min_t0, args.max_t0 + frameTime[0], frameTime[0])
+                event_df = pd.read_csv(os.path.join(animationDir,trimname + '_catalogue.csv'))
+                TG = np.zeros((len(frame_times), 3))  # Frame ID, Year, Tide Level
+                TG[:, 0] = np.arange(len(frame_times))
+                TG[:, 1] = frame_times
+                frame_times = frame_times * seconds_per_year
+                for frame in range(1, len(frame_times)):
+                    events = event_df[event_df['t0'].between(frame_times[frame - 1], frame_times[frame])]
+                    disp = TG[frame - 1, 2]
+                    if events.shape[0] > 0:
+                        first_event = True  # Flag for first event in time period - needed for searching for available displacement maps
+                        for ix, event in enumerate(events[events.columns[0]].values):
+                            if os.path.exists(os.path.join(disp_map_dir, f"ev{event:.0f}.grd")):
+                                disp_grd = nc.Dataset(os.path.join(disp_map_dir, f"ev{event:.0f}.grd"))
+                                if first_event:
+                                    dispX = disp_grd['x'][:].data
+                                    dispY = disp_grd['y'][:].data
+                                    dx = np.diff(dispX)[0]
+                                    dy = np.diff(dispY)[0]
+                                    gridX = np.round((tide['x'] - dispX[0]) / dx)
+                                    gridY = np.round((tide['y'] - dispY[0]) / dy)
+                                    first_event = False
+                                disp = np.nansum([disp, disp_grd['z'][int(gridY), int(gridX)].data])
+                    TG[frame, 2] = disp
+                tide['entries'] = int(tide['time'] / frameTime[0])  # Number of entries in each tide guage time series
+                tide['file'] = os.path.join(animationDir, 'tide_gauge.npy')
+                tide['data'] = TG
+                np.save(tide['file'], TG)
+                plt.plot(TG[:, 1], TG[:, 2])
+                plt.title('Synthetic Tide Gauge for {}'.format(args.tide_gauge_location))
+                plt.xlabel('Time (yrs)')
+                plt.ylabel('Coseismically Induced Sea Level Change (m)')
+                plt.savefig(os.path.join(animationDir, 'tide_gauge.png'))
+
             begin = time()
             print('Plotting Background')
             background = plot_background(plot_lakes=False, bounds=bounds,
@@ -192,12 +198,14 @@ if __name__ == "__main__":
         ffmpeg = "ffmpeg -framerate {2} -i '{0:s}/frame%04d.png' -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -y '{1:s}/{3:s}.mp4'".format(frameDir, animationDir, args.frameRate, aniName)
         print(ffmpeg, '\n')
         os.system(ffmpeg)
-        os.system('cat {} > movieMakerCmd.txt'.format(ffmpeg))
+        os.system('echo {} > {}'.format(ffmpeg, os.path.join(animationDir, 'movieMakerCmd.txt')))
 
         # Tidy up
         tidy = True
         filesuffixes = ['events', 'patches', 'slip', 'slip_time']
         if tidy:
-            os.remove(os.path.join(animationDir,'temp.pkl'))
+            if os.path.exists(os.path.join(animationDir,'temp.pkl')):
+                os.remove(os.path.join(animationDir,'temp.pkl'))
             for junk in filesuffixes:
-                os.remove(os.path.join(animationDir,'{}_{}.npy'.format(trimname, junk)))
+                if os.path.exists(os.path.join(animationDir,'{}_{}.npy'.format(trimname, junk))):
+                    os.remove(os.path.join(animationDir,'{}_{}.npy'.format(trimname, junk)))
