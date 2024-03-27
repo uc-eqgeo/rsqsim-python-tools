@@ -1,5 +1,6 @@
 examples/rsqsim_api/cli/run_cat_to_vtk.bash
-src\rsqsim_api\rsqsim_api\visualisation\data\bathymetry\niwa_nztm.tif
+src/rsqsim_api/rsqsim_api/visualisation/data/bathymetry/niwa_nztm.tif
+data/bathymetry/niwa_nztm.tif
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
