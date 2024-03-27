@@ -289,7 +289,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                     plot_sub_cbar: bool = False, sub_slip_max: float = 20., plot_crust_cbar: bool = False, crust_slip_max: float = 10.,
                     subduction_cmap: colors.LinearSegmentedColormap = cm.plasma, crust_cmap: colors.LinearSegmentedColormap = cm.viridis,
                     slider_axis: bool = False, aotearoa: bool = True, displace: bool = False, disp_cmap: colors.LinearSegmentedColormap = cm.bwr,
-                    disp_slip_max: float = 1., cum_slip_max: float = 5., step_size: list = None, tide: dict = None):
+                    disp_slip_max: float = 1., cum_slip_max: list = [5., 10.], step_size: list = None, tide: dict = None):
 
         if subplots is not None:
             fig, ax = subplots
@@ -447,8 +447,8 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
             crust_cbar.set_label("Crustal slip (m)")
         
         if displace:
-            slip_max = [disp_slip_max, cum_slip_max, cum_slip_max]
-            ulabel = ["Uplift (m)", "Cumulative Uplift (m)", "Uumulative Uplift (m)"]
+            slip_max = [disp_slip_max] + cum_slip_max
+            ulabel = ["Uplift (m)", "Cumulative Uplift (m)", "Cumulative Uplift (m)"]
             uix = []
             for ix, uax in enumerate(ud_cbar):
                 disp_mappable = ScalarMappable(cmap=disp_cmap)
@@ -466,7 +466,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
 def plot_tide_gauge(subplots, tide, frame_time, start_time, step_size):
 
     fig, axU1, axTG = subplots
-    axU1.scatter(tide['x'], tide['y'], c='black', s=10, zorder=3)
+    axU1.scatter(tide['x'], tide['y'], c='black', s=20, zorder=3)
     
     iterations = int((frame_time - start_time) // tide['time'])
     part_time = int(((frame_time - start_time) % tide['time']) / step_size)
