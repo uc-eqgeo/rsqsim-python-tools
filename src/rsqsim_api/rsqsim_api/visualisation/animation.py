@@ -19,6 +19,7 @@ from io import BytesIO
 from multiprocessing import Pool
 from functools import partial
 from time import time
+from shapely.geometry import LineString
 
 def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, subduction_cmap: str = "plasma",
                     crustal_cmap: str = "viridis", global_max_slip: int = 10, global_max_sub_slip: int = 40,
@@ -294,7 +295,7 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                                         max_t0=frame_time_seconds,
                                         min_mw=min_mw).copy(deep=True)
 
-    disp_cats = []
+    disp_cats = [shortened_cat]
     if displace:    # Create Catalogue of events for cumulative displacements
         aniDir = os.path.dirname(pickled_background)
         slipDir = os.path.join(aniDir, 'slip')
@@ -330,7 +331,7 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                 disp_file = os.path.join(cumDirs[ix + 1], f'disp_{frame_num}.npy')
                 if os.path.exists(disp_file):
                     disp_cum = np.load(disp_file)
-                    event.plot_uplift(subplots=(fig, axes[cum]), disp_max=cum_slip_max[ix], bounds=bounds, disp=np.flipud(disp_cum), Lon=Lon, Lat=Lat, plot_faults=False)
+                    plot_uplift(subplots=(fig, axes[cum]), disp_max=cum_slip_max[ix], bounds=bounds, disp=np.flipud(disp_cum), Lon=Lon, Lat=Lat)
                 
         if tide['time'] > 0:
             plot_tide_gauge((fig, axes['ud1'], axes['tg']), tide, frame_time, start_time, step_size[0])
@@ -377,7 +378,7 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                 disp_file = os.path.join(cumDirs[ix], f'disp_{frame_num}.npy')
                 if os.path.exists(disp_file):
                     disp_cum = np.load(disp_file)
-                    event.plot_uplift(subplots=(fig, axes[cum]), disp_max=cum_slip_max[ix], bounds=bounds, disp=np.flipud(disp_cum), Lon=Lon, Lat=Lat, plot_faults=plot_faults[ix])
+                    plot_uplift(subplots=(fig, axes[cum]), disp_max=cum_slip_max[ix], bounds=bounds, disp=np.flipud(disp_cum), Lon=Lon, Lat=Lat)
 
         if tide['time'] > 0:
             plot_tide_gauge((fig, axes['ud1'], axes['tg']), tide, frame_time, start_time, step_size[0])
@@ -539,6 +540,28 @@ def write_displacement_grids(frame_num, frame_time, step_size, aniDir, catalogue
 
         np.save(os.path.join(slipDir, f'disp_{frame_num}.npy'), disp_cum)
     print('Frame: {} ({:.2f} seconds)'.format(frame_num, time() - begin))
+
+
+def plot_uplift(disp_cmap: str = "bwr", disp_max: float = 10., subplots=None, bounds: tuple = None, disp: list = None,
+                Lon: list = None, Lat: list = None, min_trans = 0):
+
+    # Assume matplotlib objects
+    fig, ax = subplots
+    plots = []
+    dx = np.diff(Lon)[0] / 2
+    dy = np.diff(Lat)[0] / 2
+
+    transparencies = abs(disp) / disp_max
+    transparencies[transparencies > 1] = 1
+    transparencies[transparencies < min_trans] = min_trans
+    transparencies[np.isnan(transparencies)] = 1
+
+    disp_plot = ax.imshow(disp, vmin=-disp_max, vmax=disp_max, cmap=disp_cmap,
+                            extent=[Lon[0] - dx, Lon[-1] + dx, Lat[0] - dy, Lat[-1] + dy],
+                            zorder=1, alpha=transparencies)
+    plots.append(disp_plot)
+
+    return plots
 
 
 def calculate_alpha(time_since_new, fading_increment):

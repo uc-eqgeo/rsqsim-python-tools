@@ -567,32 +567,6 @@ class RsqSimEvent:
             plt.show()
         return plots
 
-    def plot_uplift(self, disp_cmap: str = "bwr", disp_max: float = 10., subplots=None, bounds: tuple = None, disp: list = None,
-                    Lon: list = None, Lat: list = None, min_trans = 0, plot_faults: bool = True):
-
-        # Assume matplotlib objects
-        fig, ax = subplots
-        plots = []
-        dx = np.diff(Lon)[0] / 2
-        dy = np.diff(Lat)[0] / 2
-
-        if plot_faults:
-            for fault in self.faults:
-                        if isinstance(fault.trace, LineString):
-                            ax.plot(*fault.trace.coords.xy, color='black', linestyle='dashed', linewidth=0.1, zorder=2)
-
-        transparencies = abs(disp) / disp_max
-        transparencies[transparencies > 1] = 1
-        transparencies[transparencies < min_trans] = min_trans
-        transparencies[np.isnan(transparencies)] = 1
-
-        disp_plot = ax.imshow(disp, vmin=-disp_max, vmax=disp_max, cmap=disp_cmap,
-                              extent=[Lon[0] - dx, Lon[-1] + dx, Lat[0] - dy, Lat[-1] + dy],
-                              zorder=1, alpha=transparencies)
-        plots.append(disp_plot)
-
-        return plots
-
     def plot_slip_evolution(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
                             step_size: int = 1, write: str = None, fps: int = 20, file_format: str = "gif",
                             figsize: tuple = (6.4, 4.8), extra_sub_list: list = None):
