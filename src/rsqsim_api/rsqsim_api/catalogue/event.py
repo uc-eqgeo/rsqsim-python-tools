@@ -568,7 +568,7 @@ class RsqSimEvent:
         return plots
 
     def plot_uplift(self, disp_cmap: str = "bwr", disp_max: float = 10., subplots=None, bounds: tuple = None, disp: list = None,
-                    Lon: list = None, Lat: list = None, min_trans = 0):
+                    Lon: list = None, Lat: list = None, min_trans = 0, plot_faults: bool = True):
 
         # Assume matplotlib objects
         fig, ax = subplots
@@ -576,9 +576,10 @@ class RsqSimEvent:
         dx = np.diff(Lon)[0] / 2
         dy = np.diff(Lat)[0] / 2
 
-        for fault in self.faults:
-                    if isinstance(fault.trace, LineString):
-                        ax.plot(*fault.trace.coords.xy, color='black', linestyle='dashed', linewidth=0.1, zorder=2)
+        if plot_faults:
+            for fault in self.faults:
+                        if isinstance(fault.trace, LineString):
+                            ax.plot(*fault.trace.coords.xy, color='black', linestyle='dashed', linewidth=0.1, zorder=2)
 
         transparencies = abs(disp) / disp_max
         transparencies[transparencies > 1] = 1
@@ -757,6 +758,7 @@ class RsqSimEvent:
 
 
         return surface_faults
+
     def slip_dist_array(self, include_zeros: bool = True, min_slip_percentile: float = None,
                         min_slip_value: float = None, nztm_to_lonlat: bool = False):
         all_patches = []
