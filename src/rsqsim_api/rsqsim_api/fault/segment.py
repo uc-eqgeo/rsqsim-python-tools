@@ -321,6 +321,7 @@ class RsqSimSegment:
 
         # check no patches have 0 area
         triangle_verts = np.reshape(triangle_array, [len(triangle_array), 3, 3])
+        triangles_to_delete = []
         for i, triangle in enumerate(triangle_verts):
             side1 = triangle[1] - triangle[0]
             side2 = triangle[1] - triangle[2]
@@ -328,9 +329,12 @@ class RsqSimSegment:
             norm_cross = norm_3d(cross_prod)
             area = 0.5 * norm_cross
             if area < min_patch_area:
-                np.delete(triangle_array, i, axis=0)
-                if patch_numbers is not None:
-                    np.delete(patch_numbers, i, axis=0)
+                triangles_to_delete.append(i)
+        if len(triangles_to_delete) > 0:
+            triangle_array = np.delete(triangle_array, triangles_to_delete, axis=0)
+            if patch_numbers is not None:
+                np.delete(patch_numbers, triangles_to_delete, axis=0)
+
 
         if patch_numbers is None:
             patch_numbers = np.arange(len(triangle_array))

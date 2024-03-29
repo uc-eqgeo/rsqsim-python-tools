@@ -212,15 +212,31 @@ def read_stl(stl_file: str, min_point_sep=100.):
     point_tree = KDTree(mesh.points)
     distances, indices = point_tree.query(mesh.points, k=[2])
     problem_indices = indices[distances < min_point_sep]
-    for i1, i2 in zip(problem_indices[::2], problem_indices[1::2]):
-        mesh_points[i2] = 0.5 * (mesh.points[i1] + mesh.points[i2])
-        mesh_points[i1] = 0.5 * (mesh.points[i1] + mesh.points[i2])
-        triangles[triangles == i1] = i2
+    paired_indices = []
+    for i1 in problem_indices:
+        i2 = indices[i1][0]
+        if not any([i in paired_indices for i in [i1, i2]]):
+            p1 = mesh.points[i1]
+            p2 = mesh.points[i2]
+            mesh_points[i2] = 0.5 * (p1 + p2)
+            mesh_points[i1] = 0.5 * (p1 + p2)
+            triangles[triangles == i1] = i2
+            paired_indices += [i1, i2]
+    if len(problem_indices) > 0:
+        num_tris_pre = len(triangles)
+        tris_num_unique_vertices = np.unique(triangles, axis=1)
+        tri_lens = np.array([len(np.unique(tri)) for tri in tris_num_unique_vertices])
+        valid_tri_indices = np.where(tri_lens == 3)[0]
+        triangles = triangles[valid_tri_indices]
+        num_tris_post = len(triangles)
+        if num_tris_post < num_tris_pre:
+            print("Warning: {} triangles removed from mesh due to duplicate vertices".format(
+                num_tris_pre - num_tris_post))
     point_dict = {i: point for i, point in enumerate(mesh_points)}
     mesh_as_array = np.array([np.hstack([point_dict[vertex] for vertex in tri]) for tri in triangles])
     return mesh_as_array
 
-def read_vtk(vtk_file: str, min_point_sep=100.):
+def read_vtk(vtk_file: str, min_point_sep=1.):
     assert os.path.exists(vtk_file)
 
     mesh = meshio.read(vtk_file)
@@ -232,10 +248,16 @@ def read_vtk(vtk_file: str, min_point_sep=100.):
     point_tree = KDTree(mesh.points)
     distances, indices = point_tree.query(mesh.points, k=[2])
     problem_indices = indices[distances < min_point_sep]
-    for i1, i2 in zip(problem_indices[::2], problem_indices[1::2]):
-        mesh_points[i2] = 0.5 * (mesh.points[i1] + mesh.points[i2])
-        mesh_points[i1] = 0.5 * (mesh.points[i1] + mesh.points[i2])
-        triangles[triangles == i1] = i2
+    paired_indices = []
+    for i1 in problem_indices:
+        i2 = indices[i1][0]
+        if not any([i in paired_indices for i in [i1, i2]]):
+            p1 = mesh.points[i1]
+            p2 = mesh.points[i2]
+            mesh_points[i2] = 0.5 * (p1 + p2)
+            mesh_points[i1] = 0.5 * (p1 + p2)
+            triangles[triangles == i1] = i2
+            paired_indices += [i1, i2]
     if len(problem_indices) > 0:
         num_tris_pre = len(triangles)
         tris_num_unique_vertices = np.unique(triangles, axis=1)
