@@ -303,9 +303,8 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
         cum2Dir = os.path.join(aniDir, 'cum2')
         cum_ax = ['ud1', 'ud2', 'ud3']
         cumDirs = [slipDir, cum1Dir, cum2Dir]
-    
-    Lon = np.load(os.path.join(aniDir, 'Lon.npy'))
-    Lat = np.load(os.path.join(aniDir, 'Lat.npy'))
+        Lon = np.load(os.path.join(aniDir, 'Lon.npy'))
+        Lat = np.load(os.path.join(aniDir, 'Lat.npy'))
 
     if shortened_cat.empty:  # Plot boring frames
     #    return frame_num, None
