@@ -225,10 +225,11 @@ def plot_hillshade(ax, alpha: float = 0.3, vertical_exaggeration: float = 0.01, 
 def plot_hillshade_niwa(ax, alpha: float = 0.3, vertical_exaggeration: float = 0.01, clip_bounds: list = None,
                         cmap: LinearSegmentedColormap = None, vmin: float = -10000., vmax: float = 10000):
     hillshade_name = "data/bathymetry/niwa_nztm.tif"
-    if not os.path.exists(hillshade_name):
+    hillshade = pathlib.Path(__file__).parent / hillshade_name
+    if not os.path.exists(hillshade):
         print('Hi-res NIWA dem not found, using low-res instead')
         hillshade_name = "data/bathymetry/niwa_combined_10000.tif"
-    hillshade = pathlib.Path(__file__).parent / hillshade_name
+        hillshade = pathlib.Path(__file__).parent / hillshade_name
     xds = rioxarray.open_rasterio(hillshade)
     clipped = xds.rio.clip_box(*clip_bounds)
     xds.close()
