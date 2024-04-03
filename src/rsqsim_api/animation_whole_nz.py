@@ -44,6 +44,7 @@ if __name__ == "__main__":
     parser.add_argument("--frameRate", help="Frames per second", default=5, type=float)
     parser.add_argument("--displace", help="Include cumulative vertical displacements in the animation", default=False, action="store_true")
     parser.add_argument("--dispTimes", help="Times at which to plot cumulative displacements (2475 for 2 percent in 50 yrs) time1/time2", default='1000/2475', type=str, dest='cum_times')
+    parser.add_argument("--logScale", help="Plot displacements with log scale", default=False, action="store_true")
     parser.add_argument("--tideTime", help="Time span of tide gauge data", default=0, type=float, dest='tide_gauge_time')
     parser.add_argument("--tideLocation", help="Location of tide gauge x1/x2", default='Wellington', type=str, dest='tide_gauge_location')
     parser.add_argument("--fadeTime", help="Number of seconds over which earthquakes fade", default=1, type=float)
@@ -187,7 +188,7 @@ if __name__ == "__main__":
                                     pickle_name=os.path.join(animationDir,'temp.pkl'), hillshade_cmap=cm.Greys, hillshade_fine=args.hires_dem,
                                     plot_edge_label=False, figsize=(10, 10), plot_sub_cbar=args.subd_plot, plot_crust_cbar=True,
                                     slider_axis=True, crust_slip_max=args.max_crust_slip, sub_slip_max=max_sub_slip,
-                                    displace=args.displace, disp_slip_max=args.max_disp_slip, cum_slip_max=max_cum_slip, step_size=frameTime, tide=tide)
+                                    displace=args.displace, disp_slip_max=args.max_disp_slip, cum_slip_max=max_cum_slip, step_size=frameTime, tide=tide, logScale=args.logScale)
 
             print('Plotting animation frames')
             write_animation_frames(args.min_t0, args.max_t0, frameTime, trimmed_catalogue, trimmed_faults,
@@ -196,7 +197,7 @@ if __name__ == "__main__":
                             global_max_sub_slip=max_sub_slip, global_max_slip=args.max_crust_slip, min_mw=args.min_mw, decimals=0,
                             fading_increment=fading, frame_dir=frameDir, num_threads_plot=args.numThreads, min_slip_value=0.2,
                             displace=args.displace, disp_slip_max=args.max_disp_slip, cum_slip_max=max_cum_slip, 
-                            disp_map_dir=disp_map_dir, tide=tide)
+                            disp_map_dir=disp_map_dir, tide=tide, logScale=args.logScale)
             print('Frames plotted in {:.2f} seconds'.format(time() - begin))
         else:
             print('Reusing previous frames')

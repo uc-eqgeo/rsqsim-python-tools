@@ -293,7 +293,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                     plot_sub_cbar: bool = False, sub_slip_max: float = 20., plot_crust_cbar: bool = False, crust_slip_max: float = 10.,
                     subduction_cmap: colors.LinearSegmentedColormap = cm.plasma, crust_cmap: colors.LinearSegmentedColormap = cm.viridis,
                     slider_axis: bool = False, aotearoa: bool = True, displace: bool = False, disp_cmap: colors.LinearSegmentedColormap = cm.bwr,
-                    disp_slip_max: float = 1., cum_slip_max: list = [5., 10.], step_size: list = None, tide: dict = None):
+                    disp_slip_max: float = 1., cum_slip_max: list = [5., 10.], step_size: list = None, tide: dict = None, logScale: bool = True):
 
         if subplots is not None:
             fig, ax = subplots
@@ -455,8 +455,11 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
             ulabel = ["Uplift (m)", "Cumulative Uplift (m)", "Cumulative Uplift (m)"]
             uix = []
             for ix, uax in enumerate(ud_cbar):
-                disp_mappable = ScalarMappable(cmap=disp_cmap)
-                disp_mappable.set_clim(vmin=-slip_max[ix], vmax=slip_max[ix])
+                if logScale:
+                    disp_mappable = ScalarMappable(norm=colors.SymLogNorm(linthresh=0.01, linscale=0.01, vmin=-slip_max[ix], vmax=slip_max[ix]), cmap=disp_cmap)
+                else:
+                    disp_mappable = ScalarMappable(cmap=disp_cmap)
+                    disp_mappable.set_clim(vmin=-slip_max[ix], vmax=slip_max[ix])
                 uix.append(fig.colorbar(disp_mappable, cax=uax, extend='both'))
                 uix[ix].set_label(ulabel[ix])
 

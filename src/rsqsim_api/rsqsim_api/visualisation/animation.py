@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from matplotlib.widgets import Slider
 from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 from matplotlib.cm import ScalarMappable
-from matplotlib.colors import LogNorm
+from matplotlib.colors import LogNorm, SymLogNorm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor, wait, FIRST_COMPLETED
 import os.path
@@ -282,7 +282,7 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                            plot_log: bool = False, log_min: float = 1., log_max: float = 100.,
                            min_slip_value: float = None, plot_zeros: bool = True, extra_sub_list: list = None,
                            min_mw: float = None, decimals: int = 1, subplot_name: str = "main_figure",
-                           displace: bool = False, disp_slip_max: float = 10., cum_slip_max: list = [5., 10.], disp_map_dir: str = None, tide: dict = None):
+                           displace: bool = False, disp_slip_max: float = 10., cum_slip_max: list = [5., 10.], disp_map_dir: str = None, tide: dict = None, logScale: bool = False):
     """
     Writes a single frame of an animation to file
     """
@@ -330,7 +330,7 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                 disp_file = os.path.join(cumDirs[ix + 1], f'disp_{frame_num}.npy')
                 if os.path.exists(disp_file):
                     disp_cum = np.load(disp_file)
-                    plot_uplift(subplots=(fig, axes[cum]), disp_max=cum_slip_max[ix], bounds=bounds, disp=np.flipud(disp_cum), Lon=Lon, Lat=Lat)
+                    plot_uplift(subplots=(fig, axes[cum]), disp_max=cum_slip_max[ix], bounds=bounds, disp=np.flipud(disp_cum), Lon=Lon, Lat=Lat, logScale=logScale)
                 
         if tide['time'] > 0:
             plot_tide_gauge((fig, axes['ud1'], axes['tg']), tide, frame_time, start_time, step_size[0])
@@ -377,7 +377,7 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                 disp_file = os.path.join(cumDirs[ix], f'disp_{frame_num}.npy')
                 if os.path.exists(disp_file):
                     disp_cum = np.load(disp_file)
-                    plot_uplift(subplots=(fig, axes[cum]), disp_max=cum_slip_max[ix], bounds=bounds, disp=np.flipud(disp_cum), Lon=Lon, Lat=Lat)
+                    plot_uplift(subplots=(fig, axes[cum]), disp_max=cum_slip_max[ix], bounds=bounds, disp=np.flipud(disp_cum), Lon=Lon, Lat=Lat, logScale=logScale)
 
         if tide['time'] > 0:
             plot_tide_gauge((fig, axes['ud1'], axes['tg']), tide, frame_time, start_time, step_size[0])
@@ -394,7 +394,7 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
                             min_mw: float = None, decimals: int = 1, subplot_name: str = "main_figure",
                             num_threads_plot: int = 4, frame_dir: str = "frames",
                             displace: bool = False, disp_slip_max: float = 10.0, cum_slip_max: float = 5.,
-                            disp_map_dir: str = None, tide: dict = None):
+                            disp_map_dir: str = None, tide: dict = None, logScale: bool = False):
         """
         Writes all the frames of an animation to file
         """
@@ -409,7 +409,7 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
                        "min_slip_value": min_slip_value, "plot_zeros": plot_zeros,
                        "extra_sub_list": extra_sub_list, "min_mw": min_mw, "decimals": decimals,
                        "subplot_name": subplot_name, "displace": displace, "disp_slip_max": disp_slip_max,
-                       "cum_slip_max": cum_slip_max, "disp_map_dir": disp_map_dir, "tide": tide}
+                       "cum_slip_max": cum_slip_max, "disp_map_dir": disp_map_dir, "tide": tide, "logScale": logScale}
         
         no_earthquakes = []
         frame_time_dict = {frame_i: frame_time for frame_i, frame_time in enumerate(steps)}
@@ -542,7 +542,7 @@ def write_displacement_grids(frame_num, frame_time, step_size, aniDir, catalogue
 
 
 def plot_uplift(disp_cmap: str = "bwr", disp_max: float = 10., subplots=None, bounds: tuple = None, disp: list = None,
-                Lon: list = None, Lat: list = None, min_trans = 0):
+                Lon: list = None, Lat: list = None, min_trans = 0, logScale: bool = True):
 
     # Assume matplotlib objects
     fig, ax = subplots
@@ -555,9 +555,14 @@ def plot_uplift(disp_cmap: str = "bwr", disp_max: float = 10., subplots=None, bo
     transparencies[transparencies < min_trans] = min_trans
     transparencies[np.isnan(transparencies)] = 1
 
-    disp_plot = ax.imshow(disp, vmin=-disp_max, vmax=disp_max, cmap=disp_cmap,
-                            extent=[Lon[0] - dx, Lon[-1] + dx, Lat[0] - dy, Lat[-1] + dy],
-                            zorder=1, alpha=transparencies)
+    if logScale:
+        disp_plot = ax.imshow(disp, cmap=disp_cmap,
+                        extent=[Lon[0] - dx, Lon[-1] + dx, Lat[0] - dy, Lat[-1] + dy],
+                        zorder=1, alpha=transparencies, norm=SymLogNorm(linthresh=0.01, linscale=0.01, vmin=-disp_max, vmax=disp_max))
+    else:
+        disp_plot = ax.imshow(disp, vmin=-disp_max, vmax=disp_max, cmap=disp_cmap,
+                                extent=[Lon[0] - dx, Lon[-1] + dx, Lat[0] - dy, Lat[-1] + dy],
+                                zorder=1, alpha=transparencies)
     plots.append(disp_plot)
 
     return plots
