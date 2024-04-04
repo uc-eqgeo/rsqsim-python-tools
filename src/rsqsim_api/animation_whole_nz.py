@@ -144,6 +144,9 @@ if __name__ == "__main__":
         trimmed_catalogue = RsqSimCatalogue.from_csv_and_arrays(os.path.join(animationDir,trimname))
         filtered_events = trimmed_catalogue.events_by_number(trimmed_catalogue.catalogue_df.index, trimmed_faults, min_patches=args.min_patches)
 
+        ffmpeg = "ffmpeg -framerate {2} -i '{0:s}/frame%04d.png' -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -y '{1:s}/{3:s}.mp4'".format(frameDir, animationDir, args.frameRate, aniName)
+        os.system('echo {} > {}'.format(ffmpeg, os.path.join(animationDir, 'movieMakerCmd.txt')))
+
         if args.remake_frames:
             if tide['time'] > 0:
                 print('Calculating synthetic tide gauge')
@@ -207,10 +210,8 @@ if __name__ == "__main__":
         aniName = '{}_{:.0e}-{:.0e}_Mw{:.1f}_{}yr'.format(args.rsqsim_prefix, args.min_t0, args.max_t0, args.min_mw, frameTime[0])
         aniName = aniName.replace('+', '')
 
-        ffmpeg = "ffmpeg -framerate {2} -i '{0:s}/frame%04d.png' -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -y '{1:s}/{3:s}.mp4'".format(frameDir, animationDir, args.frameRate, aniName)
         print(ffmpeg, '\n')
         os.system(ffmpeg)
-        os.system('echo {} > {}'.format(ffmpeg, os.path.join(animationDir, 'movieMakerCmd.txt')))
 
         # Tidy up
         tidy = True
