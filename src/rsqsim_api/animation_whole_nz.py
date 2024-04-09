@@ -122,6 +122,10 @@ if __name__ == "__main__":
     trimname = "trimmed_" + args.rsqsim_prefix
 
     catalogue = RsqSimCatalogue.from_catalogue_file_and_lists(eq_output_file, args.procDir, args.rsqsim_prefix, serial=args.serial)
+    # Write out numpy files for the catalogue
+    if any([not os.path.exists(os.path.join(args.procDir, trimname + "_{}".format(i))) for i in ['catalogue.csv', 'events.npy', 'patches.npy', 'slip.npy', 'slip_time.npy']]):
+        print('Writing full catalogue files')
+        catalogue.write_csv_and_arrays(trimname, directory=args.procDir)
 
     trimmed_catalogue = catalogue.filter_whole_catalogue(min_t0=args.min_t0 * seconds_per_year, max_t0=args.max_t0 * seconds_per_year,
                                                         min_mw=args.min_mw)
