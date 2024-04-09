@@ -292,7 +292,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                     plot_hk: bool = False, plot_fault_outlines: bool = True, wgs: bool =  False, land_color: str ='antiquewhite',
                     plot_sub_cbar: bool = False, sub_slip_max: float = 20., plot_crust_cbar: bool = False, crust_slip_max: float = 10.,
                     subduction_cmap: colors.LinearSegmentedColormap = cm.plasma, crust_cmap: colors.LinearSegmentedColormap = cm.viridis,
-                    slider_axis: bool = False, aotearoa: bool = True, displace: bool = False, disp_cmap: colors.LinearSegmentedColormap = cm.bwr,
+                    slider_axis: bool = False, aotearoa: bool = True, displace: bool = False, cumSlip: bool = False, disp_cmap: colors.LinearSegmentedColormap = cm.bwr,
                     disp_slip_max: float = 1., cum_slip_max: list = [5., 10.], step_size: list = None, tide: dict = None, logScale: bool = True):
 
         if subplots is not None:
@@ -337,20 +337,34 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                     print("Displacement plot will plot year slider axis")
                     slider_axis = True
                 if not all([plot_sub_cbar, plot_crust_cbar]):
-                    mosaic = [["main_figure", "cbar", "ud1", "ucbar1"],
-                            ["slider", "slider", "slider", "year"],
-                            ["ud2", "ucbar2", "ud3", "ucbar3"]]
-                    height_ratio = [1, 0.1, 1]
+                    if cumSlip:
+                        mosaic = [["main_figure", "cbar", "ud1", "ucbar1"],
+                                ["slider", "slider", "slider", "year"],
+                                ["ud2", "ucbar2", "ud3", "ucbar3"]]
+                        height_ratio = [1, 0.1, 1]
+                    else:
+                        mosaic = [["main_figure", "cbar", "ud1", "ucbar1"],
+                                ["slider", "slider", "slider", "year"]]
+                        height_ratio = [1, 0.1]
                     width_ratio = [1, 0.05, 1, 0.05]
                 else:
-                    mosaic = [["main_figure", "sub_cbar", "crust_cbar", "ud1", "ucbar1"],
-                            ["slider", "slider", "slider", "slider", "year"],
-                            ["ud2", "ucbar2", ".", "ud3", "ucbar3"]]
-                    height_ratio = [1, 0.1, 1]
+                    if cumSlip:
+                        mosaic = [["main_figure", "sub_cbar", "crust_cbar", "ud1", "ucbar1"],
+                                ["slider", "slider", "slider", "slider", "year"],
+                                ["ud2", "ucbar2", ".", "ud3", "ucbar3"]]
+                        height_ratio = [1, 0.1, 1]
+                    else:
+                        mosaic = [["main_figure", "sub_cbar", "crust_cbar", "ud1", "ucbar1"],
+                                ["slider", "slider", "slider", "slider", "year"]]
+                        height_ratio = [1, 0.1]
                     width_ratio = [1, 0.05, 0.05, 1, 0.05]
 
-                main_ax_id = ["main_figure", "ud1", "ud2", "ud3"]
-                main_ax_titles = ["Slip Distribution", "Coseismic Uplift", f"{step_size[1]:.0f} yrs", f"{step_size[2]:.0f} yrs"]
+                if cumSlip:
+                    main_ax_id = ["main_figure", "ud1", "ud2", "ud3"]
+                    main_ax_titles = ["Slip Distribution", "Coseismic Uplift", f"{step_size[1]:.0f} yrs", f"{step_size[2]:.0f} yrs"]
+                else:
+                    main_ax_id = ["main_figure", "ud1"]
+                    main_ax_titles = ["Slip Distribution", "Coseismic Uplift"]
             
             if tide['time'] != 0:
                 tg = []
@@ -373,8 +387,10 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
             for id in main_ax_id:
                 main_ax_list.append(ax[id])
 
-            if displace:
+            if displace and cumSlip:
                 ud_cbar = [ax["ucbar1"], ax["ucbar2"], ax["ucbar3"]]
+            elif displace:
+                ud_cbar = [ax["ucbar1"]]
 
 
         plot_bounds = list(bounds)
@@ -427,6 +443,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
             year_ax.set_xlim(0,1)
             year_ax.set_ylim(0,1)
             year_ax.set_axis_off()
+        
         sub_mappable = ScalarMappable(cmap=subduction_cmap)
         sub_mappable.set_clim(vmin=0, vmax=sub_slip_max)
         crust_mappable = ScalarMappable(cmap=crust_cmap)
@@ -449,7 +466,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
             crust_cbar = fig.colorbar(
                 crust_mappable, cax=crust_ax, extend='max')
             crust_cbar.set_label("Crustal slip (m)")
-        
+
         if displace:
             slip_max = [disp_slip_max] + cum_slip_max
             ulabel = ["Uplift (m)", "Cumulative Uplift (m)", "Cumulative Uplift (m)"]
@@ -462,7 +479,7 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                     disp_mappable.set_clim(vmin=-slip_max[ix], vmax=slip_max[ix])
                 uix.append(fig.colorbar(disp_mappable, cax=uax, extend='both'))
                 uix[ix].set_label(ulabel[ix])
-
+        
         if pickle_name is not None:
             with open(pickle_name, "wb") as pfile:
                 pickle.dump((fig, ax), pfile)

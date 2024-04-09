@@ -282,7 +282,7 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                            plot_log: bool = False, log_min: float = 1., log_max: float = 100.,
                            min_slip_value: float = None, plot_zeros: bool = True, extra_sub_list: list = None,
                            min_mw: float = None, decimals: int = 1, subplot_name: str = "main_figure",
-                           displace: bool = False, disp_slip_max: float = 10., cum_slip_max: list = [5., 10.], disp_map_dir: str = None, tide: dict = None, logScale: bool = False):
+                           displace: bool = False, cumSlip: bool = False, disp_slip_max: float = 10., cum_slip_max: list = [5., 10.], disp_map_dir: str = None, tide: dict = None, logScale: bool = False):
     """
     Writes a single frame of an animation to file
     """
@@ -301,7 +301,10 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
         slipDir = os.path.join(aniDir, 'slip')
         cum1Dir = os.path.join(aniDir, 'cum1')
         cum2Dir = os.path.join(aniDir, 'cum2')
-        cum_ax = ['ud1', 'ud2', 'ud3']
+        if cumSlip:
+            cum_ax = ['ud1', 'ud2', 'ud3']
+        else:
+            cum_ax = ['ud1']
         cumDirs = [slipDir, cum1Dir, cum2Dir]
         Lon = np.load(os.path.join(aniDir, 'Lon.npy'))
         Lat = np.load(os.path.join(aniDir, 'Lat.npy'))
@@ -325,7 +328,7 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
             year_text.set_text(f"{frame_time:.{decimals}f}")
         time_slider.set_val(frame_time)
 
-        if displace: # Plot cumulative displacements (Check needed as cumulative window can be larger than earthquake fading time)
+        if cumSlip: # Plot cumulative displacements (Check needed as cumulative window can be larger than earthquake fading time)
             for ix, cum in enumerate(cum_ax[1:]):
                 disp_file = os.path.join(cumDirs[ix + 1], f'disp_{frame_num}.npy')
                 if os.path.exists(disp_file):
@@ -393,7 +396,7 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
                             min_slip_value: float = None, plot_zeros: bool = False, extra_sub_list: list = None,
                             min_mw: float = None, decimals: int = 1, subplot_name: str = "main_figure",
                             num_threads_plot: int = 4, frame_dir: str = "frames",
-                            displace: bool = False, disp_slip_max: float = 10.0, cum_slip_max: float = 5.,
+                            displace: bool = False, cumSlip: bool = False, disp_slip_max: float = 10.0, cum_slip_max: float = 5.,
                             disp_map_dir: str = None, tide: dict = None, logScale: bool = False):
         """
         Writes all the frames of an animation to file
@@ -408,7 +411,7 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
                        "plot_log": plot_log, "log_min": log_min, "log_max": log_max,
                        "min_slip_value": min_slip_value, "plot_zeros": plot_zeros,
                        "extra_sub_list": extra_sub_list, "min_mw": min_mw, "decimals": decimals,
-                       "subplot_name": subplot_name, "displace": displace, "disp_slip_max": disp_slip_max,
+                       "subplot_name": subplot_name, "displace": displace, "cumSlip": cumSlip, "disp_slip_max": disp_slip_max,
                        "cum_slip_max": cum_slip_max, "disp_map_dir": disp_map_dir, "tide": tide, "logScale": logScale}
         
         no_earthquakes = []
@@ -431,13 +434,14 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
             print('Writing Displacement Frame Grids')
             disp_kwargs = { "catalogue": catalogue, "fault_model": fault_model,
                        "fading_increment": fading_increment, "time_to_threshold": time_to_threshold,
-                       "min_mw": min_mw, "disp_map_dir": disp_map_dir}
+                       "min_mw": min_mw, "disp_map_dir": disp_map_dir, "cumSlip": cumSlip}
             
             aniDir = os.path.dirname(frame_dir)
-            slipDir = os.path.join(aniDir, 'slip')
-            cum1Dir = os.path.join(aniDir, 'cum1')
-            cum2Dir = os.path.join(aniDir, 'cum2')
-            for dir in [slipDir, cum1Dir, cum2Dir]:
+            dirList = [os.path.join(aniDir, 'slip')]
+            if cumSlip:
+                dirList.append(os.path.join(aniDir, 'cum1'))
+                dirList.append(os.path.join(aniDir, 'cum2'))
+            for dir in dirList:
                 if not os.path.exists(dir):
                     os.makedirs(dir)
             
@@ -459,7 +463,7 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
 
 def write_displacement_grids(frame_num, frame_time, step_size, aniDir, catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault,
                            fading_increment: float = 2.0, time_to_threshold: float = 10.,
-                           min_mw: float = None, disp_map_dir: str = None):
+                           min_mw: float = None, disp_map_dir: str = None, cumSlip: bool = False):
     """
     Writes a displacement grids for each frame
     """
@@ -472,48 +476,7 @@ def write_displacement_grids(frame_num, frame_time, step_size, aniDir, catalogue
     shortened_cat = catalogue.filter_df(min_t0=frame_time_seconds - time_to_threshold * seconds_per_year,
                                         max_t0=frame_time_seconds,
                                         min_mw=min_mw).copy(deep=True)
-
-    disp_cats = []
-    for cum_time in step_size[1:]:
-        if frame_time - cum_time < 0:
-            cum_time = frame_time
-    
-        disp_cats.append(catalogue.filter_df(min_t0=frame_time_seconds - cum_time * seconds_per_year,
-                                        max_t0=frame_time_seconds,
-                                        min_mw=min_mw).copy(deep=True))
-    
     slipDir = os.path.join(aniDir, 'slip')
-    cum1Dir = os.path.join(aniDir, 'cum1')
-    cum2Dir = os.path.join(aniDir, 'cum2')
-
-    cumDirs = [cum1Dir, cum2Dir]
-
-    # Calculate cumulative displacements
-    for ix, disp_cat in enumerate(disp_cats):
-        if not disp_cat.empty:
-            disp_cat["diff_t0"] = np.abs(disp_cat["t0"] - frame_time_seconds)
-            sorted_indices = disp_cat.sort_values(by="diff_t0", ascending=False).index
-            events_for_plot = catalogue.events_by_number(sorted_indices.tolist(), fault_model)
-            temp_disp = nc.Dataset(os.path.join(disp_map_dir, "ev"+str(events_for_plot[0].event_id)+".grd"))
-            dispX = temp_disp['x'][:].data
-            dispY = temp_disp['y'][:].data
-            disp_cum = np.zeros_like(np.array(temp_disp["z"])) * np.nan
-
-            for event in events_for_plot:
-                grdfile = os.path.join(disp_map_dir, "ev"+str(event.event_id)+".grd")
-                if os.path.exists(grdfile):
-                    event_disp = np.array(nc.Dataset(grdfile)["z"])
-                    no_nan = np.where(~np.isnan(event_disp))
-                    try:
-                        disp_cum[no_nan] = np.nansum([disp_cum[no_nan], event_disp[no_nan]], axis=0)
-                    except IndexError:
-                        raise IndexError(f'{grdfile} likely different resolution to other displacement maps')
-
-            np.save(os.path.join(cumDirs[ix], f'disp_{frame_num}.npy'), disp_cum)
-            if not os.path.exists(os.path.join(aniDir, 'Lon.npy')):
-                np.save(os.path.join(aniDir, 'Lon.npy'), dispX)
-                np.save(os.path.join(aniDir, 'Lat.npy'), dispY)
-
     if not shortened_cat.empty:  # Plot slip displacements
         shortened_cat["diff_t0"] = np.abs(shortened_cat["t0"] - frame_time_seconds)
         sorted_indices = shortened_cat.sort_values(by="diff_t0", ascending=False).index
@@ -529,7 +492,6 @@ def write_displacement_grids(frame_num, frame_time, step_size, aniDir, catalogue
 
         for event in events_for_plot:
             alpha = calculate_alpha((frame_time - event.t0  / seconds_per_year), fading_increment)
-
             # Create frame displacement map, with fading alpha
             grdfile = os.path.join(disp_map_dir, "ev"+str(event.event_id)+".grd")
             if os.path.exists(grdfile):
@@ -538,6 +500,53 @@ def write_displacement_grids(frame_num, frame_time, step_size, aniDir, catalogue
                 disp_cum[no_nan] = np.nansum([disp_cum[no_nan], alpha * event_disp[no_nan]], axis=0)
 
         np.save(os.path.join(slipDir, f'disp_{frame_num}.npy'), disp_cum)
+
+        if not os.path.exists(os.path.join(aniDir, 'Lon.npy')):
+            np.save(os.path.join(aniDir, 'Lon.npy'), dispX)
+            np.save(os.path.join(aniDir, 'Lat.npy'), dispY)
+
+    if cumSlip:
+        disp_cats = []
+        for cum_time in step_size[1:]:
+            if frame_time - cum_time < 0:
+                cum_time = frame_time
+        
+            disp_cats.append(catalogue.filter_df(min_t0=frame_time_seconds - cum_time * seconds_per_year,
+                                            max_t0=frame_time_seconds,
+                                            min_mw=min_mw).copy(deep=True))
+
+        cum1Dir = os.path.join(aniDir, 'cum1')
+        cum2Dir = os.path.join(aniDir, 'cum2')
+
+        cumDirs = [cum1Dir, cum2Dir]
+
+        # Calculate cumulative displacements
+        for ix, disp_cat in enumerate(disp_cats):
+            if not disp_cat.empty:
+                disp_cat["diff_t0"] = np.abs(disp_cat["t0"] - frame_time_seconds)
+                sorted_indices = disp_cat.sort_values(by="diff_t0", ascending=False).index
+                events_for_plot = catalogue.events_by_number(sorted_indices.tolist(), fault_model)
+                temp_disp = nc.Dataset(os.path.join(disp_map_dir, "ev"+str(events_for_plot[0].event_id)+".grd"))
+                dispX = temp_disp['x'][:].data
+                dispY = temp_disp['y'][:].data
+                disp_cum = np.zeros_like(np.array(temp_disp["z"])) * np.nan
+
+                for event in events_for_plot:
+                    grdfile = os.path.join(disp_map_dir, "ev"+str(event.event_id)+".grd")
+                    if os.path.exists(grdfile):
+                        event_disp = np.array(nc.Dataset(grdfile)["z"])
+                        no_nan = np.where(~np.isnan(event_disp))
+                        try:
+                            disp_cum[no_nan] = np.nansum([disp_cum[no_nan], event_disp[no_nan]], axis=0)
+                        except IndexError:
+                            raise IndexError(f'{grdfile} likely different resolution to other displacement maps')
+
+            np.save(os.path.join(cumDirs[ix], f'disp_{frame_num}.npy'), disp_cum)
+            np.save(os.path.join(cumDirs[ix], f'disp_{frame_num}.npy'), disp_cum)
+            if not os.path.exists(os.path.join(aniDir, 'Lon.npy')):
+                np.save(os.path.join(aniDir, 'Lon.npy'), dispX)
+                np.save(os.path.join(aniDir, 'Lat.npy'), dispY)
+
     print('Frame: {} ({:.2f} seconds)'.format(frame_num, time() - begin))
 
 

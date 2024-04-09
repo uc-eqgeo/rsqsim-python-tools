@@ -42,7 +42,8 @@ if __name__ == "__main__":
     parser.add_argument("--max_disp_slip", help="Max plotted slip for displacement maps", default=1, type=float)
     parser.add_argument("--max_cum_slip", help="Max plotted slip for cumulative displacement maps", default='5/10', type=str)
     parser.add_argument("--frameRate", help="Frames per second", default=5, type=float)
-    parser.add_argument("--displace", help="Include cumulative vertical displacements in the animation", default=False, action="store_true")
+    parser.add_argument("--displace", help="Include vertical displacements in the animation", default=False, action="store_true")
+    parser.add_argument("--cumSlip", help="Include cumulative slip in the animation", default=False, action="store_true")
     parser.add_argument("--dispTimes", help="Times at which to plot cumulative displacements (2475 for 2 percent in 50 yrs) time1/time2", default='1000/2475', type=str, dest='cum_times')
     parser.add_argument("--logScale", help="Plot displacements with log scale", default=False, action="store_true")
     parser.add_argument("--tideTime", help="Time span of tide gauge data", default=0, type=float, dest='tide_gauge_time')
@@ -60,6 +61,9 @@ if __name__ == "__main__":
                 'wellington': [1749192, 5427448]}
 
     disp_map_dir = os.path.join(args.procDir, args.dispDir)
+
+    if args.cumSlip and not args.displace:
+        args.displace = True
 
     if args.cum_times is not None:
         cum_times = [int(i) for i in args.cum_times.split('/')]
@@ -85,15 +89,21 @@ if __name__ == "__main__":
     time_to_threshold = fadeFrames * args.frameTime  # Time in years for fading to occur
     fading = np.power(100 / args.fadePercent, 1 / time_to_threshold)  # Fading rate required for plotting
 
-    aniName = '{}_{:.1e}-{:.1e}_Mw{:.1f}_{}yr'.format(args.rsqsim_prefix, args.min_t0, args.max_t0, args.min_mw, args.frameTime)
-    aniName = aniName.replace('+', '')
-
     if args.displace:
         frameTime = [args.frameTime] + cum_times
     else:
         frameTime = [args.frameTime]
 
     tide = {'time': int(frameTime[0] * np.ceil(args.tide_gauge_time / frameTime[0])), 'x': tide_gauge_location[0], 'y': tide_gauge_location[1], 'ylim': args.tideLim}
+
+    aniName = '{}_{:.1e}-{:.1e}_Mw{:.1f}_{}yr'.format(args.rsqsim_prefix, args.min_t0, args.max_t0, args.min_mw, args.frameTime)
+    if args.cumSlip:
+        aniName += '_cumSlip'
+    elif args.displace:
+        aniName += '_disp'
+    if tide['time'] > 0:
+        aniName += '_TG'
+    aniName = aniName.replace('+', '')
 
     print('Earthquakes over Mw {} to fade over {} seconds (i.e. {} frames covering {} years at {} fps)'.format(args.min_mw, args.fadeTime, fadeFrames, time_to_threshold, args.frameRate))
     print('Movie Name: {}.mp4\n'.format(aniName))
@@ -108,26 +118,6 @@ if __name__ == "__main__":
 
     animationDir = os.path.join(args.procDir, aniName)
     frameDir=os.path.join(animationDir, "frames")
-    if  not os.path.exists(animationDir):
-        os.mkdir(animationDir)
-
-    if args.remake_frames:
-        if args.displace:
-            dirList = ['frames', 'slip', 'cum1', 'cum2']
-        else:
-            dirList = ['frames']
-        for dirName in dirList:
-            dir = os.path.join(animationDir, dirName)
-            if os.path.exists(dir):
-                shutil.rmtree(dir)  # Remove old frames
-                os.mkdir(dir)
-    
-    if not os.path.exists(frameDir):
-        os.mkdir(frameDir)
-        if not args.remake_frames:
-            print('No frameDir existed. Setting remake_frames to True.')
-            args.remake_frames = True
-        
 
     trimname = "trimmed_" + args.rsqsim_prefix
 
@@ -135,17 +125,30 @@ if __name__ == "__main__":
 
     trimmed_catalogue = catalogue.filter_whole_catalogue(min_t0=args.min_t0 * seconds_per_year, max_t0=args.max_t0 * seconds_per_year,
                                                         min_mw=args.min_mw)
+    if trimmed_catalogue.event_list.shape[0] == 0:
+        print('No events in the catalogue. Change filter parameters.\nExiting...')
+        quit()
+
+    if not os.path.exists(animationDir):
+        os.mkdir(animationDir)
+
     trimmed_catalogue.write_csv_and_arrays(trimname, directory=animationDir)
 
     # Read in the trimmed faults
 
     if __name__ == "__main__":
         trimmed_faults = RsqSimMultiFault.read_fault_file_keith(fault_file=flt_file)
-        trimmed_catalogue = RsqSimCatalogue.from_csv_and_arrays(os.path.join(animationDir,trimname))
+        trimmed_catalogue = RsqSimCatalogue.from_csv_and_arrays(os.path.join(animationDir, trimname))
         filtered_events = trimmed_catalogue.events_by_number(trimmed_catalogue.catalogue_df.index, trimmed_faults, min_patches=args.min_patches)
 
         ffmpeg = "ffmpeg -framerate {2} -i '{0:s}/frame%04d.png' -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -y '{1:s}/{3:s}.mp4'".format(frameDir, animationDir, args.frameRate, aniName)
         os.system('echo {} > {}'.format(ffmpeg, os.path.join(animationDir, 'movieMakerCmd.txt')))
+
+        if not os.path.exists(frameDir):
+            os.mkdir(frameDir)
+            if not args.remake_frames:
+                print('No frameDir existed. Setting remake_frames to True.')
+                args.remake_frames = True
 
         if args.remake_frames:
             if tide['time'] > 0:
@@ -191,15 +194,27 @@ if __name__ == "__main__":
                                     pickle_name=os.path.join(animationDir,'temp.pkl'), hillshade_cmap=cm.Greys, hillshade_fine=args.hires_dem,
                                     plot_edge_label=False, figsize=(10, 10), plot_sub_cbar=args.subd_plot, plot_crust_cbar=True,
                                     slider_axis=True, crust_slip_max=args.max_crust_slip, sub_slip_max=max_sub_slip,
-                                    displace=args.displace, disp_slip_max=args.max_disp_slip, cum_slip_max=max_cum_slip, step_size=frameTime, tide=tide, logScale=args.logScale)
+                                    displace=args.displace, cumSlip=args.cumSlip, disp_slip_max=args.max_disp_slip, cum_slip_max=max_cum_slip, step_size=frameTime, tide=tide, logScale=args.logScale)
 
             print('Plotting animation frames')
+            if args.cumSlip:
+                dirList = ['frames', 'slip', 'cum1', 'cum2']
+            elif args.displace:
+                dirList = ['frames', 'slip']
+            else:
+                dirList = ['frames']
+            for dirName in dirList:
+                dir = os.path.join(animationDir, dirName)
+                if os.path.exists(dir):
+                    shutil.rmtree(dir)  # Remove old frames
+                    os.mkdir(dir)
+
             write_animation_frames(args.min_t0, args.max_t0, frameTime, trimmed_catalogue, trimmed_faults,
                             pickled_background=os.path.join(animationDir,'temp.pkl'), bounds=bounds,
                             extra_sub_list=["hikurangi", "hikkerm", "puysegur"], time_to_threshold=time_to_threshold,
                             global_max_sub_slip=max_sub_slip, global_max_slip=args.max_crust_slip, min_mw=args.min_mw, decimals=0,
                             fading_increment=fading, frame_dir=frameDir, num_threads_plot=args.numThreads, min_slip_value=0.2,
-                            displace=args.displace, disp_slip_max=args.max_disp_slip, cum_slip_max=max_cum_slip, 
+                            displace=args.displace, cumSlip=args.cumSlip, disp_slip_max=args.max_disp_slip, cum_slip_max=max_cum_slip, 
                             disp_map_dir=disp_map_dir, tide=tide, logScale=args.logScale)
             print('Frames plotted in {:.2f} seconds'.format(time() - begin))
         else:
