@@ -27,6 +27,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Arguments for animation")
     parser.add_argument("--procDir", help="Path to processing directory", type=str, default=os.path.join('/mnt', 'c', 'Users', 'jmc753', 'Work', 'RSQSim', 'Aotearoa', 'whole_nz_rsqsim'))
     parser.add_argument("--rsqsim_prefix", help="Prefix for RSQSim output files", type=str, default='whole_nz')
+    parser.add_argument("--aniID", help="ID to include in animation name", default=None, type=str)
     parser.add_argument("--flt_file", help="Fault model .flt file in procDir", type=str, default='whole_nz_faults_2500_tapered_slip.flt')
     parser.add_argument("--noSerial", help="Data not in Serial type", default=True, action="store_false", dest='serial')
     parser.add_argument("--useFrames", help="Use Premade Frames", default=True, action="store_false", dest='remake_frames')
@@ -58,7 +59,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     locations = {'dunedin': [1406510, 4917008],
-                'wellington': [1749192, 5427448]}
+                'wellington': [1749192, 5427448],
+                'whakatane': [1951130, 5792205]}
 
     disp_map_dir = os.path.join(args.procDir, args.dispDir)
 
@@ -96,13 +98,16 @@ if __name__ == "__main__":
 
     tide = {'time': int(frameTime[0] * np.ceil(args.tide_gauge_time / frameTime[0])), 'x': tide_gauge_location[0], 'y': tide_gauge_location[1], 'ylim': args.tideLim}
 
-    aniName = '{}_{:.1e}-{:.1e}_Mw{:.1f}_{}yr'.format(args.rsqsim_prefix, args.min_t0, args.max_t0, args.min_mw, args.frameTime)
+    if args.aniID:
+        aniName = '{}_{}_{:.1e}-{:.1e}_Mw{:.1f}_{}yr'.format(args.rsqsim_prefix, args.aniID, args.min_t0, args.max_t0, args.min_mw, args.frameTime)
+    else:
+        aniName = '{}_{:.1e}-{:.1e}_Mw{:.1f}_{}yr'.format(args.rsqsim_prefix, args.min_t0, args.max_t0, args.min_mw, args.frameTime)
     if args.cumSlip:
         aniName += '_cumSlip'
     elif args.displace:
         aniName += '_disp'
     if tide['time'] > 0:
-        aniName += '_TG'
+        aniName += '_TG{}'.format(args.tide_gauge_location.lower().replace('/', '-'))
     aniName = aniName.replace('+', '')
 
     print('Earthquakes over Mw {} to fade over {} seconds (i.e. {} frames covering {} years at {} fps)'.format(args.min_mw, args.fadeTime, fadeFrames, time_to_threshold, args.frameRate))
@@ -114,7 +119,7 @@ if __name__ == "__main__":
         max_sub_slip = 0
 
     eq_output_file = os.path.join(args.procDir, 'eqs.' + args.rsqsim_prefix + '.out')
-    flt_file = os.path.join(args.procDir, args.flt_file)
+    flt_file = os.path.abspath(os.path.join(args.procDir, args.flt_file))
 
     animationDir = os.path.join(args.procDir, aniName)
     frameDir=os.path.join(animationDir, "frames")
