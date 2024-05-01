@@ -499,7 +499,7 @@ def plot_tide_gauge(subplots, tide, frame_time, start_time, step_size):
     data = tide['data']
     years = (data[:, 1] - start_time)
 
-    # Plot previous cycles in gret
+    # Plot previous cycles in grey
     for run in range(iterations):
         # First cycle entry (i.e year 0)
         ix1 = run * tide['entries']
@@ -512,8 +512,7 @@ def plot_tide_gauge(subplots, tide, frame_time, start_time, step_size):
         iterations -= 1 # Extend red trend to end of full timespan when resetting
         part_time = tide['entries']
     ix1 = iterations * tide['entries']
-    ix2 = (iterations * tide['entries']) + part_time + 11
-
+    ix2 = (iterations * tide['entries']) + part_time + 1
     axTG.plot(years[ix1:ix2] - years[ix1], data[ix1:ix2, 2] - data[ix1, 2], 'o-', color='red', linewidth=2)
     axTG.set_xlim([0, tide['time']])
     axTG.set_ylim([-tide['ylim'], tide['ylim']])
