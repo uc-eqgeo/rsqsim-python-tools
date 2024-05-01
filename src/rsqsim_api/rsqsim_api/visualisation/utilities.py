@@ -492,25 +492,29 @@ def plot_tide_gauge(subplots, tide, frame_time, start_time, step_size):
     fig, axU1, axTG = subplots
     axU1.scatter(tide['x'], tide['y'], c='black', s=20, zorder=3)
     
+    # Which tide guage cycle we are in
     iterations = int((frame_time - start_time) // tide['time'])
+    # How far into the cycle we are
     part_time = int(((frame_time - start_time) % tide['time']) / step_size)
     data = tide['data']
     years = (data[:, 1] - start_time)
 
+    # Plot previous cycles in gret
     for run in range(iterations):
+        # First cycle entry (i.e year 0)
         ix1 = run * tide['entries']
+        # Last cycle entry
         ix2 = (run + 1) * tide['entries'] + 1
-        ix0 = ix1 - 1 if ix1 > 0 else 0
-        axTG.plot(years[ix1:ix2] - years[ix1], data[ix1:ix2, 2] - data[ix0, 2], color='gray', alpha=0.5)
+        alpha = 0.2 if iterations - run >= 7 else 0.5 - 0.05 * (iterations - run) 
+        axTG.plot(years[ix1:ix2] - years[ix1], data[ix1:ix2, 2] - data[ix1, 2], color='gray', alpha=alpha)
 
     if part_time == 0 and frame_time != start_time:
         iterations -= 1 # Extend red trend to end of full timespan when resetting
         part_time = tide['entries']
     ix1 = iterations * tide['entries']
-    ix2 = (iterations * tide['entries']) + part_time + 1
-    ix0 = ix1 - 1 if ix1 > 0 else 0
+    ix2 = (iterations * tide['entries']) + part_time + 11
 
-    axTG.plot(years[ix1:ix2] - years[ix1], data[ix1:ix2, 2] - data[ix0, 2], 'o-', color='red')
+    axTG.plot(years[ix1:ix2] - years[ix1], data[ix1:ix2, 2] - data[ix1, 2], 'o-', color='red', linewidth=2)
     axTG.set_xlim([0, tide['time']])
     axTG.set_ylim([-tide['ylim'], tide['ylim']])
     axTG.set_ylabel('Sea Level Change (m)')
