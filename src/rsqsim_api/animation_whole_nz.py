@@ -136,6 +136,18 @@ if __name__ == "__main__":
 
     trimmed_catalogue = catalogue.filter_whole_catalogue(min_t0=args.min_t0 * seconds_per_year, max_t0=args.max_t0 * seconds_per_year,
                                                         min_mw=args.min_mw)
+    
+    events_df = trimmed_catalogue.catalogue_df
+
+    print('Filtering catalogue for events within bounds ({})...'.format(args.bounds))
+    
+    lonmin, lonmax, latmin, latmax = [int(float(i)) for i in args.bounds.split('/')]
+    bool_array = np.vstack([np.array(events_df['x'] >= lonmin), np.array(events_df['x'] <= lonmax),
+                            np.array(events_df['y'] >= latmin), np.array(events_df['y'] <= latmax)])
+    
+    event_numbers = list(events_df[bool_array.all(axis=0)].index)
+    trimmed_catalogue = catalogue.filter_by_events(event_number=event_numbers)
+
     if trimmed_catalogue.event_list.shape[0] == 0:
         print('No events in the catalogue. Change filter parameters.\nExiting...')
         quit()
@@ -145,12 +157,11 @@ if __name__ == "__main__":
 
     trimmed_catalogue.write_csv_and_arrays(trimname, directory=animationDir)
 
+    faults = RsqSimMultiFault.read_fault_file_keith(fault_file=flt_file)
+
     # Read in the trimmed faults
 
     if __name__ == "__main__":
-        trimmed_faults = RsqSimMultiFault.read_fault_file_keith(fault_file=flt_file)
-        trimmed_catalogue = RsqSimCatalogue.from_csv_and_arrays(os.path.join(animationDir, trimname))
-        filtered_events = trimmed_catalogue.events_by_number(trimmed_catalogue.catalogue_df.index, trimmed_faults, min_patches=args.min_patches)
 
         ffmpeg = "ffmpeg -framerate {2} -i '{0:s}/frame%04d.png' -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -y '{1:s}/{3:s}.mp4'".format(frameDir, animationDir, args.frameRate, aniName)
         os.system('echo {} > {}'.format(ffmpeg, os.path.join(animationDir, 'movieMakerCmd.txt')))
@@ -242,7 +253,7 @@ if __name__ == "__main__":
                 if not os.path.exists(dir):
                     os.makedirs(dir)  # Make frame and displacement directories
 
-            write_animation_frames(args.min_t0, args.max_t0, frameTime, trimmed_catalogue, trimmed_faults,
+            write_animation_frames(args.min_t0, args.max_t0, frameTime, trimmed_catalogue, faults,
                             pickled_background=os.path.join(animationDir,'temp.pkl'), bounds=bounds,
                             extra_sub_list=["hikurangi", "hikkerm", "puysegur"], time_to_threshold=time_to_threshold,
                             global_max_sub_slip=max_sub_slip, global_max_slip=args.max_crust_slip, min_mw=args.min_mw, decimals=0,
