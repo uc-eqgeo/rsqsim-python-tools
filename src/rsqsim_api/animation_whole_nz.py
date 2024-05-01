@@ -30,7 +30,9 @@ if __name__ == "__main__":
     parser.add_argument("--aniID", help="ID to include in animation name", default=None, type=str)
     parser.add_argument("--flt_file", help="Fault model .flt file in procDir", type=str, default='whole_nz_faults_2500_tapered_slip.flt')
     parser.add_argument("--noSerial", help="Data not in Serial type", default=True, action="store_false", dest='serial')
-    parser.add_argument("--useFrames", help="Use Premade Frames", default=True, action="store_false", dest='remake_frames')
+    parser.add_argument("--useAvailableFrames", help="Only use the available frames", default=False, action="store_true", dest='available_frames')
+    parser.add_argument("--newFrames", help="Use premade frames", default=False, action="store_true", dest='remake_frames')
+    parser.add_argument("--newGrids", help="Use premade displacement grids", default=False, action="store_true", dest='remake_grids')
     parser.add_argument("--dispDir", help="Directory containing displacement maps (in procDir)", default='grds_5km', type=str)
     parser.add_argument("--min_t0", help="Start Time (yrs)", default=1e4, type=float)
     parser.add_argument("--max_t0", help="End Time (yrs)", default=2e4, type=float)
@@ -159,64 +161,86 @@ if __name__ == "__main__":
                 print('No frameDir existed. Setting remake_frames to True.')
                 args.remake_frames = True
 
-        if args.remake_frames:
+        if args.available_frames:
+            print('Reusing previous frames')
+        else:
+            if args.remake_grids and not args.remake_frames:
+                print('No point remaking grids without remaking frames. Setting remake_frames to True. Maybe you wanted --useAvailableFrames?')
+                args.remake_frames = True
             if tide['time'] > 0:
-                print('Calculating synthetic tide gauge')
                 frame_times = np.arange(args.min_t0, args.max_t0 + frameTime[0], frameTime[0])
                 event_df = pd.read_csv(os.path.join(animationDir,trimname + '_catalogue.csv'))
-                TG = np.zeros((len(frame_times), 3))  # Frame ID, Year, Tide Level
-                TG[:, 0] = np.arange(len(frame_times))
-                TG[:, 1] = frame_times
-                frame_times = frame_times * seconds_per_year
-                for frame in range(1, len(frame_times)):
-                    events = event_df[event_df['t0'].between(frame_times[frame - 1], frame_times[frame])]
-                    disp = TG[frame - 1, 2]
-                    if events.shape[0] > 0:
-                        first_event = True  # Flag for first event in time period - needed for searching for available displacement maps
-                        for ix, event in enumerate(events[events.columns[0]].values):
-                            if os.path.exists(os.path.join(disp_map_dir, f"ev{event:.0f}.grd")):
-                                disp_grd = nc.Dataset(os.path.join(disp_map_dir, f"ev{event:.0f}.grd"))
-                                if first_event:
-                                    dispX = disp_grd['x'][:].data
-                                    dispY = disp_grd['y'][:].data
-                                    dx = np.diff(dispX)[0]
-                                    dy = np.diff(dispY)[0]
-                                    gridX = np.round((tide['x'] - dispX[0]) / dx)
-                                    gridY = np.round((tide['y'] - dispY[0]) / dy)
-                                    first_event = False
-                                disp = np.nansum([disp, disp_grd['z'][int(gridY), int(gridX)].data])
-                    TG[frame, 2] = disp
                 tide['entries'] = int(tide['time'] / frameTime[0])  # Number of entries in each tide guage time series
                 tide['file'] = os.path.join(animationDir, 'tide_gauge.npy')
+                if any([args.remake_grids, not os.path.exists(tide['file'])]):
+                    print('Calculating synthetic tide gauge')
+                    TG = np.zeros((len(frame_times), 3))  # Frame ID, Year, Tide Level
+                    TG[:, 0] = np.arange(len(frame_times))
+                    TG[:, 1] = frame_times
+                    frame_times = frame_times * seconds_per_year
+                    for frame in range(1, len(frame_times)):
+                        events = event_df[event_df['t0'].between(frame_times[frame - 1], frame_times[frame])]
+                        disp = TG[frame - 1, 2]
+                        if events.shape[0] > 0:
+                            first_event = True  # Flag for first event in time period - needed for searching for available displacement maps
+                            for ix, event in enumerate(events[events.columns[0]].values):
+                                if os.path.exists(os.path.join(disp_map_dir, f"ev{event:.0f}.grd")):
+                                    disp_grd = nc.Dataset(os.path.join(disp_map_dir, f"ev{event:.0f}.grd"))
+                                    if first_event:
+                                        dispX = disp_grd['x'][:].data
+                                        dispY = disp_grd['y'][:].data
+                                        dx = np.diff(dispX)[0]
+                                        dy = np.diff(dispY)[0]
+                                        gridX = np.round((tide['x'] - dispX[0]) / dx)
+                                        gridY = np.round((tide['y'] - dispY[0]) / dy)
+                                        first_event = False
+                                    disp = np.nansum([disp, disp_grd['z'][int(gridY), int(gridX)].data])
+                        TG[frame, 2] = disp
+                    np.save(tide['file'], TG)
+                    plt.plot(TG[:, 1], TG[:, 2])
+                    plt.title('Synthetic Tide Gauge for {}'.format(args.tide_gauge_location))
+                    plt.xlabel('Time (yrs)')
+                    plt.ylabel('Coseismically Induced Sea Level Change (m)')
+                    plt.savefig(os.path.join(animationDir, 'tide_gauge.png'))
+                else:
+                    print('Reusing synthetic tide gauge')
+                    TG = np.load(tide['file'])
                 tide['data'] = TG
-                np.save(tide['file'], TG)
-                plt.plot(TG[:, 1], TG[:, 2])
-                plt.title('Synthetic Tide Gauge for {}'.format(args.tide_gauge_location))
-                plt.xlabel('Time (yrs)')
-                plt.ylabel('Coseismically Induced Sea Level Change (m)')
-                plt.savefig(os.path.join(animationDir, 'tide_gauge.png'))
 
             begin = time()
             print('Plotting Background')
-            background = plot_background(plot_lakes=False, bounds=bounds,
-                                    plot_highways=False, plot_rivers=False, hillshading_intensity=0.3,
-                                    pickle_name=os.path.join(animationDir,'temp.pkl'), hillshade_cmap=cm.Greys, hillshade_fine=args.hires_dem,
-                                    plot_edge_label=False, figsize=(10, 10), plot_sub_cbar=args.subd_plot, plot_crust_cbar=True,
-                                    slider_axis=True, crust_slip_max=args.max_crust_slip, sub_slip_max=max_sub_slip,
-                                    displace=args.displace, cumSlip=args.cumSlip, disp_slip_max=args.max_disp_slip, cum_slip_max=max_cum_slip, step_size=frameTime, tide=tide, logScale=args.logScale)
+            if any([args.remake_frames, not os.path.exists(os.path.join(animationDir,'temp.pkl'))]):
+                background = plot_background(plot_lakes=False, bounds=bounds,
+                                        plot_highways=False, plot_rivers=False, hillshading_intensity=0.3,
+                                        pickle_name=os.path.join(animationDir,'temp.pkl'), hillshade_cmap=cm.Greys, hillshade_fine=args.hires_dem,
+                                        plot_edge_label=False, figsize=(10, 10), plot_sub_cbar=args.subd_plot, plot_crust_cbar=True,
+                                        slider_axis=True, crust_slip_max=args.max_crust_slip, sub_slip_max=max_sub_slip,
+                                        displace=args.displace, cumSlip=args.cumSlip, disp_slip_max=args.max_disp_slip, cum_slip_max=max_cum_slip, step_size=frameTime, tide=tide, logScale=args.logScale)
 
             print('Plotting animation frames')
             if args.cumSlip:
-                dirList = ['frames', 'slip', 'cum1', 'cum2']
+                dispList = ['slip', 'cum1', 'cum2']
             elif args.displace:
-                dirList = ['frames', 'slip']
+                dispList = ['slip']
             else:
-                dirList = ['frames']
-            for dirName in dirList:
+                dispList = []
+            dirList = ['frames']
+            if args.remake_frames:
+                rmDir = ['frames']
+                if args.remake_grids:
+                    rmDir += dispList
+            else:
+                rmDir = []
+
+            for dirName in rmDir:
                 dir = os.path.join(animationDir, dirName)
                 if os.path.exists(dir):
-                    shutil.rmtree(dir)  # Remove old frames
-                    os.mkdir(dir)
+                    shutil.rmtree(dir)  # Remove directories of files to be remade
+
+            for dirName in ['frames'] + dispList:
+                dir = os.path.join(animationDir, dirName)
+                if not os.path.exists(dir):
+                    os.makedirs(dir)  # Make frame and displacement directories
 
             write_animation_frames(args.min_t0, args.max_t0, frameTime, trimmed_catalogue, trimmed_faults,
                             pickled_background=os.path.join(animationDir,'temp.pkl'), bounds=bounds,
@@ -224,10 +248,8 @@ if __name__ == "__main__":
                             global_max_sub_slip=max_sub_slip, global_max_slip=args.max_crust_slip, min_mw=args.min_mw, decimals=0,
                             fading_increment=fading, frame_dir=frameDir, num_threads_plot=args.numThreads, min_slip_value=0.2,
                             displace=args.displace, cumSlip=args.cumSlip, disp_slip_max=args.max_disp_slip, cum_slip_max=max_cum_slip, 
-                            disp_map_dir=disp_map_dir, tide=tide, logScale=args.logScale)
-            print('Frames plotted in {:.2f} seconds'.format(time() - begin))
-        else:
-            print('Reusing previous frames')
+                            disp_map_dir=disp_map_dir, tide=tide, logScale=args.logScale, remake_frames = args.remake_frames, remake_grids=args.remake_grids)
+            print('Frames plotted in {:.2f} seconds'.format(time() - begin))            
 
         print('\nStitching frames into animation')
 
