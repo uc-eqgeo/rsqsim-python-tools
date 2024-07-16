@@ -1,5 +1,5 @@
-:py:mod:`rsqsim_api`
-====================
+rsqsim_api
+==========
 
 .. py:module:: rsqsim_api
 
@@ -14,10 +14,10 @@
 
 Subpackages
 -----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 3
 
-   catalogue/index.rst
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/rsqsim_api/catalogue/index
 
 

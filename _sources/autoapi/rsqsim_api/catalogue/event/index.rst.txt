@@ -1,5 +1,5 @@
-:py:mod:`rsqsim_api.catalogue.event`
-====================================
+rsqsim_api.catalogue.event
+==========================
 
 .. py:module:: rsqsim_api.catalogue.event
 

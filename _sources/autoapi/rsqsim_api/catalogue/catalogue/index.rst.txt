@@ -1,5 +1,5 @@
-:py:mod:`rsqsim_api.catalogue.catalogue`
-========================================
+rsqsim_api.catalogue.catalogue
+==============================
 
 .. py:module:: rsqsim_api.catalogue.catalogue
 
@@ -9,18 +9,16 @@
 
 
 
-Module Contents
----------------
-
-
 Functions
-~~~~~~~~~
+---------
 
 .. autoapisummary::
 
    rsqsim_api.catalogue.catalogue.calculate_b_value
 
 
+Module Contents
+---------------
 
 .. py:function:: calculate_b_value(magnitudes, time_interval_years, min_mw = 0.0, max_mw = 10.0, interval=0.1)
 

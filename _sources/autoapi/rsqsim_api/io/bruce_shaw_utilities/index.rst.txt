@@ -1,8 +1,0 @@
-:orphan:
-
-:py:mod:`rsqsim_api.io.bruce_shaw_utilities`
-============================================
-
-.. py:module:: rsqsim_api.io.bruce_shaw_utilities
-
-
