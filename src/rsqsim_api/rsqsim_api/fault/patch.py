@@ -125,6 +125,11 @@ class RsqSimGenericPatch:
         ds = self.dip_slip if self.dip_slip is not None else 0.
         return np.linalg.norm(np.array([ss, ds]))
 
+    def set_slip_rake(self, total_slip: float, rake: float):
+        self.rake = rake
+        self._strike_slip = total_slip * np.cos(np.radians(rake))
+        self._dip_slip = total_slip * np.sin(np.radians(rake))
+
     @staticmethod
     def calculate_rake(strike_slip: float, dip_slip: float):
         return normalize_bearing(np.degrees(np.arctan2(dip_slip, strike_slip)))
@@ -159,8 +164,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
             self._area = RsqSimTriangularPatch.calculate_area(self.vertices)
 
         if total_slip is not None:
-            self.strike_slip = total_slip * np.cos(np.radians(self.rake))
-            self.dip_slip = total_slip * np.sin(np.radians(self.rake))
+            self.set_slip_rake(total_slip, self.rake)
 
     @RsqSimGenericPatch.vertices.setter
     def vertices(self, vertices: Union[list, np.ndarray, tuple]):

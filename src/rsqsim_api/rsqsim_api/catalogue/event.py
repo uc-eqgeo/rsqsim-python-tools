@@ -1215,6 +1215,9 @@ class RsqSimEvent:
 
         return ruptured_quads_dict
 
+    def to_oq_points(self, fault_model: RsqSimMultiFault):
+        pass
+
     def get_crustal_component(self, fault_model: RsqSimMultiFault, crustal_names: list, min_moment: float = 1.e+18,
                               min_slip: float = 0.):
         moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_moment, by_cfm_names=False)

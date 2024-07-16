@@ -2,7 +2,7 @@ import os.path
 
 import numpy as np
 from typing import Union, List, Tuple, Dict
-from shapely.geometry import LineString
+from shapely.geometry import LineString, MultiLineString
 import geopandas as gpd
 import difflib
 
@@ -147,6 +147,9 @@ def calculate_dip_direction(line: LineString):
     :param line: Linestring object
     :return:
     """
+    assert isinstance(line, (LineString, MultiLineString))
+    if isinstance(line, MultiLineString):
+        line = merge_multiple_nearly_adjacent_segments(list(line.geoms))
     # Get coordinates
     x, y = line.xy
     x, y = np.array(x), np.array(y)
@@ -204,7 +207,9 @@ def optimize_point_spacing(line: LineString, spacing: float):
     :param spacing:
     :return:
     """
-    assert isinstance(line, LineString)
+    assert isinstance(line, (LineString, MultiLineString))
+    if isinstance(line, MultiLineString):
+        line = merge_multiple_nearly_adjacent_segments(list(line.geoms))
     assert isinstance(spacing, float)
     assert spacing > 0.
     line_length = line.length

@@ -334,6 +334,10 @@ class RsqSimSegment:
             triangle_array = np.delete(triangle_array, triangles_to_delete, axis=0)
             if patch_numbers is not None:
                 np.delete(patch_numbers, triangles_to_delete, axis=0)
+            if rake is not None:
+                np.delete(rake, triangles_to_delete, axis=0)
+            if total_slip is not None:
+                np.delete(total_slip, triangles_to_delete, axis=0)
 
 
         if patch_numbers is None:
@@ -943,14 +947,14 @@ class RsqSimSegment:
 
         local_dips = []
         for centre in centre_array_3d:
-            relevant_vertices = self.vertices[np.abs(np.dot(self.vertices - centre, self.strike_direction_vector)
-                                                     < width / 2.)]
+            relevant_vertices = self.vertices[np.abs(np.dot(self.vertices - centre, self.strike_direction_vector))
+                                                     < (width / 2.)]
             horizontal_dists = np.dot(relevant_vertices - centre, self.dip_direction_vector)
             depths = np.abs(relevant_vertices[:, -1])
             local_dip = fit_2d_line(horizontal_dists, depths)
             local_dips.append(local_dip)
 
-        return abs(np.median(local_dips))
+        return np.median(np.abs(local_dips))
 
     def discretize_rectangular_tiles(self, tile_size: float = 5000., interpolation_distance: float = 1000.):
         """
@@ -1024,6 +1028,10 @@ class RsqSimSegment:
             of_interest = (along_dists >= -1 * width / 2) * (along_dists <= width / 2.) * \
                           (across_dists >= -1 * interp_width / 2) * (across_dists <= interp_width / 2)
             relevant_vertices = self.vertices[of_interest]
+            if any([relevant_vertices.ndim <= 1, relevant_vertices.shape[0] < 3]):
+                of_interest = (along_dists >= -1 * width / 1.5) * (along_dists <= width / 1.5) * \
+                              (across_dists >= -1 * interp_width / 1.5) * (across_dists <= interp_width / 1.5)
+                relevant_vertices = self.vertices[of_interest]
             # Normal to plane
             normal_i, _ = fit_plane_to_points(relevant_vertices)
 
@@ -1060,10 +1068,13 @@ class RsqSimSegment:
             #
             # top_trace = LineString(poly_ls[1:-1])
             # top_traces.append(top_trace)
-
             all_tile_ls.append(np.array(poly_ls))
 
-        return np.array(all_tile_ls)
+        if not np.isnan(np.array(poly_ls)).any():
+            return np.array(all_tile_ls)
+        else:
+            print(f"{self.name}: NaNs in tile vertices")
+            return np.array([quad for quad in all_tile_ls if not np.isnan(quad).any()])
 
 
 class RsqSimFault:
