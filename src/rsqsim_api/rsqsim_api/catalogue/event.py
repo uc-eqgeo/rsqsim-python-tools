@@ -734,6 +734,7 @@ class RsqSimEvent:
 
 
         return surface_faults
+
     def slip_dist_array(self, include_zeros: bool = True, min_slip_percentile: float = None,
                         min_slip_value: float = None, nztm_to_lonlat: bool = False):
         all_patches = []
@@ -773,6 +774,16 @@ class RsqSimEvent:
                     patch_line = np.hstack([triangle_corners, np.array([0., 0., 0.])])
                     all_patches.append(patch_line)
         return np.array(all_patches)
+
+    def slip_dist_bounds(self, include_zeros: bool = True, min_slip_percentile: float = None,
+                            min_slip_value: float = None, nztm_to_lonlat: bool = False):
+        slip_dist_array = self.slip_dist_array(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
+                                               min_slip_value=min_slip_value, nztm_to_lonlat=nztm_to_lonlat)
+        min_x = np.min(slip_dist_array[:, [0, 3, 6]])
+        max_x = np.max(slip_dist_array[:, [0, 3, 6]])
+        min_y = np.min(slip_dist_array[:, [1, 4, 7]])
+        max_y = np.max(slip_dist_array[:, [1, 4, 7]])
+        return min_x, min_y, max_x, max_y
 
     def slip_dist_to_mesh(self, include_zeros: bool = True, min_slip_percentile: float = None,
                           min_slip_value: float = None, nztm_to_lonlat: bool = False):
@@ -873,13 +884,19 @@ class RsqSimEvent:
             return
 
     def discretize_openquake_ktree(self, fault_model: RsqSimMultiFault, quads_dict: dict, probability: float,
-                                   subduction_names: Iterable = ("hikurangi", "puysegur"), min_moment = 1.e18,
+                                   subduction_names: Iterable = ("hikkerm", "puysegur"), min_moment = 1.e18,
                                    min_slip = 0.1, tile_size: float = 5000., write_mesh: bool = False,
-                                   write_geojson: bool = False, xml_dir: str = None):
+                                   write_geojson: bool = False, xml_dir: str = None, threshold: float = 0.5):
         tiles_dict = self.slip_dist_quads_ktree(quads_dict=quads_dict, fault_model=fault_model,min_moment=min_moment,
-                                                min_slip=min_slip)
+                                                min_slip=min_slip, threshold_for_inclusion=threshold)
         crustal_faults = [key for key in tiles_dict.keys() if key not in subduction_names]
+        if crustal_faults:
+            if all([tiles_dict[key].size == 0 for key in crustal_faults]):
+                crustal_faults = []
         subduction_faults = [key for key in tiles_dict.keys() if key in subduction_names]
+        if subduction_faults:
+            if all([tiles_dict[key].size == 0 for key in subduction_faults]):
+                subduction_faults = []
 
         if subduction_faults:
             subduction_tiles = np.vstack([tiles_dict[key] for key in subduction_faults])
@@ -1197,21 +1214,22 @@ class RsqSimEvent:
         ruptured_quads_dict = {}
         for name in moment_quads:
             segment_quads = quads_dict[name]
-            segment = fault_model.name_dic[name]
-            segment_quad_centroids = segment_quads.mean(axis=1)
-            ruptured_patch_numbers = self.patch_numbers[np.in1d(self.patch_numbers, fault_patches) & (self.patch_slip > min_slip)]
-            segment_patch_centroids = segment.get_patch_centres()
-            ruptured_patch_centroids = segment_patch_centroids[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
-            tree = KDTree(segment_quad_centroids)
-            _, all_patch_indices = tree.query(segment_patch_centroids)
-            _, ruptured_patch_indices = tree.query(ruptured_patch_centroids)
-            ruptured_quads = []
-            for i, quad in enumerate(segment_quads):
-                num_triangles = (all_patch_indices == i).sum()
-                num_ruptured_triangles = (ruptured_patch_indices == i).sum()
-                if num_ruptured_triangles / num_triangles > threshold_for_inclusion:
-                    ruptured_quads.append(quad)
-            ruptured_quads_dict[name] = np.array(ruptured_quads)
+            if segment_quads.size > 0:
+                segment = fault_model.name_dic[name]
+                segment_quad_centroids = segment_quads.mean(axis=1)
+                ruptured_patch_numbers = self.patch_numbers[np.in1d(self.patch_numbers, fault_patches) & (self.patch_slip > min_slip)]
+                segment_patch_centroids = segment.get_patch_centres()
+                ruptured_patch_centroids = segment_patch_centroids[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
+                tree = KDTree(segment_quad_centroids)
+                _, all_patch_indices = tree.query(segment_patch_centroids)
+                _, ruptured_patch_indices = tree.query(ruptured_patch_centroids)
+                ruptured_quads = []
+                for i, quad in enumerate(segment_quads):
+                    num_triangles = (all_patch_indices == i).sum()
+                    num_ruptured_triangles = (ruptured_patch_indices == i).sum()
+                    if num_ruptured_triangles / num_triangles > threshold_for_inclusion:
+                        ruptured_quads.append(quad)
+                ruptured_quads_dict[name] = np.array(ruptured_quads)
 
         return ruptured_quads_dict
 

@@ -349,6 +349,10 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
 
         self.rake = np.rad2deg(np.arccos(np.dot(shearStress,self.along_strike_vector)/(norm_3d(shearStress)*norm_3d(self.along_strike_vector))))
 
+    @property
+    def vertical_slip(self):
+        return self.dip_slip * np.cos(np.radians(self.dip))
+
 
 
 
