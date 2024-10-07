@@ -806,13 +806,22 @@ class RsqSimSegment:
         multip = MultiPolygon(patch.as_polygon() for patch in self.patch_outlines)
         return unary_union(list(multip.geoms))
 
+    def get_slip_vec_3d(self):
+        slip_vecs = []
+        for patch in self.patch_outlines:
+            slip_vecs.append(patch.slip_vec_3d())
+        return np.array(slip_vecs)
+
     def plot_2d(self, ax: plt.Axes):
         ax.triplot(self.vertices[:, 0], self.vertices[:, 1], self.triangles)
 
-    def to_mesh(self, write_slip: bool = False):
+    def to_mesh(self, write_slip: bool = False, convert_to_mm_yr: bool = False):
         mesh = meshio.Mesh(points=self.vertices, cells=[("triangle", self.triangles)])
         if write_slip:
-            mesh.cell_data["slip"] = self.total_slip
+            if convert_to_mm_yr:
+                mesh.cell_data["slip"] = self.total_slip * csts.seconds_per_year * 1.e3
+            else:
+                mesh.cell_data["slip"] = self.total_slip
             mesh.cell_data["rake"] = self.rake
 
         return mesh
@@ -821,8 +830,8 @@ class RsqSimSegment:
         mesh = self.to_mesh()
         mesh.write(stl_name, file_format="stl")
 
-    def to_vtk(self, vtk_name: str, write_slip: bool = False):
-        mesh = self.to_mesh(write_slip=write_slip)
+    def to_vtk(self, vtk_name: str, write_slip: bool = False, convert_to_mm_yr: bool = False):
+        mesh = self.to_mesh(write_slip=write_slip, convert_to_mm_yr=convert_to_mm_yr)
         mesh.write(vtk_name, file_format="vtk")
 
     def to_gpd(self, write_slip: bool = False, crs: int = 2193):

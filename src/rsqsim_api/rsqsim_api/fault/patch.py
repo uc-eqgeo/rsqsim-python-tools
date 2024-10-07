@@ -222,8 +222,10 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         if dz == 0:
             dd_vec = np.array([0., 0., -1.])
         else:
-            dd_vec = np.array([dx, dy, -1 / dz])
-        return dd_vec / norm_3d(dd_vec)
+            xy_mag = np.sqrt(dx ** 2 + dy ** 2)
+            xy_scaling = abs(dz) / xy_mag
+            dd_vec = np.array([dx * xy_scaling, dy * xy_scaling, -xy_mag])
+        return dd_vec
 
     @property
     def dip(self):
@@ -325,6 +327,11 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
             rake = np.rad2deg(np.arctan2(strike_perp,strike_par))
 
         return strike_perp, strike_par, rake
+
+    def slip_vec_3d(self):
+        strike_slip = self.strike_slip * self.along_strike_vector
+        dip_slip = self.dip_slip * self.down_dip_vector * -1
+        return strike_slip + dip_slip
 
     def rake_from_stress_tensor(self, sigma1: np.ndarray):
         """
