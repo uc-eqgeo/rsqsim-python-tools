@@ -16,6 +16,7 @@ from matplotlib import cm, colors
 from shapely.geometry import Polygon
 import geopandas as gpd
 from numpy.random import default_rng
+from numba import njit, prange, types, typed
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault, RsqSimSegment
 from rsqsim_api.catalogue.event import RsqSimEvent
@@ -27,7 +28,7 @@ from rsqsim_api.visualisation.utilities import plot_coast, plot_background, plot
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
 import rsqsim_api.io.rsqsim_constants as csts
 from rsqsim_api.catalogue.utilities import calculate_scaling_c, calculate_stress_drop, \
-    summary_statistics
+    summary_statistics, median_cumulant, mw_to_m0, jit_intersect
 
 rng = default_rng()
 
@@ -1143,6 +1144,177 @@ class RsqSimCatalogue:
         """
         time_interval = (self.catalogue_df['t0'].max() - self.catalogue_df['t0'].min())/csts.seconds_per_year
         return calculate_b_value(self.catalogue_df["mw"], time_interval, min_mw=min_mw, max_mw=max_mw, interval=interval)
+
+
+    def calculate_dominant_magnitudes(self, fault_model: RsqSimMultiFault, unfiltered_catalogue = None,
+                                      min_for_median: int = 5):
+        """
+        Method for calculating the median magnitude that a given patch will rupture in.
+        :return: median magnitudes
+        """
+        patch_indices = np.array(list(fault_model.patch_dic.keys()), dtype=np.int32)
+        event_list = self.event_list
+        if unfiltered_catalogue is not None:
+            catalogue_mws = np.array(unfiltered_catalogue.catalogue_df["mw"])
+            catalogue_m0s = np.array(unfiltered_catalogue.catalogue_df["m0"])
+        else:
+            catalogue_mws = np.array(self.catalogue_df["mw"])
+            catalogue_m0s = np.array(self.catalogue_df["m0"])
+        event_mws = catalogue_mws[event_list]
+        event_m0s = catalogue_m0s[event_list]
+
+        medians = np.zeros_like(patch_indices, dtype=np.float64)
+
+        return self.dominant_magnitudes(patch_indices, self.patch_list, event_mws, event_m0s, min_for_median=min_for_median)
+
+    @staticmethod
+    @njit(parallel=True)
+    def dominant_magnitudes(fault_patch_indices: np.ndarray[Union[int, np.int32, np.int64]],
+                            catalogue_patch_array: np.ndarray[Union[int, np.int32, np.int64]],
+                            event_mws: np.ndarray, event_m0s: np.ndarray,
+                            min_for_median: int = 5):
+        """
+        Method for calculating the median magnitude that a given patch will rupture in.
+        :param fault_patch_indices: indices of patches in fault model
+        :param catalogue_patch_array: array of patch numbers for each event
+        :param event_mws: array of magnitudes for each event
+        :param event_m0s: array of moment magnitudes for each event
+        :param min_for_median: minimum number of events for median to be calculated
+        :return: median magnitudes
+        """
+        medians_array = np.zeros_like(fault_patch_indices, dtype=np.float64)
+
+        for i in prange(len(fault_patch_indices)):
+            n_matching = np.count_nonzero(catalogue_patch_array == i)
+            if n_matching >= min_for_median:
+                matching = np.flatnonzero(catalogue_patch_array == i)
+                matching_m0s = event_m0s[matching]
+                matching_mws = event_mws[matching]
+                med_cumulant = median_cumulant(matching_m0s, matching_mws)
+                medians_array[i] = med_cumulant
+
+        return medians_array
+
+    def filter_crustal_events(self, fault_model: RsqSimMultiFault,
+                                       subduction_names: tuple = ("hikkerm", "puysegur"),
+                                       min_crustal_mw: float = 6.0):
+        """
+        Filter events to only include those which occur on crustal faults.
+        :param fault_model:
+        :param subduction_names:
+        :param min_crustal_mw:
+        """
+        min_crustal_m0 = mw_to_m0(min_crustal_mw)
+        crustal_patch_numbers = fault_model.get_crustal_patch_numbers(subduction_faults=subduction_names)
+
+        event_indices = np.array(list(self.catalogue_df.index), dtype=np.int32)
+        all_patch_areas = fault_model.get_patch_areas()
+        patch_area_list = all_patch_areas[self.patch_list]
+
+        return self.filter_crustal_events_parallel(event_indices, crustal_patch_numbers, self.event_list,
+                                                   self.patch_list, self.patch_slip, patch_area_list, min_crustal_m0)
+
+    @staticmethod
+    @njit(parallel=True)
+    def filter_crustal_events_parallel(event_indices: np.ndarray[Union[int, np.int32, np.int64]],
+                                       crustal_patch_numbers: np.ndarray[Union[int, np.int32, np.int64]],
+                                       event_list: np.ndarray[Union[int, np.int32, np.int64]],
+                                       patch_list: np.ndarray[Union[int, np.int32, np.int64]],
+                                       patch_slip: np.ndarray[Union[float, np.float32, np.float64]],
+                                       patch_area_list: np.ndarray[Union[float, np.float32, np.float64]],
+                                       min_crustal_m0: Union[float, np.float32, np.float64]):
+        """
+        Numba parallel function to filter events to only include those which occur on crustal faults.
+        :param event_indices:
+        :param crustal_patch_numbers:
+        :param patch_list:
+        :param patch_slip:
+        :param patch_area_list:
+        :param min_crustal_m0:
+        :return:
+        """
+        crustal_bool = np.zeros_like(event_indices, dtype=np.int32)
+        for i in prange(len(event_indices)):
+            event_i = event_indices[i]
+            patch_numbers = patch_list[np.where(event_list == event_i)]
+            crustal_patches_i = jit_intersect(patch_numbers, crustal_patch_numbers)
+            if len(crustal_patches_i) > 0:
+                crustal_patch_indices = np.searchsorted(patch_numbers, crustal_patches_i)
+                patch_slip_i = patch_slip[patch_numbers]
+                patch_areas_i = patch_area_list[patch_numbers]
+                crustal_slip_i = patch_slip_i[crustal_patch_indices]
+                crustal_areas_i = patch_areas_i[crustal_patch_indices]
+                m0 = np.sum(crustal_slip_i * crustal_areas_i) * 3e10
+                if m0 >= min_crustal_m0:
+                    crustal_bool[i] = 1
+
+        return event_indices[crustal_bool == 1]
+
+    def match_events_to_crustal_nshm_dicts(self, fault_model: RsqSimMultiFault,
+                                           event_ids: np.ndarray[Union[int, np.int32, np.int64]],
+                                           crustal_patch_dict: dict, crustal_n_dict: dict,
+                                           subduction_names: tuple = ("hikkerm", "puysegur"), threshold_proportion: float = 0.5):
+        crustal_patch_numbers = fault_model.get_crustal_patch_numbers(subduction_faults=subduction_names)
+        crustal_patch_dict_typed = typed.Dict.empty(types.int32, types.int32[:])
+        for key in crustal_patch_dict.keys():
+            crustal_patch_dict_typed[key] = np.array(crustal_patch_dict[key]["triangle_indices"], dtype=np.int32)
+        crustal_n_dict_typed = typed.Dict.empty(types.int32, types.int32)
+        for key in crustal_n_dict.keys():
+            crustal_n_dict_typed[key] = crustal_n_dict[key]
+        return self.match_crustal_nshm_parallel(event_ids, self.event_list, self.patch_list, crustal_patch_dict_typed,
+                                                crustal_n_dict_typed, crustal_patch_numbers,
+                                                threshold_proportion=threshold_proportion)
+
+
+
+    @staticmethod
+    @njit
+    def match_crustal_nshm_parallel(event_ids: np.ndarray[Union[int, np.int32, np.int64]],
+                                    event_list: np.ndarray[Union[int, np.int32, np.int64]],
+                                    patch_list: np.ndarray[Union[int, np.int32, np.int64]],
+                                    crustal_patch_dict: typed.Dict,
+                                    crustal_n_dict: typed.Dict,
+                                    crustal_patch_numbers: np.ndarray[Union[int, np.int32, np.int64]],
+                                    threshold_proportion: float = 0.5):
+        """
+        Numba parallel function to match events to crustal n values.
+        :param event_ids:
+        :param event_list:
+        :param patch_list:
+        :param crustal_patch_dict:
+        :param crustal_n_dict:
+        :param crustal_patch_numbers:
+        :param threshold_proportion:
+        """
+        nshm_patch_dict = typed.Dict.empty(types.int32, types.int32[:])
+        nshm_keys = np.array(list(crustal_patch_dict.keys()), dtype=np.int32)
+        for event_i in range(len(event_ids)):
+            event_id = event_ids[event_i]
+            patch_numbers = patch_list[np.where(event_list == event_id)]
+            crustal_patches_i = jit_intersect(patch_numbers, crustal_patch_numbers)
+            subsection_bool = np.zeros_like(nshm_keys, dtype=np.int32)
+            for subsection_i in range(len(nshm_keys)):
+                subsection_number = nshm_keys[subsection_i]
+                subsection_patches = crustal_patch_dict[subsection_number]
+                subsection_patches_i = jit_intersect(crustal_patches_i, subsection_patches)
+                if len(subsection_patches_i) > 0:
+                    nshm_n_i = crustal_n_dict[subsection_number]
+                    if len(subsection_patches_i) / nshm_n_i >= threshold_proportion:
+                        subsection_bool[subsection_i] = 1
+            nshm_patch_dict[event_id] = nshm_keys[subsection_bool == 1]
+            print(event_id)
+        return nshm_patch_dict
+
+                                    
+
+
+
+
+
+
+
+
+
 
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627",
                fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in",

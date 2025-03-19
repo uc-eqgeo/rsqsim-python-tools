@@ -199,6 +199,65 @@ def calculate_dip_direction(line: LineString):
 
     return dip_direction
 
+def calculate_strike(line: LineString, lt180: bool = False):
+    """
+    Calculate the strike of a shapely linestring object with coordinates in NZTM
+    :param line: Linestring object
+    :return:
+    """
+    assert isinstance(line, (LineString, MultiLineString))
+    if isinstance(line, MultiLineString):
+        line = merge_multiple_nearly_adjacent_segments(list(line.geoms))
+    # Get coordinates
+    x, y = line.xy
+    x, y = np.array(x), np.array(y)
+    if (y==y[0]).all():
+        bearing = 180.
+    elif (x==x[0]).all():
+        bearing = 90.
+
+    else:
+        # Calculate gradient of line in 2D
+        px = np.polyfit(x, y, 1, full=True)
+        gradient_x = px[0][0]
+
+        if len(px[1]):
+            res_x = px[1][0]
+        else:
+            res_x = 0
+
+
+        py = np.polyfit(y, x, 1, full=True)
+        gradient_y = py[0][0]
+        if len(py[1]):
+            res_y = py[1][0]
+        else:
+            res_y = 0
+
+        if res_x <= res_y:
+            # Gradient to bearing
+            bearing = 180 - np.degrees(np.arctan2(gradient_x, 1))
+        else:
+            bearing = 180 - np.degrees(np.arctan2(1/gradient_y, 1))
+
+    strike = normalize_bearing(bearing - 90.)
+
+    # Ensure strike is between zero and 360 (bearing)
+    while strike < 0:
+        strike += 360.
+
+    while strike >= 360.:
+        strike -= 360.
+
+    if lt180:
+        while strike >= 180.:
+            strike -= 180.
+
+        while strike < 0:
+            strike += 180.
+
+    return strike
+
 
 def optimize_point_spacing(line: LineString, spacing: float):
     """

@@ -116,6 +116,9 @@ class RsqSimMultiFault:
     def v2_name_dic(self):
         return self._v2_name_dic
 
+    def get_patch_areas(self):
+        return np.hstack([fault.patch_areas for fault in self.faults])
+
     def make_v2_name_dic(self,path2cfm: str):
         """Make dictionary to convert Bruce V2 fault segment names to the equivalent CFM names"""
         assert os.path.exists(path2cfm), "Path to CFM fault model not found"
@@ -702,6 +705,19 @@ class RsqSimMultiFault:
                 print(f'Check trace type for {fault_name}')
 
         return new_segment
+
+    def get_subduction_patch_numbers(self, subduction_faults: tuple[str] = ("hikkerm", "puysegur")):
+        subduction_patches = []
+        for fault in self.faults:
+            if any([subduction_fault in fault.name for subduction_fault in subduction_faults]):
+                subduction_patches.extend(fault.patch_numbers)
+        return np.array(subduction_patches)
+
+    def get_crustal_patch_numbers(self, subduction_faults: tuple[str] = ("hikkerm", "puysegur")):
+        subduction_patches = self.get_subduction_patch_numbers(subduction_faults=subduction_faults)
+        all_patches = np.array(list(self.patch_dic.keys()))
+        crustal_patches = np.setdiff1d(all_patches, subduction_patches)
+        return crustal_patches
 
 
 

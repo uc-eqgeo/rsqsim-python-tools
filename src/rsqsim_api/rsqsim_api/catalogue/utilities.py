@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+from numba import njit, int32
+
 def calculate_b_value_kijko_smit(magnitudes: np.ndarray, min_mw: float = 0.0, max_mw: float = 10.0):
     """
     Calculate b-value from magnitudes using the Kijko and Smit (2012) method.
@@ -63,6 +65,7 @@ def summary_statistics(dataframe: pd.DataFrame, stress_c: float = 2.44):
     labels = ["Max Mw, 5th C, 50th C, 95th C, 5th SD, 50th SD, 95th SD"]
     return pd.Series([max(magnitudes), *c_value_percentiles, *stress_drop_percentiles], index=labels)
 
+@njit
 def mw_to_m0(magnitudes: np.ndarray):
     """
     Convert magnitudes to seismic moment.
@@ -71,6 +74,7 @@ def mw_to_m0(magnitudes: np.ndarray):
     """
     return 10 ** (1.5 * magnitudes + 9.05)
 
+@njit
 def m0_to_mw(seismic_moment: float):
     """
     Convert seismic moment to magnitudes.
@@ -84,4 +88,50 @@ def weighted_circular_mean(azimuths: np.ndarray, weights: np.ndarray):
     mean_cos = np.average(np.cos(np.radians(azimuths)), weights=weights)
     mean_az = np.degrees(np.arctan2(mean_sin, mean_cos))
     return mean_az
+
+@njit
+def median_cumulant(m0_array: np.ndarray, mw_array: np.ndarray):
+    """
+    Calculate the median cumulant for a given array of moment magnitudes and moment values.
+    :param m0_array: M0 values for all events that rupture a patch of interest
+    :param mw_array: Moment magnitudes for all events that rupture a patch of interest
+    :return:
+    """
+    # Sort the arrays by M0
+    sorted_m0_indices = np.argsort(m0_array)
+    sorted_m0 = m0_array[sorted_m0_indices]
+    sorted_mw = mw_array[sorted_m0_indices]
+    # Calculate the cumulative sum moment of the sorted m0
+    norm_cumulative_m0 = np.cumsum(sorted_mw) / sorted_m0[-1]
+    # Find median cumulant (last index where norm_cumulative_m0 < 0.5)
+    med_cumulant_index = np.flatnonzero(norm_cumulative_m0 < 0.5)[-1]
+    # Return MW for relevant index
+    return sorted_mw[med_cumulant_index]
+
+@njit(int32[:](int32[:], int32[:]))
+def jit_intersect(l1, l2):
+    l3 = np.array([i for i in l1 for j in l2 if i == j])
+    return np.unique(l3) # and i not in crossSec]
+
+def mw_from_area_and_scaling_c(area: float, c: float):
+    """
+    Calculate the moment magnitude from an area and scaling parameter c.
+    :param area: in m^2
+    :param c: scaling parameter, usually 4.2 in NZ
+    :return: moment magnitude
+    """
+    return np.log10(area) - 6. + c
+
+
+def slip_from_area_and_scaling_c(area: float, c: float, mu: float =3.e10):
+    """
+    Calculate the slip from an area and scaling parameter c.
+    :param area: in m^2
+    :param c: scaling parameter, usually 4.2 in NZ
+    :param mu: rigidity in Pa
+    :return: slip in meters
+    """
+
+    m0 = mw_to_m0(mw_from_area_and_scaling_c(area, c))
+    return m0 / (mu * area)
 
