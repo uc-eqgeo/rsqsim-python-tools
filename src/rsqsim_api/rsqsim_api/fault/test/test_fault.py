@@ -7,7 +7,7 @@ import os
 
 test_vertices = np.array([[0., 0., 0.],
                           [1., 1., 0.],
-                          [0., 1., -1]])
+                          [0., 1., -1.]])
 
 fault_names = pd.Series(["test"])
 
@@ -133,13 +133,13 @@ class TestTriangularPatch(unittest.TestCase):
         np.testing.assert_array_almost_equal(self.triangle.normal_vector, np.array([-0.57735, 0.57735, 0.57735]))
 
     def test_down_dip_vector(self):
-        np.testing.assert_array_almost_equal(self.triangle.down_dip_vector, np.array([-0.301511, 0.301511, -0.904534]))
+        np.testing.assert_array_almost_equal(self.triangle.down_dip_vector, np.array([-0.408248,  0.408248, -0.816497]))
 
     def test_dip_magnitude(self):
-        np.testing.assert_almost_equal(self.triangle.dip, 64.7605981)
+        np.testing.assert_almost_equal(self.triangle.dip, 54.735610317245346)
 
     def test_along_strike_vector(self):
-        np.testing.assert_array_almost_equal(self.triangle.along_strike_vector, np.array([-0.696311, -0.696311, 0.]))
+        np.testing.assert_array_almost_equal(self.triangle.along_strike_vector, np.array([-0.707107, -0.707107,  0.      ]))
 
     def test_centre(self):
         np.testing.assert_array_almost_equal(self.triangle.centre, np.array([0.333333, 0.6666667, -0.3333333]))
