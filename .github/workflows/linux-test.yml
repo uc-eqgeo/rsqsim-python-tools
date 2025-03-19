@@ -18,14 +18,14 @@ jobs:
 
     steps:
     - name: Checkout github repo including lfs files
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         lfs: true
 
     - name: Setup miniconda
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       with:
-        miniforge-variant: Mambaforge
+        miniforge-variant: Miniforge3
         channels: conda-forge
         activate-environment: rsqsim-python-tools
         environment-file: environment.yml
