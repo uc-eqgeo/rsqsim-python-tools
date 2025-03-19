@@ -12,8 +12,8 @@ rsqsim_api
 
 
 
-Subpackages
------------
+Submodules
+----------
 
 .. toctree::
    :maxdepth: 1
