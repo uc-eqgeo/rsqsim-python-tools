@@ -372,18 +372,23 @@ class RsqSimEvent:
             else:
                 # Assume matplotlib objects
                 fig, ax = subplots
+                assert isinstance(fig, plt.Figure), "subplots must be a matplotlib figure or a pickled figure"
+                assert isinstance(ax, plt.Axes), "subplots must be a matplotlib figure or a pickled figure"
+
         elif create_background:
-            fig, ax = plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
-                                      bounds=bounds, plot_rivers=plot_rivers, plot_lakes=plot_lakes,
-                                      plot_highways=plot_highways, plot_boundaries=plot_boundaries,
-                                      hillshade_cmap=hillshade_cmap, wgs=wgs, land_color=land_color,
-                                      plot_edge_label=plot_edge_label)
+            fig, background_ax = plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
+                                                 bounds=bounds, plot_rivers=plot_rivers, plot_lakes=plot_lakes,
+                                                 plot_highways=plot_highways, plot_boundaries=plot_boundaries,
+                                                 hillshade_cmap=hillshade_cmap, wgs=wgs, land_color=land_color,
+                                                 plot_edge_label=plot_edge_label)
+            ax = background_ax["main_figure"]
         elif coast_only:
 
-            fig, ax = plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
-                                      bounds=bounds, plot_rivers=False, plot_lakes=False, plot_highways=False,
-                                      plot_boundaries=False, hillshade_cmap=hillshade_cmap, wgs=wgs,
-                                      land_color=land_color, plot_edge_label=plot_edge_label)
+            fig, background_ax = plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
+                                                 bounds=bounds, plot_rivers=False, plot_lakes=False, plot_highways=False,
+                                                 plot_boundaries=False, hillshade_cmap=hillshade_cmap, wgs=wgs,
+                                                 land_color=land_color, plot_edge_label=plot_edge_label)
+            ax = background_ax["main_figure"]
 
 
         else:
@@ -734,6 +739,30 @@ class RsqSimEvent:
 
 
         return surface_faults
+
+    def split_by_fault(self, fault_model: RsqSimMultiFault, min_slip: float = 0.1, min_patches: int = 1):
+        """
+        Create subevent Event objects for each fault in the event
+        """
+        assert self.faults is not None, "Event has no faults, can't split by fault"
+        subevents = {}
+        moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_slip)
+        for i, fault in enumerate(self.faults):
+            if fault.name in moment_dict.keys():
+                sub_m0 = moment_dict[fault.name]
+                sub_mw = m0_to_mw(sub_m0)
+                fault_patches = np.array(list(fault.patch_dic.keys()))
+                fault_patch_numbers = self.patch_numbers[np.in1d(self.patch_numbers, fault_patches)]
+                fault_patch_slip = self.patch_slip[np.in1d(self.patch_numbers, fault_patches)]
+                fault_patch_time = self.patch_time[np.in1d(self.patch_numbers, fault_patches)]
+                sub_event = self.from_earthquake_list(t0=self.t0, m0=sub_m0, mw=sub_mw, x=self.x, y=self.y, z=self.z,
+                                                      area=self.area, dt=self.dt,
+                                                      patch_numbers=fault_patch_numbers, patch_slip=fault_patch_slip,
+                                                      patch_time=fault_patch_time, fault_model=fault_model, event_id=i)
+                subevents[fault.name] = sub_event
+
+        return subevents
+
 
     def slip_dist_array(self, include_zeros: bool = True, min_slip_percentile: float = None,
                         min_slip_value: float = None, nztm_to_lonlat: bool = False):
