@@ -207,6 +207,43 @@ class RsqSimEvent:
             event.faults = []
 
         return event
+    
+    def sub_events_by_fault(self, fault_model: RsqSimMultiFault, min_slip: float = 0.1) -> List["RsqSimEvent"]:
+        """
+        Split the event into subevents by fault. This is useful for plotting and analysis.
+        :param fault_model: Fault model to use for splitting the event.
+        :param min_slip: Minimum slip to consider a patch as part of a subevent.
+        :return: List of subevents.
+        """
+        m0s = self.make_fault_moment_dict(fault_model=fault_model, mu=3.0e10, by_cfm_names=False)
+        subevents = []
+        for fault in self.faults:
+            fault_patches = np.array(list(fault.patch_dic.keys()))
+            fault_patch_numbers = self.patch_numbers[np.in1d(self.patch_numbers, fault_patches)]
+            fault_patch_slip = self.patch_slip[np.in1d(self.patch_numbers, fault_patch_numbers)]
+            fault_patch_time = self.patch_time[np.in1d(self.patch_numbers, fault_patch_numbers)]
+
+            fault_t0 = self.t0 + np.min(fault_patch_time)
+            fault_dt = np.max(fault_patch_time) - np.min(fault_patch_time)
+            fault_m0 = m0s[fault.name]
+            fault_mw = m0_to_mw(fault_m0)
+            fault_area = np.sum([fault.patch_dic[number].area for number in fault_patch_numbers])
+            fault_first_patch = fault_patch_numbers[np.where(fault_patch_time == np.min(fault_patch_time))[0][0]]
+            fault_first_patch = fault_model.patch_dic[fault_first_patch]
+            fault_x, fault_y, fault_z = fault_first_patch.centre
+
+
+
+            # Check if any slip is above the minimum slip threshold
+            if np.any(fault_patch_slip >= min_slip):
+                subevent = RsqSimEvent.from_earthquake_list(
+                    fault_t0, fault_m0, fault_mw, fault_x, fault_y, fault_z, fault_area, fault_dt,
+                    fault_patch_numbers, fault_patch_slip, fault_patch_time,
+                    fault_model=fault_model, event_id=self.event_id)
+                subevents.append(subevent)
+
+        return subevents
+
 
     def find_mean_slip(self):
         if self.patches:

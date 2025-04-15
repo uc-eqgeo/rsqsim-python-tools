@@ -582,7 +582,7 @@ class RsqSimCatalogue:
             return
 
     def events_by_number(self, event_number: Union[int, Iterable[int]], fault_model: RsqSimMultiFault,
-                         child_processes: int = 0, min_patches: int = 1):
+                         child_processes: int = 0, min_patches: int = 1) -> List[RsqSimEvent]:
         assert isinstance(fault_model,RsqSimMultiFault), "Fault model required"
         if isinstance(event_number, (int, np.int32, np.int64)):
             ev_ls = [event_number]
