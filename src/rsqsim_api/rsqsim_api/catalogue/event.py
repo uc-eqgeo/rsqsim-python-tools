@@ -1268,7 +1268,7 @@ class RsqSimEvent:
             return
 
     def slip_dist_quads_ktree(self, fault_model: RsqSimMultiFault, quads_dict: dict, min_moment: float = 1.e+18,
-                              min_slip: float = 0.,threshold_for_inclusion: float = 0.5):
+                              min_slip: float = 0.,threshold_for_inclusion: float = 0.5, slip_per_quad = False):
         moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_moment, by_cfm_names=False)
         moment_quads = [key for key in moment_dict.keys() if key in quads_dict.keys()]
         missing_quads = [key for key in moment_dict.keys() if key not in moment_quads]
@@ -1278,6 +1278,7 @@ class RsqSimEvent:
 
         fault_patches = np.array(list(fault_model.patch_dic.keys()))
         ruptured_quads_dict = {}
+        slip_quads_dict = {}
         for name in moment_quads:
             segment_quads = quads_dict[name]
             if segment_quads.size > 0:
@@ -1290,14 +1291,28 @@ class RsqSimEvent:
                 _, all_patch_indices = tree.query(segment_patch_centroids)
                 _, ruptured_patch_indices = tree.query(ruptured_patch_centroids)
                 ruptured_quads = []
-                for i, quad in enumerate(segment_quads):
+                quad_slip = []
+                #for i, quad in enumerate(segment_quads):
+                for i in set(ruptured_patch_indices):
+                    quad = segment_quads[i]
                     num_triangles = (all_patch_indices == i).sum()
                     num_ruptured_triangles = (ruptured_patch_indices == i).sum()
+                    if not num_ruptured_triangles or not num_triangles:
+                        continue
                     if num_ruptured_triangles / num_triangles > threshold_for_inclusion:
                         ruptured_quads.append(quad)
+                        if slip_per_quad:
+                            areas = np.array([segment.patch_dic[patch_number].area for patch_number in ruptured_patch_numbers[ruptured_patch_indices == i]])
+                            slip = event.patch_slip[np.isin(event.patch_numbers, ruptured_patch_numbers[ruptured_patch_indices == i])]
+                            average_slip = np.average(slip, weights=areas)
+                            quad_slip.append(average_slip)
                 ruptured_quads_dict[name] = np.array(ruptured_quads)
-
-        return ruptured_quads_dict
+                if slip_per_quad:
+                    slip_quads_dict[name] = np.array(quad_slip)
+        if slip_per_quad:
+            return ruptured_quads_dict, slip_quads_dict
+        else:
+            return ruptured_quads_dict
 
     def to_oq_points(self, fault_model: RsqSimMultiFault):
         pass
