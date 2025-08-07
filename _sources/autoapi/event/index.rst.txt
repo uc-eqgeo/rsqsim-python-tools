@@ -1,0 +1,11 @@
+event
+=====
+
+.. py:module:: event
+
+.. autoapi-nested-parse::
+
+   Event class for RSQSim Catalogue
+
+
+
