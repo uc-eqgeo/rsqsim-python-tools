@@ -192,7 +192,6 @@ def plot_coast(ax: plt.Axes, clip_boundary: list = None, edgecolor: str = "0.5",
         clipped_gs = clip_coast_with_trim(x1, y1, x2, y2, wgs=wgs, coarse=coarse)
     else:
         clipped_gs = clip_coast(x1, y1, x2, y2, wgs=wgs, coarse=coarse)
-
     clipped_gs.plot(ax=ax, edgecolor=edgecolor, facecolor=facecolor, linewidth=linewidth)
     if wgs:
         aspect = 1/np.cos(np.radians(np.mean([y1, y2])))

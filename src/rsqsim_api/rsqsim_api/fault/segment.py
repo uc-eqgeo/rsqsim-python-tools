@@ -812,9 +812,13 @@ class RsqSimSegment:
             slip_vecs.append(patch.slip_vec_3d())
         return np.array(slip_vecs)
 
-    def plot_2d(self, ax: plt.Axes, cmap: str = "viridis", max_slip: float = 10., alpha: float = 0.5):
-        ax.tripcolor(self.vertices[:, 0], self.vertices[:, 1], triangles=self.triangles, c= self.total_slip,
-                    cmap=cmap, vmin=0, vmax=max_slip, alpha=alpha)
+    def plot_2d(self, ax: plt.Axes, cmap: str = "viridis", max_slip: float = 10., alpha: float = 0.5, mm_yr: bool = True):
+        if mm_yr:
+            slip = self.total_slip * csts.seconds_per_year * 1.e3
+        else:
+            slip = self.total_slip
+        return ax.tripcolor(self.vertices[:, 0], self.vertices[:, 1], triangles=self.triangles, facecolors=slip,
+                            cmap=cmap, vmin=0, vmax=max_slip, alpha=alpha)
 
     def to_mesh(self, write_slip: bool = False, convert_to_mm_yr: bool = False):
         mesh = meshio.Mesh(points=self.vertices, cells=[("triangle", self.triangles)])
