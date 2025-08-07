@@ -261,7 +261,7 @@ def calculate_strike(line: LineString, lt180: bool = False):
 
 def optimize_point_spacing(line: LineString, spacing: float):
     """
-    Optimize point spacing of a linestring object.
+    Optimize point spacing of a linestring object. Might be less good than geopandas segmentize.
     :param line:
     :param spacing:
     :return:
