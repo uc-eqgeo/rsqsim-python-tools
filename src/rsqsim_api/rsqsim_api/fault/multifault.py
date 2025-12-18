@@ -469,7 +469,7 @@ class RsqSimMultiFault:
 
         all_faults = gpd.GeoDataFrame.from_dict(fault_dict)
         all_faults.to_file(prefix+".shp", crs=crs)
-        all_faults.to_file(prefix+"_traces.shp", crs=crs)
+
 
     def write_fault_outlines_to_gis(self, fault_list: Iterable = None, prefix: str = "./bruce_faults",crs: str ="EPSG:2193" ):
         if fault_list is not None:
@@ -501,6 +501,34 @@ class RsqSimMultiFault:
 
     def plot_slip_distribution_2d(self):
         pass
+
+    def patch_id_array(self,nztm_to_lonlat: bool =False):
+        """write out patch triangles with patch number to help with picking patches"""
+        all_patches = []
+        for fault in self.faults:
+            for patch_id in fault.patch_numbers:
+                patch = fault.patch_dic[patch_id]
+                if nztm_to_lonlat:
+                    triangle_corners = patch.vertices_lonlat.flatten()
+                else:
+                    triangle_corners = patch.vertices.flatten()
+                patch_line = np.hstack([triangle_corners, patch_id])
+                all_patches.append(patch_line)
+        return np.array(all_patches)
+
+    def patch_id_to_mesh(self,nztm_to_lonlat: bool = False):
+        patch_id_array = self.patch_id_array(nztm_to_lonlat=nztm_to_lonlat)
+        mesh = array_to_mesh(patch_id_array[:, :9])
+        data_dic = {}
+        for label, index in zip(["patch_id"], [9]):
+            data_dic[label] = patch_id_array[:, index]
+        mesh.cell_data = data_dic
+
+        return mesh
+
+    def patch_id_to_vtk(self, vtk_file: str, nztm_to_lonlat: bool = False):
+        mesh = self.patch_id_to_mesh(nztm_to_lonlat=nztm_to_lonlat)
+        mesh.write(vtk_file, file_format="vtk")
 
 
     def slip_rate_array(self, include_zeros: bool = True,

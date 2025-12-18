@@ -309,6 +309,16 @@ class RsqSimEvent:
 
         self.length = rupture_length
 
+    def fault_times(self, fault_model: RsqSimMultiFault):
+        """"make a list of fault names sorted by the time they begin to rupture"""
+        assert self.faults is not None, "Event has no faults, can't reorder"
+        fault_times = {}
+        for fault in self.faults:
+            fault_patches = np.array(list(fault.patch_dic.keys()))
+            fault_patch_times = self.patch_time[np.in1d(self.patch_numbers, fault_patches)]
+            fault_times[fault.name] = min(fault_patch_times)
+        return fault_times
+
     def make_fault_moment_dict(self, fault_model: RsqSimMultiFault, mu: float = 3.0e10, by_cfm_names: bool = True,
                                min_m0: float = 0.):
         """
@@ -736,12 +746,14 @@ class RsqSimEvent:
             plt.show()
 
     def find_surface_faults(self,fault_model: RsqSimMultiFault,min_slip: float =0.1, method: str = 'vertex',
-                                      n_patches: int = 1, max_depth: float = -1000., faults2ignore: [list,str] ='hikurangi'):
+                                      n_patches: int = 1, max_depth: float = -1000.,
+                            faults2ignore: [list,str] ='hikurangi',max_slip_per_fault: bool =False):
         """
                min_slip = 0.1  # min slip on a surface patch in m
                method = 'centroid'  # specify vertex or centroid
                n_patches = 1  # number of surface rupturing patches needed
                max_depth = -2000.  # max depth for a 'surface' patch vertex or centroid - about 1000 for vertex or 2000 for centroid
+                max_slip_per_fault if true return the maximum surface slip on each surface fault
                """
 
         assert method in ['centroid', 'vertex'], "Method must be centroid or vertex"
@@ -749,10 +761,14 @@ class RsqSimEvent:
         if issubclass(type(faults2ignore),str):
             faults2ignore =[faults2ignore]
 
+        if max_slip_per_fault:
+            max_slip_dict ={}
         surface_faults = []
         for fault in self.faults:
             if not fault.name in faults2ignore:
                 surface_patches = []
+                if max_slip_per_fault:
+                    surface_slips = []
                 for patch_id in fault.patch_numbers:
                     if patch_id in self.patch_numbers:
                         patch = fault.patch_dic[patch_id]
@@ -770,12 +786,18 @@ class RsqSimEvent:
                             patch_slip = self.patch_slip[patch_ev_index]
                             if patch_slip >= min_slip:
                                 surface_patches.append(patch_ev_index)
+                                if max_slip_per_fault:
+                                    surface_slips.append(patch_slip)
 
                 if len(surface_patches) >= n_patches:
                     surface_faults.append(fault.name)
+                    if max_slip_per_fault:
+                        max_slip_dict[fault.name]=max(surface_slips)
 
-
-        return surface_faults
+        if max_slip_per_fault:
+            return max_slip_dict
+        else:
+            return surface_faults
 
     def split_by_fault(self, fault_model: RsqSimMultiFault, min_slip: float = 0.1, min_patches: int = 1):
         """

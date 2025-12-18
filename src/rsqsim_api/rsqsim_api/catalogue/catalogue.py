@@ -570,12 +570,13 @@ class RsqSimCatalogue:
         patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
         event_numbers = self.event_list[patch_indices]
         if event_numbers.size:
+            event_indices = np.where(np.in1d(self.event_list, event_numbers))[0]
             trimmed_df = self.catalogue_df.loc[np.unique(event_numbers)]
             filtered_cat = self.from_dataframe(trimmed_df)
-            filtered_cat.event_list = event_numbers
-            filtered_cat.patch_list = self.patch_list[patch_indices]
-            filtered_cat.patch_slip = self.patch_slip[patch_indices]
-            filtered_cat.patch_time_list = self.patch_time_list[patch_indices]
+            filtered_cat.event_list = self.event_list[event_indices]
+            filtered_cat.patch_list = self.patch_list[event_indices]
+            filtered_cat.patch_slip = self.patch_slip[event_indices]
+            filtered_cat.patch_time_list = self.patch_time_list[event_indices]
             return filtered_cat
         else:
             print("No events found!")
@@ -927,7 +928,8 @@ class RsqSimCatalogue:
                 instrumental_b_value = calculate_b_value(instrumental_mags, time_interval_years=(latest_year - inst_year_min), min_mw=4.5, max_mw=8.5)
                 print(f"b-value for instrumental catalogue: {instrumental_b_value[0]:.2f}")
 
-            plt.ylim([0.0001, 1000])
+
+            plt.ylim([0.001, 1000])
 
         elif plot_type == "cumulative":
             tints = []
@@ -974,10 +976,10 @@ class RsqSimCatalogue:
                                    label=f'{inst_year_min} - {int(latest_year)}, Mw>{mmin:.1f} corr')
                 xsortNZFull = IMsort[:]
                 ysortNZFull = IMcum * weightsyrs_IM[0]
-            plt.ylim([0.0001, 100])
+            plt.ylim([0.001, 100])
 
         plt.ylabel('N [$yr^{-1}$]')
-        plt.xlabel('M')
+        plt.xlabel('Mw')
         plt.tight_layout()
         plt.legend()
 
