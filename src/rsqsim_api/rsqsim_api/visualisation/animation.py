@@ -335,7 +335,7 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
                             plot_log: bool = False, log_min: float = 1., log_max: float = 100.,
                             min_slip_value: float = None, plot_zeros: bool = False, extra_sub_list: list = None,
                             min_mw: float = None, decimals: int = 1, subplot_name: str = "main_figure",
-                            num_threads_plot: int = 4, frame_dir: str = "frames",
+                            num_threads_plot: int = 4, frame_dir: str = "frames",resolution: int = 100
                            ):
         """
         Writes all the frames of an animation to file
@@ -362,7 +362,7 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
             frame_i, fig_i = future.result()
                     
             if fig_i is not None:
-                fig_i.savefig(f"{frame_dir}/frame{frame_i:04d}.png", format="png", dpi=100)
+                fig_i.savefig(f"{frame_dir}/frame{frame_i:04d}.png", format="png", dpi=resolution)
                 plt.close(fig_i)
                 print(f"Writing {frame_i}")
                 
@@ -397,7 +397,7 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
             else:
                 year_text.set_text(f"{frame_time:.{decimals}f}")
             time_slider.set_val(frame_time)
-            fig.savefig(f"{frame_dir}/frame{frame_num:04d}.png", dpi=100)
+            fig.savefig(f"{frame_dir}/frame{frame_num:04d}.png", dpi=resolution)
             plt.close(fig)
         
 
