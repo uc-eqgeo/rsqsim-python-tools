@@ -419,9 +419,7 @@ class RsqSimEvent:
             else:
                 # Assume matplotlib objects
                 fig, ax = subplots
-                assert isinstance(fig, plt.Figure), "subplots must be a matplotlib figure or a pickled figure"
-                assert isinstance(ax, plt.Axes), "subplots must be a matplotlib figure or a pickled figure"
-            if create_background:
+                if create_background:
                     raise Warning("create_background is set to True but subplots are provided, ignoring background creation")
         elif create_background:
             fig, background_ax = plot_background(figsize=figsize, hillshading_intensity=hillshading_intensity,
