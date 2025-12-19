@@ -15,8 +15,6 @@ from matplotlib import pyplot as plt
 from matplotlib import cm, colors
 from shapely.geometry import Polygon
 import geopandas as gpd
-from numpy.random import default_rng
-from numba import njit, prange, types, typed
 
 from rsqsim_api.fault.multifault import RsqSimMultiFault, RsqSimSegment
 from rsqsim_api.catalogue.event import RsqSimEvent
@@ -27,10 +25,6 @@ from rsqsim_api.visualisation.utilities import plot_coast, plot_background, plot
     plot_river_lines, plot_highway_lines, plot_boundary_polygons
 from rsqsim_api.io.bruce_shaw_utilities import bruce_subduction
 import rsqsim_api.io.rsqsim_constants as csts
-from rsqsim_api.catalogue.utilities import calculate_scaling_c, calculate_stress_drop, \
-    summary_statistics, median_cumulant, mw_to_m0, jit_intersect
-
-rng = default_rng()
 
 fint = Union[int, float]
 sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
@@ -84,9 +78,7 @@ class RsqSimCatalogue:
         self.t0, self.m0, self.mw = (None,) * 3
         self.x, self.y, self.z = (None,) * 3
         self.area, self.dt = (None,) * 2
-        
 
-        
     @property
     def catalogue_df(self):
         return self._catalogue_df
@@ -201,40 +193,20 @@ class RsqSimCatalogue:
 
         # Read in catalogue to dataframe and initiate class instance
         rcat = cls.from_catalogue_file(catalogue_file, reproject=reproject)
-
-        num_events = len(rcat.catalogue_df)
-
+        # print("Messing around with this 9/5/23 - check it still does what you want!")
+        #
+        # print(rcat.catalogue_df.index)
         if serial:
-
-            event_list = read_text(standard_list_files[1], format="i") - 1
-            patch_list = read_text(standard_list_files[0], format="i") - 1
-            patch_slip, patch_time_list = [read_text(fname, format="d") for fname in
-                                           standard_list_files[2:]]
-
+            rcat.patch_list = read_text(standard_list_files[0], format="i") - 1
+            # indices start from 1, change so that it is zero instead
+            rcat.event_list = read_text(standard_list_files[1], format="i") - 1
+            rcat.patch_slip, rcat.patch_time_list = [read_text(fname, format="d") for fname in
+                                                     standard_list_files[2:]]
         else:
-            patch_list = read_binary(standard_list_files[0], format="i",endian=endian) - 1
-            event_list = read_binary(standard_list_files[1], format="i",endian=endian) - 1
-            patch_slip, patch_time_list = [read_binary(fname, format="d",endian=endian) for fname in standard_list_files[2:]]
-
-        unique_events = np.unique(event_list)
-        if len(unique_events) == num_events:
-                rcat.event_list = event_list
-                rcat.patch_list = patch_list
-                rcat.patch_slip, rcat.patch_time_list = patch_slip, patch_time_list
-        else:
-            print("Event list does not match catalogue length. Trying to fix...")
-            if not len(unique_events) > num_events:
-                raise ValueError("Event list is too short!")
-            last_event = rcat.catalogue_df.index[-1]
-            short_events = event_list[event_list <= last_event]
-            short_patches = patch_list[:len(short_events)]
-            short_slip = patch_slip[:len(short_events)]
-            short_time = patch_time_list[:len(short_events)]
-            rcat.event_list = short_events
-            rcat.patch_list = short_patches
-            rcat.patch_slip, rcat.patch_time_list = short_slip, short_time
-
-            print("Fixed!")
+            rcat.patch_list = read_binary(standard_list_files[0], format="i",endian=endian) - 1
+            # indices start from 1, change so that it is zero instead
+            rcat.event_list = read_binary(standard_list_files[1], format="i",endian=endian) - 1
+            rcat.patch_slip, rcat.patch_time_list = [read_binary(fname, format="d",endian=endian) for fname in standard_list_files[2:]]
 
         return rcat
 
@@ -361,12 +333,12 @@ class RsqSimCatalogue:
         return rcat
 
     def filter_by_events(self, event_number: Union[int, Iterable[int]], reset_index: bool = False):
-        if isinstance(event_number, (int, np.int32,np.int64)):
+        if isinstance(event_number, (int,np.int32,np.int64)):
             ev_ls = [event_number]
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
             ev_ls = list(event_number)
-            assert all([isinstance(a, (int, np.int32,np.int64)) for a in ev_ls])
+            assert all([isinstance(a, (int,np.int32,np.int64)) for a in ev_ls])
         trimmed_df = self.catalogue_df.loc[ev_ls]
         event_indices = np.where(np.in1d(self.event_list, np.array(trimmed_df.index)))[0]
         trimmed_event_ls = self.event_list[event_indices]
@@ -452,73 +424,30 @@ class RsqSimCatalogue:
 
             return None
 
-    def filter_not_on_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],
-                            minimum_patches_per_fault: int = None):
-        if isinstance(fault_or_faults,RsqSimSegment):
-            fault_ls = [fault_or_faults]
-        elif isinstance(fault_or_faults,RsqSimMultiFault):
-            fault_ls=fault_or_faults.faults
+    def filter_not_on_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],fault_model: RsqSimMultiFault):
+        if isinstance(fault_or_faults, RsqSimSegment):
+            fault_ls = [fault_or_faults.name]
+        elif isinstance(fault_or_faults, RsqSimMultiFault):
+            fault_ls = [fault.name for fault in fault_or_faults.faults]
         else:
             fault_ls = list(fault_or_faults)
 
-        if minimum_patches_per_fault is not None:
-            assert isinstance(minimum_patches_per_fault, int)
-            assert minimum_patches_per_fault > 0
+        ev_list=[]
+        for event in self.all_events(fault_model=fault_model):
+            fault_names=[fault.name for fault in event.faults]
+            if not any([name in fault_ls for name in fault_names]):
+                ev_list.append(event.event_id)
 
-        # Collect all patches we don't want to be involved
-        all_patches = []
-        for fault in fault_ls:
-            all_patches += list(fault.patch_dic.keys())
-        patch_numbers = np.unique(np.array(all_patches))
-
-        #in1d will return true if any value in patch_numbers matches a value in patch_list
-        #i.e. don't have to rupture all faults in the list, only 1
-        # choose all events where this is the case, then remove them from the catalogue
-        patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
-        selected_events = self.event_list[patch_indices]
-        selected_patches = self.patch_list[patch_indices]
-        if selected_events.size > 0:
-            if minimum_patches_per_fault is not None:
-                events_gt_min = []
-                for fault in fault_ls:
-                    fault_patches = np.array(list(fault.patch_dic.keys()))
-                    fault_patch_indices = np.where(np.in1d(selected_patches, fault_patches))[0]
-                    fault_event_list = selected_events[fault_patch_indices]
-                    events_counter = Counter(fault_event_list)
-                    events_sufficient_patches = np.array([ev for ev, count in events_counter.items()
-                                                          if count >= minimum_patches_per_fault])
-                    events_gt_min += list(events_sufficient_patches)
-
-                event_numbers2reject = np.unique(np.array(events_gt_min))
-                event_indices = np.where(np.in1d(self.event_list, event_numbers2reject))[0]
-
-            else:
-                event_numbers2reject = np.unique(selected_events)
-                event_indices = np.where(np.in1d(self.event_list, event_numbers2reject))[0]
-            if len(event_indices) > 0:
-                trimmed_df = self.catalogue_df.drop(event_numbers2reject)
-
-                filtered_cat = self.from_dataframe(trimmed_df)
-                filtered_cat.event_list = np.delete(self.event_list,event_indices)
-                filtered_cat.patch_list = np.delete(self.patch_list,event_indices)
-                filtered_cat.patch_slip = np.delete(self.patch_slip,event_indices)
-                filtered_cat.patch_time_list = np.delete(self.patch_time_list,event_indices)
-
-                return filtered_cat
-            else:
-                print("No remaining events")
-                return None
+        if len(ev_list) >0 :
+            return self.filter_by_events(ev_list)
         else:
-            print("No events found which include:")
-            for fault in fault_ls:
-               print(fault.name)
+            print("All events include at least one of the specified faults.")
 
-            return self
+            return None
 
 
     def find_surface_rupturing_events(self,fault_model: RsqSimMultiFault,min_slip: float =0.1, method: str = 'vertex',
-                                      n_patches: int = 1, max_depth: float = -1000., n_faults: int =1, write_flt_dict: bool = False,
-                                      faults2ignore: [list,str] = 'hikurangi'):
+                                      n_patches: int = 1, max_depth: float = -1000., n_faults: int =1, write_flt_dict: bool = False):
 
         """
         min_slip = 0.1  # min slip on a surface patch in m
@@ -534,11 +463,16 @@ class RsqSimCatalogue:
         surface_ev_ids = []
         for event in self.all_events(fault_model=fault_model):
             surface_faults = event.find_surface_faults(fault_model, min_slip=min_slip, method=method,
-                                                       n_patches=n_patches, max_depth=max_depth, faults2ignore=faults2ignore)
+                                                       n_patches=n_patches, max_depth=max_depth)
             if len(surface_faults) >= n_faults:
                 surface_ev_ids.append(event.event_id)
                 if write_flt_dict:
-                    flt_dict[event.event_id] = surface_faults
+                    for fault in surface_faults:
+                        if not fault in list(flt_dict.keys()):
+                            flt_dict[fault] = 1
+                        else:
+                            flt_dict[fault] += 1
+
 
         if write_flt_dict:
             return surface_ev_ids, flt_dict
@@ -572,27 +506,27 @@ class RsqSimCatalogue:
         patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
         event_numbers = self.event_list[patch_indices]
         if event_numbers.size:
-            event_indices = np.where(np.in1d(self.event_list, event_numbers))[0]
             trimmed_df = self.catalogue_df.loc[np.unique(event_numbers)]
             filtered_cat = self.from_dataframe(trimmed_df)
-            filtered_cat.event_list = self.event_list[event_indices]
-            filtered_cat.patch_list = self.patch_list[event_indices]
-            filtered_cat.patch_slip = self.patch_slip[event_indices]
-            filtered_cat.patch_time_list = self.patch_time_list[event_indices]
+            filtered_cat.event_list = event_numbers
+            filtered_cat.patch_list = self.patch_list[patch_indices]
+            filtered_cat.patch_slip = self.patch_slip[patch_indices]
+            filtered_cat.patch_time_list = self.patch_time_list[patch_indices]
             return filtered_cat
         else:
             print("No events found!")
             return
 
     def events_by_number(self, event_number: Union[int, Iterable[int]], fault_model: RsqSimMultiFault,
-                         child_processes: int = 0, min_patches: int = 1) -> List[RsqSimEvent]:
+                         child_processes: int = 0, min_patches: int = 1):
         assert isinstance(fault_model,RsqSimMultiFault), "Fault model required"
-        if isinstance(event_number, (int, np.int32, np.int64)):
+        if isinstance(event_number, (int, np.int32)):
             ev_ls = [event_number]
         else:
             assert isinstance(event_number, abc.Iterable), "Expecting either int or array/list of ints"
             ev_ls = list(event_number)
-            assert all([isinstance(a, (int, np.int32, np.int64)) for a in ev_ls])
+            assert all([isinstance(a, (int,np.int32)) for a in ev_ls])
+
         out_events = []
 
         cat_dict = self.catalogue_df.to_dict(orient='index')
@@ -859,8 +793,7 @@ class RsqSimCatalogue:
 
     def plot_mfd(self, plot_type: str = 'differential' , nSamp: int = 1000,
                  window: float = 80.*csts.seconds_per_year, n_bins: int=50, instrumental_path: str = None, inst_year_min: float = 1940, show: bool = True,
-                write: str = None, tmin: float = None, tmax: float = None, depth_min: float = None, depth_max: float =None, mmin: float = 4.5, mmax: float = 9.5,
-                 plot_corrected_instrumental: bool = True):
+                write: str = None, tmin: float = None, tmax: float = None, depth_min: float = None, depth_max: float =None, mmin: float = 4.5, mmax: float = 9.5):
         """
         Plot cumulative or differential Gutenburg-Richter distribution for a given catalogue with Aki b-value at reference mag.
         y-axis: log(annual frequency of events with M>Mw)
@@ -894,7 +827,7 @@ class RsqSimCatalogue:
         if plot_type == "differential":
             tints = []
             for i in np.arange(1, nSamp, 1):
-                tinit = tmin + (rng.uniform() * (tmax - tmin - window))
+                tinit = tmin + (np.random.rand() * (tmax - tmin - window))
                 tints.append(tinit)
                 tfin = tinit + window
                 mags = self.catalogue_df["mw"].loc[
@@ -927,17 +860,12 @@ class RsqSimCatalogue:
                 plt.hist(instrumental_mags, n_bins, weights=weightsyrs_IM, range=(mmin, mmax), histtype='step',
                          log=True, label=f"{str(inst_year_min)}-{str(latest_year)}, Mw>{mmin:.1f}", edgecolor='b',
                          linewidth=1.5)
-                instrumental_b_value = calculate_b_value(instrumental_mags, time_interval_years=(latest_year - inst_year_min), min_mw=4.5, max_mw=8.5)
-                print(f"b-value for instrumental catalogue: {instrumental_b_value[0]:.2f}")
-
 
             plt.ylim([0.001, 1000])
 
         elif plot_type == "cumulative":
-            tints = []
             for i in np.arange(1, nSamp, 1):
-                tinit = tmin + (rng.uniform() * (tmax - tmin - window))
-                tints.append(tinit)
+                tinit = tmin + (np.random.rand() * (tmax - tmin - window))
                 tfin = tinit + window
                 mags = self.catalogue_df["mw"].loc[
                     (self.catalogue_df['t0'] > tinit) & (self.catalogue_df['t0'] <= tfin)]
@@ -971,17 +899,16 @@ class RsqSimCatalogue:
                 IMcum = np.ones(shape=np.size(IMsort))
                 IMcum = np.cumsum(IMcum)
                 plt.semilogy(IMsort, IMcum * weightsyrs_IM[0], c='b', linewidth=1,
-                               label=f'{inst_year_min} - {int(latest_year)}, Mw>{mmin:.1f}')
-                if plot_corrected_instrumental:
-                    correctionFactor = 2 / 3.0 * 1 / 1.5
-                    plt.semilogy(IMsort, IMcum * weightsyrs_IM[0] * correctionFactor, c='b', linestyle=':', linewidth=1,
-                                   label=f'{inst_year_min} - {int(latest_year)}, Mw>{mmin:.1f} corr')
+                               label=f'{inst_year_min} - {latest_year}, Mw>{mmin:.1f}')
+                correctionFactor = 2 / 3.0 * 1 / 1.5
+                plt.semilogy(IMsort, IMcum * weightsyrs_IM[0] * correctionFactor, c='b', linestyle=':', linewidth=1,
+                               label=f'{inst_year_min} - {latest_year}, Mw>{mmin:.1f} corr')
                 xsortNZFull = IMsort[:]
                 ysortNZFull = IMcum * weightsyrs_IM[0]
             plt.ylim([0.001, 100])
 
         plt.ylabel('N [$yr^{-1}$]')
-        plt.xlabel('Mw')
+        plt.xlabel('M')
         plt.tight_layout()
         plt.legend()
 
@@ -1026,7 +953,6 @@ class RsqSimCatalogue:
             fig.savefig(write,dpi=450)
         if show:
             fig.show()
-
     def plot_mean_slip_vs_mag(self, fault_model: RsqSimMultiFault, show: bool = True,
                               write: str = None, plot_rel: bool = True):
         """
@@ -1116,15 +1042,6 @@ class RsqSimCatalogue:
         else:
             plt.close()
 
-    def stress_drops(self, stress_c: float = 2.44):
-        return calculate_stress_drop(self.m0, self.area, stress_c=stress_c)
-
-    def scaling_c(self):
-        return calculate_scaling_c(self.mw, self.area)
-
-    def scaling_summary_statistics(self, stress_c: float = 2.44):
-        return summary_statistics(self.catalogue_df, stress_c=stress_c)
-
     def all_slip_distributions_to_vtk(self, fault_model: RsqSimMultiFault, output_directory: str,
                                       include_zeros: bool = False, min_slip_value: float = None):
         """
@@ -1138,182 +1055,6 @@ class RsqSimCatalogue:
         for event in self.all_events(fault_model):
             outfile_path = os.path.join(output_directory, f"event{event.event_id}.vtk")
             event.slip_dist_to_vtk(outfile_path, include_zeros=include_zeros,min_slip_value=min_slip_value)
-
-    def calculate_b_value(self, min_mw: float = 0.0, max_mw: float = 10.0, interval=0.1):
-        """
-        Calculate b-value from magnitudes and completeness magnitude.
-        :param magnitudes:
-        :param mc:
-        :return:
-        """
-        time_interval = (self.catalogue_df['t0'].max() - self.catalogue_df['t0'].min())/csts.seconds_per_year
-        return calculate_b_value(self.catalogue_df["mw"], time_interval, min_mw=min_mw, max_mw=max_mw, interval=interval)
-
-
-    def calculate_dominant_magnitudes(self, fault_model: RsqSimMultiFault, unfiltered_catalogue = None,
-                                      min_for_median: int = 5):
-        """
-        Method for calculating the median magnitude that a given patch will rupture in.
-        :return: median magnitudes
-        """
-        patch_indices = np.array(list(fault_model.patch_dic.keys()), dtype=np.int32)
-        event_list = self.event_list
-        if unfiltered_catalogue is not None:
-            catalogue_mws = np.array(unfiltered_catalogue.catalogue_df["mw"])
-            catalogue_m0s = np.array(unfiltered_catalogue.catalogue_df["m0"])
-        else:
-            catalogue_mws = np.array(self.catalogue_df["mw"])
-            catalogue_m0s = np.array(self.catalogue_df["m0"])
-        event_mws = catalogue_mws[event_list]
-        event_m0s = catalogue_m0s[event_list]
-
-        medians = np.zeros_like(patch_indices, dtype=np.float64)
-
-        return self.dominant_magnitudes(patch_indices, self.patch_list, event_mws, event_m0s, min_for_median=min_for_median)
-
-    @staticmethod
-    @njit(parallel=True)
-    def dominant_magnitudes(fault_patch_indices: np.ndarray[Union[int, np.int32, np.int64]],
-                            catalogue_patch_array: np.ndarray[Union[int, np.int32, np.int64]],
-                            event_mws: np.ndarray, event_m0s: np.ndarray,
-                            min_for_median: int = 5):
-        """
-        Method for calculating the median magnitude that a given patch will rupture in.
-        :param fault_patch_indices: indices of patches in fault model
-        :param catalogue_patch_array: array of patch numbers for each event
-        :param event_mws: array of magnitudes for each event
-        :param event_m0s: array of moment magnitudes for each event
-        :param min_for_median: minimum number of events for median to be calculated
-        :return: median magnitudes
-        """
-        medians_array = np.zeros_like(fault_patch_indices, dtype=np.float64)
-
-        for i in prange(len(fault_patch_indices)):
-            n_matching = np.count_nonzero(catalogue_patch_array == i)
-            if n_matching >= min_for_median:
-                matching = np.flatnonzero(catalogue_patch_array == i)
-                matching_m0s = event_m0s[matching]
-                matching_mws = event_mws[matching]
-                med_cumulant = median_cumulant(matching_m0s, matching_mws)
-                medians_array[i] = med_cumulant
-
-        return medians_array
-
-    def filter_crustal_events(self, fault_model: RsqSimMultiFault,
-                                       subduction_names: tuple = ("hikkerm", "puysegur"),
-                                       min_crustal_mw: float = 6.0):
-        """
-        Filter events to only include those which occur on crustal faults.
-        :param fault_model:
-        :param subduction_names:
-        :param min_crustal_mw:
-        """
-        min_crustal_m0 = mw_to_m0(min_crustal_mw)
-        crustal_patch_numbers = fault_model.get_crustal_patch_numbers(subduction_faults=subduction_names)
-
-        event_indices = np.array(list(self.catalogue_df.index), dtype=np.int32)
-        all_patch_areas = fault_model.get_patch_areas()
-        patch_area_list = all_patch_areas[self.patch_list]
-
-        return self.filter_crustal_events_parallel(event_indices, crustal_patch_numbers, self.event_list,
-                                                   self.patch_list, self.patch_slip, patch_area_list, min_crustal_m0)
-
-    @staticmethod
-    @njit(parallel=True)
-    def filter_crustal_events_parallel(event_indices: np.ndarray[Union[int, np.int32, np.int64]],
-                                       crustal_patch_numbers: np.ndarray[Union[int, np.int32, np.int64]],
-                                       event_list: np.ndarray[Union[int, np.int32, np.int64]],
-                                       patch_list: np.ndarray[Union[int, np.int32, np.int64]],
-                                       patch_slip: np.ndarray[Union[float, np.float32, np.float64]],
-                                       patch_area_list: np.ndarray[Union[float, np.float32, np.float64]],
-                                       min_crustal_m0: Union[float, np.float32, np.float64]):
-        """
-        Numba parallel function to filter events to only include those which occur on crustal faults.
-        :param event_indices:
-        :param crustal_patch_numbers:
-        :param patch_list:
-        :param patch_slip:
-        :param patch_area_list:
-        :param min_crustal_m0:
-        :return:
-        """
-        crustal_bool = np.zeros_like(event_indices, dtype=np.int32)
-        for i in prange(len(event_indices)):
-            event_i = event_indices[i]
-            patch_numbers = patch_list[np.where(event_list == event_i)]
-            crustal_patches_i = jit_intersect(patch_numbers, crustal_patch_numbers)
-            if len(crustal_patches_i) > 0:
-                crustal_patch_indices = np.searchsorted(patch_numbers, crustal_patches_i)
-                patch_slip_i = patch_slip[patch_numbers]
-                patch_areas_i = patch_area_list[patch_numbers]
-                crustal_slip_i = patch_slip_i[crustal_patch_indices]
-                crustal_areas_i = patch_areas_i[crustal_patch_indices]
-                m0 = np.sum(crustal_slip_i * crustal_areas_i) * 3e10
-                if m0 >= min_crustal_m0:
-                    crustal_bool[i] = 1
-
-        return event_indices[crustal_bool == 1]
-
-    def match_events_to_crustal_nshm_dicts(self, fault_model: RsqSimMultiFault,
-                                           event_ids: np.ndarray[Union[int, np.int32, np.int64]],
-                                           crustal_patch_dict: dict, crustal_n_dict: dict,
-                                           subduction_names: tuple = ("hikkerm", "puysegur"), threshold_proportion: float = 0.5):
-        crustal_patch_numbers = fault_model.get_crustal_patch_numbers(subduction_faults=subduction_names)
-        crustal_patch_dict_typed = typed.Dict.empty(types.int32, types.int32[:])
-        for key in crustal_patch_dict.keys():
-            crustal_patch_dict_typed[key] = np.array(crustal_patch_dict[key]["triangle_indices"], dtype=np.int32)
-        crustal_n_dict_typed = typed.Dict.empty(types.int32, types.int32)
-        for key in crustal_n_dict.keys():
-            crustal_n_dict_typed[key] = crustal_n_dict[key]
-        return self.match_crustal_nshm_parallel(event_ids, self.event_list, self.patch_list, crustal_patch_dict_typed,
-                                                crustal_n_dict_typed, crustal_patch_numbers,
-                                                threshold_proportion=threshold_proportion)
-
-
-
-    @staticmethod
-    @njit
-    def match_crustal_nshm_parallel(event_ids: np.ndarray[Union[int, np.int32, np.int64]],
-                                    event_list: np.ndarray[Union[int, np.int32, np.int64]],
-                                    patch_list: np.ndarray[Union[int, np.int32, np.int64]],
-                                    crustal_patch_dict: typed.Dict,
-                                    crustal_n_dict: typed.Dict,
-                                    crustal_patch_numbers: np.ndarray[Union[int, np.int32, np.int64]],
-                                    threshold_proportion: float = 0.5):
-        """
-        Numba parallel function to match events to crustal n values.
-        :param event_ids:
-        :param event_list:
-        :param patch_list:
-        :param crustal_patch_dict:
-        :param crustal_n_dict:
-        :param crustal_patch_numbers:
-        :param threshold_proportion:
-        """
-        nshm_patch_dict = typed.Dict.empty(types.int32, types.int32[:])
-        nshm_keys = np.array(list(crustal_patch_dict.keys()), dtype=np.int32)
-        for event_i in range(len(event_ids)):
-            event_id = event_ids[event_i]
-            patch_numbers = patch_list[np.where(event_list == event_id)]
-            crustal_patches_i = jit_intersect(patch_numbers, crustal_patch_numbers)
-            subsection_bool = np.zeros_like(nshm_keys, dtype=np.int32)
-            for subsection_i in range(len(nshm_keys)):
-                subsection_number = nshm_keys[subsection_i]
-                subsection_patches = crustal_patch_dict[subsection_number]
-                subsection_patches_i = jit_intersect(crustal_patches_i, subsection_patches)
-                if len(subsection_patches_i) > 0:
-                    nshm_n_i = crustal_n_dict[subsection_number]
-                    if len(subsection_patches_i) / nshm_n_i >= threshold_proportion:
-                        subsection_bool[subsection_i] = 1
-            nshm_patch_dict[event_id] = nshm_keys[subsection_bool == 1]
-            print(event_id)
-        return nshm_patch_dict
-
-                                    
-
-
-
-
 
 
 
@@ -1357,23 +1098,3 @@ def combine_boundaries(bounds1: list, bounds2: list):
     min_bounds = [min([a, b]) for a, b in zip(bounds1, bounds2)]
     max_bounds = [max([a, b]) for a, b in zip(bounds1, bounds2)]
     return min_bounds[:2] + max_bounds[2:]
-
-def calculate_b_value(magnitudes, time_interval_years, min_mw: float = 0.0, max_mw: float = 10.0, interval = 0.1):
-    """
-    Calculate b-value from magnitudes and completeness magnitude.
-    :param magnitudes:
-    :param mc:
-    :return:
-    """
-    magnitudes = np.array(magnitudes)
-    mfd_bins = np.arange(0., 10. + interval, interval)
-    mfd_hist = np.histogram(magnitudes, bins=mfd_bins)
-    bin_centres = mfd_bins[:-1] + interval/2
-    trimmed_bins = bin_centres[(bin_centres >= min_mw) & (bin_centres <= max_mw + interval)]
-    cumulative_mfd = np.array([sum(mfd_hist[0][i:]) for i in range(len(mfd_hist[0]))], dtype=float)
-    trimmed_mfd = cumulative_mfd[(bin_centres >= min_mw) & (bin_centres <= max_mw + interval)]
-    trimmed_mfd_no_zeros = trimmed_mfd[trimmed_mfd > 0.]
-    trimmed_mfd_no_zeros /= time_interval_years
-    trimmed_bins_no_zeros = trimmed_bins[trimmed_mfd > 0.]
-    grad, intercept = np.polyfit(trimmed_bins_no_zeros, np.log10(trimmed_mfd_no_zeros), 1)
-    return -1 * grad, intercept

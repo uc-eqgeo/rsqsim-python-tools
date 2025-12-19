@@ -192,6 +192,7 @@ def plot_coast(ax: plt.Axes, clip_boundary: list = None, edgecolor: str = "0.5",
         clipped_gs = clip_coast_with_trim(x1, y1, x2, y2, wgs=wgs, coarse=coarse)
     else:
         clipped_gs = clip_coast(x1, y1, x2, y2, wgs=wgs, coarse=coarse)
+
     clipped_gs.plot(ax=ax, edgecolor=edgecolor, facecolor=facecolor, linewidth=linewidth)
     if wgs:
         aspect = 1/np.cos(np.radians(np.mean([y1, y2])))
@@ -286,11 +287,10 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                     plot_hk: bool = False, plot_fault_outlines: bool = True, wgs: bool =  False, land_color: str ='antiquewhite',
                     plot_sub_cbar: bool = False, sub_slip_max: float = 20., plot_crust_cbar: bool = False, crust_slip_max: float = 10.,
                     subduction_cmap: colors.LinearSegmentedColormap = cm.plasma, crust_cmap: colors.LinearSegmentedColormap = cm.viridis,
-                    slider_axis: bool = False, aotearoa: bool = True):
+                    slider_axis: bool = False):
 
         if subplots is not None:
             fig, ax = subplots
-            #doesn't work because the ax returned by the function when no subplots are specified is actually a dictionary of axes
             main_ax = ax
         else:
             if plot_sub_cbar or plot_crust_cbar:
@@ -334,37 +334,37 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
 
 
         plot_bounds = list(bounds)
-        if aotearoa:
-            if hillshading_intensity > 0:
-                plot_coast(main_ax, clip_boundary=plot_bounds, facecolor=land_color)
-                x_lim = main_ax.get_xlim()
-                y_lim = main_ax.get_ylim()
-                if hillshade_fine:
-                    plot_hillshade_niwa(main_ax, hillshading_intensity, clip_bounds=plot_bounds, cmap=hillshade_cmap)
-                else:
-                    plot_hillshade(main_ax, hillshading_intensity, clip_bounds=plot_bounds, cmap=hillshade_cmap)
-                main_ax.set_xlim(x_lim)
-                main_ax.set_ylim(y_lim)
+
+        if hillshading_intensity > 0:
+            plot_coast(main_ax, clip_boundary=plot_bounds, facecolor=land_color)
+            x_lim = main_ax.get_xlim()
+            y_lim = main_ax.get_ylim()
+            if hillshade_fine:
+                plot_hillshade_niwa(main_ax, hillshading_intensity, clip_bounds=plot_bounds, cmap=hillshade_cmap)
             else:
-                plot_coast(main_ax, clip_boundary=plot_bounds,wgs=wgs, facecolor=land_color)
+                plot_hillshade(main_ax, hillshading_intensity, clip_bounds=plot_bounds, cmap=hillshade_cmap)
+            main_ax.set_xlim(x_lim)
+            main_ax.set_ylim(y_lim)
+        else:
+            plot_coast(main_ax, clip_boundary=plot_bounds,wgs=wgs, facecolor=land_color)
 
-            if plot_lakes:
-                plot_lake_polygons(ax=main_ax, clip_bounds=plot_bounds)
+        if plot_lakes:
+            plot_lake_polygons(ax=main_ax, clip_bounds=plot_bounds)
 
-            if plot_rivers:
-                plot_river_lines(main_ax, clip_bounds=plot_bounds)
+        if plot_rivers:
+            plot_river_lines(main_ax, clip_bounds=plot_bounds)
 
-            if plot_highways:
-                plot_highway_lines(main_ax, clip_bounds=plot_bounds)
+        if plot_highways:
+            plot_highway_lines(main_ax, clip_bounds=plot_bounds)
 
-            if plot_boundaries:
-                plot_boundary_polygons(main_ax, clip_bounds=plot_bounds)
+        if plot_boundaries:
+            plot_boundary_polygons(main_ax, clip_bounds=plot_bounds)
 
-            if plot_hk:
-                plot_hk_boundary(main_ax, clip_bounds=plot_bounds)
+        if plot_hk:
+            plot_hk_boundary(main_ax, clip_bounds=plot_bounds)
 
-            if plot_fault_outlines:
-                pass
+        if plot_fault_outlines:
+            pass
 
         main_ax.set_aspect("equal")
         x_lim = (plot_bounds[0], plot_bounds[2])

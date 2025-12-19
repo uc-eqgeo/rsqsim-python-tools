@@ -8,5 +8,16 @@
 /dataSources.local.xml
 #other stuff
 /.idea/
-/data/
-/src/test/data/
+data/
+*.png
+*.jpg
+*.jpeg
+*.shp
+*.cpg
+*.dbf
+*.prj
+*.shx
+*.tif
+*.gpkg
+*.nbc
+*.nbi
