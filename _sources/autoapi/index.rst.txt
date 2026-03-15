@@ -6,9 +6,8 @@ This page contains auto-generated API reference documentation [#f1]_.
 .. toctree::
    :titlesonly:
 
-   /autoapi/event/index
-   /autoapi/catalogue/index
-   /autoapi/utilities/index
-   /autoapi/nshm_utilities/index
+   /autoapi/rsqsim_api/index
+   /autoapi/test_fault/index
+   /autoapi/test_catalogue/index
 
 .. [#f1] Created with `sphinx-autoapi <https://github.com/readthedocs/sphinx-autoapi>`_

@@ -1,0 +1,165 @@
+rsqsim_api.io.tsurf
+===================
+
+.. py:module:: rsqsim_api.io.tsurf
+
+.. autoapi-nested-parse::
+
+   Reader and writer for GOCAD TSurf triangulated surface files.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   rsqsim_api.io.tsurf.tsurf
+
+
+Module Contents
+---------------
+
+.. py:class:: tsurf(*args, **kwargs)
+
+   Bases: :py:obj:`object`
+
+
+   Read, create, and write GOCAD TSurf triangulated surface files.
+
+   Supports construction from a ``.ts`` file path or from raw coordinate
+   and connectivity arrays.  Provides access to the triangulated mesh via
+   the ``triangles`` property and can export back to the GOCAD TSurf format.
+
+   :param \*args: Either a single ``filename`` string (reads from file), or four
+                  positional arguments ``x, y, z, cells`` (constructs from arrays).
+   :param solid_color: RGBA colour tuple for visualisation.  Defaults to cyan ``(0,1,1,1)``.
+   :type solid_color: tuple of float, optional
+   :param visible: GOCAD visibility flag string.  Defaults to ``"false"``.
+   :type visible: str, optional
+   :param name: Surface name stored in the TSurf header.  Defaults to
+                ``"Undefined"``.
+   :type name: str, optional
+   :param NAME: GOCAD coordinate system ``NAME`` field.  Defaults to
+                ``"Default"``.
+   :type NAME: str, optional
+   :param AXIS_NAME: GOCAD coordinate system ``AXIS_NAME`` field.  Defaults to
+                     ``'"X" "Y" "Z"'``.
+   :type AXIS_NAME: str, optional
+   :param AXIS_UNIT: GOCAD coordinate system ``AXIS_UNIT`` field.  Defaults to
+                     ``'"m" "m" "m"'``.
+   :type AXIS_UNIT: str, optional
+   :param ZPOSITIVE: GOCAD coordinate system ``ZPOSITIVE`` field.  Defaults to
+                     ``"Elevation"``.
+   :type ZPOSITIVE: str, optional
+
+   .. attribute:: mesh
+
+      Internal mesh representation holding ``points`` and ``cells``.
+
+      :type: meshio.Mesh
+
+   .. attribute:: x, y, z
+
+      Sequences of point coordinates.
+
+   .. attribute:: header
+
+      GOCAD header key-value pairs.
+
+      :type: dict
+
+   .. attribute:: csInfo
+
+      GOCAD coordinate system key-value pairs.
+
+      :type: dict
+
+   .. attribute:: name
+
+      Surface name.
+
+      :type: str
+
+   .. attribute:: solid_color
+
+      RGBA visualisation colour.
+
+      :type: tuple
+
+   .. attribute:: visible
+
+      Visibility flag.
+
+      :type: str
+
+   :raises ValueError: If the number of positional arguments is not 1 or 4.
+   :raises IOError: If a filename is supplied that does not start with ``GOCAD TSurf``.
+
+
+   .. py:attribute:: default_name
+      :value: 'Undefined'
+
+
+
+   .. py:attribute:: default_solid_color
+      :value: (0, 1, 1, 1.0)
+
+
+
+   .. py:attribute:: default_visible
+      :value: 'false'
+
+
+
+   .. py:attribute:: default_NAME
+      :value: 'Default'
+
+
+
+   .. py:attribute:: default_AXIS_NAME
+      :value: '"X" "Y" "Z"'
+
+
+
+   .. py:attribute:: default_AXIS_UNIT
+      :value: '"m" "m" "m"'
+
+
+
+   .. py:attribute:: default_ZPOSITIVE
+      :value: 'Elevation'
+
+
+
+   .. py:property:: triangles
+
+      Triangle vertex coordinates as a deduplicated array.
+
+      Builds a lookup dictionary from vertex index to coordinate, then
+      assembles each triangle's three corners into a row of 9 values
+      ``[x1,y1,z1, x2,y2,z2, x3,y3,z3]``.
+
+      :returns: Unique triangles, sorted lexicographically by
+                ``numpy.unique``.
+      :rtype: numpy.ndarray of shape (n_unique_triangles, 9)
+
+
+   .. py:method:: write(outname)
+
+      Write the tsurf to a GOCAD TSurf ``.ts`` file.
+
+      Writes the HEADER block, GOCAD_ORIGINAL_COORDINATE_SYSTEM block,
+      TFACE data (VRTX lines followed by TRGL lines), and the END
+      marker.
+
+      :param outname: Output file path for the TSurf file.
+
+      .. admonition:: Notes
+
+         Triangle connectivity is written with 1-based vertex indices as
+         required by the GOCAD TSurf format specification.  Only the first
+         cell block is written; multi-block meshes are not supported.
+
+
+

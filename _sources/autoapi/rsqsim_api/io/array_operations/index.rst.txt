@@ -1,0 +1,214 @@
+rsqsim_api.io.array_operations
+==============================
+
+.. py:module:: rsqsim_api.io.array_operations
+
+.. autoapi-nested-parse::
+
+   Raster and grid I/O utilities for GeoTIFF and GMT NetCDF formats.
+
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   rsqsim_api.io.array_operations.read_grid
+   rsqsim_api.io.array_operations.read_tiff
+   rsqsim_api.io.array_operations.read_gmt_grid
+   rsqsim_api.io.array_operations.write_tiff
+   rsqsim_api.io.array_operations.write_gmt_grd
+   rsqsim_api.io.array_operations.tiff2grd
+   rsqsim_api.io.array_operations.grd2tiff
+   rsqsim_api.io.array_operations.array_to_gmt
+   rsqsim_api.io.array_operations.clip_tiff
+   rsqsim_api.io.array_operations.reproject_tiff
+
+
+Module Contents
+---------------
+
+.. py:function:: read_grid(raster_file, nan_threshold = 100, window = None, buffer = 100, return_meta = False)
+
+   Read a raster file into coordinate and value arrays.
+
+   Supports optional spatial windowing by bounding box or shapefile
+   extent.  Values with absolute magnitude above ``nan_threshold`` are
+   replaced with NaN.
+
+   :param raster_file: Path to the raster file (any format supported by rasterio).
+   :param nan_threshold: Values with ``|z| > nan_threshold`` are set to NaN.  Defaults
+                         to 100.
+   :param window: Optional spatial subset.  May be a path to a vector file (whose
+                  bounding box is used), or a 4-element sequence
+                  ``[x_min, y_min, x_max, y_max]`` in the raster's CRS.
+   :param buffer: Extra margin (in CRS units) added around the window bounds.
+                  Defaults to 100.
+   :param return_meta: If ``True``, also return the rasterio metadata dict updated to
+                       reflect the windowed read.
+
+   :returns: * **x** (*numpy.ndarray*) -- 1-D array of easting (column-centre) coordinates.
+             * **y** (*numpy.ndarray*) -- 1-D array of northing (row-centre) coordinates.
+             * **z** (*numpy.ndarray of shape (len(y), len(x))*) -- Data values with out-of-range entries set to NaN.
+             * **geo_meta** (*dict, optional*) -- Rasterio metadata dict (only returned when ``return_meta=True``).
+
+   :raises AssertionError: If ``raster_file`` does not exist, the window sequence does not
+       have exactly 4 elements, or ``x_max <= x_min`` / ``y_max <= y_min``.
+
+
+.. py:function:: read_tiff(tiff, x_correct = None, y_correct = None, nan_threshold = 9000, make_y_ascending = False, window = None, buffer = 100, return_meta = False)
+
+   Read a GeoTIFF file into coordinate and value arrays.
+
+   Thin wrapper around :func:`read_grid` with GeoTIFF-specific defaults
+   and optional coordinate offset correction.
+
+   :param tiff: Path to the GeoTIFF file.
+   :param x_correct: Offset added to x coordinates to correct for pixel vs. gridline
+                     registration differences (GMT convention).
+   :param y_correct: Offset added to y coordinates (same purpose as ``x_correct``).
+   :param nan_threshold: Values with ``|z| > nan_threshold`` are set to NaN.  Defaults
+                         to 9000 (suitable for elevation data in metres).
+   :param make_y_ascending: If ``True`` and ``y[0] > y[-1]``, reverse y and the corresponding
+                            rows of z so that y increases monotonically.
+   :param window: Optional spatial subset passed to :func:`read_grid`.
+   :param buffer: Buffer added around the window bounds in CRS units.
+   :param return_meta: If ``True``, also return the rasterio metadata dict.
+
+   :returns: * **x** (*numpy.ndarray*) -- 1-D easting coordinate array.
+             * **y** (*numpy.ndarray*) -- 1-D northing coordinate array.
+             * **z** (*numpy.ndarray of shape (len(y), len(x))*) -- Data values.
+             * **geo_meta** (*dict, optional*) -- Rasterio metadata (only returned when ``return_meta=True``).
+
+   :raises AssertionError: If ``tiff`` does not exist.
+
+
+.. py:function:: read_gmt_grid(grd_file)
+
+   Read a GMT-compatible NetCDF4 grid file.
+
+   Reads variables named ``x``, ``y``, and ``z`` from the file and
+   fills any masked values with NaN.  Faster than using rasterio for
+   NetCDF grids.
+
+   :param grd_file: Path to the GMT ``.grd`` NetCDF4 file.
+
+   :returns: * **x** (*numpy.ndarray*) -- 1-D array of x (easting) coordinate values.
+             * **y** (*numpy.ndarray*) -- 1-D array of y (northing) coordinate values.
+             * **z** (*numpy.ndarray of shape (len(y), len(x))*) -- Grid data values; masked values replaced with NaN.
+
+   :raises AssertionError: If ``grd_file`` does not exist or if the file does not contain
+       variables named ``x``, ``y``, and ``z``.
+
+
+.. py:function:: write_tiff(filename, x, y, z, epsg = 2193, reverse_y = False, compress_lzw = True)
+
+   Write coordinate and data arrays to a GeoTIFF file.
+
+   :param filename: Output GeoTIFF file path.
+   :param x: 1-D array of easting coordinates (column centres).
+   :param y: 1-D array of northing coordinates (row centres).
+   :param z: Data values to write to band 1.
+   :type z: numpy.ndarray of shape (len(y), len(x))
+   :param epsg: EPSG code for the output coordinate reference system.  Defaults
+                to 2193 (NZTM2000).
+   :param reverse_y: If ``True``, write the GeoTIFF with y decreasing (top-to-bottom),
+                     as preferred by some GIS applications.
+   :param compress_lzw: If ``True`` (default), apply LZW compression.
+
+   :raises AssertionError: If ``x`` or ``y`` are not 1-D, or if ``z.shape != (len(y), len(x))``.
+
+
+.. py:function:: write_gmt_grd(x_array, y_array, mesh, grid_name)
+
+   Write coordinate and data arrays to a GMT-compatible NetCDF4 grid file.
+
+   :param x_array: 1-D array of x (easting) coordinate values.
+   :param y_array: 1-D array of y (northing) coordinate values.
+   :param mesh: Data values (z) to store in the ``z`` variable.
+   :type mesh: numpy.ndarray of shape (len(y_array), len(x_array))
+   :param grid_name: Output file path, typically ending in ``.grd``.
+
+   :raises AssertionError: If ``x_array`` or ``y_array`` are not 1-D, or if
+       ``mesh.shape != (len(y_array), len(x_array))``.
+
+
+.. py:function:: tiff2grd(tiff, grd, x_correct = None, y_correct = None, window = None, buffer = 100)
+
+   Convert a GeoTIFF to a GMT NetCDF4 grid file.
+
+   :param tiff: Path to the input GeoTIFF file.
+   :param grd: Path for the output GMT ``.grd`` file.
+   :param x_correct: Offset applied to x coordinates to correct for pixel vs. gridline
+                     registration differences.
+   :param y_correct: Offset applied to y coordinates (same purpose as ``x_correct``).
+   :param window: Optional spatial subset passed to :func:`read_tiff`.
+   :param buffer: Buffer added around the window bounds in CRS units.
+
+   :raises AssertionError: If ``tiff`` does not exist.
+
+
+.. py:function:: grd2tiff(grd, tiff, x_correct = None, y_correct = None)
+
+   Convert a GMT NetCDF4 grid file to a GeoTIFF.
+
+   :param grd: Path to the input GMT ``.grd`` file.
+   :param tiff: Path for the output GeoTIFF file.
+   :param x_correct: Offset applied to x coordinates after reading.
+   :param y_correct: Offset applied to y coordinates after reading.
+
+   :raises AssertionError: If ``grd`` does not exist.
+
+
+.. py:function:: array_to_gmt(array, out_file)
+
+   Write a NumPy array to a plain-text GMT-compatible file.
+
+   Each row of ``array`` is written as a space-separated line of values
+   formatted to 4 decimal places.
+
+   :param array: 1-D or 2-D array to write.  Must have at least 2 elements or
+                 columns.
+   :param out_file: Output file path.
+
+   :raises AssertionError: If the last dimension of ``array`` has fewer than 2 elements.
+
+
+.. py:function:: clip_tiff(in_tiff, out_tiff, window, buffer = 100)
+
+   Clip a GeoTIFF to a spatial window and write the result.
+
+   :param in_tiff: Path to the input GeoTIFF file.
+   :param out_tiff: Path for the output clipped GeoTIFF.
+   :param window: Spatial subset specifier: a path to a vector file or a 4-element
+                  sequence ``[x_min, y_min, x_max, y_max]``.
+   :param buffer: Extra margin added around the window bounds in CRS units.
+                  Defaults to 100.
+
+   :raises AssertionError: If ``in_tiff`` does not exist.
+
+
+.. py:function:: reproject_tiff(in_raster, out_raster, dst_epsg = 4326, window = None, buffer = 100, out_format='tiff')
+
+   Reproject a raster to a different coordinate reference system.
+
+   Reads the input raster, reprojects it to the target CRS using
+   nearest-neighbour resampling, and writes the result as a GeoTIFF
+   or GMT grid.
+
+   :param in_raster: Path to the input raster file.
+   :param out_raster: Path for the output reprojected file.
+   :param dst_epsg: Target EPSG code.  Defaults to 4326 (WGS84 geographic).
+   :param window: Optional spatial subset applied before reprojection.
+   :param buffer: Buffer added around the window bounds in CRS units.
+   :param out_format: Output format: ``"tiff"`` (default) or ``"grd"``.
+
+   :raises AssertionError: If ``out_format`` is not ``"tiff"`` or ``"grd"``.
+
+   .. admonition:: Notes
+
+      Based on the rasterio reprojection example from the rasterio
+      documentation.
+
+

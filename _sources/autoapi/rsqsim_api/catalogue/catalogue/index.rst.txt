@@ -1,0 +1,1133 @@
+rsqsim_api.catalogue.catalogue
+==============================
+
+.. py:module:: rsqsim_api.catalogue.catalogue
+
+.. autoapi-nested-parse::
+
+   RSQSim earthquake catalogue management and analysis.
+
+   Provides :class:`RsqSimCatalogue` for loading, filtering, and analysing
+   earthquake catalogues produced by RSQSim, along with module-level helper
+   functions for reading Bruce Shaw run directories and combining spatial
+   bounds.
+
+   The catalogue stores per-event metadata (time, magnitude, location,
+   area, duration) as a Pandas DataFrame alongside parallel flat arrays of
+   per-patch slip, timing, and event identifiers that can be lazily resolved
+   to :class:`~rsqsim_api.catalogue.event.RsqSimEvent` objects.
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   rsqsim_api.catalogue.catalogue.rng
+   rsqsim_api.catalogue.catalogue.fint
+   rsqsim_api.catalogue.catalogue.sensible_ranges
+   rsqsim_api.catalogue.catalogue.list_file_suffixes
+   rsqsim_api.catalogue.catalogue.extra_file_suffixes
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   rsqsim_api.catalogue.catalogue.RsqSimCatalogue
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   rsqsim_api.catalogue.catalogue.get_mask
+   rsqsim_api.catalogue.catalogue.read_bruce
+   rsqsim_api.catalogue.catalogue.read_bruce_if_necessary
+   rsqsim_api.catalogue.catalogue.combine_boundaries
+   rsqsim_api.catalogue.catalogue.calculate_b_value
+
+
+Module Contents
+---------------
+
+.. py:data:: rng
+
+.. py:data:: fint
+
+.. py:data:: sensible_ranges
+
+.. py:data:: list_file_suffixes
+   :value: ('.pList', '.eList', '.dList', '.tList')
+
+
+.. py:data:: extra_file_suffixes
+   :value: ('.dmuList', '.dsigmaList', '.dtauList', '.taupList')
+
+
+.. py:function:: get_mask(ev_ls, min_patches, faults_with_patches, event_list, patch_list, queue)
+
+   Worker function: compute per-event patch masks and post results to a queue.
+
+   For each event index in ``ev_ls``, finds the patches belonging to each
+   fault segment and masks out segments that contribute fewer than
+   ``min_patches`` patches.  Results are posted to ``queue`` as
+   ``(event_index, ev_indices, mask)`` tuples.
+
+   :param ev_ls: Event indices to process in this worker.
+   :type ev_ls: array-like of int
+   :param min_patches: Minimum patches per fault for a segment to be retained.
+   :type min_patches: int
+   :param faults_with_patches: Mapping of patch number to fault segment number (integer IDs
+                               rather than objects, for serialisability).
+   :type faults_with_patches: dict
+   :param event_list: Flat array of event IDs for every patch entry in the catalogue.
+   :type event_list: array-like of int
+   :param patch_list: Flat array of patch IDs parallel to ``event_list``.
+   :type patch_list: array-like of int
+   :param queue: Output queue; tuples of ``(event_id, ev_indices, mask)`` are
+                 placed here.
+   :type queue: multiprocessing.Queue
+
+
+.. py:class:: RsqSimCatalogue
+
+   Container for an RSQSim earthquake catalogue with per-patch slip data.
+
+   Stores the catalogue as a Pandas DataFrame together with four
+   parallel flat arrays (event IDs, patch IDs, slip values, and rupture
+   times) that cover the slip distribution for every event.  Provides
+   methods to load data from RSQSim binary output files, filter by
+   magnitude, time, location, or fault, retrieve fully populated
+   :class:`~rsqsim_api.catalogue.event.RsqSimEvent` objects, and
+   produce diagnostic plots.
+
+   .. attribute:: t0, m0, mw
+
+      Origin time (s), scalar moment (N·m), and moment magnitude
+      arrays from the catalogue DataFrame (set lazily).
+
+      :type: numpy.ndarray or None
+
+   .. attribute:: x, y, z
+
+      Hypocentre NZTM coordinates (m).
+
+      :type: numpy.ndarray or None
+
+   .. attribute:: area, dt
+
+      Rupture areas (m²) and durations (s).
+
+      :type: numpy.ndarray or None
+
+
+   .. py:property:: catalogue_df
+
+      Per-event catalogue with 8 numeric columns.
+
+      :type: pandas.DataFrame
+
+
+   .. py:method:: check_list(data_list, data_type)
+
+      Validate a flat patch/event list array before assignment.
+
+      :param data_list: 1-D array to validate.
+      :type data_list: numpy.ndarray
+      :param data_type: ``"i"`` for integer arrays (patch/event lists) or ``"d"``
+                        for floating-point arrays (slip/time lists).
+      :type data_type: str
+
+      :raises AttributeError: If the catalogue DataFrame has not been loaded yet.
+      :raises AssertionError: If ``data_type``, dtype, or dimensionality are invalid.
+
+
+
+   .. py:property:: event_list
+
+      Flat integer array of event IDs, one per patch entry.
+
+      :type: numpy.ndarray
+
+
+   .. py:property:: patch_list
+
+      Flat integer array of patch IDs, parallel to ``event_list``.
+
+      :type: numpy.ndarray
+
+
+   .. py:property:: patch_time_list
+
+      Rupture times (s) for each patch entry.
+
+      :type: numpy.ndarray
+
+
+   .. py:property:: patch_slip
+
+      Slip magnitudes (m) for each patch entry.
+
+      :type: numpy.ndarray
+
+
+   .. py:property:: accumulated_slip
+
+      Mapping of patch ID to total slip accumulated over all events.
+
+      :type: dict
+
+
+   .. py:property:: event_mean_slip
+
+      Mapping of event ID to mean slip (m); populated by :meth:`assign_event_mean_slip`.
+
+      :type: dict or None
+
+
+   .. py:property:: event_mean_sdr
+
+      Mapping of event ID to ``[strike, dip, rake]``; populated by :meth:`assign_event_mean_sdr`.
+
+      :type: dict or None
+
+
+   .. py:property:: event_length
+
+      Mapping of event ID to rupture length (m); populated by :meth:`assign_event_length`.
+
+      :type: dict or None
+
+
+   .. py:method:: from_dataframe(dataframe, reproject = None)
+      :classmethod:
+
+
+      Construct a catalogue from an existing DataFrame.
+
+      :param dataframe: DataFrame with 8 numeric columns in the standard RSQSim
+                        catalogue column order (t0, m0, mw, x, y, z, area, dt).
+      :type dataframe: pandas.DataFrame
+      :param reproject: ``[in_epsg, out_epsg]`` pair.  If provided, the ``x`` and
+                        ``y`` columns are reprojected using PyProj.
+      :type reproject: list or tuple of int, optional
+
+      :returns: Catalogue populated with the DataFrame (no patch lists).
+      :rtype: RsqSimCatalogue
+
+
+
+   .. py:method:: from_catalogue_file(filename, reproject = None)
+      :classmethod:
+
+
+      Construct a catalogue by reading an RSQSim ``eqs.*.out`` file.
+
+      :param filename: Path to the RSQSim catalogue file.
+      :type filename: str
+      :param reproject: ``[in_epsg, out_epsg]`` pair for coordinate reprojection.
+      :type reproject: list or tuple of int, optional
+
+      :returns: Catalogue populated from the file (no patch lists).
+      :rtype: RsqSimCatalogue
+
+
+
+   .. py:method:: from_catalogue_file_and_lists(catalogue_file, list_file_directory, list_file_prefix, read_extra_lists = False, reproject = None, serial = False, endian = 'little')
+      :classmethod:
+
+
+      Construct a fully populated catalogue from an RSQSim output directory.
+
+      Reads the ``eqs.*.out`` catalogue file together with the four
+      binary list files (``.pList``, ``.eList``, ``.dList``, ``.tList``).
+
+      :param catalogue_file: Path to the ``eqs.*.out`` catalogue file.
+      :type catalogue_file: str
+      :param list_file_directory: Directory containing the ``.pList``/``.eList``/``.dList``/
+                                  ``.tList`` binary files.
+      :type list_file_directory: str
+      :param list_file_prefix: Common prefix for the list files (e.g. ``"rundir4627"``).
+      :type list_file_prefix: str
+      :param read_extra_lists: Unused; reserved for future extra list support.
+      :type read_extra_lists: bool, optional
+      :param reproject: ``[in_epsg, out_epsg]`` pair for coordinate reprojection.
+      :type reproject: list or tuple of int, optional
+      :param serial: If ``True``, read list files as plain text rather than
+                     binary.  Defaults to ``False``.
+      :type serial: bool, optional
+      :param endian: Byte order of the binary list files: ``"little"`` (default)
+                     or ``"big"``.
+      :type endian: str, optional
+
+      :returns: Fully populated catalogue with patch slip distribution.
+      :rtype: RsqSimCatalogue
+
+
+
+   .. py:method:: from_dataframe_and_arrays(dataframe, event_list, patch_list, patch_slip, patch_time_list, reproject = None)
+      :classmethod:
+
+
+      Construct a catalogue from a DataFrame and pre-loaded patch arrays.
+
+      :param dataframe: Per-event catalogue DataFrame.
+      :type dataframe: pandas.DataFrame
+      :param event_list: Flat 1-D integer array of event IDs, one per patch entry.
+      :type event_list: numpy.ndarray
+      :param patch_list: Flat 1-D integer array of patch IDs parallel to ``event_list``.
+      :type patch_list: numpy.ndarray
+      :param patch_slip: Flat 1-D float array of slip magnitudes (m).
+      :type patch_slip: numpy.ndarray
+      :param patch_time_list: Flat 1-D float array of rupture times (s).
+      :type patch_time_list: numpy.ndarray
+      :param reproject: ``[in_epsg, out_epsg]`` pair for coordinate reprojection.
+      :type reproject: list or tuple of int, optional
+
+      :returns: Fully populated catalogue.
+      :rtype: RsqSimCatalogue
+
+
+
+   .. py:method:: from_csv_and_arrays(prefix, read_index = True, reproject = None)
+      :classmethod:
+
+
+      Construct a catalogue from a CSV and companion NumPy array files.
+
+      :param prefix: File path prefix used by :func:`~rsqsim_api.io.read_utils.read_csv_and_array`.
+      :type prefix: str
+      :param read_index: Whether to read the DataFrame index from the CSV.
+                         Defaults to ``True``.
+      :type read_index: bool, optional
+      :param reproject: ``[in_epsg, out_epsg]`` pair for coordinate reprojection.
+      :type reproject: list or tuple of int, optional
+
+      :returns: Fully populated catalogue.
+      :rtype: RsqSimCatalogue
+
+
+
+   .. py:method:: write_csv_and_arrays(prefix, directory = None, write_index = True)
+
+      Write the catalogue DataFrame and patch arrays to CSV and NumPy files.
+
+      :param prefix: File name prefix for the output files.
+      :type prefix: str
+      :param directory: Output directory.  Created if it does not exist.  If
+                        ``None``, files are written to the current directory.
+      :type directory: str or None, optional
+      :param write_index: Whether to write the DataFrame index to the CSV.
+                          Defaults to ``True``.
+      :type write_index: bool, optional
+
+
+
+   .. py:method:: first_event(fault_model)
+
+      Return the first event in the catalogue as an :class:`~rsqsim_api.catalogue.event.RsqSimEvent`.
+
+
+
+   .. py:method:: nth_event(fault_model, n)
+
+      Return the n-th event (1-based) from the catalogue.
+
+      :param fault_model: Fault model for resolving patch slip distributions.
+      :type fault_model: RsqSimMultiFault
+      :param n: 1-based index of the event to retrieve.
+      :type n: int
+
+      :rtype: RsqSimEvent
+
+
+
+   .. py:method:: first_n_events(number_of_events, fault_model)
+
+      Return the first ``number_of_events`` events from the catalogue.
+
+      :param number_of_events: Number of events to retrieve.
+      :type number_of_events: int
+      :param fault_model: Fault model for resolving patch slip distributions.
+      :type fault_model: RsqSimMultiFault
+
+      :rtype: list of RsqSimEvent
+
+
+
+   .. py:method:: all_events(fault_model)
+
+      Return all events in the catalogue.
+
+      :param fault_model: Fault model for resolving patch slip distributions.
+      :type fault_model: RsqSimMultiFault
+
+      :rtype: list of RsqSimEvent
+
+
+
+   .. py:method:: event_outlines(fault_model, event_numbers = None)
+
+      Return the Shapely exterior geometries for a set of events.
+
+      :param fault_model: Fault model for resolving patch slip distributions.
+      :type fault_model: RsqSimMultiFault
+      :param event_numbers: Event IDs to retrieve.  If ``None``, all events are used.
+      :type event_numbers: iterable of int, optional
+
+      :returns: Unary-union patch outlines for each event.
+      :rtype: list of shapely.geometry.base.BaseGeometry
+
+
+
+   .. py:method:: filter_df(min_t0 = None, max_t0 = None, min_m0 = None, max_m0 = None, min_mw = None, max_mw = None, min_x = None, max_x = None, min_y = None, max_y = None, min_z = None, max_z = None, min_area = None, max_area = None, min_dt = None, max_dt = None)
+
+      Return a filtered view of the catalogue DataFrame.
+
+      All parameters are optional range constraints.  Values outside
+      ``sensible_ranges`` raise a ``ValueError``.
+
+      :param min_t0: Origin time bounds (s).
+      :type min_t0: float or int, optional
+      :param max_t0: Origin time bounds (s).
+      :type max_t0: float or int, optional
+      :param min_m0: Scalar moment bounds (N·m).
+      :type min_m0: float or int, optional
+      :param max_m0: Scalar moment bounds (N·m).
+      :type max_m0: float or int, optional
+      :param min_mw: Moment magnitude bounds.
+      :type min_mw: float or int, optional
+      :param max_mw: Moment magnitude bounds.
+      :type max_mw: float or int, optional
+      :param min_x: Horizontal coordinate bounds (NZTM metres).
+      :type min_x: float or int, optional
+      :param max_x: Horizontal coordinate bounds (NZTM metres).
+      :type max_x: float or int, optional
+      :param min_y: Horizontal coordinate bounds (NZTM metres).
+      :type min_y: float or int, optional
+      :param max_y: Horizontal coordinate bounds (NZTM metres).
+      :type max_y: float or int, optional
+      :param min_z: Depth bounds (m, negative downward).
+      :type min_z: float or int, optional
+      :param max_z: Depth bounds (m, negative downward).
+      :type max_z: float or int, optional
+      :param min_area: Rupture area bounds (m²).
+      :type min_area: float or int, optional
+      :param max_area: Rupture area bounds (m²).
+      :type max_area: float or int, optional
+      :param min_dt: Duration bounds (s).
+      :type min_dt: float or int, optional
+      :param max_dt: Duration bounds (s).
+      :type max_dt: float or int, optional
+
+      :returns: Filtered DataFrame, or ``None`` if no conditions were
+                specified.
+      :rtype: pandas.DataFrame or None
+
+
+
+   .. py:method:: filter_whole_catalogue(min_t0 = None, max_t0 = None, min_m0 = None, max_m0 = None, min_mw = None, max_mw = None, min_x = None, max_x = None, min_y = None, max_y = None, min_z = None, max_z = None, min_area = None, max_area = None, min_dt = None, max_dt = None, reset_index = False)
+
+      Return a new catalogue filtered by catalogue-level parameter ranges.
+
+      Parameters are identical to :meth:`filter_df` with an additional
+      ``reset_index`` option.
+
+      :param min_t0:
+      :param max_t0:
+      :param min_m0:
+      :param max_m0:
+      :param min_mw:
+      :param max_mw:
+      :param min_x:
+      :param max_x:
+      :param :
+      :param min_y: See :meth:`filter_df`.
+      :param max_y: See :meth:`filter_df`.
+      :param min_z: See :meth:`filter_df`.
+      :param max_z: See :meth:`filter_df`.
+      :param min_area: See :meth:`filter_df`.
+      :param max_area: See :meth:`filter_df`.
+      :param min_dt: See :meth:`filter_df`.
+      :param max_dt: See :meth:`filter_df`.
+      :param reset_index: If ``True``, reindex the filtered catalogue starting from 0.
+      :type reset_index: bool, optional
+
+      :returns: New catalogue containing only events within the specified
+                parameter ranges.
+      :rtype: RsqSimCatalogue
+
+
+
+   .. py:method:: filter_by_events(event_number, reset_index = False)
+
+      Return a new catalogue containing only the specified events.
+
+      :param event_number: One or more event IDs to retain.
+      :type event_number: int or iterable of int
+      :param reset_index: If ``True``, reindex the filtered catalogue from 0.
+      :type reset_index: bool, optional
+
+      :returns: Catalogue containing only the selected events.
+      :rtype: RsqSimCatalogue
+
+
+
+   .. py:method:: drop_few_patches(fault_model, min_patches = 3)
+
+      Return a catalogue with events having fewer than ``min_patches`` dropped.
+
+      :param fault_model: Fault model for resolving patch distributions.
+      :type fault_model: RsqSimMultiFault
+      :param min_patches: Minimum number of patches required for an event to be
+                          retained.  Defaults to 3.
+      :type min_patches: int, optional
+
+      :returns: Filtered catalogue.
+      :rtype: RsqSimCatalogue
+
+
+
+   .. py:method:: filter_by_fault(fault_or_faults, minimum_patches_per_fault = None)
+
+      Return a catalogue filtered to events that rupture specified faults.
+
+      An event is included if at least one of its patches belongs to
+      any fault in ``fault_or_faults``.
+
+      :param fault_or_faults: Fault(s) to filter on.
+      :type fault_or_faults: RsqSimSegment, RsqSimMultiFault, list, or tuple
+      :param minimum_patches_per_fault: If given, an event is only included if it ruptures at least
+                                        this many patches on at least one of the target faults.
+      :type minimum_patches_per_fault: int or None, optional
+
+      :returns: Filtered catalogue, or ``None`` if no matching events found.
+      :rtype: RsqSimCatalogue or None
+
+
+
+   .. py:method:: filter_not_on_fault(fault_or_faults, minimum_patches_per_fault = None)
+
+      Return a catalogue with events that rupture specified faults removed.
+
+      The complement of :meth:`filter_by_fault`: events are rejected if
+      they rupture any patch on the target faults.
+
+      :param fault_or_faults: Fault(s) whose events should be excluded.
+      :type fault_or_faults: RsqSimSegment, RsqSimMultiFault, list, or tuple
+      :param minimum_patches_per_fault: If given, an event is only rejected if it ruptures at least
+                                        this many patches on one of the target faults.
+      :type minimum_patches_per_fault: int or None, optional
+
+      :returns: Filtered catalogue, or ``None`` if no events remain, or
+                ``self`` if no events were on the target faults.
+      :rtype: RsqSimCatalogue or None
+
+
+
+   .. py:method:: find_surface_rupturing_events(fault_model, min_slip = 0.1, method = 'vertex', n_patches = 1, max_depth = -1000.0, n_faults = 1, write_flt_dict = False, faults2ignore = 'hikurangi')
+
+      Find catalogue event IDs that include surface rupture.
+
+      :param fault_model: Fault model used to resolve patch slip distributions.
+      :type fault_model: RsqSimMultiFault
+      :param min_slip: Minimum slip (m) for a patch to count as ruptured.
+                       Defaults to 0.1 m.
+      :type min_slip: float, optional
+      :param method: ``"vertex"`` (use the shallowest vertex) or ``"centroid"``
+                     (use the centroid depth) for the depth criterion.
+      :type method: str, optional
+      :param n_patches: Minimum number of qualifying surface patches per fault.
+                        Defaults to 1.
+      :type n_patches: int, optional
+      :param max_depth: Depth threshold (m, negative).  Defaults to -1000 m.
+      :type max_depth: float, optional
+      :param n_faults: Minimum number of surface-rupturing faults per event.
+                       Defaults to 1.
+      :type n_faults: int, optional
+      :param write_flt_dict: If ``True``, also return a dict mapping event IDs to lists
+                             of surface-rupturing fault names.
+      :type write_flt_dict: bool, optional
+      :param faults2ignore: Fault name(s) to exclude.  Defaults to ``"hikurangi"``.
+      :type faults2ignore: list of str or str, optional
+
+      :returns: * *list of int* -- Event IDs with surface rupture.
+                * *dict, optional* -- Only returned when ``write_flt_dict=True``; maps event ID
+                  to the list of surface-rupturing fault names.
+
+
+
+   .. py:method:: find_multi_fault(fault_model)
+
+      Identify events that rupture more than one named fault segment.
+
+      Note that segmentation is based on the fault model's segment
+      names and may not correspond to other multi-fault definitions.
+
+      :param fault_model: Fault model for resolving patch slip distributions.
+      :type fault_model: RsqSimMultiFault
+
+      :returns: * **multifault** (*list of RsqSimEvent*) -- Events that involve more than one fault segment.
+                * **multi_cat** (*RsqSimCatalogue*) -- Sub-catalogue containing only those events.
+
+
+
+   .. py:method:: filter_by_region(region, fault_model, event_numbers = None)
+
+      Filter events by geographic region.
+
+      Not yet implemented.
+
+      :param region: Region geometry (reserved for future use).
+      :type region: Polygon or geopandas.GeoSeries
+      :param fault_model: Fault model (reserved for future use).
+      :type fault_model: RsqSimMultiFault
+      :param event_numbers: Reserved for future use.
+      :type event_numbers: iterable of int, optional
+
+
+
+   .. py:method:: filter_by_patch_numbers(patch_numbers)
+
+      Return a catalogue containing only events that ruptured specified patches.
+
+      :param patch_numbers: Patch IDs to filter on; events with at least one matching
+                            patch are retained.
+      :type patch_numbers: array-like of int
+
+      :returns: Filtered catalogue, or ``None`` if no events match.
+      :rtype: RsqSimCatalogue or None
+
+
+
+   .. py:method:: events_by_number(event_number, fault_model, child_processes = 0, min_patches = 1)
+
+      Retrieve one or more events as fully populated :class:`~rsqsim_api.catalogue.event.RsqSimEvent` objects.
+
+      :param event_number: Event ID(s) to retrieve.
+      :type event_number: int or iterable of int
+      :param fault_model: Fault model for resolving patch objects and fault associations.
+      :type fault_model: RsqSimMultiFault
+      :param child_processes: If > 0, distribute event processing across this many child
+                              processes using shared memory.  Defaults to 0 (serial).
+      :type child_processes: int, optional
+      :param min_patches: Minimum patches per fault segment for an event to be
+                          considered.  Defaults to 1.
+      :type min_patches: int, optional
+
+      :returns: Fully populated events in the order they were requested.
+      :rtype: list of RsqSimEvent
+
+
+
+   .. py:method:: assign_accumulated_slip()
+
+      Compute and cache total accumulated slip per patch.
+
+      Sums ``patch_slip`` over all events for each unique patch ID
+      and stores the result in :attr:`_accumulated_slip`.  Subsequent
+      accesses via :attr:`accumulated_slip` return the cached value.
+
+
+
+   .. py:method:: assign_event_mean_slip(fault_model)
+
+      Compute and cache mean slip per event.
+
+      :param fault_model: Fault model for resolving patch objects.
+      :type fault_model: RsqSimMultiFault
+
+
+
+   .. py:method:: assign_event_mean_sdr(fault_model)
+
+      Compute and cache mean strike, dip, and rake per event.
+
+      :param fault_model: Fault model for resolving patch objects.
+      :type fault_model: RsqSimMultiFault
+
+
+
+   .. py:method:: assign_event_length(fault_model)
+
+      Compute and cache rupture length per event.
+
+      :param fault_model: Fault model for resolving patch and fault objects.
+      :type fault_model: RsqSimMultiFault
+
+
+
+   .. py:method:: plot_accumulated_slip_2d(fault_model, subduction_cmap = 'plasma', crustal_cmap = 'viridis', show = True, write = None, subplots=None, global_max_sub_slip = 0, global_max_slip = 0, figsize = (6.4, 4.8), hillshading_intensity = 0.0, bounds = None, plot_rivers = True, plot_lakes = True, plot_highways = True, plot_boundaries = False, create_background = False, coast_only = True, hillshade_cmap = cm.terrain, plot_log_scale = False, log_cmap = 'magma', log_min = 1.0, log_max = 100.0, plot_traces = True, trace_colour = 'pink', min_slip_percentile = None, min_slip_value = None, plot_zeros = True)
+
+      Plot a 2-D map of accumulated slip across all events in the catalogue.
+
+      Sums slip over the entire catalogue per patch and plots the
+      result with separate colourmaps for subduction-interface and
+      crustal faults.
+
+      :param fault_model: Fault model whose patches are coloured by accumulated slip.
+      :type fault_model: RsqSimMultiFault
+      :param subduction_cmap: Colourmap for subduction-interface patches.  Defaults to
+                              ``"plasma"``.
+      :type subduction_cmap: str, optional
+      :param crustal_cmap: Colourmap for crustal patches.  Defaults to ``"viridis"``.
+      :type crustal_cmap: str, optional
+      :param show: If ``True`` (default), call ``plt.show()``.
+      :type show: bool, optional
+      :param write: File path to save the figure.
+      :type write: str or None, optional
+      :param subplots: Existing ``(fig, ax)`` or pickled figure to plot on.
+      :type subplots: tuple or str or None, optional
+      :param global_max_sub_slip: Fixed colourbar maxima; 0 means per-data maximum.
+      :type global_max_sub_slip: float, optional
+      :param global_max_slip: Fixed colourbar maxima; 0 means per-data maximum.
+      :type global_max_slip: float, optional
+      :param figsize: Figure size in inches.
+      :type figsize: tuple of float, optional
+      :param hillshading_intensity: Hillshading intensity.
+      :type hillshading_intensity: float, optional
+      :param bounds: Map extent ``(x_min, y_min, x_max, y_max)`` in NZTM.
+      :type bounds: tuple or None, optional
+      :param plot_rivers: Toggle background map layers.
+      :type plot_rivers: bool, optional
+      :param plot_lakes: Toggle background map layers.
+      :type plot_lakes: bool, optional
+      :param plot_highways: Toggle background map layers.
+      :type plot_highways: bool, optional
+      :param plot_boundaries: Toggle background map layers.
+      :type plot_boundaries: bool, optional
+      :param create_background: Render full background map.
+      :type create_background: bool, optional
+      :param coast_only: Render coastline only as background.
+      :type coast_only: bool, optional
+      :param hillshade_cmap: Hillshade colourmap.
+      :type hillshade_cmap: LinearSegmentedColormap, optional
+      :param plot_log_scale: Use logarithmic colour scaling.
+      :type plot_log_scale: bool, optional
+      :param log_cmap: Parameters for log-scale colouring.
+      :type log_cmap: optional
+      :param log_min: Parameters for log-scale colouring.
+      :type log_min: optional
+      :param log_max: Parameters for log-scale colouring.
+      :type log_max: optional
+      :param plot_traces: Plot fault surface traces.
+      :type plot_traces: bool, optional
+      :param trace_colour: Colour for fault traces.
+      :type trace_colour: str, optional
+      :param min_slip_percentile: Slip percentile threshold below which patches are zeroed.
+      :type min_slip_percentile: float or None, optional
+      :param min_slip_value: Slip value threshold (m) below which patches are zeroed.
+      :type min_slip_value: float or None, optional
+      :param plot_zeros: If ``True`` (default), plot zero-slip patches.
+      :type plot_zeros: bool, optional
+
+      :returns: Matplotlib ``PolyCollection`` objects for each fault plotted.
+      :rtype: list
+
+
+
+   .. py:method:: plot_mfd(plot_type = 'differential', nSamp = 1000, window = 80.0 * csts.seconds_per_year, n_bins = 50, instrumental_path = None, inst_year_min = 1940, show = True, write = None, tmin = None, tmax = None, depth_min = None, depth_max = None, mmin = 4.5, mmax = 9.5, plot_corrected_instrumental = True)
+
+      Plot a magnitude–frequency distribution for the catalogue.
+
+      Produces a Gutenberg-Richter plot (annual rates vs Mw) in either
+      differential or cumulative form.  Random time-window samples can
+      be overlaid to show variability.
+
+      :param plot_type: ``"differential"`` (default) or ``"cumulative"``.
+      :type plot_type: str, optional
+      :param nSamp: Number of random time-window samples to draw for the
+                    variability envelope.  Defaults to 1000.
+      :type nSamp: int, optional
+      :param window: Duration (s) of each random sample window.  Defaults to
+                     80 years.
+      :type window: float, optional
+      :param n_bins: Number of magnitude bins.  Defaults to 50.
+      :type n_bins: int, optional
+      :param instrumental_path: Path to an instrumental seismicity CSV file for comparison.
+      :type instrumental_path: str or None, optional
+      :param inst_year_min: Minimum year for the instrumental catalogue.  Defaults to
+                            1940.
+      :type inst_year_min: float, optional
+      :param show: If ``True`` (default), call ``plt.show()``.
+      :type show: bool, optional
+      :param write: File path to save the figure.
+      :type write: str or None, optional
+      :param tmin: Time range (s) to use.  Defaults to the catalogue range.
+      :type tmin: float or None, optional
+      :param tmax: Time range (s) to use.  Defaults to the catalogue range.
+      :type tmax: float or None, optional
+      :param depth_min: Depth range (km) for filtering the instrumental catalogue.
+      :type depth_min: float or None, optional
+      :param depth_max: Depth range (km) for filtering the instrumental catalogue.
+      :type depth_max: float or None, optional
+      :param mmin: Magnitude range for the histogram/plot.  Defaults to
+                   4.5–9.5.
+      :type mmin: float, optional
+      :param mmax: Magnitude range for the histogram/plot.  Defaults to
+                   4.5–9.5.
+      :type mmax: float, optional
+      :param plot_corrected_instrumental: If ``True`` (default), overlay a magnitude-corrected
+                                          cumulative curve for the instrumental catalogue.
+      :type plot_corrected_instrumental: bool, optional
+
+
+
+   .. py:method:: plot_depth_hist(fault_model, n_bins = 10, depth_min = None, depth_max = None, write = None, show = True)
+
+      Plot a histogram of hypocentral depths alongside fault-base depths.
+
+      :param fault_model: Fault model used to extract fault base depths.
+      :type fault_model: RsqSimMultiFault
+      :param n_bins: Number of depth bins.  Defaults to 10.
+      :type n_bins: int, optional
+      :param depth_min: Minimum depth (km) for the plot.  Defaults to the shallowest
+                        hypocentre.
+      :type depth_min: float or None, optional
+      :param depth_max: Maximum depth (km) for the plot.  Defaults to the deepest
+                        hypocentre.
+      :type depth_max: float or None, optional
+      :param write: File path to save the figure.
+      :type write: str or None, optional
+      :param show: If ``True`` (default), display the figure.
+      :type show: bool, optional
+
+
+
+   .. py:method:: plot_mean_slip_vs_mag(fault_model, show = True, write = None, plot_rel = True)
+
+      Scatter-plot mean patch slip vs moment magnitude for all events.
+
+      :param fault_model: Fault model for computing mean slip per event.
+      :type fault_model: RsqSimMultiFault
+      :param show: If ``True`` (default), display the figure.
+      :type show: bool, optional
+      :param write: File path to save the figure.
+      :type write: str or None, optional
+      :param plot_rel: If ``True`` (default), overlay the best-fit trend and the
+                       expected 1/3-slope scaling-law line.
+      :type plot_rel: bool, optional
+
+
+
+   .. py:method:: plot_area_vs_mag(fault_model, show = True, write = None, plot_rel = True)
+
+      Scatter-plot rupture area vs moment magnitude for all events.
+
+      :param fault_model: Fault model for retrieving event areas.
+      :type fault_model: RsqSimMultiFault
+      :param show: If ``True`` (default), display the figure.
+      :type show: bool, optional
+      :param write: File path to save the figure.
+      :type write: str or None, optional
+      :param plot_rel: If ``True`` (default), overlay the best-fit log-linear trend.
+      :type plot_rel: bool, optional
+
+
+
+   .. py:method:: stress_drops(stress_c = 2.44)
+
+      Compute stress drops for all events.
+
+      :param stress_c: Shape constant (default 2.44 for a circular crack).
+      :type stress_c: float, optional
+
+      :returns: Stress drop in Pa for each event.
+      :rtype: numpy.ndarray
+
+
+
+   .. py:method:: scaling_c()
+
+      Compute the Gutenberg-Richter scaling parameter c for all events.
+
+      :returns: Scaling parameter c (``Mw - log10(area) + 6``) per event.
+      :rtype: numpy.ndarray
+
+
+
+   .. py:method:: scaling_summary_statistics(stress_c = 2.44)
+
+      Return summary statistics of scaling parameters for the catalogue.
+
+      :param stress_c: Shape constant passed to
+                       :func:`~rsqsim_api.catalogue.utilities.summary_statistics`.
+      :type stress_c: float, optional
+
+      :returns: Summary statistics including max Mw and percentiles of c and
+                stress drop.
+      :rtype: pandas.Series
+
+
+
+   .. py:method:: all_slip_distributions_to_vtk(fault_model, output_directory, include_zeros = False, min_slip_value = None)
+
+      Write VTK slip distribution files for every event in the catalogue.
+
+      :param fault_model: Fault model for resolving patch objects.
+      :type fault_model: RsqSimMultiFault
+      :param output_directory: Existing directory to write ``event<id>.vtk`` files.
+      :type output_directory: str
+      :param include_zeros: If ``True``, include zero-slip patches.  Defaults to
+                            ``False``.
+      :type include_zeros: bool, optional
+      :param min_slip_value: Minimum slip threshold (m) passed to
+                             :meth:`~rsqsim_api.catalogue.event.RsqSimEvent.slip_dist_to_vtk`.
+      :type min_slip_value: float or None, optional
+
+
+
+   .. py:method:: calculate_b_value(min_mw = 0.0, max_mw = 10.0, interval=0.1)
+
+      Estimate the Gutenberg-Richter b-value for the catalogue.
+
+      :param min_mw: Minimum magnitude bin centre to include.  Defaults to 0.0.
+      :type min_mw: float, optional
+      :param max_mw: Maximum magnitude bin centre to include.  Defaults to 10.0.
+      :type max_mw: float, optional
+      :param interval: Magnitude bin width.  Defaults to 0.1.
+      :type interval: float, optional
+
+      :returns: ``(b_value, intercept)`` from the least-squares fit to the
+                log-linear cumulative MFD.
+      :rtype: tuple of float
+
+
+
+   .. py:method:: calculate_dominant_magnitudes(fault_model, unfiltered_catalogue=None, min_for_median = 5)
+
+      Compute the dominant (median cumulant) magnitude for each patch.
+
+      :param fault_model: Fault model providing patch indices.
+      :type fault_model: RsqSimMultiFault
+      :param unfiltered_catalogue: If provided, use this catalogue's magnitude arrays (useful
+                                   when the current catalogue is a filtered subset).
+      :type unfiltered_catalogue: RsqSimCatalogue or None, optional
+      :param min_for_median: Minimum number of matching events for the median to be
+                             computed.  Defaults to 5.
+      :type min_for_median: int, optional
+
+      :returns: Dominant magnitude (Mw) for each patch in ``fault_model``.
+      :rtype: numpy.ndarray
+
+
+
+   .. py:method:: dominant_magnitudes(fault_patch_indices, catalogue_patch_array, event_mws, event_m0s, min_for_median = 5)
+      :staticmethod:
+
+
+      Numba-parallel computation of dominant magnitude per patch.
+
+      For each patch index, finds all matching entries in the catalogue
+      and computes the median cumulant magnitude.
+
+      :param fault_patch_indices: All patch IDs in the fault model.
+      :type fault_patch_indices: numpy.ndarray of int
+      :param catalogue_patch_array: Flat array of patch IDs from the catalogue (parallel to
+                                    ``event_list``).
+      :type catalogue_patch_array: numpy.ndarray of int
+      :param event_mws: Mw for each entry in ``catalogue_patch_array``.
+      :type event_mws: numpy.ndarray of float
+      :param event_m0s: M0 (N·m) for each entry in ``catalogue_patch_array``.
+      :type event_m0s: numpy.ndarray of float
+      :param min_for_median: Minimum matching events required to compute the median.
+                             Patches below this threshold receive 0.  Defaults to 5.
+      :type min_for_median: int, optional
+
+      :returns: Dominant magnitude for each patch (0 if insufficient data).
+      :rtype: numpy.ndarray of float
+
+
+
+   .. py:method:: filter_crustal_events(fault_model, subduction_names = ('hikkerm', 'puysegur'), min_crustal_mw = 6.0)
+
+      Return event IDs where crustal moment exceeds a magnitude threshold.
+
+      Uses Numba-parallel processing to check each event's crustal
+      moment contribution.
+
+      :param fault_model: Fault model providing patch areas and crustal patch numbers.
+      :type fault_model: RsqSimMultiFault
+      :param subduction_names: Fault names classified as subduction interface; all other
+                               patches are considered crustal.
+      :type subduction_names: tuple of str, optional
+      :param min_crustal_mw: Minimum crustal moment magnitude threshold.  Defaults to 6.0.
+      :type min_crustal_mw: float, optional
+
+      :returns: Event IDs whose crustal moment meets the threshold.
+      :rtype: numpy.ndarray of int
+
+
+
+   .. py:method:: filter_crustal_events_parallel(event_indices, crustal_patch_numbers, event_list, patch_list, patch_slip, patch_area_list, min_crustal_m0)
+      :staticmethod:
+
+
+      Numba-parallel filter: return events with crustal moment >= threshold.
+
+      :param event_indices: All event IDs to check.
+      :type event_indices: numpy.ndarray of int
+      :param crustal_patch_numbers: Patch IDs classified as crustal (non-subduction).
+      :type crustal_patch_numbers: numpy.ndarray of int
+      :param event_list: Flat catalogue event-ID array.
+      :type event_list: numpy.ndarray of int
+      :param patch_list: Flat catalogue patch-ID array.
+      :type patch_list: numpy.ndarray of int
+      :param patch_slip: Slip (m) parallel to ``patch_list``.
+      :type patch_slip: numpy.ndarray of float
+      :param patch_area_list: Patch areas (m²) parallel to ``patch_list``.
+      :type patch_area_list: numpy.ndarray of float
+      :param min_crustal_m0: Minimum crustal scalar moment (N·m) threshold.
+      :type min_crustal_m0: float
+
+      :returns: Event IDs whose crustal moment meets ``min_crustal_m0``.
+      :rtype: numpy.ndarray of int
+
+
+
+   .. py:method:: match_events_to_crustal_nshm_dicts(fault_model, event_ids, crustal_patch_dict, crustal_n_dict, subduction_names = ('hikkerm', 'puysegur'), threshold_proportion = 0.5)
+
+      Match events to NSHM subsection indices using a KD-tree patch lookup.
+
+      For each event, determines which NSHM subsection indices are
+      ruptured based on the fraction of the subsection's patches that
+      slipped.
+
+      :param fault_model: Fault model providing crustal patch numbers.
+      :type fault_model: RsqSimMultiFault
+      :param event_ids: Event IDs to process.
+      :type event_ids: numpy.ndarray of int
+      :param crustal_patch_dict: Mapping of NSHM subsection index (int) to a dict with
+                                 ``"triangle_indices"`` giving the RSQSim patch IDs.
+      :type crustal_patch_dict: dict
+      :param crustal_n_dict: Mapping of NSHM subsection index (int) to total number of
+                             RSQSim patches in that subsection.
+      :type crustal_n_dict: dict
+      :param subduction_names: Fault names excluded from the crustal analysis.
+      :type subduction_names: tuple of str, optional
+      :param threshold_proportion: Fraction of subsection patches that must be ruptured for the
+                                   subsection to be considered active.  Defaults to 0.5.
+      :type threshold_proportion: float, optional
+
+      :returns: Mapping of event ID (int32) to an array of NSHM subsection
+                indices (int32) that were ruptured.
+      :rtype: numba.typed.Dict
+
+
+
+   .. py:method:: match_crustal_nshm_parallel(event_ids, event_list, patch_list, crustal_patch_dict, crustal_n_dict, crustal_patch_numbers, threshold_proportion = 0.5)
+      :staticmethod:
+
+
+      Numba JIT-compiled: map events to NSHM subsection indices.
+
+      :param event_ids: Events to process.
+      :type event_ids: numpy.ndarray of int32
+      :param event_list: Flat catalogue event-ID array.
+      :type event_list: numpy.ndarray of int32
+      :param patch_list: Flat catalogue patch-ID array.
+      :type patch_list: numpy.ndarray of int32
+      :param crustal_patch_dict: Mapping of subsection index to array of RSQSim patch IDs.
+      :type crustal_patch_dict: numba.typed.Dict
+      :param crustal_n_dict: Mapping of subsection index to total patch count.
+      :type crustal_n_dict: numba.typed.Dict
+      :param crustal_patch_numbers: All crustal patch IDs.
+      :type crustal_patch_numbers: numpy.ndarray of int32
+      :param threshold_proportion: Fraction threshold for subsection inclusion.  Defaults to
+                                   0.5.
+      :type threshold_proportion: float, optional
+
+      :returns: Mapping of event ID (int32) to array of active subsection
+                indices (int32).
+      :rtype: numba.typed.Dict
+
+
+
+.. py:function:: read_bruce(run_dir = '/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627', fault_file = 'bruce_faults.in', names_file = 'bruce_names.in', catalogue_file = 'eqs..out')
+
+   Read a Bruce Shaw RSQSim run directory and return the fault model and catalogue.
+
+   :param run_dir: Path to the RSQSim run directory.
+   :type run_dir: str
+   :param fault_file: Fault geometry file name.  Defaults to ``"bruce_faults.in"``.
+   :type fault_file: str, optional
+   :param names_file: Fault names file name.  Defaults to ``"bruce_names.in"``.
+   :type names_file: str, optional
+   :param catalogue_file: Catalogue file name.  Defaults to ``"eqs..out"``.
+   :type catalogue_file: str, optional
+
+   :returns: * **bruce_faults** (*RsqSimMultiFault*) -- Fault model with UTM coordinates transformed to NZTM.
+             * **catalogue** (*RsqSimCatalogue*) -- Fully populated catalogue.
+
+
+.. py:function:: read_bruce_if_necessary(run_dir = '/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627', fault_file = 'bruce_faults.in', names_file = 'bruce_names.in', catalogue_file = 'eqs..out', default_faults = 'bruce_faults', default_cat = 'catalogue')
+
+   Read a Bruce Shaw run directory only if the variables are not already in global scope.
+
+   :param run_dir: Path to the RSQSim run directory.
+   :type run_dir: str
+   :param fault_file: File names for faults, fault names, and the catalogue.
+   :type fault_file: str, optional
+   :param names_file: File names for faults, fault names, and the catalogue.
+   :type names_file: str, optional
+   :param catalogue_file: File names for faults, fault names, and the catalogue.
+   :type catalogue_file: str, optional
+   :param default_faults: Global variable name expected to hold the fault model.
+                          Defaults to ``"bruce_faults"``.
+   :type default_faults: str, optional
+   :param default_cat: Global variable name expected to hold the catalogue.
+                       Defaults to ``"catalogue"``.
+   :type default_cat: str, optional
+
+   :returns: Returns the fault model and catalogue if they were not already
+             defined; otherwise returns ``None``.
+   :rtype: tuple of (RsqSimMultiFault, RsqSimCatalogue) or None
+
+
+.. py:function:: combine_boundaries(bounds1, bounds2)
+
+   Return the bounding box that encompasses both input bounding boxes.
+
+   Takes the element-wise minimum for the lower two coordinates and the
+   element-wise maximum for the upper two, producing a combined extent.
+
+   :param bounds1: First bounding box as ``[min_x, min_y, max_x, max_y]``.
+   :type bounds1: list
+   :param bounds2: Second bounding box in the same format.
+   :type bounds2: list
+
+   :returns: Combined bounding box ``[min_x, min_y, max_x, max_y]``.
+   :rtype: list
+
+   :raises AssertionError: If ``bounds1`` and ``bounds2`` have different lengths.
+
+
+.. py:function:: calculate_b_value(magnitudes, time_interval_years, min_mw = 0.0, max_mw = 10.0, interval=0.1)
+
+   Estimate the Gutenberg-Richter b-value from a magnitude catalogue.
+
+   Builds a cumulative MFD histogram, normalises by the observation
+   interval, and fits a straight line to log₁₀(rate) vs Mw to obtain
+   the b-value (negative slope) and the a-value (intercept).
+
+   :param magnitudes: Array of moment magnitudes.
+   :type magnitudes: array-like
+   :param time_interval_years: Observation duration in years used to convert event counts to
+                               annual rates.
+   :type time_interval_years: float
+   :param min_mw: Lower magnitude cutoff for the regression.  Defaults to 0.0.
+   :type min_mw: float, optional
+   :param max_mw: Upper magnitude cutoff for the regression.  Defaults to 10.0.
+   :type max_mw: float, optional
+   :param interval: Magnitude bin width.  Defaults to 0.1.
+   :type interval: float, optional
+
+   :returns: * **b_value** (*float*) -- Estimated b-value (positive, i.e. the negative of the fitted
+               gradient).
+             * **intercept** (*float*) -- Log₁₀ a-value (y-intercept of the Gutenberg-Richter fit).
+
+

@@ -1,0 +1,28 @@
+rsqsim_api.io
+=============
+
+.. py:module:: rsqsim_api.io
+
+.. autoapi-nested-parse::
+
+   Input/output utilities for RSQSim data formats.
+
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/rsqsim_api/io/array_operations/index
+   /autoapi/rsqsim_api/io/bruce_shaw_utilities/index
+   /autoapi/rsqsim_api/io/compressed_pickle/index
+   /autoapi/rsqsim_api/io/mesh_utils/index
+   /autoapi/rsqsim_api/io/multiprocessing_utils/index
+   /autoapi/rsqsim_api/io/read_utils/index
+   /autoapi/rsqsim_api/io/rsqsim_constants/index
+   /autoapi/rsqsim_api/io/tsurf/index
+   /autoapi/rsqsim_api/io/write_utils/index
+
+

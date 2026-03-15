@@ -1,0 +1,371 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>test_fault &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../help/intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">test_fault</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for test_fault</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">unittest</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">rsqsim_api.fault.segment</span> <span class="kn">import</span> <span class="n">RsqSimTriangularPatch</span><span class="p">,</span> <span class="n">RsqSimSegment</span>
+<span class="kn">from</span> <span class="nn">rsqsim_api.fault.multifault</span> <span class="kn">import</span> <span class="n">RsqSimMultiFault</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<div class="viewcode-block" id="test_vertices">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.test_vertices">[docs]</a>
+<span class="n">test_vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span>
+                          <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span>
+                          <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.</span><span class="p">]])</span></div>
+
+
+<div class="viewcode-block" id="fault_names">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.fault_names">[docs]</a>
+<span class="n">fault_names</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="s2">&quot;test&quot;</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="column_names">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.column_names">[docs]</a>
+<span class="n">column_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;x1&quot;</span><span class="p">,</span> <span class="s2">&quot;y1&quot;</span><span class="p">,</span> <span class="s2">&quot;z1&quot;</span><span class="p">,</span> <span class="s2">&quot;x2&quot;</span><span class="p">,</span> <span class="s2">&quot;y2&quot;</span><span class="p">,</span> <span class="s2">&quot;z2&quot;</span><span class="p">,</span> <span class="s2">&quot;x3&quot;</span><span class="p">,</span> <span class="s2">&quot;y3&quot;</span><span class="p">,</span> <span class="s2">&quot;z3&quot;</span><span class="p">,</span> <span class="s2">&quot;rake&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;slip_rate&quot;</span><span class="p">,</span> <span class="s2">&quot;fault_num&quot;</span><span class="p">,</span> <span class="s2">&quot;bruce_name&quot;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="faults_in">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.faults_in">[docs]</a>
+<span class="n">faults_in</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">180.0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">columns</span><span class="o">=</span><span class="n">column_names</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="TestMultiFault">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestMultiFault">[docs]</a>
+<span class="k">class</span> <span class="nc">TestMultiFault</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+<div class="viewcode-block" id="TestMultiFault.setUp">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestMultiFault.setUp">[docs]</a>
+    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">multifault</span> <span class="o">=</span> <span class="n">RsqSimMultiFault</span><span class="o">.</span><span class="n">read_fault_file_keith</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span>
+                                                                              <span class="s2">&quot;data/test_fault_keith.flt&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="TestMultiFault.test_return_faults">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestMultiFault.test_return_faults">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_return_faults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">segments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">multifault</span><span class="o">.</span><span class="n">faults</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">segments</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIsInstance</span><span class="p">(</span><span class="n">segments</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">RsqSimSegment</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TestMultiFault.test_return_names">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestMultiFault.test_return_names">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_return_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">multifault</span><span class="o">.</span><span class="n">names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;hikurangi0&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TestMultiFault.test_return_name_dic">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestMultiFault.test_return_name_dic">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_return_name_dic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertDictEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">multifault</span><span class="o">.</span><span class="n">name_dic</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;hikurangi0&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">multifault</span><span class="o">.</span><span class="n">faults</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                                        <span class="s1">&#39;hikurangi1&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">multifault</span><span class="o">.</span><span class="n">faults</span><span class="p">[</span><span class="mi">1</span><span class="p">]})</span></div>
+
+
+<div class="viewcode-block" id="TestMultiFault.test_return_bounds">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestMultiFault.test_return_bounds">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_return_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_almost_equal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">multifault</span><span class="o">.</span><span class="n">bounds</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">724300.821675</span><span class="p">,</span> <span class="mf">5206243.353544</span><span class="p">,</span>
+                                                                               <span class="mf">840261.391107</span><span class="p">,</span> <span class="mf">5360639.504934</span><span class="p">]))</span></div>
+
+
+<div class="viewcode-block" id="TestMultiFault.test_return_patch_dic">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestMultiFault.test_return_patch_dic">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_return_patch_dic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIsInstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">multifault</span><span class="o">.</span><span class="n">patch_dic</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">RsqSimTriangularPatch</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TestMultiFault.test_return_faults_with_patches">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestMultiFault.test_return_faults_with_patches">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_return_faults_with_patches</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">faults_with_patches</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">multifault</span><span class="o">.</span><span class="n">faults_with_patches</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIsInstance</span><span class="p">(</span><span class="n">faults_with_patches</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">RsqSimSegment</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">faults_with_patches</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">multifault</span><span class="o">.</span><span class="n">faults</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="TestMultiFault.test_filter_faults_by_patch_numbers">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestMultiFault.test_filter_faults_by_patch_numbers">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_filter_faults_by_patch_numbers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">multifault</span><span class="o">.</span><span class="n">filter_faults_by_patch_numbers</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIsInstance</span><span class="p">(</span><span class="n">patch</span><span class="p">,</span> <span class="n">RsqSimMultiFault</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">patch</span><span class="o">.</span><span class="n">faults</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">multifault</span><span class="o">.</span><span class="n">faults</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">patch</span><span class="o">.</span><span class="n">faults</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TestMultiFault.test_read_bruce_fault_file">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestMultiFault.test_read_bruce_fault_file">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_read_bruce_fault_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">multifault</span> <span class="o">=</span> <span class="n">RsqSimMultiFault</span><span class="o">.</span><span class="n">read_fault_file_bruce</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span>
+                                                                        <span class="s2">&quot;data/test_fault_bruce.in&quot;</span><span class="p">),</span>
+                                                            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span>
+                                                            <span class="s2">&quot;data/test_names_bruce.in&quot;</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIsInstance</span><span class="p">(</span><span class="n">multifault</span><span class="p">,</span> <span class="n">RsqSimMultiFault</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIsInstance</span><span class="p">(</span><span class="n">multifault</span><span class="o">.</span><span class="n">faults</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">RsqSimSegment</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">multifault</span><span class="o">.</span><span class="n">faults</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="TestSegment">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestSegment">[docs]</a>
+<span class="k">class</span> <span class="nc">TestSegment</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+<div class="viewcode-block" id="TestSegment.setUp">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestSegment.setUp">[docs]</a>
+    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fault</span> <span class="o">=</span> <span class="n">RsqSimSegment</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span><span class="n">faults_in</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;test&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fault</span><span class="o">.</span><span class="n">strike_slip</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span> <span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">fault</span><span class="o">.</span><span class="n">patch_numbers</span><span class="o">.</span><span class="n">size</span><span class="p">,))</span></div>
+
+
+<div class="viewcode-block" id="TestSegment.test_return_vertices">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestSegment.test_return_vertices">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_return_vertices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fault</span><span class="o">.</span><span class="n">vertices</span><span class="o">.</span><span class="n">flat</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">test_vertices</span><span class="o">.</span><span class="n">flat</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="TestSegment.test_return_bounds">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestSegment.test_return_bounds">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_return_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fault</span><span class="o">.</span><span class="n">bounds</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span></div>
+
+
+<div class="viewcode-block" id="TestSegment.test_return_patch_outlines">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestSegment.test_return_patch_outlines">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_return_patch_outlines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">patch_outlines</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fault</span><span class="o">.</span><span class="n">patch_outlines</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">patch_outlines</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIsInstance</span><span class="p">(</span><span class="n">patch_outlines</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">RsqSimTriangularPatch</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TestSegment.test_return_patch_numbers">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestSegment.test_return_patch_numbers">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_return_patch_numbers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">patch_numbers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fault</span><span class="o">.</span><span class="n">patch_numbers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">patch_numbers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">patch_numbers</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TestSegment.test_return_patch_dic">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestSegment.test_return_patch_dic">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_return_patch_dic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIsInstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fault</span><span class="o">.</span><span class="n">patch_dic</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">RsqSimTriangularPatch</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TestSegment.test_return_patch_vertices">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestSegment.test_return_patch_vertices">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_return_patch_vertices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">patch_vertices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fault</span><span class="o">.</span><span class="n">patch_vertices</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">patch_vertices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">patch_vertices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flat</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">test_vertices</span><span class="o">.</span><span class="n">flat</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="TestSegment.test_return_edge_lines">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestSegment.test_return_edge_lines">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_return_edge_lines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fault</span><span class="o">.</span><span class="n">edge_lines</span><span class="p">,</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span></div>
+
+
+<div class="viewcode-block" id="TestSegment.test_return_triangles">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestSegment.test_return_triangles">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_return_triangles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fault</span><span class="o">.</span><span class="n">triangles</span><span class="p">,</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span></div>
+
+
+<div class="viewcode-block" id="TestSegment.test_dip_slip">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestSegment.test_dip_slip">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_dip_slip</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fault</span><span class="o">.</span><span class="n">patch_dic</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">patch</span><span class="o">.</span><span class="n">dip_slip</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TestSegment.test_strike_slip">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestSegment.test_strike_slip">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_strike_slip</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fault</span><span class="o">.</span><span class="n">patch_dic</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">patch</span><span class="o">.</span><span class="n">strike_slip</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TestSegment.test_total_slip">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestSegment.test_total_slip">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_total_slip</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fault</span><span class="o">.</span><span class="n">patch_dic</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">patch</span><span class="o">.</span><span class="n">total_slip</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TestSegment.test_find_triangles_from_vertex_index">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestSegment.test_find_triangles_from_vertex_index">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_find_triangles_from_vertex_index</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">triangle_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fault</span><span class="o">.</span><span class="n">find_triangles_from_vertex_index</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">triangle_index</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">triangle_index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIn</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fault</span><span class="o">.</span><span class="n">triangles</span><span class="p">[</span><span class="n">triangle_index</span><span class="p">])</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="TestTriangularPatch">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestTriangularPatch">[docs]</a>
+<span class="k">class</span> <span class="nc">TestTriangularPatch</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+<div class="viewcode-block" id="TestTriangularPatch.setUp">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestTriangularPatch.setUp">[docs]</a>
+    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">segment</span> <span class="o">=</span> <span class="n">RsqSimSegment</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">triangle</span> <span class="o">=</span> <span class="n">RsqSimTriangularPatch</span><span class="p">(</span><span class="n">segment</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">segment</span><span class="p">,</span> <span class="n">vertices</span><span class="o">=</span><span class="n">test_vertices</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TestTriangularPatch.test_return_vertices_shape">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestTriangularPatch.test_return_vertices_shape">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_return_vertices_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertSequenceEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="o">.</span><span class="n">vertices</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">test_vertices</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TestTriangularPatch.test_return_vertices">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestTriangularPatch.test_return_vertices">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_return_vertices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_almost_equal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="o">.</span><span class="n">vertices</span><span class="p">,</span> <span class="n">test_vertices</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TestTriangularPatch.test_normal_vector">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestTriangularPatch.test_normal_vector">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_normal_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_almost_equal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="o">.</span><span class="n">normal_vector</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">0.57735</span><span class="p">,</span> <span class="mf">0.57735</span><span class="p">,</span> <span class="mf">0.57735</span><span class="p">]))</span></div>
+
+
+<div class="viewcode-block" id="TestTriangularPatch.test_down_dip_vector">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestTriangularPatch.test_down_dip_vector">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_down_dip_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_almost_equal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="o">.</span><span class="n">down_dip_vector</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">0.408248</span><span class="p">,</span>  <span class="mf">0.408248</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.816497</span><span class="p">]))</span></div>
+
+
+<div class="viewcode-block" id="TestTriangularPatch.test_dip_magnitude">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestTriangularPatch.test_dip_magnitude">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_dip_magnitude</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="o">.</span><span class="n">dip</span><span class="p">,</span> <span class="mf">54.735610317245346</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TestTriangularPatch.test_along_strike_vector">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestTriangularPatch.test_along_strike_vector">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_along_strike_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_almost_equal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="o">.</span><span class="n">along_strike_vector</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">0.707107</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.707107</span><span class="p">,</span>  <span class="mf">0.</span>      <span class="p">]))</span></div>
+
+
+<div class="viewcode-block" id="TestTriangularPatch.test_centre">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestTriangularPatch.test_centre">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_centre</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_almost_equal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="o">.</span><span class="n">centre</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.333333</span><span class="p">,</span> <span class="mf">0.6666667</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.3333333</span><span class="p">]))</span></div>
+
+
+<div class="viewcode-block" id="TestTriangularPatch.test_area">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestTriangularPatch.test_area">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_area</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="o">.</span><span class="n">area</span><span class="p">,</span> <span class="mf">0.8660254</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TestTriangularPatch.test_strike">
+<a class="viewcode-back" href="../autoapi/test_fault/index.html#test_fault.TestTriangularPatch.test_strike">[docs]</a>
+    <span class="k">def</span> <span class="nf">test_strike</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="o">.</span><span class="n">strike</span><span class="p">,</span> <span class="mf">225.0</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

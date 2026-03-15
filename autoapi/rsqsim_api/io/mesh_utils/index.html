@@ -1,0 +1,308 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.io.mesh_utils &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="rsqsim_api.io.multiprocessing_utils" href="../multiprocessing_utils/index.html" />
+    <link rel="prev" title="rsqsim_api.io.compressed_pickle" href="../compressed_pickle/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">rsqsim_api</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../../catalogue/index.html">rsqsim_api.catalogue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../fault/index.html">rsqsim_api.fault</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../index.html">rsqsim_api.io</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../tsunami/index.html">rsqsim_api.tsunami</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../visualisation/index.html">rsqsim_api.visualisation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_fault/index.html">test_fault</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_catalogue/index.html">test_catalogue</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">rsqsim_api</a></li>
+          <li class="breadcrumb-item"><a href="../index.html">rsqsim_api.io</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.io.mesh_utils</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/io/mesh_utils/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.io.mesh_utils">
+<span id="rsqsim-api-io-mesh-utils"></span><h1>rsqsim_api.io.mesh_utils<a class="headerlink" href="#module-rsqsim_api.io.mesh_utils" title="Link to this heading"></a></h1>
+<p>Utilities for converting between triangulated mesh formats and NumPy arrays.</p>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.mesh_utils.expected_formats" title="rsqsim_api.io.mesh_utils.expected_formats"><code class="xref py py-obj docutils literal notranslate"><span class="pre">expected_formats</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.mesh_utils.change_mesh_format" title="rsqsim_api.io.mesh_utils.change_mesh_format"><code class="xref py py-obj docutils literal notranslate"><span class="pre">change_mesh_format</span></code></a>(in_mesh, out_format[, out_mesh])</p></td>
+<td><p>Convert a mesh file from one format to another.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.mesh_utils.mesh_to_array" title="rsqsim_api.io.mesh_utils.mesh_to_array"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mesh_to_array</span></code></a>(mesh)</p></td>
+<td><p>Convert a meshio Mesh to a flat NumPy triangle array.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.mesh_utils.convert_multi" title="rsqsim_api.io.mesh_utils.convert_multi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_multi</span></code></a>(search_string, out_format)</p></td>
+<td><p>Convert all mesh files matching a glob pattern to a target format.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.mesh_utils.array_to_mesh" title="rsqsim_api.io.mesh_utils.array_to_mesh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">array_to_mesh</span></code></a>(triangle_array)</p></td>
+<td><p>Convert a flat triangle array to a meshio Mesh object.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.mesh_utils.tri_slip_rake_to_mesh" title="rsqsim_api.io.mesh_utils.tri_slip_rake_to_mesh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tri_slip_rake_to_mesh</span></code></a>(in_array)</p></td>
+<td><p>Convert a triangle array with slip and rake columns to a meshio Mesh.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.mesh_utils.quads_to_vtk" title="rsqsim_api.io.mesh_utils.quads_to_vtk"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quads_to_vtk</span></code></a>(quads)</p></td>
+<td><p>Convert a list of quadrilateral patches to a meshio Mesh for VTK export.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.io.mesh_utils.expected_formats">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.mesh_utils.</span></span><span class="sig-name descname"><span class="pre">expected_formats</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['stl',</span> <span class="pre">'obj',</span> <span class="pre">'e',</span> <span class="pre">'txt']</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/mesh_utils.html#expected_formats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.mesh_utils.expected_formats" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.mesh_utils.change_mesh_format">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.mesh_utils.</span></span><span class="sig-name descname"><span class="pre">change_mesh_format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_format</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_mesh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/mesh_utils.html#change_mesh_format"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.mesh_utils.change_mesh_format" title="Link to this definition"></a></dt>
+<dd><p>Convert a mesh file from one format to another.</p>
+<p>Reads the input mesh with meshio and writes it in the requested output
+format.  If <code class="docutils literal notranslate"><span class="pre">out_format</span></code> is <code class="docutils literal notranslate"><span class="pre">&quot;txt&quot;</span></code>, the mesh is converted to a
+flat NumPy array and saved with <code class="docutils literal notranslate"><span class="pre">numpy.savetxt</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>in_mesh</strong> (<em>str</em>) – Path to the input mesh file (any format supported by meshio).</p></li>
+<li><p><strong>out_format</strong> (<em>str</em>) – Target format.  Must be one of <code class="docutils literal notranslate"><span class="pre">&quot;stl&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;obj&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;e&quot;</span></code>,
+or <code class="docutils literal notranslate"><span class="pre">&quot;txt&quot;</span></code>.</p></li>
+<li><p><strong>out_mesh</strong> (<em>str</em>) – Output file path.  If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the input file stem is reused
+with the new extension.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">in_mesh</span></code> does not exist or <code class="docutils literal notranslate"><span class="pre">out_format</span></code> is not in the
+allowed list.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.mesh_utils.mesh_to_array">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.mesh_utils.</span></span><span class="sig-name descname"><span class="pre">mesh_to_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/mesh_utils.html#mesh_to_array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.mesh_utils.mesh_to_array" title="Link to this definition"></a></dt>
+<dd><p>Convert a meshio Mesh to a flat NumPy triangle array.</p>
+<p>Expands the indexed triangle representation into a dense array where
+each row contains the (x, y, z) coordinates of all three corner
+vertices of one triangle.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mesh</strong> (<em>meshio.Mesh</em>) – meshio Mesh object containing at least one set of triangular cells.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Each row is <code class="docutils literal notranslate"><span class="pre">[x1,y1,z1,</span> <span class="pre">x2,y2,z2,</span> <span class="pre">x3,y3,z3]</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray of shape (n_triangles, 9)</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If the mesh contains no triangular cells.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.mesh_utils.convert_multi">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.mesh_utils.</span></span><span class="sig-name descname"><span class="pre">convert_multi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">search_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_format</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/mesh_utils.html#convert_multi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.mesh_utils.convert_multi" title="Link to this definition"></a></dt>
+<dd><p>Convert all mesh files matching a glob pattern to a target format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>search_string</strong> (<em>str</em>) – Glob pattern used to find input mesh files, e.g.
+<code class="docutils literal notranslate"><span class="pre">&quot;/path/to/meshes/*.stl&quot;</span></code>.</p></li>
+<li><p><strong>out_format</strong> (<em>str</em>) – Target format passed to <a class="reference internal" href="#rsqsim_api.io.mesh_utils.change_mesh_format" title="rsqsim_api.io.mesh_utils.change_mesh_format"><code class="xref py py-func docutils literal notranslate"><span class="pre">change_mesh_format()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If no files match <code class="docutils literal notranslate"><span class="pre">search_string</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.mesh_utils.array_to_mesh">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.mesh_utils.</span></span><span class="sig-name descname"><span class="pre">array_to_mesh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">triangle_array</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/mesh_utils.html#array_to_mesh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.mesh_utils.array_to_mesh" title="Link to this definition"></a></dt>
+<dd><p>Convert a flat triangle array to a meshio Mesh object.</p>
+<p>Deduplicates the vertices across all triangles and builds an indexed
+meshio Mesh with a single set of triangular cells.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>triangle_array</strong> (<em>numpy.ndarray</em><em> of </em><em>shape</em><em> (</em><em>n_triangles</em><em>, </em><em>9</em><em>)</em>) – Each row contains the (x, y, z) coordinates of the three corner
+vertices of one triangle: <code class="docutils literal notranslate"><span class="pre">[x1,y1,z1,</span> <span class="pre">x2,y2,z2,</span> <span class="pre">x3,y3,z3]</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Mesh with unique <code class="docutils literal notranslate"><span class="pre">points</span></code> (shape <code class="docutils literal notranslate"><span class="pre">(n_unique_verts,</span> <span class="pre">3)</span></code>) and
+triangular cells referencing them by index.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>meshio.Mesh</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">triangle_array</span></code> does not have exactly 9 columns.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.mesh_utils.tri_slip_rake_to_mesh">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.mesh_utils.</span></span><span class="sig-name descname"><span class="pre">tri_slip_rake_to_mesh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_array</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/mesh_utils.html#tri_slip_rake_to_mesh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.mesh_utils.tri_slip_rake_to_mesh" title="Link to this definition"></a></dt>
+<dd><p>Convert a triangle array with slip and rake columns to a meshio Mesh.</p>
+<p>Builds a mesh from the first 9 columns (vertex coordinates) and
+attaches the slip rate and rake columns as cell data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>in_array</strong> (<em>numpy.ndarray</em><em> of </em><em>shape</em><em> (</em><em>n_triangles</em><em>, </em><em>11</em><em>)</em>) – Columns 0–8 are the (x,y,z) coordinates of the three triangle
+corners (as in <a class="reference internal" href="#rsqsim_api.io.mesh_utils.array_to_mesh" title="rsqsim_api.io.mesh_utils.array_to_mesh"><code class="xref py py-func docutils literal notranslate"><span class="pre">array_to_mesh()</span></code></a>).  Column 9 is slip rate
+in m/s and column 10 is rake in degrees.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Mesh with triangular cells and <code class="docutils literal notranslate"><span class="pre">cell_data</span></code> containing
+<code class="docutils literal notranslate"><span class="pre">&quot;slip_rate&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;rake&quot;</span></code> arrays.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>meshio.Mesh</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">in_array</span></code> does not have exactly 11 columns.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.mesh_utils.quads_to_vtk">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.mesh_utils.</span></span><span class="sig-name descname"><span class="pre">quads_to_vtk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quads</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/mesh_utils.html#quads_to_vtk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.mesh_utils.quads_to_vtk" title="Link to this definition"></a></dt>
+<dd><p>Convert a list of quadrilateral patches to a meshio Mesh for VTK export.</p>
+<p>Deduplicates vertices across all quads and builds an indexed meshio
+Mesh with quad cells.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>quads</strong> – Iterable of quadrilateral patches.  Each element should be an
+array-like of shape (4, 3) giving the four corner (x, y, z)
+coordinates in NZTM (metres).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Mesh with unique <code class="docutils literal notranslate"><span class="pre">points</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;quad&quot;</span></code> cells.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>meshio.Mesh</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../compressed_pickle/index.html" class="btn btn-neutral float-left" title="rsqsim_api.io.compressed_pickle" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../multiprocessing_utils/index.html" class="btn btn-neutral float-right" title="rsqsim_api.io.multiprocessing_utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

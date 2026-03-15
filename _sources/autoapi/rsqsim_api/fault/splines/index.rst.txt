@@ -1,0 +1,98 @@
+rsqsim_api.fault.splines
+========================
+
+.. py:module:: rsqsim_api.fault.splines
+
+.. autoapi-nested-parse::
+
+   Spline utilities for constructing idealised slip distributions on fault patches.
+
+   Provides functions that build :class:`scipy.interpolate.UnivariateSpline`
+   objects encoding along-fault and depth-dependent slip profiles, suitable
+   for imposing prescribed slip distributions in RSQSim or other fault models.
+
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   rsqsim_api.fault.splines.fault_edge_spline
+   rsqsim_api.fault.splines.fault_depth_spline
+
+
+Module Contents
+---------------
+
+.. py:function:: fault_edge_spline(max_slip, distance_width, total_width, min_slip_fraction = 0.0, line_stop_fraction = 0.5, gradient_change = 1.2, spline_k = 3, spline_s = 0.0, resolution = 10.0)
+
+   Build a univariate spline encoding slip as a function of along-fault distance.
+
+   Constructs an interpolated spline that ramps from a minimum slip
+   fraction at the fault edge up to the maximum slip, with a
+   piecewise-linear interpolant shaped by the supplied parameters.
+
+   :param max_slip: Maximum slip value (m or m/yr) at the centre of the fault.
+   :type max_slip: float
+   :param distance_width: Along-fault distance (m) at which ``max_slip`` is reached.
+   :type distance_width: float
+   :param total_width: Total along-fault width (m) of the spline domain.
+   :type total_width: float
+   :param min_slip_fraction: Fraction of ``max_slip`` at the fault edge (distance = 0).
+                             Defaults to 0.
+   :type min_slip_fraction: float, optional
+   :param line_stop_fraction: Fraction of ``distance_width`` at which the initial ramp
+                              levels off before the gradient change.  Defaults to 0.5.
+   :type line_stop_fraction: float, optional
+   :param gradient_change: Multiplicative factor applied to the intermediate y value to
+                           create a smooth overshoot before the final ramp.  Defaults to
+                           1.2.
+   :type gradient_change: float, optional
+   :param spline_k: Degree of the smoothing spline.  Defaults to 3 (cubic).
+   :type spline_k: int, optional
+   :param spline_s: Smoothing factor passed to
+                    :class:`~scipy.interpolate.UnivariateSpline`.  Defaults to
+                    0.0 (interpolating spline).
+   :type spline_s: float, optional
+   :param resolution: Sample spacing (m) used when building the x-axis for
+                      interpolation.  Defaults to 10.
+   :type resolution: float, optional
+
+   :returns: Spline object; call with an x array (metres from edge) to
+             evaluate the slip profile.
+   :rtype: scipy.interpolate.UnivariateSpline
+
+
+.. py:function:: fault_depth_spline(gradient_change_x, after_change_fract, resolution = 0.01, after_change_gradient = 1.2, spline_k = 3, spline_s = 0.0)
+
+   Build a univariate spline encoding normalised slip as a function of normalised depth.
+
+   Produces a spline on [0, 1] (normalised depth fraction) that is
+   approximately flat at 1 down to ``gradient_change_x``, then ramps
+   linearly to 0 at the base of the fault, with an optional gradient
+   overshoot controlled by ``after_change_gradient``.
+
+   :param gradient_change_x: Normalised depth (0–1) at which the gradient begins to change.
+   :type gradient_change_x: float
+   :param after_change_fract: Fraction of the remaining depth below ``gradient_change_x``
+                              over which the gradient change is applied.
+   :type after_change_fract: float
+   :param resolution: Sample spacing in normalised depth used when building the
+                      spline.  Defaults to 0.01.
+   :type resolution: float, optional
+   :param after_change_gradient: Multiplicative factor that controls the magnitude of the
+                                 gradient overshoot.  Defaults to 1.2.
+   :type after_change_gradient: float, optional
+   :param spline_k: Degree of the smoothing spline.  Defaults to 3 (cubic).
+   :type spline_k: int, optional
+   :param spline_s: Smoothing factor passed to
+                    :class:`~scipy.interpolate.UnivariateSpline`.  Defaults to
+                    0.0 (interpolating spline).
+   :type spline_s: float, optional
+
+   :returns: Spline object; call with a normalised-depth array to evaluate
+             the depth-dependent slip multiplier.
+   :rtype: scipy.interpolate.UnivariateSpline
+
+

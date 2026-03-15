@@ -1,0 +1,183 @@
+rsqsim_api.fault.slip
+=====================
+
+.. py:module:: rsqsim_api.fault.slip
+
+.. autoapi-nested-parse::
+
+   Hikurangi subduction zone slip-rate and coupling utilities.
+
+   Provides helper functions for computing along-trench distances,
+   coupling coefficients, and convergence rates for the Hikurangi margin,
+   as well as a general best-fit-plane routine.
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   rsqsim_api.fault.slip.transformer
+   rsqsim_api.fault.slip.trans_inv
+   rsqsim_api.fault.slip.east_cape
+   rsqsim_api.fault.slip.start_0_2
+   rsqsim_api.fault.slip.end_0_2
+   rsqsim_api.fault.slip.start_0_5
+   rsqsim_api.fault.slip.convergence_start
+   rsqsim_api.fault.slip.convergence_end
+   rsqsim_api.fault.slip.east_cape_dist
+   rsqsim_api.fault.slip.start_0_2_dist
+   rsqsim_api.fault.slip.end_0_2_dist
+   rsqsim_api.fault.slip.start_0_5_dist
+   rsqsim_api.fault.slip.convergence_start_dist
+   rsqsim_api.fault.slip.convergence_end_dist
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   rsqsim_api.fault.slip.fit_plane_to_points
+   rsqsim_api.fault.slip.point_dist
+   rsqsim_api.fault.slip.point_dist_nztm
+   rsqsim_api.fault.slip.coupling
+   rsqsim_api.fault.slip.convergence
+   rsqsim_api.fault.slip.convergence_dist
+   rsqsim_api.fault.slip.kermadec_slip_rate
+
+
+Module Contents
+---------------
+
+.. py:data:: transformer
+
+.. py:data:: trans_inv
+
+.. py:function:: fit_plane_to_points(points, eps = 1e-05)
+
+   Fit a best-fit plane to a set of 3-D points using SVD.
+
+   The plane is constrained to pass through the centroid of the
+   point cloud.  The normal is extracted from the last column of the
+   left singular matrix of the de-meaned covariance and is oriented
+   so that its z-component is positive.
+
+   :param points: Array of 3-D point coordinates.
+   :type points: numpy.ndarray of shape (n, 3)
+   :param eps: Threshold below which normal-vector components are set to
+               exactly zero.  Defaults to 1e-5.
+   :type eps: float, optional
+
+   :returns: * **plane_normal** (*numpy.ndarray of shape (3,)*) -- Unit normal vector to the best-fit plane (A, B, C).
+             * **plane_origin** (*numpy.ndarray of shape (3,)*) -- Centroid of the input points, lying on the fitted plane.
+
+
+.. py:data:: east_cape
+
+.. py:data:: start_0_2
+
+.. py:data:: end_0_2
+
+.. py:data:: start_0_5
+
+.. py:data:: convergence_start
+
+.. py:data:: convergence_end
+
+.. py:function:: point_dist(point, along_overall)
+
+   Project a WGS84 point onto an NZTM direction vector.
+
+   Transforms the point to NZTM (EPSG:2193) and computes its dot
+   product with the supplied unit direction vector.
+
+   :param point: Point in WGS84 (longitude, latitude) coordinates.
+   :type point: shapely.geometry.Point
+   :param along_overall: 2-D unit direction vector in NZTM coordinates.
+   :type along_overall: numpy.ndarray of shape (2,)
+
+   :returns: Scalar projection of the transformed point onto
+             ``along_overall``.
+   :rtype: float
+
+
+.. py:function:: point_dist_nztm(point, along_overall)
+
+   Project an NZTM point onto a direction vector.
+
+   :param point: Point already in NZTM (EPSG:2193) coordinates.
+   :type point: shapely.geometry.Point
+   :param along_overall: 2-D unit direction vector.
+   :type along_overall: numpy.ndarray of shape (2,)
+
+   :returns: Scalar projection of the point onto ``along_overall``.
+   :rtype: float
+
+
+.. py:data:: east_cape_dist
+
+.. py:data:: start_0_2_dist
+
+.. py:data:: end_0_2_dist
+
+.. py:data:: start_0_5_dist
+
+.. py:data:: convergence_start_dist
+
+.. py:data:: convergence_end_dist
+
+.. py:function:: coupling(dist)
+
+   Return the Hikurangi plate-interface coupling coefficient at a given along-trench distance.
+
+   Implements a piecewise model: 0.2 south of ``start_0_2``, 0.5
+   north of ``start_0_5``, and a linear gradient in between.
+
+   :param dist: Along-trench distance (m in NZTM projection) from east cape.
+   :type dist: float
+
+   :returns: Coupling coefficient (dimensionless, 0–1).
+   :rtype: float
+
+   :raises AssertionError: If ``dist`` is south of east cape (i.e. less than
+       ``east_cape_dist``).
+
+
+.. py:function:: convergence(dist)
+
+   Return the Hikurangi convergence rate at a given along-trench distance.
+
+   Linear interpolation between 49 mm/yr at the southern end
+   (``convergence_start``) and 85 mm/yr at the northern end
+   (``convergence_end``).
+
+   :param dist: Along-trench distance (m in NZTM projection).
+   :type dist: float
+
+   :returns: Convergence rate in mm/yr.
+   :rtype: float
+
+
+.. py:function:: convergence_dist(dist)
+
+.. py:function:: kermadec_slip_rate(dist, modelled_value = 0.0)
+
+   Compute the Kermadec subduction zone slip rate at a given along-trench distance.
+
+   Blends the modelled slip rate with the convergence-rate-based
+   estimate using a linear fractional interpolation from east cape to
+   the 0.2-coupling start point.  If ``modelled_value`` is zero,
+   returns the pure convergence × coupling estimate.
+
+   :param dist: Along-trench distance (m in NZTM projection).
+   :type dist: float
+   :param modelled_value: Modelled slip rate (mm/yr) from the fault model.  If 0
+                          (default), only coupling × convergence is used.
+   :type modelled_value: float, optional
+
+   :returns: Slip rate in mm/yr.
+   :rtype: float
+
+

@@ -1,0 +1,807 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.fault.utilities &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.fault.utilities</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for rsqsim_api.fault.utilities</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Geometric utility functions for fault-trace analysis and manipulation.</span>
+
+<span class="sd">Provides bearing arithmetic, line operations (strike, dip direction,</span>
+<span class="sd">reversal, smoothing), and helpers for merging nearly-adjacent</span>
+<span class="sd">:class:`~shapely.geometry.LineString` segments into single traces.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">os.path</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">LineString</span><span class="p">,</span> <span class="n">MultiLineString</span>
+<span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
+<span class="kn">import</span> <span class="nn">difflib</span>
+
+
+<div class="viewcode-block" id="smallest_difference">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/utilities/index.html#rsqsim_api.fault.utilities.smallest_difference">[docs]</a>
+<span class="k">def</span> <span class="nf">smallest_difference</span><span class="p">(</span><span class="n">value1</span><span class="p">,</span> <span class="n">value2</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the smallest angular difference between two bearings.</span>
+
+<span class="sd">    Accounts for the circular nature of bearings so that, for example,</span>
+<span class="sd">    the difference between 350° and 10° is 20° rather than 340°.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    value1 : float or int</span>
+<span class="sd">        First bearing in degrees.</span>
+<span class="sd">    value2 : float or int</span>
+<span class="sd">        Second bearing in degrees.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Smallest non-negative angular difference in degrees (0–180).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">abs_diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">value1</span> <span class="o">-</span> <span class="n">value2</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">abs_diff</span> <span class="o">&gt;</span> <span class="mi">180</span><span class="p">:</span>
+        <span class="n">smallest_diff</span> <span class="o">=</span> <span class="mi">360</span> <span class="o">-</span> <span class="n">abs_diff</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">smallest_diff</span> <span class="o">=</span> <span class="n">abs_diff</span>
+
+    <span class="k">return</span> <span class="n">smallest_diff</span></div>
+
+
+
+<div class="viewcode-block" id="normalize_bearing">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/utilities/index.html#rsqsim_api.fault.utilities.normalize_bearing">[docs]</a>
+<span class="k">def</span> <span class="nf">normalize_bearing</span><span class="p">(</span><span class="n">bearing</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Normalise a bearing to the range [0, 360).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    bearing : float or int</span>
+<span class="sd">        Input bearing in degrees (any value).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Equivalent bearing in the range [0, 360).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">while</span> <span class="n">bearing</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">bearing</span> <span class="o">+=</span> <span class="mf">360.</span>
+
+    <span class="k">while</span> <span class="n">bearing</span> <span class="o">&gt;=</span> <span class="mf">360.</span><span class="p">:</span>
+        <span class="n">bearing</span> <span class="o">-=</span> <span class="mf">360.</span>
+
+    <span class="k">return</span> <span class="n">bearing</span></div>
+
+
+
+<div class="viewcode-block" id="bearing_leq">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/utilities/index.html#rsqsim_api.fault.utilities.bearing_leq">[docs]</a>
+<span class="k">def</span> <span class="nf">bearing_leq</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">benchmark</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check whether a bearing is anticlockwise of (less than) another bearing.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    value : int or float</span>
+<span class="sd">        The bearing to test, in degrees.</span>
+<span class="sd">    benchmark : int or float</span>
+<span class="sd">        The reference bearing, in degrees.</span>
+<span class="sd">    tolerance : int or float, optional</span>
+<span class="sd">        Angular tolerance in degrees to account for rounding.</span>
+<span class="sd">        Defaults to 0.1.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        ``True`` if ``value`` is strictly anticlockwise of</span>
+<span class="sd">        ``benchmark`` (i.e. less than, within ``tolerance``).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">smallest_diff</span> <span class="o">=</span> <span class="n">smallest_difference</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">benchmark</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">smallest_diff</span> <span class="o">&gt;</span> <span class="n">tolerance</span><span class="p">:</span>
+        <span class="n">compare_value</span> <span class="o">=</span> <span class="n">normalize_bearing</span><span class="p">(</span><span class="n">value</span> <span class="o">+</span> <span class="n">smallest_diff</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">abs</span><span class="p">(</span><span class="n">compare_value</span> <span class="o">-</span> <span class="n">normalize_bearing</span><span class="p">(</span><span class="n">benchmark</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">tolerance</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+
+<div class="viewcode-block" id="bearing_geq">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/utilities/index.html#rsqsim_api.fault.utilities.bearing_geq">[docs]</a>
+<span class="k">def</span> <span class="nf">bearing_geq</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">benchmark</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check whether a bearing is clockwise of (greater than) another bearing.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    value : int or float</span>
+<span class="sd">        The bearing to test, in degrees.</span>
+<span class="sd">    benchmark : int or float</span>
+<span class="sd">        The reference bearing, in degrees.</span>
+<span class="sd">    tolerance : int or float, optional</span>
+<span class="sd">        Angular tolerance in degrees to account for rounding.</span>
+<span class="sd">        Defaults to 0.1.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        ``True`` if ``value`` is strictly clockwise of ``benchmark``</span>
+<span class="sd">        (i.e. greater than, within ``tolerance``).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">smallest_diff</span> <span class="o">=</span> <span class="n">smallest_difference</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">benchmark</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">smallest_diff</span> <span class="o">&gt;</span> <span class="n">tolerance</span><span class="p">:</span>
+        <span class="n">compare_value</span> <span class="o">=</span> <span class="n">normalize_bearing</span><span class="p">(</span><span class="n">value</span> <span class="o">-</span> <span class="n">smallest_diff</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">abs</span><span class="p">(</span><span class="n">compare_value</span> <span class="o">-</span> <span class="n">normalize_bearing</span><span class="p">(</span><span class="n">benchmark</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">tolerance</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+
+<div class="viewcode-block" id="reverse_bearing">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/utilities/index.html#rsqsim_api.fault.utilities.reverse_bearing">[docs]</a>
+<span class="k">def</span> <span class="nf">reverse_bearing</span><span class="p">(</span><span class="n">bearing</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the bearing 180° opposite to the supplied bearing.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    bearing : int or float</span>
+<span class="sd">        Input bearing in degrees; must be in [0, 360].</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Reversed bearing in the range [0, 360).</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``bearing`` is not a float or int, or is outside [0, 360].</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bearing</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="mf">0.</span> <span class="o">&lt;=</span> <span class="n">bearing</span> <span class="o">&lt;=</span> <span class="mf">360.</span>
+    <span class="n">new_bearing</span> <span class="o">=</span> <span class="n">bearing</span> <span class="o">+</span> <span class="mf">180.</span>
+
+    <span class="c1"># Ensure strike is between zero and 360 (bearing)</span>
+    <span class="k">return</span> <span class="n">normalize_bearing</span><span class="p">(</span><span class="n">new_bearing</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="reverse_line">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/utilities/index.html#rsqsim_api.fault.utilities.reverse_line">[docs]</a>
+<span class="k">def</span> <span class="nf">reverse_line</span><span class="p">(</span><span class="n">line</span><span class="p">:</span> <span class="n">LineString</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reverse the vertex order of a :class:`~shapely.geometry.LineString`.</span>
+
+<span class="sd">    Works with both 2-D and 3-D (has_z) lines.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    line : shapely.geometry.LineString</span>
+<span class="sd">        Input line to reverse.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    shapely.geometry.LineString</span>
+<span class="sd">        New line with vertices in the opposite order.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``line`` is not a :class:`~shapely.geometry.LineString`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">LineString</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">has_z</span><span class="p">:</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">x_back</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">y_back</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">has_z</span><span class="p">:</span>
+        <span class="n">z_back</span> <span class="o">=</span> <span class="n">z</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">new_line</span> <span class="o">=</span> <span class="n">LineString</span><span class="p">([[</span><span class="n">xi</span><span class="p">,</span> <span class="n">yi</span><span class="p">,</span> <span class="n">zi</span><span class="p">]</span> <span class="k">for</span> <span class="n">xi</span><span class="p">,</span> <span class="n">yi</span><span class="p">,</span> <span class="n">zi</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">x_back</span><span class="p">,</span> <span class="n">y_back</span><span class="p">,</span> <span class="n">z_back</span><span class="p">)])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">new_line</span> <span class="o">=</span> <span class="n">LineString</span><span class="p">([[</span><span class="n">xi</span><span class="p">,</span> <span class="n">yi</span><span class="p">]</span> <span class="k">for</span> <span class="n">xi</span><span class="p">,</span> <span class="n">yi</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">x_back</span><span class="p">,</span> <span class="n">y_back</span><span class="p">)])</span>
+    <span class="k">return</span> <span class="n">new_line</span></div>
+
+
+<div class="viewcode-block" id="fit_2d_line">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/utilities/index.html#rsqsim_api.fault.utilities.fit_2d_line">[docs]</a>
+<span class="k">def</span> <span class="nf">fit_2d_line</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fit a straight line to a 2-D point cloud and return the dip angle.</span>
+
+<span class="sd">    Fits both ``y = f(x)`` and ``x = g(y)`` and selects whichever has</span>
+<span class="sd">    the smaller residual, then converts the gradient to a dip angle.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : numpy.ndarray</span>
+<span class="sd">        x-coordinates of the points.</span>
+<span class="sd">    y : numpy.ndarray</span>
+<span class="sd">        y-coordinates of the points.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Dip angle in degrees measured from the horizontal.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If either ``x`` or ``y`` is not a :class:`numpy.ndarray`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+
+    <span class="n">px</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">gradient_x</span> <span class="o">=</span> <span class="n">px</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">px</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="n">res_x</span> <span class="o">=</span> <span class="n">px</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">res_x</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">py</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">gradient_y</span> <span class="o">=</span> <span class="n">py</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">py</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="n">res_y</span> <span class="o">=</span> <span class="n">py</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">res_y</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">if</span> <span class="n">res_x</span> <span class="o">&lt;=</span> <span class="n">res_y</span><span class="p">:</span>
+        <span class="n">dip_angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">gradient_x</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dip_angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">gradient_y</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">dip_angle</span></div>
+
+
+
+<div class="viewcode-block" id="calculate_dip_direction">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/utilities/index.html#rsqsim_api.fault.utilities.calculate_dip_direction">[docs]</a>
+<span class="k">def</span> <span class="nf">calculate_dip_direction</span><span class="p">(</span><span class="n">line</span><span class="p">:</span> <span class="n">LineString</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the dip direction of a fault-trace LineString in NZTM.</span>
+
+<span class="sd">    Computes the strike of the line (best-fit gradient) and adds 90° to</span>
+<span class="sd">    obtain the dip direction.  The sign is chosen so that the dip</span>
+<span class="sd">    direction is consistent with the majority of vertices being to the</span>
+<span class="sd">    right of the strike vector.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    line : shapely.geometry.LineString or MultiLineString</span>
+<span class="sd">        Fault-surface trace in NZTM (EPSG:2193) coordinates.</span>
+<span class="sd">        A :class:`~shapely.geometry.MultiLineString` is first merged</span>
+<span class="sd">        into a single line.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Dip direction in degrees, range [0, 360).</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``line`` is not a LineString or MultiLineString.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="p">(</span><span class="n">LineString</span><span class="p">,</span> <span class="n">MultiLineString</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">MultiLineString</span><span class="p">):</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">merge_multiple_nearly_adjacent_segments</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">geoms</span><span class="p">))</span>
+    <span class="c1"># Get coordinates</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">xy</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="c1"># Calculate gradient of line in 2D</span>
+    <span class="n">px</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">gradient_x</span> <span class="o">=</span> <span class="n">px</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">px</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="n">res_x</span> <span class="o">=</span> <span class="n">px</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">res_x</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">py</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">gradient_y</span> <span class="o">=</span> <span class="n">py</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">py</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="n">res_y</span> <span class="o">=</span> <span class="n">py</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">res_y</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">if</span> <span class="n">res_x</span> <span class="o">&lt;=</span> <span class="n">res_y</span><span class="p">:</span>
+        <span class="c1"># Gradient to bearing</span>
+        <span class="n">bearing</span> <span class="o">=</span> <span class="mi">180</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">gradient_x</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">bearing</span> <span class="o">=</span> <span class="mi">180</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">gradient_y</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">strike</span> <span class="o">=</span> <span class="n">normalize_bearing</span><span class="p">(</span><span class="n">bearing</span> <span class="o">-</span> <span class="mf">90.</span><span class="p">)</span>
+    <span class="n">strike_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">strike</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">strike</span><span class="p">))])</span>
+
+    <span class="c1"># Determine whether line object fits strike convention</span>
+    <span class="n">relative_x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">relative_y</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">relative_x</span><span class="p">,</span> <span class="n">relative_y</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">strike_vector</span><span class="p">)</span>
+    <span class="n">num_pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">distances</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">num_neg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">distances</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">num_neg</span> <span class="o">&gt;</span> <span class="n">num_pos</span><span class="p">:</span>
+        <span class="n">bearing</span> <span class="o">+=</span> <span class="mf">180.</span>
+
+    <span class="n">dip_direction</span> <span class="o">=</span> <span class="n">bearing</span>
+    <span class="c1"># Ensure strike is between zero and 360 (bearing)</span>
+    <span class="k">while</span> <span class="n">dip_direction</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">dip_direction</span> <span class="o">+=</span> <span class="mf">360.</span>
+
+    <span class="k">while</span> <span class="n">dip_direction</span> <span class="o">&gt;=</span> <span class="mf">360.</span><span class="p">:</span>
+        <span class="n">dip_direction</span> <span class="o">-=</span> <span class="mf">360.</span>
+
+    <span class="k">return</span> <span class="n">dip_direction</span></div>
+
+
+<div class="viewcode-block" id="calculate_strike">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/utilities/index.html#rsqsim_api.fault.utilities.calculate_strike">[docs]</a>
+<span class="k">def</span> <span class="nf">calculate_strike</span><span class="p">(</span><span class="n">line</span><span class="p">:</span> <span class="n">LineString</span><span class="p">,</span> <span class="n">lt180</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the strike of a fault-trace LineString in NZTM.</span>
+
+<span class="sd">    Fits a best-fit gradient to the trace coordinates and converts it</span>
+<span class="sd">    to an azimuthal strike.  When ``lt180`` is ``True`` the result is</span>
+<span class="sd">    reduced to the half-circle convention [0, 180).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    line : shapely.geometry.LineString or MultiLineString</span>
+<span class="sd">        Fault-surface trace in NZTM (EPSG:2193) coordinates.</span>
+<span class="sd">        A :class:`~shapely.geometry.MultiLineString` is first merged</span>
+<span class="sd">        into a single line.</span>
+<span class="sd">    lt180 : bool, optional</span>
+<span class="sd">        If ``True``, return a strike in [0, 180) instead of [0, 360).</span>
+<span class="sd">        Defaults to ``False``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Strike in degrees.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``line`` is not a LineString or MultiLineString.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="p">(</span><span class="n">LineString</span><span class="p">,</span> <span class="n">MultiLineString</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">MultiLineString</span><span class="p">):</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">merge_multiple_nearly_adjacent_segments</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">geoms</span><span class="p">))</span>
+    <span class="c1"># Get coordinates</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">xy</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">y</span><span class="o">==</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="n">bearing</span> <span class="o">=</span> <span class="mf">180.</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="n">x</span><span class="o">==</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="n">bearing</span> <span class="o">=</span> <span class="mf">90.</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Calculate gradient of line in 2D</span>
+        <span class="n">px</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">gradient_x</span> <span class="o">=</span> <span class="n">px</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">px</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">res_x</span> <span class="o">=</span> <span class="n">px</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">res_x</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+        <span class="n">py</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">gradient_y</span> <span class="o">=</span> <span class="n">py</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">py</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">res_y</span> <span class="o">=</span> <span class="n">py</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">res_y</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">res_x</span> <span class="o">&lt;=</span> <span class="n">res_y</span><span class="p">:</span>
+            <span class="c1"># Gradient to bearing</span>
+            <span class="n">bearing</span> <span class="o">=</span> <span class="mi">180</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">gradient_x</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">bearing</span> <span class="o">=</span> <span class="mi">180</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">gradient_y</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">strike</span> <span class="o">=</span> <span class="n">normalize_bearing</span><span class="p">(</span><span class="n">bearing</span> <span class="o">-</span> <span class="mf">90.</span><span class="p">)</span>
+
+    <span class="c1"># Ensure strike is between zero and 360 (bearing)</span>
+    <span class="k">while</span> <span class="n">strike</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">strike</span> <span class="o">+=</span> <span class="mf">360.</span>
+
+    <span class="k">while</span> <span class="n">strike</span> <span class="o">&gt;=</span> <span class="mf">360.</span><span class="p">:</span>
+        <span class="n">strike</span> <span class="o">-=</span> <span class="mf">360.</span>
+
+    <span class="k">if</span> <span class="n">lt180</span><span class="p">:</span>
+        <span class="k">while</span> <span class="n">strike</span> <span class="o">&gt;=</span> <span class="mf">180.</span><span class="p">:</span>
+            <span class="n">strike</span> <span class="o">-=</span> <span class="mf">180.</span>
+
+        <span class="k">while</span> <span class="n">strike</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">strike</span> <span class="o">+=</span> <span class="mf">180.</span>
+
+    <span class="k">return</span> <span class="n">strike</span></div>
+
+
+
+<div class="viewcode-block" id="optimize_point_spacing">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/utilities/index.html#rsqsim_api.fault.utilities.optimize_point_spacing">[docs]</a>
+<span class="k">def</span> <span class="nf">optimize_point_spacing</span><span class="p">(</span><span class="n">line</span><span class="p">:</span> <span class="n">LineString</span><span class="p">,</span> <span class="n">spacing</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Re-sample a LineString to approximately uniform point spacing.</span>
+
+<span class="sd">    Interpolates ``num_points`` centre-points along the line, where</span>
+<span class="sd">    ``num_points`` is chosen to match ``spacing`` as closely as</span>
+<span class="sd">    possible.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    line : shapely.geometry.LineString or MultiLineString</span>
+<span class="sd">        Input line.  A :class:`~shapely.geometry.MultiLineString` is</span>
+<span class="sd">        first merged into a single line.</span>
+<span class="sd">    spacing : float</span>
+<span class="sd">        Target point spacing in the same units as the line coordinates</span>
+<span class="sd">        (metres for NZTM).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    centre_points : list of shapely.geometry.Point</span>
+<span class="sd">        Resampled centre points along the line.</span>
+<span class="sd">    new_width : float</span>
+<span class="sd">        Actual spacing used (line length / number of points).</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``line`` is not a LineString or MultiLineString, or if</span>
+<span class="sd">        ``spacing`` is not a positive float.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="p">(</span><span class="n">LineString</span><span class="p">,</span> <span class="n">MultiLineString</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">MultiLineString</span><span class="p">):</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">merge_multiple_nearly_adjacent_segments</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">geoms</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spacing</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">spacing</span> <span class="o">&gt;</span> <span class="mf">0.</span>
+    <span class="n">line_length</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">length</span>
+    <span class="n">num_points</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">line_length</span> <span class="o">/</span> <span class="n">spacing</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">num_points</span> <span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">num_points</span><span class="o">=</span><span class="mi">1</span>
+    <span class="n">new_width</span> <span class="o">=</span> <span class="n">line_length</span> <span class="o">/</span> <span class="n">num_points</span>
+    <span class="n">centre_points</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">interpolate</span><span class="p">((</span><span class="n">i</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">new_width</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_points</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">centre_points</span><span class="p">,</span> <span class="n">new_width</span></div>
+
+
+
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">LineString</span><span class="p">,</span> <span class="n">Point</span>
+<span class="kn">from</span> <span class="nn">shapely.ops</span> <span class="kn">import</span> <span class="n">linemerge</span>
+
+
+
+<div class="viewcode-block" id="chaikins_corner_cutting">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/utilities/index.html#rsqsim_api.fault.utilities.chaikins_corner_cutting">[docs]</a>
+<span class="k">def</span> <span class="nf">chaikins_corner_cutting</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">refinements</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Smooth a polyline using Chaikin&#39;s corner-cutting algorithm.</span>
+
+<span class="sd">    Each refinement pass replaces every edge with two new points at</span>
+<span class="sd">    the 1/4 and 3/4 positions, progressively rounding corners.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    coords : array-like of shape (n, 2) or (n, 3)</span>
+<span class="sd">        Coordinate array of the polyline vertices.</span>
+<span class="sd">    refinements : int, optional</span>
+<span class="sd">        Number of corner-cutting passes to apply.  Defaults to 5.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        Smoothed coordinate array with approximately</span>
+<span class="sd">        ``n * 2 ** refinements`` vertices.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">refinements</span><span class="p">):</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="n">coords</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+        <span class="n">R</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">R</span><span class="p">[</span><span class="mi">2</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">R</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span><span class="p">[</span><span class="mi">2</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">R</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">l</span> <span class="o">*</span> <span class="mf">0.75</span> <span class="o">+</span> <span class="n">R</span> <span class="o">*</span> <span class="mf">0.25</span>
+
+    <span class="k">return</span> <span class="n">coords</span></div>
+
+
+<div class="viewcode-block" id="smooth_trace">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/utilities/index.html#rsqsim_api.fault.utilities.smooth_trace">[docs]</a>
+<span class="k">def</span> <span class="nf">smooth_trace</span><span class="p">(</span><span class="n">trace</span><span class="p">:</span> <span class="n">LineString</span><span class="p">,</span> <span class="n">n_refinements</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Smooth a fault-trace LineString using Chaikin&#39;s corner-cutting algorithm.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    trace : shapely.geometry.LineString</span>
+<span class="sd">        Input trace to smooth.</span>
+<span class="sd">    n_refinements : int, optional</span>
+<span class="sd">        Number of corner-cutting passes.  Defaults to 5.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    shapely.geometry.LineString</span>
+<span class="sd">        Smoothed line with approximately</span>
+<span class="sd">        ``len(trace.coords) * 2 ** n_refinements`` vertices.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``trace`` is not a :class:`~shapely.geometry.LineString`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">LineString</span><span class="p">)</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">LineString</span><span class="p">(</span><span class="n">chaikins_corner_cutting</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">refinements</span><span class="o">=</span><span class="n">n_refinements</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="straighten">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/utilities/index.html#rsqsim_api.fault.utilities.straighten">[docs]</a>
+<span class="k">def</span> <span class="nf">straighten</span><span class="p">(</span><span class="n">line</span><span class="p">:</span> <span class="n">LineString</span><span class="p">,</span> <span class="n">strike</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">damping</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Straighten a 3-D line by damping its across-strike deviations.</span>
+
+<span class="sd">    Projects each vertex onto the along-strike and across-strike</span>
+<span class="sd">    directions, then reconstructs new positions with the across-strike</span>
+<span class="sd">    component multiplied by ``damping``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    line : shapely.geometry.LineString</span>
+<span class="sd">        Input 3-D line (z coordinate included in</span>
+<span class="sd">        :attr:`~shapely.geometry.LineString.coords`).</span>
+<span class="sd">    strike : float</span>
+<span class="sd">        Strike azimuth in degrees used to define the along/across</span>
+<span class="sd">        direction.</span>
+<span class="sd">    damping : float</span>
+<span class="sd">        Fractional weight applied to the across-strike displacement</span>
+<span class="sd">        (0 = fully straight, 1 = unchanged).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    shapely.geometry.LineString</span>
+<span class="sd">        New line with reduced across-strike curvature.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">strike_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">strike</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">strike</span><span class="p">)),</span> <span class="mf">0.</span><span class="p">])</span>
+    <span class="n">across_strike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">strike</span> <span class="o">+</span> <span class="mf">90.</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">strike</span> <span class="o">+</span> <span class="mf">90.</span><span class="p">)),</span> <span class="mf">0.</span><span class="p">])</span>
+    <span class="n">line_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+    <span class="n">centroid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">centroid</span><span class="p">)</span>
+
+    <span class="n">along_dists</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">line_array</span> <span class="o">-</span> <span class="n">centroid</span><span class="p">,</span> <span class="n">strike_vector</span><span class="p">)</span>
+    <span class="n">across_dists</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">line_array</span> <span class="o">-</span> <span class="n">centroid</span><span class="p">,</span> <span class="n">across_strike</span><span class="p">)</span>
+
+    <span class="n">new_locations</span> <span class="o">=</span> <span class="n">centroid</span> <span class="o">+</span> <span class="n">along_dists</span> <span class="o">+</span> <span class="n">damping</span> <span class="o">*</span> <span class="n">across_dists</span>
+
+    <span class="k">return</span> <span class="n">LineString</span><span class="p">(</span><span class="n">new_locations</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="align_two_nearly_adjacent_segments">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/utilities/index.html#rsqsim_api.fault.utilities.align_two_nearly_adjacent_segments">[docs]</a>
+<span class="k">def</span> <span class="nf">align_two_nearly_adjacent_segments</span><span class="p">(</span><span class="n">segment_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">LineString</span><span class="p">],</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">200.</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Snap the closest endpoints of two nearly-adjacent LineStrings to their midpoint.</span>
+
+<span class="sd">    Identifies which endpoints of the two segments are closest to each</span>
+<span class="sd">    other and replaces both with the midpoint, making the segments</span>
+<span class="sd">    exactly adjacent.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    segment_list : list of shapely.geometry.LineString</span>
+<span class="sd">        Exactly two line segments.</span>
+<span class="sd">    tolerance : float, optional</span>
+<span class="sd">        Maximum allowable distance (m) between the nearest endpoints</span>
+<span class="sd">        for the operation to be valid.  Defaults to 200.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    tuple of shapely.geometry.LineString</span>
+<span class="sd">        Two new segments with snapped endpoints.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``segment_list`` does not contain exactly 2 segments, or</span>
+<span class="sd">        if the distance between them exceeds ``tolerance``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">segment_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+    <span class="n">line1</span><span class="p">,</span> <span class="n">line2</span> <span class="o">=</span> <span class="n">segment_list</span>
+    <span class="k">assert</span> <span class="n">line1</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">line2</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">tolerance</span>
+
+    <span class="n">l1e1</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="n">line1</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">l1e2</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="n">line1</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">p1</span> <span class="o">=</span> <span class="n">l1e1</span> <span class="k">if</span> <span class="n">l1e1</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">line2</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">l1e2</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">line2</span><span class="p">)</span> <span class="k">else</span> <span class="n">l1e2</span>
+
+    <span class="n">l2e1</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="n">line2</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">l2e2</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="n">line2</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">p2</span> <span class="o">=</span> <span class="n">l2e1</span> <span class="k">if</span> <span class="n">l2e1</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">line1</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">l2e2</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">line1</span><span class="p">)</span> <span class="k">else</span> <span class="n">l2e2</span>
+
+    <span class="n">mid_point</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">p1</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">p2</span><span class="o">.</span><span class="n">coords</span><span class="p">))</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+
+    <span class="k">if</span> <span class="n">l1e1</span> <span class="o">==</span> <span class="n">p1</span><span class="p">:</span>
+        <span class="n">new_line1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mid_point</span><span class="o">.</span><span class="n">coords</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">line1</span><span class="o">.</span><span class="n">coords</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">new_line1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">line1</span><span class="o">.</span><span class="n">coords</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mid_point</span><span class="o">.</span><span class="n">coords</span><span class="p">)])</span>
+
+    <span class="k">if</span> <span class="n">l2e1</span> <span class="o">==</span> <span class="n">p2</span><span class="p">:</span>
+        <span class="n">new_line2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mid_point</span><span class="o">.</span><span class="n">coords</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">line2</span><span class="o">.</span><span class="n">coords</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">new_line2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">line2</span><span class="o">.</span><span class="n">coords</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mid_point</span><span class="o">.</span><span class="n">coords</span><span class="p">)])</span>
+
+    <span class="k">return</span> <span class="n">LineString</span><span class="p">(</span><span class="n">new_line1</span><span class="p">),</span> <span class="n">LineString</span><span class="p">(</span><span class="n">new_line2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="merge_two_nearly_adjacent_segments">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/utilities/index.html#rsqsim_api.fault.utilities.merge_two_nearly_adjacent_segments">[docs]</a>
+<span class="k">def</span> <span class="nf">merge_two_nearly_adjacent_segments</span><span class="p">(</span><span class="n">segment_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">LineString</span><span class="p">],</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">200.</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Merge two nearly-adjacent LineStrings into one by snapping their endpoints.</span>
+
+<span class="sd">    Calls :func:`align_two_nearly_adjacent_segments` to snap the</span>
+<span class="sd">    closest endpoints to their midpoint, then merges the result into a</span>
+<span class="sd">    single :class:`~shapely.geometry.LineString` with</span>
+<span class="sd">    :func:`~shapely.ops.linemerge`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    segment_list : list of shapely.geometry.LineString</span>
+<span class="sd">        Exactly two line segments.</span>
+<span class="sd">    tolerance : float, optional</span>
+<span class="sd">        Maximum allowable gap (m) between segments.  Defaults to 200.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    shapely.geometry.LineString</span>
+<span class="sd">        Merged single line.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">new_line1</span><span class="p">,</span> <span class="n">new_line2</span> <span class="o">=</span> <span class="n">align_two_nearly_adjacent_segments</span><span class="p">(</span><span class="n">segment_list</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">linemerge</span><span class="p">([</span><span class="n">new_line1</span><span class="p">,</span> <span class="n">new_line2</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="merge_multiple_nearly_adjacent_segments">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/utilities/index.html#rsqsim_api.fault.utilities.merge_multiple_nearly_adjacent_segments">[docs]</a>
+<span class="k">def</span> <span class="nf">merge_multiple_nearly_adjacent_segments</span><span class="p">(</span><span class="n">segment_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">LineString</span><span class="p">],</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">200.</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Iteratively merge a list of nearly-adjacent LineStrings into one.</span>
+
+<span class="sd">    Repeatedly merges the first two segments using</span>
+<span class="sd">    :func:`merge_two_nearly_adjacent_segments` until a single line</span>
+<span class="sd">    remains.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    segment_list : list of shapely.geometry.LineString</span>
+<span class="sd">        Two or more line segments to merge, ordered along the trace.</span>
+<span class="sd">    tolerance : float, optional</span>
+<span class="sd">        Maximum allowable gap (m) between consecutive segments.</span>
+<span class="sd">        Defaults to 200.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    shapely.geometry.LineString</span>
+<span class="sd">        Single merged line.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``segment_list`` contains fewer than 2 segments.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">segment_list</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">segment_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">merge_two_nearly_adjacent_segments</span><span class="p">(</span><span class="n">segment_list</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">segment_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">segment_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">merge_two_nearly_adjacent_segments</span><span class="p">(</span><span class="n">segment_list</span><span class="p">[:</span><span class="mi">2</span><span class="p">],</span> <span class="n">tolerance</span><span class="p">)]</span> <span class="o">+</span> <span class="n">segment_list</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="n">merge_two_nearly_adjacent_segments</span><span class="p">(</span><span class="n">segment_list</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

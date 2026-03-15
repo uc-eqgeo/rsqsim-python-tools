@@ -1,0 +1,1418 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.fault.patch &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.fault.patch</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for rsqsim_api.fault.patch</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">xml.etree.ElementTree</span> <span class="k">as</span> <span class="nn">ElemTree</span>
+<span class="kn">from</span> <span class="nn">xml.dom</span> <span class="kn">import</span> <span class="n">minidom</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">numba</span> <span class="kn">import</span> <span class="n">njit</span>
+<span class="kn">from</span> <span class="nn">pyproj</span> <span class="kn">import</span> <span class="n">Transformer</span>
+<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">Polygon</span>
+
+
+<div class="viewcode-block" id="transformer_utm2nztm">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.transformer_utm2nztm">[docs]</a>
+<span class="n">transformer_utm2nztm</span> <span class="o">=</span> <span class="n">Transformer</span><span class="o">.</span><span class="n">from_crs</span><span class="p">(</span><span class="mi">32759</span><span class="p">,</span> <span class="mi">2193</span><span class="p">,</span> <span class="n">always_xy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="transformer_nztm2wgs">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.transformer_nztm2wgs">[docs]</a>
+<span class="n">transformer_nztm2wgs</span> <span class="o">=</span> <span class="n">Transformer</span><span class="o">.</span><span class="n">from_crs</span><span class="p">(</span><span class="mi">2193</span><span class="p">,</span> <span class="mi">4326</span><span class="p">,</span> <span class="n">always_xy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="transformer_wgs2nztm">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.transformer_wgs2nztm">[docs]</a>
+<span class="n">transformer_wgs2nztm</span> <span class="o">=</span> <span class="n">Transformer</span><span class="o">.</span><span class="n">from_crs</span><span class="p">(</span><span class="mi">4326</span><span class="p">,</span> <span class="mi">2193</span><span class="p">,</span> <span class="n">always_xy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="anticlockwise90">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.anticlockwise90">[docs]</a>
+<span class="n">anticlockwise90</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span>
+                            <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span>
+                            <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">]])</span></div>
+
+
+
+<span class="nd">@njit</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="viewcode-block" id="norm_3d">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.norm_3d">[docs]</a>
+<span class="k">def</span> <span class="nf">norm_3d</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the Euclidean (2-norm) length of a 3-dimensional vector.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    a : array-like of shape (3,)</span>
+<span class="sd">        Input 3-component vector.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Scalar Euclidean norm of ``a``.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Compiled with ``numba.njit`` for performance inside tight loops.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">a</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span></div>
+
+
+
+<span class="nd">@njit</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="viewcode-block" id="cross_3d">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.cross_3d">[docs]</a>
+<span class="k">def</span> <span class="nf">cross_3d</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the cross product of two 3-dimensional vectors.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    a : array-like of shape (3,)</span>
+<span class="sd">        First input vector.</span>
+<span class="sd">    b : array-like of shape (3,)</span>
+<span class="sd">        Second input vector.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray of shape (3,)</span>
+<span class="sd">        Vector perpendicular to both ``a`` and ``b``, with magnitude</span>
+<span class="sd">        ``|a| * |b| * sin(theta)``, following the right-hand rule.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Compiled with ``numba.njit`` for performance inside tight loops.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="p">((</span><span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">-</span> <span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="p">((</span><span class="n">a</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="p">((</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="normalize_bearing">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.normalize_bearing">[docs]</a>
+<span class="k">def</span> <span class="nf">normalize_bearing</span><span class="p">(</span><span class="n">bearing</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrap a bearing value into the half-open interval [0, 360).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    bearing :</span>
+<span class="sd">        Input bearing in degrees.  May be any real number.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Equivalent bearing constrained to [0, 360).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">while</span> <span class="n">bearing</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">bearing</span> <span class="o">+=</span> <span class="mf">360.</span>
+
+    <span class="k">while</span> <span class="n">bearing</span> <span class="o">&gt;=</span> <span class="mf">360.</span><span class="p">:</span>
+        <span class="n">bearing</span> <span class="o">-=</span> <span class="mf">360.</span>
+
+    <span class="k">return</span> <span class="n">bearing</span></div>
+
+
+
+<span class="nd">@njit</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="viewcode-block" id="unit_vector">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.unit_vector">[docs]</a>
+<span class="k">def</span> <span class="nf">unit_vector</span><span class="p">(</span><span class="n">vec1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">vec2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the unit vector pointing from ``vec1`` to ``vec2``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vec1 : numpy.ndarray of shape (3,)</span>
+<span class="sd">        Origin point (tail of the vector).</span>
+<span class="sd">    vec2 : numpy.ndarray of shape (3,)</span>
+<span class="sd">        Destination point (head of the vector).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray of shape (3,)</span>
+<span class="sd">        Normalised direction vector from ``vec1`` to ``vec2``.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Compiled with ``numba.njit`` for performance inside tight loops.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">vec2</span> <span class="o">-</span> <span class="n">vec1</span><span class="p">)</span> <span class="o">/</span> <span class="n">norm_3d</span><span class="p">(</span><span class="n">vec2</span> <span class="o">-</span> <span class="n">vec1</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="RsqSimGenericPatch">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimGenericPatch">[docs]</a>
+<span class="k">class</span> <span class="nc">RsqSimGenericPatch</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class representing a single fault patch in an RSQSim fault model.</span>
+
+<span class="sd">    Stores patch identity, slip components, and the parent fault segment</span>
+<span class="sd">    reference.  Concrete subclasses add geometry (triangular, rectangular,</span>
+<span class="sd">    etc.).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    segment :</span>
+<span class="sd">        Parent fault segment object that owns this patch.</span>
+<span class="sd">    patch_number : int, optional</span>
+<span class="sd">        Zero-based integer index identifying the patch within its segment.</span>
+<span class="sd">        Defaults to 0.</span>
+<span class="sd">    dip_slip : float, optional</span>
+<span class="sd">        Dip-slip component of displacement in metres.  Positive values</span>
+<span class="sd">        indicate reverse/thrust motion.</span>
+<span class="sd">    strike_slip : float, optional</span>
+<span class="sd">        Strike-slip component of displacement in metres.  Positive values</span>
+<span class="sd">        indicate right-lateral motion.</span>
+<span class="sd">    rake : float, optional</span>
+<span class="sd">        Rake angle in degrees, measured from the along-strike direction</span>
+<span class="sd">        following the Aki &amp; Richards convention.  Stored normalised to</span>
+<span class="sd">        [0, 360).</span>
+<span class="sd">    total_slip : float, optional</span>
+<span class="sd">        Total slip magnitude in metres (unused by the base class but</span>
+<span class="sd">        accepted for interface consistency).</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    segment :</span>
+<span class="sd">        Reference to the parent fault segment.</span>
+<span class="sd">    patch_number : int</span>
+<span class="sd">        Non-negative integer patch index.</span>
+<span class="sd">    dip_slip : float or None</span>
+<span class="sd">        Dip-slip component in metres.</span>
+<span class="sd">    strike_slip : float or None</span>
+<span class="sd">        Strike-slip component in metres.</span>
+<span class="sd">    rake : float or None</span>
+<span class="sd">        Rake angle in degrees, normalised to [0, 360).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">segment</span><span class="p">,</span> <span class="n">patch_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="n">dip_slip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">strike_slip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">rake</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">total_slip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_patch_number</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_vertices</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dip_slip</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strike_slip</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rake</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="OpenQuakeRectangularPatch.segment">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.OpenQuakeRectangularPatch.segment">[docs]</a>
+<div class="viewcode-block" id="RsqSimTriangularPatch.segment">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.segment">[docs]</a>
+<div class="viewcode-block" id="RsqSimGenericPatch.segment">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimGenericPatch.segment">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">segment</span> <span class="o">=</span> <span class="n">segment</span></div>
+</div>
+</div>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">patch_number</span> <span class="o">=</span> <span class="n">patch_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dip_slip</span> <span class="o">=</span> <span class="n">dip_slip</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">strike_slip</span> <span class="o">=</span> <span class="n">strike_slip</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rake</span> <span class="o">=</span> <span class="n">rake</span>
+
+    <span class="c1"># Patch number is zero if not specified</span>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="OpenQuakeRectangularPatch.patch_number">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.OpenQuakeRectangularPatch.patch_number">[docs]</a>
+<div class="viewcode-block" id="RsqSimTriangularPatch.patch_number">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.patch_number">[docs]</a>
+<div class="viewcode-block" id="RsqSimGenericPatch.patch_number">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimGenericPatch.patch_number">[docs]</a>
+    <span class="k">def</span> <span class="nf">patch_number</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Non-negative integer index identifying this patch within its segment.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_patch_number</span></div>
+</div>
+</div>
+
+
+    <span class="nd">@patch_number</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">patch_number</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">patch_number</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the patch number after validating it is a non-negative integer.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        patch_number :</span>
+<span class="sd">            Non-negative integer patch index.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If ``patch_number`` is not an integer type or is negative.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">patch_number</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="nb">int</span><span class="p">)),</span> <span class="s2">&quot;Patch number must be an integer&quot;</span>
+        <span class="k">assert</span> <span class="n">patch_number</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;Must be greater than zero!&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_patch_number</span> <span class="o">=</span> <span class="n">patch_number</span>
+
+    <span class="c1"># I&#39;ve written dip slip and strike slip as properties, in case we want to implement checks on values later</span>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimGenericPatch.dip_slip">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimGenericPatch.dip_slip">[docs]</a>
+    <span class="k">def</span> <span class="nf">dip_slip</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Dip-slip displacement component in metres.</span>
+
+<span class="sd">        Setting this value also recomputes the rake if the strike-slip</span>
+<span class="sd">        component is already defined.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dip_slip</span></div>
+
+
+    <span class="nd">@dip_slip</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">dip_slip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slip</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Assign the dip-slip component and update rake if strike-slip is set.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        slip :</span>
+<span class="sd">            Dip-slip displacement in metres.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strike_slip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rake</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_rake</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_strike_slip</span><span class="p">,</span> <span class="n">slip</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dip_slip</span> <span class="o">=</span> <span class="n">slip</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimGenericPatch.strike_slip">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimGenericPatch.strike_slip">[docs]</a>
+    <span class="k">def</span> <span class="nf">strike_slip</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Strike-slip displacement component in metres.</span>
+
+<span class="sd">        Setting this value also recomputes the rake if the dip-slip</span>
+<span class="sd">        component is already defined.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strike_slip</span></div>
+
+
+    <span class="nd">@strike_slip</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">strike_slip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slip</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Assign the strike-slip component and update rake if dip-slip is set.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        slip :</span>
+<span class="sd">            Strike-slip displacement in metres.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dip_slip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rake</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_rake</span><span class="p">(</span><span class="n">slip</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dip_slip</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strike_slip</span> <span class="o">=</span> <span class="n">slip</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimGenericPatch.rake">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimGenericPatch.rake">[docs]</a>
+    <span class="k">def</span> <span class="nf">rake</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Rake angle in degrees, normalised to the interval [0, 360).</span>
+
+<span class="sd">        Setting this value calls :func:`normalize_bearing` automatically.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rake</span></div>
+
+
+    <span class="nd">@rake</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">rake</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rake_i</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Assign the rake angle, normalising it to [0, 360).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rake_i :</span>
+<span class="sd">            Rake angle in degrees.  Pass ``None`` to clear the rake.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">rake_i</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rake</span> <span class="o">=</span> <span class="n">normalize_bearing</span><span class="p">(</span><span class="n">rake_i</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rake</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimGenericPatch.vertices">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimGenericPatch.vertices">[docs]</a>
+    <span class="k">def</span> <span class="nf">vertices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Array of patch corner vertices in NZTM coordinates (metres).</span>
+
+<span class="sd">        Returns ``None`` until populated by a subclass setter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vertices</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimGenericPatch.total_slip">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimGenericPatch.total_slip">[docs]</a>
+    <span class="k">def</span> <span class="nf">total_slip</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Euclidean magnitude of the slip vector in metres.</span>
+
+<span class="sd">        Computed from ``strike_slip`` and ``dip_slip``; treats ``None``</span>
+<span class="sd">        components as zero.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strike_slip</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">strike_slip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mf">0.</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dip_slip</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dip_slip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mf">0.</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ss</span><span class="p">,</span> <span class="n">ds</span><span class="p">]))</span></div>
+
+
+<div class="viewcode-block" id="RsqSimGenericPatch.set_slip_rake">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimGenericPatch.set_slip_rake">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_slip_rake</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">total_slip</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">rake</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Decompose a total slip magnitude and rake into strike-slip and dip-slip.</span>
+
+<span class="sd">        Sets ``strike_slip``, ``dip_slip``, and ``rake`` on the patch</span>
+<span class="sd">        directly without triggering the cross-update logic in the individual</span>
+<span class="sd">        property setters.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        total_slip :</span>
+<span class="sd">            Total slip magnitude in metres.</span>
+<span class="sd">        rake :</span>
+<span class="sd">            Rake angle in degrees (stored normalised to [0, 360)).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rake</span> <span class="o">=</span> <span class="n">rake</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strike_slip</span> <span class="o">=</span> <span class="n">total_slip</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">rake</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dip_slip</span> <span class="o">=</span> <span class="n">total_slip</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">rake</span><span class="p">))</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="RsqSimGenericPatch.calculate_rake">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimGenericPatch.calculate_rake">[docs]</a>
+    <span class="k">def</span> <span class="nf">calculate_rake</span><span class="p">(</span><span class="n">strike_slip</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">dip_slip</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute rake from strike-slip and dip-slip components.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        strike_slip :</span>
+<span class="sd">            Strike-slip displacement component in metres.</span>
+<span class="sd">        dip_slip :</span>
+<span class="sd">            Dip-slip displacement component in metres.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        float</span>
+<span class="sd">            Rake angle in degrees, normalised to [0, 360) via</span>
+<span class="sd">            :func:`normalize_bearing`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">normalize_bearing</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">dip_slip</span><span class="p">,</span> <span class="n">strike_slip</span><span class="p">)))</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="RsqSimTriangularPatch">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch">[docs]</a>
+<span class="k">class</span> <span class="nc">RsqSimTriangularPatch</span><span class="p">(</span><span class="n">RsqSimGenericPatch</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A single triangular fault patch for use in RSQSim fault models.</span>
+
+<span class="sd">    Stores the three corner vertices and derives geometric quantities</span>
+<span class="sd">    (normal vector, down-dip vector, along-strike vector, dip, centre,</span>
+<span class="sd">    area) either from supplied ``patch_data`` or by computing them from</span>
+<span class="sd">    the vertices.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    segment :</span>
+<span class="sd">        Parent fault segment object that owns this patch.</span>
+<span class="sd">    vertices : list or numpy.ndarray or tuple</span>
+<span class="sd">        Array-like of shape (3, 3) giving the (x, y, z) coordinates of</span>
+<span class="sd">        the triangle corners in NZTM (metres).  If more than three rows</span>
+<span class="sd">        are supplied only the first three are used.</span>
+<span class="sd">    patch_number : int, optional</span>
+<span class="sd">        Zero-based integer index identifying the patch.  Defaults to 0.</span>
+<span class="sd">    dip_slip : float, optional</span>
+<span class="sd">        Dip-slip component of displacement in metres.</span>
+<span class="sd">    strike_slip : float, optional</span>
+<span class="sd">        Strike-slip component of displacement in metres.</span>
+<span class="sd">    patch_data : list or numpy.ndarray or tuple, optional</span>
+<span class="sd">        Pre-computed geometry sequence of the form</span>
+<span class="sd">        ``[normal_vector, down_dip_vector, dip, along_strike_vector,</span>
+<span class="sd">        centre, area]``.  When provided the geometric calculations are</span>
+<span class="sd">        skipped.</span>
+<span class="sd">    rake : float, optional</span>
+<span class="sd">        Rake angle in degrees.</span>
+<span class="sd">    total_slip : float, optional</span>
+<span class="sd">        Total slip magnitude in metres.  When provided, ``set_slip_rake``</span>
+<span class="sd">        is called using this value and the current rake.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    segment :</span>
+<span class="sd">        Reference to the parent fault segment.</span>
+<span class="sd">    patch_number : int</span>
+<span class="sd">        Non-negative integer patch index.</span>
+<span class="sd">    vertices : numpy.ndarray of shape (3, 3)</span>
+<span class="sd">        Triangle corner coordinates in NZTM (metres).</span>
+<span class="sd">    normal_vector : numpy.ndarray of shape (3,)</span>
+<span class="sd">        Unit normal vector of the patch pointing upward.</span>
+<span class="sd">    down_dip_vector : numpy.ndarray of shape (3,)</span>
+<span class="sd">        Vector pointing in the steepest down-dip direction.</span>
+<span class="sd">    along_strike_vector : numpy.ndarray of shape (3,)</span>
+<span class="sd">        Vector pointing along strike.</span>
+<span class="sd">    dip : float</span>
+<span class="sd">        Dip angle in degrees, measured from horizontal.</span>
+<span class="sd">    centre : numpy.ndarray of shape (3,)</span>
+<span class="sd">        Centroid of the triangle in NZTM (metres).</span>
+<span class="sd">    area : float</span>
+<span class="sd">        Area of the triangular patch in square metres.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">segment</span><span class="p">,</span> <span class="n">vertices</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">patch_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="n">dip_slip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">strike_slip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">patch_data</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">rake</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">total_slip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">RsqSimTriangularPatch</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">segment</span><span class="o">=</span><span class="n">segment</span><span class="p">,</span> <span class="n">patch_number</span><span class="o">=</span><span class="n">patch_number</span><span class="p">,</span>
+                                                    <span class="n">dip_slip</span><span class="o">=</span><span class="n">dip_slip</span><span class="p">,</span> <span class="n">strike_slip</span><span class="o">=</span><span class="n">strike_slip</span><span class="p">,</span> <span class="n">rake</span><span class="o">=</span><span class="n">rake</span><span class="p">)</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.vertices">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.vertices">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vertices</span> <span class="o">=</span> <span class="n">vertices</span></div>
+
+        <span class="k">if</span> <span class="n">patch_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_normal_vector</span> <span class="o">=</span> <span class="n">patch_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_down_dip_vector</span> <span class="o">=</span> <span class="n">patch_data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dip</span> <span class="o">=</span> <span class="n">patch_data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_along_strike_vector</span> <span class="o">=</span> <span class="n">patch_data</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_centre</span> <span class="o">=</span> <span class="n">patch_data</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_area</span> <span class="o">=</span> <span class="n">patch_data</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_normal_vector</span> <span class="o">=</span> <span class="n">RsqSimTriangularPatch</span><span class="o">.</span><span class="n">calculate_normal_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vertices</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_down_dip_vector</span> <span class="o">=</span> <span class="n">RsqSimTriangularPatch</span><span class="o">.</span><span class="n">calculate_down_dip_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">normal_vector</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dip</span> <span class="o">=</span> <span class="n">RsqSimTriangularPatch</span><span class="o">.</span><span class="n">calculate_dip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">down_dip_vector</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_along_strike_vector</span> <span class="o">=</span> <span class="n">RsqSimTriangularPatch</span><span class="o">.</span><span class="n">calculate_along_strike_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">normal_vector</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">down_dip_vector</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_centre</span> <span class="o">=</span> <span class="n">RsqSimTriangularPatch</span><span class="o">.</span><span class="n">calculate_centre</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vertices</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_area</span> <span class="o">=</span> <span class="n">RsqSimTriangularPatch</span><span class="o">.</span><span class="n">calculate_area</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vertices</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">total_slip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_slip_rake</span><span class="p">(</span><span class="n">total_slip</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rake</span><span class="p">)</span>
+
+    <span class="nd">@RsqSimGenericPatch</span><span class="o">.</span><span class="n">vertices</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">vertices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vertices</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Validate and store the triangle corner vertices.</span>
+
+<span class="sd">        Accepts an array-like with at least three rows of three (x, y, z)</span>
+<span class="sd">        coordinates in NZTM (metres).  Only the first three rows are</span>
+<span class="sd">        retained if more are provided.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        vertices :</span>
+<span class="sd">            Array-like of shape (N, 3) where N &gt;= 3.  Each row is an</span>
+<span class="sd">            (x, y, z) coordinate in NZTM (metres).</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If ``vertices`` cannot be converted to a float64 NumPy array.</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If the array is not 2-D, has fewer than 3 rows, or does not</span>
+<span class="sd">            have exactly 3 columns.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">vertex_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">vertices</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Error parsing vertices for </span><span class="si">{}</span><span class="s2">, patch </span><span class="si">{:d}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">segment</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_number</span><span class="p">))</span>
+
+        <span class="k">assert</span> <span class="n">vertex_array</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;2D array expected&quot;</span>
+        <span class="c1"># Check that at least 3 vertices supplied</span>
+        <span class="k">assert</span> <span class="n">vertex_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;At least 3 vertices (rows in array) expected&quot;</span>
+        <span class="k">assert</span> <span class="n">vertex_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;Three coordinates (x,y,z) expected for each vertex&quot;</span>
+
+        <span class="k">if</span> <span class="n">vertex_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">, patch </span><span class="si">{:d}</span><span class="s2">: more patches than expected&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">segment</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_number</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Taking first 3 vertices...&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_vertices</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="p">:]</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.vertices_lonlat">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.vertices_lonlat">[docs]</a>
+    <span class="k">def</span> <span class="nf">vertices_lonlat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Triangle corner coordinates transformed to WGS84 longitude/latitude.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray of shape (3, 3)</span>
+<span class="sd">            Columns are (longitude, latitude, depth) for each of the three</span>
+<span class="sd">            corners, in degrees (WGS84) and metres depth.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">transformer_nztm2wgs</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">vertices</span><span class="o">.</span><span class="n">T</span><span class="p">))</span><span class="o">.</span><span class="n">T</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.centre_lonlat">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.centre_lonlat">[docs]</a>
+    <span class="k">def</span> <span class="nf">centre_lonlat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Patch centroid transformed to WGS84 longitude/latitude.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray of shape (3,)</span>
+<span class="sd">            (longitude, latitude, depth) of the patch centroid, in degrees</span>
+<span class="sd">            (WGS84) and metres depth.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">transformer_nztm2wgs</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">centre</span><span class="o">.</span><span class="n">T</span><span class="p">))</span><span class="o">.</span><span class="n">T</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@njit</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.calculate_normal_vector">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.calculate_normal_vector">[docs]</a>
+    <span class="k">def</span> <span class="nf">calculate_normal_vector</span><span class="p">(</span><span class="n">vertices</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the upward-pointing unit normal vector of a triangular patch.</span>
+
+<span class="sd">        Uses the cross product of two edge vectors.  If the raw cross</span>
+<span class="sd">        product points downward its sign is flipped so that the normal</span>
+<span class="sd">        always has a positive z-component.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        vertices : numpy.ndarray of shape (3, 3)</span>
+<span class="sd">            Triangle corner coordinates (x, y, z) in any consistent</span>
+<span class="sd">            Cartesian coordinate system.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray of shape (3,)</span>
+<span class="sd">            Unit normal vector with non-negative z-component.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Compiled with ``numba.njit`` for performance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">vertices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">vertices</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">cross_a_b</span> <span class="o">=</span> <span class="n">cross_3d</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+        <span class="c1"># Ensure that normal always points up, normalize to give unit vector</span>
+        <span class="k">if</span> <span class="n">cross_a_b</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">unit_cross</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">cross_a_b</span> <span class="o">/</span> <span class="n">norm_3d</span><span class="p">(</span><span class="n">cross_a_b</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">unit_cross</span> <span class="o">=</span> <span class="n">cross_a_b</span> <span class="o">/</span> <span class="n">norm_3d</span><span class="p">(</span><span class="n">cross_a_b</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">unit_cross</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.normal_vector">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.normal_vector">[docs]</a>
+    <span class="k">def</span> <span class="nf">normal_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Upward-pointing unit normal vector of the triangular patch.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normal_vector</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.down_dip_vector">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.down_dip_vector">[docs]</a>
+    <span class="k">def</span> <span class="nf">down_dip_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Vector pointing in the steepest down-dip direction of the patch.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_down_dip_vector</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@njit</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.calculate_down_dip_vector">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.calculate_down_dip_vector">[docs]</a>
+    <span class="k">def</span> <span class="nf">calculate_down_dip_vector</span><span class="p">(</span><span class="n">normal_vector</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Derive the down-dip vector from a patch normal vector.</span>
+
+<span class="sd">        The down-dip direction is the steepest descent direction on the</span>
+<span class="sd">        fault plane.  For a vertical patch (zero z-component in the</span>
+<span class="sd">        normal) it defaults to straight down (0, 0, -1).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        normal_vector : numpy.ndarray of shape (3,)</span>
+<span class="sd">            Upward-pointing unit normal of the fault patch.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray of shape (3,)</span>
+<span class="sd">            Down-dip vector whose z-component is ``-xy_mag`` and whose</span>
+<span class="sd">            horizontal components are scaled by ``|dz| / xy_mag``.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Compiled with ``numba.njit`` for performance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dx</span><span class="p">,</span> <span class="n">dy</span><span class="p">,</span> <span class="n">dz</span> <span class="o">=</span> <span class="n">normal_vector</span>
+        <span class="k">if</span> <span class="n">dz</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">dd_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">xy_mag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dx</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">dy</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">xy_scaling</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">dz</span><span class="p">)</span> <span class="o">/</span> <span class="n">xy_mag</span>
+            <span class="n">dd_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">dx</span> <span class="o">*</span> <span class="n">xy_scaling</span><span class="p">,</span> <span class="n">dy</span> <span class="o">*</span> <span class="n">xy_scaling</span><span class="p">,</span> <span class="o">-</span><span class="n">xy_mag</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">dd_vec</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.dip">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.dip">[docs]</a>
+    <span class="k">def</span> <span class="nf">dip</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Dip angle of the patch in degrees, measured from horizontal.</span>
+
+<span class="sd">        Returns 90 for vertical patches and ``numpy.nan`` if the down-dip</span>
+<span class="sd">        vector contains NaN values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dip</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@njit</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.calculate_dip">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.calculate_dip">[docs]</a>
+    <span class="k">def</span> <span class="nf">calculate_dip</span><span class="p">(</span><span class="n">down_dip_vector</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the dip angle in degrees from a down-dip vector.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        down_dip_vector : numpy.ndarray of shape (3,)</span>
+<span class="sd">            Down-dip direction vector (need not be a unit vector).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        float</span>
+<span class="sd">            Dip angle in degrees measured from horizontal.  Returns</span>
+<span class="sd">            ``numpy.nan`` if ``down_dip_vector[-1]`` is NaN, or 90.0</span>
+<span class="sd">            when the horizontal component magnitude is less than 1e-10</span>
+<span class="sd">            (effectively vertical patch).</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Compiled with ``numba.njit`` for performance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">down_dip_vector</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">horizontal</span> <span class="o">=</span> <span class="n">norm_3d</span><span class="p">(</span><span class="n">down_dip_vector</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">horizontal</span> <span class="o">&lt;</span> <span class="mf">1e-10</span> <span class="p">:</span>
+                <span class="k">return</span> <span class="mf">90.</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">vertical</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">down_dip_vector</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">vertical</span> <span class="o">/</span> <span class="n">horizontal</span><span class="p">))</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.along_strike_vector">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.along_strike_vector">[docs]</a>
+    <span class="k">def</span> <span class="nf">along_strike_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Vector pointing along the strike direction of the patch.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_along_strike_vector</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.strike">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.strike">[docs]</a>
+    <span class="k">def</span> <span class="nf">strike</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Strike bearing of the patch in degrees, normalised to [0, 360).</span>
+
+<span class="sd">        Derived from the along-strike vector using the standard geographic</span>
+<span class="sd">        convention (clockwise from north).  Recomputes normal, down-dip,</span>
+<span class="sd">        and along-strike vectors if any are ``None``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">normal_vector</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">down_dip_vector</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">along_strike_vector</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">calculate_normal_vector</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">calculate_down_dip_vector</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">calculate_along_strike_vector</span><span class="p">()</span>
+        <span class="n">strike</span> <span class="o">=</span> <span class="mf">90.</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">along_strike_vector</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">along_strike_vector</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">normalize_bearing</span><span class="p">(</span><span class="n">strike</span><span class="p">)</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@njit</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.calculate_along_strike_vector">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.calculate_along_strike_vector">[docs]</a>
+    <span class="k">def</span> <span class="nf">calculate_along_strike_vector</span><span class="p">(</span><span class="n">normal_vector</span><span class="p">,</span> <span class="n">down_dip_vector</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the along-strike vector as the cross product of the normal</span>
+<span class="sd">        and down-dip vectors.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        normal_vector : numpy.ndarray of shape (3,)</span>
+<span class="sd">            Upward-pointing unit normal of the fault patch.</span>
+<span class="sd">        down_dip_vector : numpy.ndarray of shape (3,)</span>
+<span class="sd">            Down-dip direction vector of the fault patch.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray of shape (3,)</span>
+<span class="sd">            Along-strike vector (normal cross down-dip, right-hand rule).</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Compiled with ``numba.njit`` for performance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">cross_3d</span><span class="p">(</span><span class="n">normal_vector</span><span class="p">,</span> <span class="n">down_dip_vector</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.centre">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.centre">[docs]</a>
+    <span class="k">def</span> <span class="nf">centre</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Centroid of the triangular patch in NZTM coordinates (metres).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_centre</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@njit</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.calculate_centre">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.calculate_centre">[docs]</a>
+    <span class="k">def</span> <span class="nf">calculate_centre</span><span class="p">(</span><span class="n">vertices</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the centroid of a triangular patch.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        vertices : numpy.ndarray of shape (3, 3)</span>
+<span class="sd">            Triangle corner coordinates (x, y, z) in NZTM (metres).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray of shape (3,)</span>
+<span class="sd">            Mean of the three corner coordinates, i.e. the centroid.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        ``numpy.mean`` is not supported by Numba&#39;s njit compiler, so the</span>
+<span class="sd">        centroid is computed as ``sum / len`` directly.  Compiled with</span>
+<span class="sd">        ``numba.njit`` for performance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># np.mean(vertices, axis=0) does not have compile support</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">vertices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">vertices</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.area">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.area">[docs]</a>
+    <span class="k">def</span> <span class="nf">area</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Area of the triangular patch in square metres.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_area</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@njit</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.calculate_area">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.calculate_area">[docs]</a>
+    <span class="k">def</span> <span class="nf">calculate_area</span><span class="p">(</span><span class="n">vertices</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the area of a triangular patch from its three vertices.</span>
+
+<span class="sd">        Uses the cross-product formula: area = 0.5 * |a x b|, where ``a``</span>
+<span class="sd">        and ``b`` are two edge vectors meeting at the same vertex.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        vertices : numpy.ndarray of shape (3, 3)</span>
+<span class="sd">            Triangle corner coordinates (x, y, z) in NZTM (metres).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        float</span>
+<span class="sd">            Area of the triangle in square metres.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Compiled with ``numba.njit`` for performance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">vertices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">vertices</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">cross_a_b</span> <span class="o">=</span> <span class="n">cross_3d</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="n">norm_3d</span><span class="p">(</span><span class="n">cross_a_b</span><span class="p">)</span>
+        <span class="n">area</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">norm</span>
+        <span class="k">return</span> <span class="n">area</span></div>
+
+
+<div class="viewcode-block" id="RsqSimTriangularPatch.slip3d_to_ss_ds">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.slip3d_to_ss_ds">[docs]</a>
+    <span class="k">def</span> <span class="nf">slip3d_to_ss_ds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x1_slip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span> <span class="n">x2_slip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span> <span class="n">x3_slip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Decompose a 3-D slip vector into strike-slip and dip-slip components.</span>
+
+<span class="sd">        Projects the supplied Cartesian slip vector onto the along-strike</span>
+<span class="sd">        and (negated) down-dip directions of this patch.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x1_slip :</span>
+<span class="sd">            Slip component in the x1 (easting) direction in metres.</span>
+<span class="sd">        x2_slip :</span>
+<span class="sd">            Slip component in the x2 (northing) direction in metres.</span>
+<span class="sd">        x3_slip :</span>
+<span class="sd">            Slip component in the x3 (vertical) direction in metres.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ds : float</span>
+<span class="sd">            Dip-slip component in metres (projection onto the up-dip</span>
+<span class="sd">            direction).</span>
+<span class="sd">        ss : float</span>
+<span class="sd">            Strike-slip component in metres (projection onto the</span>
+<span class="sd">            along-strike direction).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sv_3d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x1_slip</span><span class="p">,</span> <span class="n">x2_slip</span><span class="p">,</span> <span class="n">x3_slip</span><span class="p">])</span>
+        <span class="n">ss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">along_strike_vector</span><span class="p">,</span> <span class="n">sv_3d</span><span class="p">)</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">down_dip_vector</span><span class="p">,</span> <span class="n">sv_3d</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ds</span><span class="p">,</span> <span class="n">ss</span></div>
+
+
+<div class="viewcode-block" id="RsqSimTriangularPatch.horizontal_sv_to_ds_ss">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.horizontal_sv_to_ds_ss">[docs]</a>
+    <span class="k">def</span> <span class="nf">horizontal_sv_to_ds_ss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slipvec</span><span class="p">,</span> <span class="n">magnitude</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert a horizontal slip-vector azimuth to dip-slip and strike-slip components.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        slipvec :</span>
+<span class="sd">            Azimuth of the slip vector measured clockwise from north,</span>
+<span class="sd">            in degrees.</span>
+<span class="sd">        magnitude :</span>
+<span class="sd">            Desired total magnitude of the output slip components.</span>
+<span class="sd">            Results are normalised to this value.  Defaults to 1.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        strike_perp : float</span>
+<span class="sd">            Strike-perpendicular (dip-slip proxy) component, normalised</span>
+<span class="sd">            to ``magnitude``.</span>
+<span class="sd">        strike_par : float</span>
+<span class="sd">            Strike-parallel (strike-slip proxy) component, normalised</span>
+<span class="sd">            to ``magnitude``.</span>
+<span class="sd">        rake : float</span>
+<span class="sd">            Rake angle in degrees derived from</span>
+<span class="sd">            ``arctan2(strike_perp, strike_par)``.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        The angle between the patch strike and the input azimuth is used</span>
+<span class="sd">        to project the horizontal slip direction onto the fault-plane</span>
+<span class="sd">        axes, accounting for the patch dip when resolving the</span>
+<span class="sd">        strike-perpendicular component.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#assert isinstance(slipvec, ())</span>
+        <span class="c1"># angle is the angle between the horizontal azimuth of the slip vector and the strike</span>
+        <span class="n">angle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strike</span> <span class="o">-</span> <span class="n">slipvec</span>
+        <span class="k">if</span> <span class="n">angle</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mf">180.</span><span class="p">:</span>
+            <span class="n">angle</span> <span class="o">=</span> <span class="mf">360.</span> <span class="o">+</span> <span class="n">angle</span>
+        <span class="k">elif</span> <span class="n">angle</span> <span class="o">&gt;</span> <span class="mf">180.</span><span class="p">:</span>
+            <span class="n">angle</span> <span class="o">=</span> <span class="n">angle</span> <span class="o">-</span> <span class="mf">360.</span>
+
+        <span class="k">if</span> <span class="n">angle</span> <span class="o">==</span> <span class="mf">90.</span><span class="p">:</span>
+            <span class="n">strike_perp</span> <span class="o">=</span> <span class="n">magnitude</span>
+            <span class="n">strike_par</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="k">elif</span> <span class="n">angle</span> <span class="o">==</span> <span class="o">-</span><span class="mf">90.</span><span class="p">:</span>
+            <span class="n">strike_perp</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span> <span class="o">*</span> <span class="n">magnitude</span>
+            <span class="n">strike_par</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">strike_par</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">angle</span><span class="p">))</span>
+            <span class="n">strike_perp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">angle</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dip</span><span class="p">))</span>
+            <span class="n">normalizer</span> <span class="o">=</span> <span class="n">magnitude</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">strike_par</span><span class="p">,</span> <span class="n">strike_perp</span><span class="p">]))</span>
+            <span class="n">strike_par</span> <span class="o">*=</span> <span class="n">normalizer</span>
+            <span class="n">strike_perp</span> <span class="o">*=</span> <span class="n">normalizer</span>
+            <span class="n">rake</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">strike_perp</span><span class="p">,</span><span class="n">strike_par</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">strike_perp</span><span class="p">,</span> <span class="n">strike_par</span><span class="p">,</span> <span class="n">rake</span></div>
+
+
+<div class="viewcode-block" id="RsqSimTriangularPatch.slip_vec_3d">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.slip_vec_3d">[docs]</a>
+    <span class="k">def</span> <span class="nf">slip_vec_3d</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the 3-D slip vector for this patch.</span>
+
+<span class="sd">        Combines the strike-slip and dip-slip components with their</span>
+<span class="sd">        respective direction vectors to produce the full 3-D displacement</span>
+<span class="sd">        vector in NZTM Cartesian coordinates (metres).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray of shape (3,)</span>
+<span class="sd">            3-D slip vector in NZTM (metres).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">strike_slip</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strike_slip</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">along_strike_vector</span>
+        <span class="n">dip_slip</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dip_slip</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">down_dip_vector</span> <span class="o">*</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">return</span> <span class="n">strike_slip</span> <span class="o">+</span> <span class="n">dip_slip</span></div>
+
+
+<div class="viewcode-block" id="RsqSimTriangularPatch.rake_from_stress_tensor">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.rake_from_stress_tensor">[docs]</a>
+    <span class="k">def</span> <span class="nf">rake_from_stress_tensor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the rake to align with the shear stress resolved onto the patch.</span>
+
+<span class="sd">        Resolves the principal stress vector ``sigma1`` onto the fault</span>
+<span class="sd">        plane, extracts the shear-stress component, and sets the patch</span>
+<span class="sd">        rake to the angle between that shear stress and the along-strike</span>
+<span class="sd">        direction.  Assumes sigma2 = sigma3 = 0.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sigma1 : numpy.ndarray of shape (3,)</span>
+<span class="sd">            Maximum principal stress vector (direction and relative</span>
+<span class="sd">            magnitude).</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If ``sigma1`` does not have exactly 3 elements, or if either</span>
+<span class="sd">            ``along_strike_vector`` or ``normal_vector`` is ``None``.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Only the direction of ``sigma1`` influences the resulting rake;</span>
+<span class="sd">        sigma2 and sigma3 are not accounted for.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">sigma1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span>
+
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span> <span class="n">a</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">along_strike_vector</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">normal_vector</span><span class="p">)])</span>
+
+        <span class="k">if</span> <span class="n">norm_3d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">normal_vector</span> <span class="o">==</span> <span class="mf">1.</span><span class="p">)</span> <span class="p">:</span>
+            <span class="n">unit_norm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">normal_vector</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">unit_norm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">normal_vector</span><span class="o">/</span><span class="n">norm_3d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">normal_vector</span><span class="p">)</span>
+
+        <span class="n">normalStress</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">sigma1</span><span class="p">,</span><span class="n">unit_norm</span><span class="p">)</span><span class="o">*</span><span class="n">unit_norm</span>
+        <span class="n">shearStress</span><span class="o">=</span><span class="n">sigma1</span> <span class="o">-</span> <span class="n">normalStress</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rake</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">shearStress</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">along_strike_vector</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">norm_3d</span><span class="p">(</span><span class="n">shearStress</span><span class="p">)</span><span class="o">*</span><span class="n">norm_3d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">along_strike_vector</span><span class="p">))))</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimTriangularPatch.vertical_slip">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.vertical_slip">[docs]</a>
+    <span class="k">def</span> <span class="nf">vertical_slip</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Vertical component of the dip-slip displacement in metres.</span>
+
+<span class="sd">        Computed as ``dip_slip * cos(dip)``, where dip is in degrees.</span>
+<span class="sd">        Positive when the hanging wall moves upward relative to the</span>
+<span class="sd">        footwall (reverse/thrust sense).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dip_slip</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dip</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="RsqSimTriangularPatch.as_polygon">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch.as_polygon">[docs]</a>
+    <span class="k">def</span> <span class="nf">as_polygon</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the triangular patch as a Shapely Polygon.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        shapely.geometry.Polygon</span>
+<span class="sd">            Polygon whose exterior ring is defined by the three patch</span>
+<span class="sd">            vertices.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Polygon</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vertices</span><span class="p">)</span></div>
+</div>
+
+
+<div class="viewcode-block" id="OpenQuakeRectangularPatch">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.OpenQuakeRectangularPatch">[docs]</a>
+<span class="k">class</span> <span class="nc">OpenQuakeRectangularPatch</span><span class="p">(</span><span class="n">RsqSimGenericPatch</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A rectangular fault patch suitable for use with OpenQuake engine inputs.</span>
+
+<span class="sd">    Stores the four corner points of a planar rectangular fault surface</span>
+<span class="sd">    and derives geometric direction vectors from them.  Provides a class</span>
+<span class="sd">    method to construct a patch from a Shapely ``Polygon`` and an export</span>
+<span class="sd">    method for writing OpenQuake-compatible XML.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    segment :</span>
+<span class="sd">        Parent fault segment object that owns this patch.</span>
+<span class="sd">    patch_number : int, optional</span>
+<span class="sd">        Zero-based integer index identifying the patch.  Defaults to 0.</span>
+<span class="sd">    dip_slip : float, optional</span>
+<span class="sd">        Dip-slip component of displacement in metres.</span>
+<span class="sd">    strike_slip : float, optional</span>
+<span class="sd">        Strike-slip component of displacement in metres.</span>
+<span class="sd">    rake : float, optional</span>
+<span class="sd">        Rake angle in degrees.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    segment :</span>
+<span class="sd">        Reference to the parent fault segment.</span>
+<span class="sd">    patch_number : int</span>
+<span class="sd">        Non-negative integer patch index.</span>
+<span class="sd">    top_left : numpy.ndarray of shape (3,) or None</span>
+<span class="sd">        Top-left corner in NZTM (metres); populated after construction.</span>
+<span class="sd">    top_right : numpy.ndarray of shape (3,) or None</span>
+<span class="sd">        Top-right corner in NZTM (metres); populated after construction.</span>
+<span class="sd">    bottom_left : numpy.ndarray of shape (3,) or None</span>
+<span class="sd">        Bottom-left corner in NZTM (metres); populated after construction.</span>
+<span class="sd">    bottom_right : numpy.ndarray of shape (3,) or None</span>
+<span class="sd">        Bottom-right corner in NZTM (metres); populated after construction.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">segment</span><span class="p">,</span> <span class="n">patch_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="n">dip_slip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">strike_slip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">rake</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">OpenQuakeRectangularPatch</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">patch_number</span><span class="o">=</span><span class="n">patch_number</span><span class="p">,</span> <span class="n">dip_slip</span><span class="o">=</span><span class="n">dip_slip</span><span class="p">,</span>
+                                                        <span class="n">strike_slip</span><span class="o">=</span><span class="n">strike_slip</span><span class="p">,</span> <span class="n">rake</span><span class="o">=</span><span class="n">rake</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_top_left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_top_right</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,)</span> <span class="o">*</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bottom_left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bottom_right</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,)</span> <span class="o">*</span> <span class="mi">2</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_along_strike_vector</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_down_dip_vector</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="OpenQuakeRectangularPatch.top_left">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.OpenQuakeRectangularPatch.top_left">[docs]</a>
+    <span class="k">def</span> <span class="nf">top_left</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Top-left corner of the rectangular patch in NZTM (metres).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_top_left</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="OpenQuakeRectangularPatch.top_right">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.OpenQuakeRectangularPatch.top_right">[docs]</a>
+    <span class="k">def</span> <span class="nf">top_right</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Top-right corner of the rectangular patch in NZTM (metres).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_top_right</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="OpenQuakeRectangularPatch.bottom_left">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.OpenQuakeRectangularPatch.bottom_left">[docs]</a>
+    <span class="k">def</span> <span class="nf">bottom_left</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Bottom-left corner of the rectangular patch in NZTM (metres).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bottom_left</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="OpenQuakeRectangularPatch.bottom_right">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.OpenQuakeRectangularPatch.bottom_right">[docs]</a>
+    <span class="k">def</span> <span class="nf">bottom_right</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Bottom-right corner of the rectangular patch in NZTM (metres).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bottom_right</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="OpenQuakeRectangularPatch.along_strike_vector">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.OpenQuakeRectangularPatch.along_strike_vector">[docs]</a>
+    <span class="k">def</span> <span class="nf">along_strike_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Unit vector pointing along strike, from top-left to top-right corner.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">unit_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">top_left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">top_right</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="OpenQuakeRectangularPatch.top_centre">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.OpenQuakeRectangularPatch.top_centre">[docs]</a>
+    <span class="k">def</span> <span class="nf">top_centre</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Midpoint of the top edge of the rectangular patch in NZTM (metres).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">top_left</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">top_right</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="OpenQuakeRectangularPatch.bottom_centre">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.OpenQuakeRectangularPatch.bottom_centre">[docs]</a>
+    <span class="k">def</span> <span class="nf">bottom_centre</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Midpoint of the bottom edge of the rectangular patch in NZTM (metres).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bottom_left</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bottom_right</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="OpenQuakeRectangularPatch.down_dip_vector">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.OpenQuakeRectangularPatch.down_dip_vector">[docs]</a>
+    <span class="k">def</span> <span class="nf">down_dip_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Unit vector pointing down-dip, from top-centre to bottom-centre.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">unit_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">top_centre</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bottom_centre</span><span class="p">)</span></div>
+
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="OpenQuakeRectangularPatch.from_polygon">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.OpenQuakeRectangularPatch.from_polygon">[docs]</a>
+    <span class="k">def</span> <span class="nf">from_polygon</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">polygon</span><span class="p">:</span> <span class="n">Polygon</span><span class="p">,</span> <span class="n">segment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">patch_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                     <span class="n">dip_slip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">strike_slip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">rake</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">wgs_to_nztm</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct an ``OpenQuakeRectangularPatch`` from a Shapely Polygon.</span>
+
+<span class="sd">        Parses the four corners of a rectangular fault-surface polygon,</span>
+<span class="sd">        identifies which corners belong to the top and bottom edges based</span>
+<span class="sd">        on depth (z-coordinate), and assigns them as top-left, top-right,</span>
+<span class="sd">        bottom-left, and bottom-right using the along-strike direction to</span>
+<span class="sd">        determine left/right orientation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        polygon : shapely.geometry.Polygon</span>
+<span class="sd">            Closed polygon with exactly 5 exterior coordinates (4 unique</span>
+<span class="sd">            corners plus the closing repeat of the first).  Each</span>
+<span class="sd">            coordinate must have three values (x, y, z); z is depth in</span>
+<span class="sd">            metres using a negative-downward convention.</span>
+<span class="sd">        segment :</span>
+<span class="sd">            Parent fault segment object.  Defaults to ``None``.</span>
+<span class="sd">        patch_number : int, optional</span>
+<span class="sd">            Zero-based patch index.  Defaults to 0.</span>
+<span class="sd">        dip_slip : float, optional</span>
+<span class="sd">            Dip-slip displacement in metres.</span>
+<span class="sd">        strike_slip : float, optional</span>
+<span class="sd">            Strike-slip displacement in metres.</span>
+<span class="sd">        rake : float, optional</span>
+<span class="sd">            Rake angle in degrees.</span>
+<span class="sd">        wgs_to_nztm : bool, optional</span>
+<span class="sd">            If ``True``, the polygon coordinates are assumed to be in</span>
+<span class="sd">            WGS84 (longitude, latitude, depth) and are reprojected to</span>
+<span class="sd">            NZTM before assigning corners.  Defaults to ``False``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        OpenQuakeRectangularPatch</span>
+<span class="sd">            New patch instance with all four corner coordinates set.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If the polygon exterior does not have exactly 5 coordinate</span>
+<span class="sd">            rows (i.e. 4 unique corners).</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        For vertical patches (where a top corner shares its horizontal</span>
+<span class="sd">        position with a bottom corner) the down-dip vector is set to</span>
+<span class="sd">        ``[0, 0, -1]`` and the along-strike vector is computed directly</span>
+<span class="sd">        from the top edge.  For non-vertical patches an across-strike</span>
+<span class="sd">        vector is projected horizontally and rotated 90 degrees</span>
+<span class="sd">        anti-clockwise using the module-level ``anticlockwise90`` matrix</span>
+<span class="sd">        to determine the along-strike direction, which in turn determines</span>
+<span class="sd">        the left/right assignment of corner pairs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">exterior</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">coords</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">top_depth</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">coords</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">bottom_depth</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">coords</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">top1</span><span class="p">,</span> <span class="n">top2</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[</span><span class="n">coords</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">top_depth</span><span class="p">]</span>
+        <span class="n">bot1</span><span class="p">,</span> <span class="n">bot2</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[</span><span class="n">coords</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">bottom_depth</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">wgs_to_nztm</span><span class="p">:</span>
+            <span class="n">top1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">transformer_wgs2nztm</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="o">*</span><span class="n">top1</span><span class="p">))</span>
+            <span class="n">top2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">transformer_wgs2nztm</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="o">*</span><span class="n">top2</span><span class="p">))</span>
+            <span class="n">bot1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">transformer_wgs2nztm</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="o">*</span><span class="n">bot1</span><span class="p">))</span>
+            <span class="n">bot2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">transformer_wgs2nztm</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="o">*</span><span class="n">bot2</span><span class="p">))</span>
+
+        <span class="n">patch</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">patch_number</span><span class="o">=</span><span class="n">patch_number</span><span class="p">,</span> <span class="n">dip_slip</span><span class="o">=</span><span class="n">dip_slip</span><span class="p">,</span>
+                    <span class="n">strike_slip</span><span class="o">=</span><span class="n">strike_slip</span><span class="p">,</span> <span class="n">rake</span><span class="o">=</span><span class="n">rake</span><span class="p">)</span>
+
+        <span class="c1"># Check for vertical patch:</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">top1</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">a</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">[</span><span class="n">bot1</span><span class="p">,</span> <span class="n">bot2</span><span class="p">]]):</span>
+            <span class="n">patch</span><span class="o">.</span><span class="n">_top_left</span> <span class="o">=</span> <span class="n">top1</span>
+            <span class="n">patch</span><span class="o">.</span><span class="n">_top_right</span> <span class="o">=</span> <span class="n">top2</span>
+            <span class="n">patch</span><span class="o">.</span><span class="n">_along_strike_vector</span> <span class="o">=</span> <span class="p">(</span><span class="n">top2</span> <span class="o">-</span> <span class="n">top1</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">top2</span> <span class="o">-</span> <span class="n">top1</span><span class="p">)</span>
+            <span class="n">patch</span><span class="o">.</span><span class="n">_down_dip_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">top1</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">bot1</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="n">patch</span><span class="o">.</span><span class="n">_bottom_left</span> <span class="o">=</span> <span class="n">bot1</span>
+                <span class="n">patch</span><span class="o">.</span><span class="n">_bottom_right</span> <span class="o">=</span> <span class="n">bot2</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">patch</span><span class="o">.</span><span class="n">_bottom_left</span> <span class="o">=</span> <span class="n">bot2</span>
+                <span class="n">patch</span><span class="o">.</span><span class="n">_bottom_right</span> <span class="o">=</span> <span class="n">bot1</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Try one way round, if it doesn&#39;t work try the other way</span>
+
+            <span class="n">cen_top</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">top1</span> <span class="o">+</span> <span class="n">top2</span><span class="p">)</span>
+            <span class="n">cen_bot</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">bot1</span> <span class="o">+</span> <span class="n">bot2</span><span class="p">)</span>
+
+            <span class="n">across_strike_vector</span> <span class="o">=</span> <span class="n">unit_vector</span><span class="p">(</span><span class="n">cen_top</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">cen_bot</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cen_bot</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">cen_top</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]))</span>
+            <span class="n">along_strike_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">anticlockwise90</span><span class="p">,</span> <span class="n">across_strike_vector</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">along_strike_vector</span><span class="p">,</span> <span class="n">unit_vector</span><span class="p">(</span><span class="n">top1</span><span class="p">,</span> <span class="n">top2</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">patch</span><span class="o">.</span><span class="n">_top_left</span> <span class="o">=</span> <span class="n">top1</span>
+                <span class="n">patch</span><span class="o">.</span><span class="n">_top_right</span> <span class="o">=</span> <span class="n">top2</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">patch</span><span class="o">.</span><span class="n">_top_left</span> <span class="o">=</span> <span class="n">top2</span>
+                <span class="n">patch</span><span class="o">.</span><span class="n">_top_right</span> <span class="o">=</span> <span class="n">top1</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">along_strike_vector</span><span class="p">,</span> <span class="n">unit_vector</span><span class="p">(</span><span class="n">bot1</span><span class="p">,</span> <span class="n">bot2</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">patch</span><span class="o">.</span><span class="n">_bottom_left</span> <span class="o">=</span> <span class="n">bot1</span>
+                <span class="n">patch</span><span class="o">.</span><span class="n">_bottom_right</span> <span class="o">=</span> <span class="n">bot2</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">patch</span><span class="o">.</span><span class="n">_bottom_left</span> <span class="o">=</span> <span class="n">bot2</span>
+                <span class="n">patch</span><span class="o">.</span><span class="n">_bottom_right</span> <span class="o">=</span> <span class="n">bot1</span>
+
+        <span class="k">return</span> <span class="n">patch</span></div>
+
+
+<div class="viewcode-block" id="OpenQuakeRectangularPatch.to_oq_xml">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/patch/index.html#rsqsim_api.fault.patch.OpenQuakeRectangularPatch.to_oq_xml">[docs]</a>
+    <span class="k">def</span> <span class="nf">to_oq_xml</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Serialise the patch as an OpenQuake ``planarSurface`` XML element.</span>
+
+<span class="sd">        Converts the four corner coordinates from NZTM (metres) to WGS84</span>
+<span class="sd">        longitude/latitude and depth in kilometres, then builds an</span>
+<span class="sd">        ``xml.etree.ElementTree.Element`` with child elements for each</span>
+<span class="sd">        corner.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        xml.etree.ElementTree.Element</span>
+<span class="sd">            ``&lt;planarSurface&gt;`` element containing four child elements</span>
+<span class="sd">            named ``topLeft``, ``topRight``, ``bottomLeft``, and</span>
+<span class="sd">            ``bottomRight``, each carrying ``depth`` (km, 4 d.p.),</span>
+<span class="sd">            ``lat`` (degrees, 4 d.p.), and ``lon`` (degrees, 4 d.p.)</span>
+<span class="sd">            attributes.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Depth is stored as a positive value in kilometres following the</span>
+<span class="sd">        OpenQuake NRML convention, converted from the negative-downward</span>
+<span class="sd">        metres used internally via ``depth_km = -1e-3 * z``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">plane_element</span> <span class="o">=</span> <span class="n">ElemTree</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;planarSurface&quot;</span><span class="p">)</span>
+
+        <span class="n">corner_list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;topLeft&quot;</span><span class="p">,</span> <span class="s2">&quot;topRight&quot;</span><span class="p">,</span> <span class="s2">&quot;bottomLeft&quot;</span><span class="p">,</span> <span class="s2">&quot;bottomRight&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">corner</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">corner_list</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">top_left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">top_right</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bottom_left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bottom_right</span><span class="p">]):</span>
+            <span class="n">depth_km</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.e-3</span> <span class="o">*</span> <span class="n">corner</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">transformer_nztm2wgs</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">corner</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">corner</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">element_i</span> <span class="o">=</span> <span class="n">ElemTree</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">attrib</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;depth&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">depth_km</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                                                        <span class="s2">&quot;lat&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lat</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                                                        <span class="s2">&quot;lon&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lon</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+                                                        <span class="p">})</span>
+            <span class="n">plane_element</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">element_i</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">plane_element</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

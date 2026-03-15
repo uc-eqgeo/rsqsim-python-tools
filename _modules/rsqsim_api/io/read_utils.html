@@ -1,0 +1,620 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.io.read_utils &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.io.read_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for rsqsim_api.io.read_utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Utilities for reading RSQSim output files in text, binary, CSV, DXF, STL, and VTK formats.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">meshio</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">ezdxf</span>
+<span class="kn">from</span> <span class="nn">scipy.spatial</span> <span class="kn">import</span> <span class="n">KDTree</span>
+
+<div class="viewcode-block" id="catalogue_columns">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/read_utils/index.html#rsqsim_api.io.read_utils.catalogue_columns">[docs]</a>
+<span class="n">catalogue_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;t0&quot;</span><span class="p">,</span> <span class="s2">&quot;m0&quot;</span><span class="p">,</span> <span class="s2">&quot;mw&quot;</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="s2">&quot;area&quot;</span><span class="p">,</span> <span class="s2">&quot;dt&quot;</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="read_text">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/read_utils/index.html#rsqsim_api.io.read_utils.read_text">[docs]</a>
+<span class="k">def</span> <span class="nf">read_text</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read scalar values from a text file output by RSQSim.</span>
+
+<span class="sd">    Produced when RSQSim is compiled with serial (text) output mode.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    file :</span>
+<span class="sd">        Path to the text file to read.</span>
+<span class="sd">    format :</span>
+<span class="sd">        Data type specifier: ``&quot;d&quot;`` for double (float64) or ``&quot;i&quot;``</span>
+<span class="sd">        for integer (int32).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        Flattened 1-D array of values read from the file.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``format`` is not ``&quot;d&quot;`` or ``&quot;i&quot;``, or if ``file`` does not</span>
+<span class="sd">        exist.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check file existence and that parameter supplied for format makes sense.</span>
+    <span class="k">assert</span> <span class="nb">format</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;d&quot;</span><span class="p">,</span> <span class="s2">&quot;i&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;d&quot;</span><span class="p">:</span>
+        <span class="n">numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">numbers</span></div>
+
+
+<div class="viewcode-block" id="read_binary">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/read_utils/index.html#rsqsim_api.io.read_utils.read_binary">[docs]</a>
+<span class="k">def</span> <span class="nf">read_binary</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">endian</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;little&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read scalar values from a binary file output by RSQSim.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    file :</span>
+<span class="sd">        Path to the binary file to read.</span>
+<span class="sd">    format :</span>
+<span class="sd">        Data type specifier: ``&quot;d&quot;`` for double (float64) or ``&quot;i&quot;``</span>
+<span class="sd">        for integer (int32).</span>
+<span class="sd">    endian :</span>
+<span class="sd">        Byte order of the file.  ``&quot;little&quot;`` (default) is standard for</span>
+<span class="sd">        most modern x86 systems; use ``&quot;big&quot;`` for non-standard platforms.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        Flattened 1-D array of values read from the file.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``endian`` is not ``&quot;little&quot;`` or ``&quot;big&quot;``, if ``format`` is</span>
+<span class="sd">        not ``&quot;d&quot;`` or ``&quot;i&quot;``, or if ``file`` does not exist.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check that parameter supplied for endianness makes sense</span>
+    <span class="k">assert</span> <span class="n">endian</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;little&quot;</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">),</span> <span class="s2">&quot;Must specify either &#39;big&#39; or &#39;little&#39; endian&quot;</span>
+    <span class="n">endian_sign</span> <span class="o">=</span> <span class="s2">&quot;&lt;&quot;</span> <span class="k">if</span> <span class="n">endian</span> <span class="o">==</span> <span class="s2">&quot;little&quot;</span> <span class="k">else</span> <span class="s2">&quot;&gt;&quot;</span>
+    <span class="k">assert</span> <span class="nb">format</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;d&quot;</span><span class="p">,</span> <span class="s2">&quot;i&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;d&quot;</span><span class="p">:</span>
+        <span class="n">numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfile</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">endian_sign</span> <span class="o">+</span> <span class="s2">&quot;f8&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfile</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">endian_sign</span> <span class="o">+</span> <span class="s2">&quot;i4&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">numbers</span></div>
+
+
+
+<div class="viewcode-block" id="read_csv_and_array">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/read_utils/index.html#rsqsim_api.io.read_utils.read_csv_and_array">[docs]</a>
+<span class="k">def</span> <span class="nf">read_csv_and_array</span><span class="p">(</span><span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">read_index</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read a catalogue CSV and its associated NumPy array files from a common prefix.</span>
+
+<span class="sd">    Expects files named ``&lt;prefix&gt;_catalogue.csv``, ``&lt;prefix&gt;_events.npy``,</span>
+<span class="sd">    ``&lt;prefix&gt;_patches.npy``, ``&lt;prefix&gt;_slip.npy``, and</span>
+<span class="sd">    ``&lt;prefix&gt;_slip_time.npy`` to exist on disk.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    prefix :</span>
+<span class="sd">        File path prefix (with or without trailing underscore).</span>
+<span class="sd">    read_index : bool, optional</span>
+<span class="sd">        If ``True`` (default), read the first column of the CSV as the</span>
+<span class="sd">        DataFrame index.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list</span>
+<span class="sd">        ``[df, events, patches, slip, slip_time]`` where ``df`` is a</span>
+<span class="sd">        ``pandas.DataFrame`` and the remaining elements are NumPy arrays</span>
+<span class="sd">        loaded from the corresponding ``.npy`` files.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``prefix`` is an empty string.</span>
+<span class="sd">    FileNotFoundError</span>
+<span class="sd">        If any of the five expected files is missing.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">prefix</span><span class="p">,</span> <span class="s2">&quot;Empty prefix string supplied&quot;</span>
+    <span class="k">if</span> <span class="n">prefix</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;_&quot;</span><span class="p">:</span>
+        <span class="n">prefix</span> <span class="o">+=</span> <span class="s2">&quot;_&quot;</span>
+    <span class="n">suffixes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;catalogue.csv&quot;</span><span class="p">,</span> <span class="s2">&quot;events.npy&quot;</span><span class="p">,</span> <span class="s2">&quot;patches.npy&quot;</span><span class="p">,</span> <span class="s2">&quot;slip.npy&quot;</span><span class="p">,</span> <span class="s2">&quot;slip_time.npy&quot;</span><span class="p">]</span>
+    <span class="n">file_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">suffix</span> <span class="k">for</span> <span class="n">suffix</span> <span class="ow">in</span> <span class="n">suffixes</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">file</span><span class="p">,</span> <span class="n">suffix</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">file_list</span><span class="p">,</span> <span class="n">suffixes</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> file missing!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suffix</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">read_index</span><span class="p">:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">file_list</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">file_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">array_ls</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">file_list</span><span class="p">[</span><span class="mi">1</span><span class="p">:]]</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">df</span><span class="p">]</span> <span class="o">+</span> <span class="n">array_ls</span></div>
+
+
+
+
+<div class="viewcode-block" id="read_earthquakes">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/read_utils/index.html#rsqsim_api.io.read_utils.read_earthquakes">[docs]</a>
+<span class="k">def</span> <span class="nf">read_earthquakes</span><span class="p">(</span><span class="n">earthquake_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">get_patch</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">eq_start_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">eq_end_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">endian</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;little&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read earthquake event data, inferring companion file names from the event file prefix.</span>
+
+<span class="sd">    Based on R scripts by Keith Richards-Dinger.  The earthquake file is</span>
+<span class="sd">    expected to follow the naming convention ``eqs.&lt;prefix&gt;.out``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    earthquake_file :</span>
+<span class="sd">        Path to the RSQSim earthquake output file, usually with a</span>
+<span class="sd">        ``.out`` suffix and named ``eqs.&lt;prefix&gt;.out``.</span>
+<span class="sd">    get_patch :</span>
+<span class="sd">        If ``True``, also read per-patch rupture data.  Currently unused</span>
+<span class="sd">        placeholder.</span>
+<span class="sd">    eq_start_index :</span>
+<span class="sd">        Zero-based index of the first earthquake to read.  Both</span>
+<span class="sd">        ``eq_start_index`` and ``eq_end_index`` must be provided together.</span>
+<span class="sd">    eq_end_index :</span>
+<span class="sd">        Zero-based index of the last earthquake to read (exclusive).</span>
+<span class="sd">    endian :</span>
+<span class="sd">        Byte order for binary companion files.  Defaults to ``&quot;little&quot;``.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``endian`` is not ``&quot;little&quot;`` or ``&quot;big&quot;``, or if</span>
+<span class="sd">        ``earthquake_file`` does not exist.</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If ``eq_start_index &gt;= eq_end_index`` when both are provided.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">endian</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;little&quot;</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">),</span> <span class="s2">&quot;Must specify either &#39;big&#39; or &#39;little&#39; endian&quot;</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">earthquake_file</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">([</span><span class="n">a</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="n">eq_start_index</span><span class="p">,</span> <span class="n">eq_end_index</span><span class="p">)]):</span>
+        <span class="k">if</span> <span class="n">eq_start_index</span> <span class="o">&gt;=</span> <span class="n">eq_end_index</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;eq_start index should be smaller than eq_end_index!&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Get full path to file and working directory</span>
+    <span class="n">abs_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">earthquake_file</span><span class="p">)</span>
+    <span class="n">file_base_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">abs_file_path</span><span class="p">)</span>
+
+    <span class="c1"># Get file prefix from basename</span>
+    <span class="n">split_by_dots</span> <span class="o">=</span> <span class="n">file_base_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+    <span class="c1"># Check that filename fits expected format</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">split_by_dots</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;eqs&quot;</span><span class="p">,</span> <span class="n">split_by_dots</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;out&quot;</span><span class="p">]):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: non-standard file name.&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Expecting earthquake file name to have the format: eqs.</span><span class="si">{prefix}</span><span class="s2">.out&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;using &#39;catalogue&#39; as prefix...&quot;</span><span class="p">)</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;catalogue&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Join prefix back together if necessary, warning if empty</span>
+        <span class="n">prefix_list</span> <span class="o">=</span> <span class="n">split_by_dots</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">prefix_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="n">prefix_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">prefix</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: empty prefix string&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="o">*</span><span class="n">prefix_list</span><span class="p">)</span>
+
+    <span class="c1"># Search for binary files in directory</span>
+    <span class="n">tau_file</span> <span class="o">=</span> <span class="n">abs_file_path</span> <span class="o">+</span> <span class="s2">&quot;/tauDot.</span><span class="si">{}</span><span class="s2">.out&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+    <span class="n">sigmat_file</span> <span class="o">=</span> <span class="n">abs_file_path</span> <span class="o">+</span> <span class="s2">&quot;/sigmaDot.</span><span class="si">{}</span><span class="s2">.out&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="read_earthquake_catalogue">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/read_utils/index.html#rsqsim_api.io.read_utils.read_earthquake_catalogue">[docs]</a>
+<span class="k">def</span> <span class="nf">read_earthquake_catalogue</span><span class="p">(</span><span class="n">catalogue_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read an RSQSim earthquake catalogue text file into a DataFrame.</span>
+
+<span class="sd">    Parses the catalogue file produced by RSQSim, skipping the header</span>
+<span class="sd">    block that ends with the line ``%%% end input files``, and loads the</span>
+<span class="sd">    subsequent rows into a DataFrame with the standard catalogue columns</span>
+<span class="sd">    ``t0, m0, mw, x, y, z, area, dt``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    catalogue_file :</span>
+<span class="sd">        Path to the RSQSim catalogue text file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        DataFrame with columns ``[&quot;t0&quot;, &quot;m0&quot;, &quot;mw&quot;, &quot;x&quot;, &quot;y&quot;, &quot;z&quot;,</span>
+<span class="sd">        &quot;area&quot;, &quot;dt&quot;]``, one row per earthquake event.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``catalogue_file`` does not exist.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">catalogue_file</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">catalogue_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fid</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">fid</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+
+    <span class="n">start_eqs</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%%% e</span><span class="s2">nd input files</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">data_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">start_eqs</span><span class="p">:])</span>
+    <span class="n">earthquake_catalogue</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data_array</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">8</span><span class="p">],</span> <span class="n">columns</span><span class="o">=</span><span class="n">catalogue_columns</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">earthquake_catalogue</span></div>
+
+
+
+
+
+<span class="c1"># def read_fault(fault_file_name: str, check_if_grid: bool = True, )</span>
+
+<div class="viewcode-block" id="read_ts_coords">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/read_utils/index.html#rsqsim_api.io.read_utils.read_ts_coords">[docs]</a>
+<span class="k">def</span> <span class="nf">read_ts_coords</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read vertex and triangle data from a tsurf (``.ts``) file.</span>
+
+<span class="sd">    Parses the SCEC Community Fault Model tsurf format, extracting</span>
+<span class="sd">    vertex coordinates and triangle connectivity.  Based on the MATLAB</span>
+<span class="sd">    script ``ReadAndSaveCfm.m`` by Brendan Meade.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    filename :</span>
+<span class="sd">        Path to the tsurf ``.ts`` file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    vrtx : numpy.ndarray of shape (n_vertices, 4)</span>
+<span class="sd">        Vertex data array.  Each row is ``[vertex_id, x, y, z]``.</span>
+<span class="sd">    trgl : numpy.ndarray of shape (n_triangles, 3), dtype int</span>
+<span class="sd">        Triangle connectivity array.  Each row gives the three vertex IDs</span>
+<span class="sd">        forming a triangle.</span>
+<span class="sd">    tri : numpy.ndarray of shape (n_triangles, 9)</span>
+<span class="sd">        Triangle data array.  Each row contains the (x, y, z) coordinates</span>
+<span class="sd">        of all three corners concatenated: ``[x1,y1,z1, x2,y2,z2, x3,y3,z3]``.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Copyright Paul Kaeufl, July 2014.</span>
+<span class="sd">    Original MATLAB script:</span>
+<span class="sd">    http://structure.rc.fas.harvard.edu/cfm/download/meade/ReadAndSaveCfm.m</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">idxVrtx</span> <span class="o">=</span> <span class="p">[</span><span class="n">idx</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+               <span class="k">if</span> <span class="s1">&#39;VRTX&#39;</span> <span class="ow">in</span> <span class="n">l</span> <span class="ow">or</span> <span class="s1">&#39;PVRTX&#39;</span> <span class="ow">in</span> <span class="n">l</span><span class="p">]</span>
+    <span class="n">idxTrgl</span> <span class="o">=</span> <span class="p">[</span><span class="n">idx</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="k">if</span> <span class="s1">&#39;TRGL&#39;</span> <span class="ow">in</span> <span class="n">l</span><span class="p">]</span>
+    <span class="n">nVrtx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">idxVrtx</span><span class="p">)</span>
+    <span class="n">nTrgl</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">idxTrgl</span><span class="p">)</span>
+    <span class="n">vrtx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nVrtx</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+    <span class="n">trgl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nTrgl</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+    <span class="n">tri</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nTrgl</span><span class="p">,</span> <span class="mi">9</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">iVrtx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">idxVrtx</span><span class="p">):</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">iVrtx</span><span class="p">]</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="n">vrtx</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="mi">3</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="mi">4</span><span class="p">])]</span>
+
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">iTrgl</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">idxTrgl</span><span class="p">):</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">iTrgl</span><span class="p">]</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+        <span class="n">trgl</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="mi">3</span><span class="p">])]</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+            <span class="n">i1</span> <span class="o">=</span> <span class="n">l</span> <span class="o">*</span> <span class="mi">3</span>
+            <span class="n">i2</span> <span class="o">=</span> <span class="mi">3</span> <span class="o">*</span> <span class="p">(</span><span class="n">l</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">vertex_i</span> <span class="o">=</span> <span class="n">vrtx</span><span class="p">[</span><span class="n">vrtx</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">trgl</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">l</span><span class="p">]][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">tri</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">i1</span><span class="p">:</span><span class="n">i2</span><span class="p">]</span> <span class="o">=</span> <span class="n">vertex_i</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="k">return</span> <span class="n">vrtx</span><span class="p">,</span> <span class="n">trgl</span><span class="p">,</span> <span class="n">tri</span></div>
+
+
+
+<div class="viewcode-block" id="read_dxf">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/read_utils/index.html#rsqsim_api.io.read_utils.read_dxf">[docs]</a>
+<span class="k">def</span> <span class="nf">read_dxf</span><span class="p">(</span><span class="n">dxf_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read a triangulated mesh and boundary polyline from a DXF file.</span>
+
+<span class="sd">    Expects a DXF file exported from Move containing exactly one</span>
+<span class="sd">    ``POLYLINE`` boundary and one or more ``3DFACE`` triangles.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dxf_file :</span>
+<span class="sd">        Path to the DXF file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    triangle_array : numpy.ndarray of shape (n_triangles, 9)</span>
+<span class="sd">        Each row contains the (x, y, z) coordinates of the three triangle</span>
+<span class="sd">        corners concatenated: ``[x1,y1,z1, x2,y2,z2, x3,y3,z3]``.</span>
+<span class="sd">    boundary_array : numpy.ndarray of shape (n_points, 3)</span>
+<span class="sd">        (x, y, z) coordinates of the boundary polyline vertices.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``dxf_file`` does not exist, or if the file does not contain</span>
+<span class="sd">        both ``3DFACE`` and ``POLYLINE`` entities.</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If the file contains more than one ``POLYLINE`` boundary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dxf_file</span><span class="p">)</span>
+    <span class="n">dxf</span> <span class="o">=</span> <span class="n">ezdxf</span><span class="o">.</span><span class="n">readfile</span><span class="p">(</span><span class="n">dxf_file</span><span class="p">)</span>
+    <span class="n">msp</span> <span class="o">=</span> <span class="n">dxf</span><span class="o">.</span><span class="n">modelspace</span><span class="p">()</span>
+    <span class="n">dxftypes</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">dxftype</span><span class="p">()</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">msp</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">a</span> <span class="ow">in</span> <span class="n">dxftypes</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;3DFACE&quot;</span><span class="p">,</span> <span class="s2">&quot;POLYLINE&quot;</span><span class="p">)]),</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">: Expected triangles and boundary&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dxf_file</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dxftypes</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;POLYLINE&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">: Too many boundaries lines...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dxf_file</span><span class="p">))</span>
+
+
+    <span class="n">triangle_ls</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">boundary_array</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">entity</span> <span class="ow">in</span> <span class="n">msp</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">entity</span><span class="o">.</span><span class="n">dxftype</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;3DFACE&quot;</span><span class="p">:</span>
+            <span class="n">triangle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">vertex</span><span class="o">.</span><span class="n">xyz</span> <span class="k">for</span> <span class="n">vertex</span> <span class="ow">in</span> <span class="n">entity</span><span class="p">])</span>
+            <span class="n">unique_triangle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">triangle</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">9</span><span class="p">,))</span>
+            <span class="n">triangle_ls</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">unique_triangle</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">entity</span><span class="o">.</span><span class="n">dxftype</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;POLYLINE&quot;</span><span class="p">:</span>
+            <span class="n">boundary_ls</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">entity</span><span class="o">.</span><span class="n">points</span><span class="p">():</span>
+                <span class="n">boundary_ls</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">point</span><span class="o">.</span><span class="n">xyz</span><span class="p">)</span>
+            <span class="n">boundary_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">boundary_ls</span><span class="p">)</span>
+
+    <span class="n">triangle_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">triangle_ls</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">triangle_array</span><span class="p">,</span> <span class="n">boundary_array</span></div>
+
+
+
+<div class="viewcode-block" id="read_stl">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/read_utils/index.html#rsqsim_api.io.read_utils.read_stl">[docs]</a>
+<span class="k">def</span> <span class="nf">read_stl</span><span class="p">(</span><span class="n">stl_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">min_point_sep</span><span class="o">=</span><span class="mf">100.</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read a triangulated surface mesh from an STL file.</span>
+
+<span class="sd">    Merges near-duplicate vertices (within ``min_point_sep``) by averaging</span>
+<span class="sd">    their positions and removing degenerate triangles that result from the</span>
+<span class="sd">    merge.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    stl_file :</span>
+<span class="sd">        Path to the STL mesh file.</span>
+<span class="sd">    min_point_sep :</span>
+<span class="sd">        Minimum separation in metres below which two vertices are</span>
+<span class="sd">        considered duplicates and merged.  Defaults to 100.0 m.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray of shape (n_triangles, 9)</span>
+<span class="sd">        Each row contains the (x, y, z) coordinates of the three triangle</span>
+<span class="sd">        corners: ``[x1,y1,z1, x2,y2,z2, x3,y3,z3]``.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``stl_file`` does not exist or if the mesh contains no</span>
+<span class="sd">        triangular cells.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">stl_file</span><span class="p">)</span>
+
+    <span class="n">mesh</span> <span class="o">=</span> <span class="n">meshio</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">stl_file</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="s2">&quot;triangle&quot;</span> <span class="ow">in</span> <span class="n">mesh</span><span class="o">.</span><span class="n">cells_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="n">triangles</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">cells_dict</span><span class="p">[</span><span class="s2">&quot;triangle&quot;</span><span class="p">]</span>
+    <span class="n">mesh_points</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">points</span><span class="p">[:]</span>
+    <span class="n">point_tree</span> <span class="o">=</span> <span class="n">KDTree</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+    <span class="n">distances</span><span class="p">,</span> <span class="n">indices</span> <span class="o">=</span> <span class="n">point_tree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">points</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+    <span class="n">problem_indices</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="n">distances</span> <span class="o">&lt;</span> <span class="n">min_point_sep</span><span class="p">]</span>
+    <span class="n">paired_indices</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i1</span> <span class="ow">in</span> <span class="n">problem_indices</span><span class="p">:</span>
+        <span class="n">i2</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="n">i1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">([</span><span class="n">i</span> <span class="ow">in</span> <span class="n">paired_indices</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">i2</span><span class="p">]]):</span>
+            <span class="n">p1</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i1</span><span class="p">]</span>
+            <span class="n">p2</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i2</span><span class="p">]</span>
+            <span class="n">mesh_points</span><span class="p">[</span><span class="n">i2</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">p1</span> <span class="o">+</span> <span class="n">p2</span><span class="p">)</span>
+            <span class="n">mesh_points</span><span class="p">[</span><span class="n">i1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">p1</span> <span class="o">+</span> <span class="n">p2</span><span class="p">)</span>
+            <span class="n">triangles</span><span class="p">[</span><span class="n">triangles</span> <span class="o">==</span> <span class="n">i1</span><span class="p">]</span> <span class="o">=</span> <span class="n">i2</span>
+            <span class="n">paired_indices</span> <span class="o">+=</span> <span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">i2</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">problem_indices</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">num_tris_pre</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">triangles</span><span class="p">)</span>
+        <span class="n">tris_num_unique_vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">triangles</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">tri_lens</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">tri</span><span class="p">))</span> <span class="k">for</span> <span class="n">tri</span> <span class="ow">in</span> <span class="n">tris_num_unique_vertices</span><span class="p">])</span>
+        <span class="n">valid_tri_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">tri_lens</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">triangles</span> <span class="o">=</span> <span class="n">triangles</span><span class="p">[</span><span class="n">valid_tri_indices</span><span class="p">]</span>
+        <span class="n">num_tris_post</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">triangles</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_tris_post</span> <span class="o">&lt;</span> <span class="n">num_tris_pre</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: </span><span class="si">{}</span><span class="s2"> triangles removed from mesh due to duplicate vertices&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">num_tris_pre</span> <span class="o">-</span> <span class="n">num_tris_post</span><span class="p">))</span>
+    <span class="n">point_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">point</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mesh_points</span><span class="p">)}</span>
+    <span class="n">mesh_as_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">point_dict</span><span class="p">[</span><span class="n">vertex</span><span class="p">]</span> <span class="k">for</span> <span class="n">vertex</span> <span class="ow">in</span> <span class="n">tri</span><span class="p">])</span> <span class="k">for</span> <span class="n">tri</span> <span class="ow">in</span> <span class="n">triangles</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">mesh_as_array</span></div>
+
+
+<div class="viewcode-block" id="read_vtk">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/read_utils/index.html#rsqsim_api.io.read_utils.read_vtk">[docs]</a>
+<span class="k">def</span> <span class="nf">read_vtk</span><span class="p">(</span><span class="n">vtk_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">min_point_sep</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read a triangulated surface mesh with slip and rake data from a VTK file.</span>
+
+<span class="sd">    Merges near-duplicate vertices (within ``min_point_sep``) and removes</span>
+<span class="sd">    degenerate triangles, preserving the associated slip and rake cell data.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vtk_file :</span>
+<span class="sd">        Path to the VTK mesh file.</span>
+<span class="sd">    min_point_sep :</span>
+<span class="sd">        Minimum separation in metres below which two vertices are</span>
+<span class="sd">        considered duplicates and merged.  Defaults to 1.0 m.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    mesh_as_array : numpy.ndarray of shape (n_triangles, 9)</span>
+<span class="sd">        Each row contains the (x, y, z) coordinates of the three triangle</span>
+<span class="sd">        corners: ``[x1,y1,z1, x2,y2,z2, x3,y3,z3]``.</span>
+<span class="sd">    slip : numpy.ndarray of shape (n_triangles,)</span>
+<span class="sd">        Slip magnitude (metres) for each triangle after duplicate removal.</span>
+<span class="sd">    rake : numpy.ndarray of shape (n_triangles,)</span>
+<span class="sd">        Rake angle (degrees) for each triangle after duplicate removal.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``vtk_file`` does not exist, if the mesh contains no triangular</span>
+<span class="sd">        cells, or if the ``slip`` and ``rake`` cell data arrays are absent.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">vtk_file</span><span class="p">)</span>
+
+    <span class="n">mesh</span> <span class="o">=</span> <span class="n">meshio</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">vtk_file</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="s2">&quot;triangle&quot;</span> <span class="ow">in</span> <span class="n">mesh</span><span class="o">.</span><span class="n">cells_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">data</span> <span class="ow">in</span> <span class="n">mesh</span><span class="o">.</span><span class="n">cell_data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;slip&quot;</span><span class="p">,</span> <span class="s2">&quot;rake&quot;</span><span class="p">)])</span>
+    <span class="n">triangles</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">cells_dict</span><span class="p">[</span><span class="s2">&quot;triangle&quot;</span><span class="p">]</span>
+    <span class="n">mesh_points</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">points</span><span class="p">[:]</span>
+    <span class="n">point_tree</span> <span class="o">=</span> <span class="n">KDTree</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+    <span class="n">distances</span><span class="p">,</span> <span class="n">indices</span> <span class="o">=</span> <span class="n">point_tree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">points</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+    <span class="n">problem_indices</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="n">distances</span> <span class="o">&lt;</span> <span class="n">min_point_sep</span><span class="p">]</span>
+    <span class="n">paired_indices</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i1</span> <span class="ow">in</span> <span class="n">problem_indices</span><span class="p">:</span>
+        <span class="n">i2</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="n">i1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">([</span><span class="n">i</span> <span class="ow">in</span> <span class="n">paired_indices</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">i2</span><span class="p">]]):</span>
+            <span class="n">p1</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i1</span><span class="p">]</span>
+            <span class="n">p2</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">i2</span><span class="p">]</span>
+            <span class="n">mesh_points</span><span class="p">[</span><span class="n">i2</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">p1</span> <span class="o">+</span> <span class="n">p2</span><span class="p">)</span>
+            <span class="n">mesh_points</span><span class="p">[</span><span class="n">i1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">p1</span> <span class="o">+</span> <span class="n">p2</span><span class="p">)</span>
+            <span class="n">triangles</span><span class="p">[</span><span class="n">triangles</span> <span class="o">==</span> <span class="n">i1</span><span class="p">]</span> <span class="o">=</span> <span class="n">i2</span>
+            <span class="n">paired_indices</span> <span class="o">+=</span> <span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">i2</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">problem_indices</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">num_tris_pre</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">triangles</span><span class="p">)</span>
+        <span class="n">tris_num_unique_vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">triangles</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">tri_lens</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">tri</span><span class="p">))</span> <span class="k">for</span> <span class="n">tri</span> <span class="ow">in</span> <span class="n">tris_num_unique_vertices</span><span class="p">])</span>
+        <span class="n">valid_tri_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">tri_lens</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">triangles</span> <span class="o">=</span> <span class="n">triangles</span><span class="p">[</span><span class="n">valid_tri_indices</span><span class="p">]</span>
+        <span class="n">slip</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">cell_data</span><span class="p">[</span><span class="s2">&quot;slip&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">valid_tri_indices</span><span class="p">]</span>
+        <span class="n">rake</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">cell_data</span><span class="p">[</span><span class="s2">&quot;rake&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">valid_tri_indices</span><span class="p">]</span>
+        <span class="n">num_tris_post</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">triangles</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_tris_post</span> <span class="o">&lt;</span> <span class="n">num_tris_pre</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: </span><span class="si">{}</span><span class="s2"> triangles removed from mesh due to duplicate vertices&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num_tris_pre</span> <span class="o">-</span> <span class="n">num_tris_post</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">slip</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">cell_data</span><span class="p">[</span><span class="s2">&quot;slip&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">rake</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">cell_data</span><span class="p">[</span><span class="s2">&quot;rake&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">point_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">point</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mesh_points</span><span class="p">)}</span>
+    <span class="n">mesh_as_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">point_dict</span><span class="p">[</span><span class="n">vertex</span><span class="p">]</span> <span class="k">for</span> <span class="n">vertex</span> <span class="ow">in</span> <span class="n">tri</span><span class="p">])</span> <span class="k">for</span> <span class="n">tri</span> <span class="ow">in</span> <span class="n">triangles</span><span class="p">])</span>
+
+
+    <span class="k">return</span> <span class="n">mesh_as_array</span><span class="p">,</span> <span class="n">slip</span><span class="p">,</span> <span class="n">rake</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,580 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.fault.utilities &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="rsqsim_api.io" href="../../io/index.html" />
+    <link rel="prev" title="rsqsim_api.fault.splines" href="../splines/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">rsqsim_api</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../../catalogue/index.html">rsqsim_api.catalogue</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../index.html">rsqsim_api.fault</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../io/index.html">rsqsim_api.io</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../tsunami/index.html">rsqsim_api.tsunami</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../visualisation/index.html">rsqsim_api.visualisation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_fault/index.html">test_fault</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_catalogue/index.html">test_catalogue</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">rsqsim_api</a></li>
+          <li class="breadcrumb-item"><a href="../index.html">rsqsim_api.fault</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.fault.utilities</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/fault/utilities/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.fault.utilities">
+<span id="rsqsim-api-fault-utilities"></span><h1>rsqsim_api.fault.utilities<a class="headerlink" href="#module-rsqsim_api.fault.utilities" title="Link to this heading"></a></h1>
+<p>Geometric utility functions for fault-trace analysis and manipulation.</p>
+<p>Provides bearing arithmetic, line operations (strike, dip direction,
+reversal, smoothing), and helpers for merging nearly-adjacent
+<code class="xref py py-class docutils literal notranslate"><span class="pre">LineString</span></code> segments into single traces.</p>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.utilities.smallest_difference" title="rsqsim_api.fault.utilities.smallest_difference"><code class="xref py py-obj docutils literal notranslate"><span class="pre">smallest_difference</span></code></a>(value1, value2)</p></td>
+<td><p>Return the smallest angular difference between two bearings.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.utilities.normalize_bearing" title="rsqsim_api.fault.utilities.normalize_bearing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalize_bearing</span></code></a>(bearing)</p></td>
+<td><p>Normalise a bearing to the range [0, 360).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.utilities.bearing_leq" title="rsqsim_api.fault.utilities.bearing_leq"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bearing_leq</span></code></a>(value, benchmark[, tolerance])</p></td>
+<td><p>Check whether a bearing is anticlockwise of (less than) another bearing.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.utilities.bearing_geq" title="rsqsim_api.fault.utilities.bearing_geq"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bearing_geq</span></code></a>(value, benchmark[, tolerance])</p></td>
+<td><p>Check whether a bearing is clockwise of (greater than) another bearing.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.utilities.reverse_bearing" title="rsqsim_api.fault.utilities.reverse_bearing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reverse_bearing</span></code></a>(bearing)</p></td>
+<td><p>Return the bearing 180° opposite to the supplied bearing.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.utilities.reverse_line" title="rsqsim_api.fault.utilities.reverse_line"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reverse_line</span></code></a>(line)</p></td>
+<td><p>Reverse the vertex order of a <code class="xref py py-class docutils literal notranslate"><span class="pre">LineString</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.utilities.fit_2d_line" title="rsqsim_api.fault.utilities.fit_2d_line"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_2d_line</span></code></a>(x, y)</p></td>
+<td><p>Fit a straight line to a 2-D point cloud and return the dip angle.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.utilities.calculate_dip_direction" title="rsqsim_api.fault.utilities.calculate_dip_direction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_dip_direction</span></code></a>(line)</p></td>
+<td><p>Calculate the dip direction of a fault-trace LineString in NZTM.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.utilities.calculate_strike" title="rsqsim_api.fault.utilities.calculate_strike"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_strike</span></code></a>(line[, lt180])</p></td>
+<td><p>Calculate the strike of a fault-trace LineString in NZTM.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.utilities.optimize_point_spacing" title="rsqsim_api.fault.utilities.optimize_point_spacing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">optimize_point_spacing</span></code></a>(line, spacing)</p></td>
+<td><p>Re-sample a LineString to approximately uniform point spacing.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.utilities.chaikins_corner_cutting" title="rsqsim_api.fault.utilities.chaikins_corner_cutting"><code class="xref py py-obj docutils literal notranslate"><span class="pre">chaikins_corner_cutting</span></code></a>(coords[, refinements])</p></td>
+<td><p>Smooth a polyline using Chaikin's corner-cutting algorithm.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.utilities.smooth_trace" title="rsqsim_api.fault.utilities.smooth_trace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">smooth_trace</span></code></a>(trace[, n_refinements])</p></td>
+<td><p>Smooth a fault-trace LineString using Chaikin's corner-cutting algorithm.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.utilities.straighten" title="rsqsim_api.fault.utilities.straighten"><code class="xref py py-obj docutils literal notranslate"><span class="pre">straighten</span></code></a>(line, strike, damping)</p></td>
+<td><p>Straighten a 3-D line by damping its across-strike deviations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.utilities.align_two_nearly_adjacent_segments" title="rsqsim_api.fault.utilities.align_two_nearly_adjacent_segments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">align_two_nearly_adjacent_segments</span></code></a>(segment_list[, ...])</p></td>
+<td><p>Snap the closest endpoints of two nearly-adjacent LineStrings to their midpoint.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.utilities.merge_two_nearly_adjacent_segments" title="rsqsim_api.fault.utilities.merge_two_nearly_adjacent_segments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge_two_nearly_adjacent_segments</span></code></a>(segment_list[, ...])</p></td>
+<td><p>Merge two nearly-adjacent LineStrings into one by snapping their endpoints.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.utilities.merge_multiple_nearly_adjacent_segments" title="rsqsim_api.fault.utilities.merge_multiple_nearly_adjacent_segments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge_multiple_nearly_adjacent_segments</span></code></a>(segment_list)</p></td>
+<td><p>Iteratively merge a list of nearly-adjacent LineStrings into one.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.utilities.smallest_difference">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.utilities.</span></span><span class="sig-name descname"><span class="pre">smallest_difference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/utilities.html#smallest_difference"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.utilities.smallest_difference" title="Link to this definition"></a></dt>
+<dd><p>Return the smallest angular difference between two bearings.</p>
+<p>Accounts for the circular nature of bearings so that, for example,
+the difference between 350° and 10° is 20° rather than 340°.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value1</strong> (<em>float</em><em> or </em><em>int</em>) – First bearing in degrees.</p></li>
+<li><p><strong>value2</strong> (<em>float</em><em> or </em><em>int</em>) – Second bearing in degrees.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Smallest non-negative angular difference in degrees (0–180).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.utilities.normalize_bearing">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.utilities.</span></span><span class="sig-name descname"><span class="pre">normalize_bearing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bearing</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/utilities.html#normalize_bearing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.utilities.normalize_bearing" title="Link to this definition"></a></dt>
+<dd><p>Normalise a bearing to the range [0, 360).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>bearing</strong> (<em>float</em><em> or </em><em>int</em>) – Input bearing in degrees (any value).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Equivalent bearing in the range [0, 360).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.utilities.bearing_leq">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.utilities.</span></span><span class="sig-name descname"><span class="pre">bearing_leq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">benchmark</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/utilities.html#bearing_leq"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.utilities.bearing_leq" title="Link to this definition"></a></dt>
+<dd><p>Check whether a bearing is anticlockwise of (less than) another bearing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<em>int</em><em> or </em><em>float</em>) – The bearing to test, in degrees.</p></li>
+<li><p><strong>benchmark</strong> (<em>int</em><em> or </em><em>float</em>) – The reference bearing, in degrees.</p></li>
+<li><p><strong>tolerance</strong> (<em>int</em><em> or </em><em>float</em><em>, </em><em>optional</em>) – Angular tolerance in degrees to account for rounding.
+Defaults to 0.1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if <code class="docutils literal notranslate"><span class="pre">value</span></code> is strictly anticlockwise of
+<code class="docutils literal notranslate"><span class="pre">benchmark</span></code> (i.e. less than, within <code class="docutils literal notranslate"><span class="pre">tolerance</span></code>).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.utilities.bearing_geq">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.utilities.</span></span><span class="sig-name descname"><span class="pre">bearing_geq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">benchmark</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/utilities.html#bearing_geq"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.utilities.bearing_geq" title="Link to this definition"></a></dt>
+<dd><p>Check whether a bearing is clockwise of (greater than) another bearing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<em>int</em><em> or </em><em>float</em>) – The bearing to test, in degrees.</p></li>
+<li><p><strong>benchmark</strong> (<em>int</em><em> or </em><em>float</em>) – The reference bearing, in degrees.</p></li>
+<li><p><strong>tolerance</strong> (<em>int</em><em> or </em><em>float</em><em>, </em><em>optional</em>) – Angular tolerance in degrees to account for rounding.
+Defaults to 0.1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if <code class="docutils literal notranslate"><span class="pre">value</span></code> is strictly clockwise of <code class="docutils literal notranslate"><span class="pre">benchmark</span></code>
+(i.e. greater than, within <code class="docutils literal notranslate"><span class="pre">tolerance</span></code>).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.utilities.reverse_bearing">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.utilities.</span></span><span class="sig-name descname"><span class="pre">reverse_bearing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bearing</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/utilities.html#reverse_bearing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.utilities.reverse_bearing" title="Link to this definition"></a></dt>
+<dd><p>Return the bearing 180° opposite to the supplied bearing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>bearing</strong> (<em>int</em><em> or </em><em>float</em>) – Input bearing in degrees; must be in [0, 360].</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Reversed bearing in the range [0, 360).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">bearing</span></code> is not a float or int, or is outside [0, 360].</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.utilities.reverse_line">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.utilities.</span></span><span class="sig-name descname"><span class="pre">reverse_line</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">line</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/utilities.html#reverse_line"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.utilities.reverse_line" title="Link to this definition"></a></dt>
+<dd><p>Reverse the vertex order of a <code class="xref py py-class docutils literal notranslate"><span class="pre">LineString</span></code>.</p>
+<p>Works with both 2-D and 3-D (has_z) lines.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>line</strong> (<em>shapely.geometry.LineString</em>) – Input line to reverse.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>New line with vertices in the opposite order.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>shapely.geometry.LineString</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">line</span></code> is not a <code class="xref py py-class docutils literal notranslate"><span class="pre">LineString</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.utilities.fit_2d_line">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.utilities.</span></span><span class="sig-name descname"><span class="pre">fit_2d_line</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/utilities.html#fit_2d_line"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.utilities.fit_2d_line" title="Link to this definition"></a></dt>
+<dd><p>Fit a straight line to a 2-D point cloud and return the dip angle.</p>
+<p>Fits both <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">f(x)</span></code> and <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">g(y)</span></code> and selects whichever has
+the smaller residual, then converts the gradient to a dip angle.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>numpy.ndarray</em>) – x-coordinates of the points.</p></li>
+<li><p><strong>y</strong> (<em>numpy.ndarray</em>) – y-coordinates of the points.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dip angle in degrees measured from the horizontal.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If either <code class="docutils literal notranslate"><span class="pre">x</span></code> or <code class="docutils literal notranslate"><span class="pre">y</span></code> is not a <code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.utilities.calculate_dip_direction">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.utilities.</span></span><span class="sig-name descname"><span class="pre">calculate_dip_direction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">line</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/utilities.html#calculate_dip_direction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.utilities.calculate_dip_direction" title="Link to this definition"></a></dt>
+<dd><p>Calculate the dip direction of a fault-trace LineString in NZTM.</p>
+<p>Computes the strike of the line (best-fit gradient) and adds 90° to
+obtain the dip direction.  The sign is chosen so that the dip
+direction is consistent with the majority of vertices being to the
+right of the strike vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>line</strong> (<em>shapely.geometry.LineString</em><em> or </em><em>MultiLineString</em>) – Fault-surface trace in NZTM (EPSG:2193) coordinates.
+A <code class="xref py py-class docutils literal notranslate"><span class="pre">MultiLineString</span></code> is first merged
+into a single line.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dip direction in degrees, range [0, 360).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">line</span></code> is not a LineString or MultiLineString.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.utilities.calculate_strike">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.utilities.</span></span><span class="sig-name descname"><span class="pre">calculate_strike</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">line</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lt180</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/utilities.html#calculate_strike"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.utilities.calculate_strike" title="Link to this definition"></a></dt>
+<dd><p>Calculate the strike of a fault-trace LineString in NZTM.</p>
+<p>Fits a best-fit gradient to the trace coordinates and converts it
+to an azimuthal strike.  When <code class="docutils literal notranslate"><span class="pre">lt180</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> the result is
+reduced to the half-circle convention [0, 180).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>line</strong> (<em>shapely.geometry.LineString</em><em> or </em><em>MultiLineString</em>) – Fault-surface trace in NZTM (EPSG:2193) coordinates.
+A <code class="xref py py-class docutils literal notranslate"><span class="pre">MultiLineString</span></code> is first merged
+into a single line.</p></li>
+<li><p><strong>lt180</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, return a strike in [0, 180) instead of [0, 360).
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Strike in degrees.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">line</span></code> is not a LineString or MultiLineString.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.utilities.optimize_point_spacing">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.utilities.</span></span><span class="sig-name descname"><span class="pre">optimize_point_spacing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">line</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacing</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/utilities.html#optimize_point_spacing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.utilities.optimize_point_spacing" title="Link to this definition"></a></dt>
+<dd><p>Re-sample a LineString to approximately uniform point spacing.</p>
+<p>Interpolates <code class="docutils literal notranslate"><span class="pre">num_points</span></code> centre-points along the line, where
+<code class="docutils literal notranslate"><span class="pre">num_points</span></code> is chosen to match <code class="docutils literal notranslate"><span class="pre">spacing</span></code> as closely as
+possible.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>line</strong> (<em>shapely.geometry.LineString</em><em> or </em><em>MultiLineString</em>) – Input line.  A <code class="xref py py-class docutils literal notranslate"><span class="pre">MultiLineString</span></code> is
+first merged into a single line.</p></li>
+<li><p><strong>spacing</strong> (<em>float</em>) – Target point spacing in the same units as the line coordinates
+(metres for NZTM).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>centre_points</strong> (<em>list of shapely.geometry.Point</em>) – Resampled centre points along the line.</p></li>
+<li><p><strong>new_width</strong> (<em>float</em>) – Actual spacing used (line length / number of points).</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">line</span></code> is not a LineString or MultiLineString, or if
+<code class="docutils literal notranslate"><span class="pre">spacing</span></code> is not a positive float.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.utilities.chaikins_corner_cutting">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.utilities.</span></span><span class="sig-name descname"><span class="pre">chaikins_corner_cutting</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refinements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/utilities.html#chaikins_corner_cutting"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.utilities.chaikins_corner_cutting" title="Link to this definition"></a></dt>
+<dd><p>Smooth a polyline using Chaikin’s corner-cutting algorithm.</p>
+<p>Each refinement pass replaces every edge with two new points at
+the 1/4 and 3/4 positions, progressively rounding corners.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coords</strong> (<em>array-like</em><em> of </em><em>shape</em><em> (</em><a class="reference internal" href="../segment/index.html#rsqsim_api.fault.segment.DisplacementArray.n" title="rsqsim_api.fault.segment.DisplacementArray.n"><em>n</em></a><em>, </em><em>2</em><em>) or </em><em>(</em><a class="reference internal" href="../segment/index.html#rsqsim_api.fault.segment.DisplacementArray.n" title="rsqsim_api.fault.segment.DisplacementArray.n"><em>n</em></a><em>, </em><em>3</em><em>)</em>) – Coordinate array of the polyline vertices.</p></li>
+<li><p><strong>refinements</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of corner-cutting passes to apply.  Defaults to 5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Smoothed coordinate array with approximately
+<code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">*</span> <span class="pre">2</span> <span class="pre">**</span> <span class="pre">refinements</span></code> vertices.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.utilities.smooth_trace">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.utilities.</span></span><span class="sig-name descname"><span class="pre">smooth_trace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_refinements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/utilities.html#smooth_trace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.utilities.smooth_trace" title="Link to this definition"></a></dt>
+<dd><p>Smooth a fault-trace LineString using Chaikin’s corner-cutting algorithm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>trace</strong> (<em>shapely.geometry.LineString</em>) – Input trace to smooth.</p></li>
+<li><p><strong>n_refinements</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of corner-cutting passes.  Defaults to 5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Smoothed line with approximately
+<code class="docutils literal notranslate"><span class="pre">len(trace.coords)</span> <span class="pre">*</span> <span class="pre">2</span> <span class="pre">**</span> <span class="pre">n_refinements</span></code> vertices.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>shapely.geometry.LineString</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">trace</span></code> is not a <code class="xref py py-class docutils literal notranslate"><span class="pre">LineString</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.utilities.straighten">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.utilities.</span></span><span class="sig-name descname"><span class="pre">straighten</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">line</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">damping</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/utilities.html#straighten"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.utilities.straighten" title="Link to this definition"></a></dt>
+<dd><p>Straighten a 3-D line by damping its across-strike deviations.</p>
+<p>Projects each vertex onto the along-strike and across-strike
+directions, then reconstructs new positions with the across-strike
+component multiplied by <code class="docutils literal notranslate"><span class="pre">damping</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>line</strong> (<em>shapely.geometry.LineString</em>) – Input 3-D line (z coordinate included in
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">coords</span></code>).</p></li>
+<li><p><strong>strike</strong> (<em>float</em>) – Strike azimuth in degrees used to define the along/across
+direction.</p></li>
+<li><p><strong>damping</strong> (<em>float</em>) – Fractional weight applied to the across-strike displacement
+(0 = fully straight, 1 = unchanged).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>New line with reduced across-strike curvature.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>shapely.geometry.LineString</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.utilities.align_two_nearly_adjacent_segments">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.utilities.</span></span><span class="sig-name descname"><span class="pre">align_two_nearly_adjacent_segments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">segment_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/utilities.html#align_two_nearly_adjacent_segments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.utilities.align_two_nearly_adjacent_segments" title="Link to this definition"></a></dt>
+<dd><p>Snap the closest endpoints of two nearly-adjacent LineStrings to their midpoint.</p>
+<p>Identifies which endpoints of the two segments are closest to each
+other and replaces both with the midpoint, making the segments
+exactly adjacent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>segment_list</strong> (<em>list</em><em> of </em><em>shapely.geometry.LineString</em>) – Exactly two line segments.</p></li>
+<li><p><strong>tolerance</strong> (<em>float</em><em>, </em><em>optional</em>) – Maximum allowable distance (m) between the nearest endpoints
+for the operation to be valid.  Defaults to 200.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Two new segments with snapped endpoints.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple of shapely.geometry.LineString</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">segment_list</span></code> does not contain exactly 2 segments, or
+if the distance between them exceeds <code class="docutils literal notranslate"><span class="pre">tolerance</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.utilities.merge_two_nearly_adjacent_segments">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.utilities.</span></span><span class="sig-name descname"><span class="pre">merge_two_nearly_adjacent_segments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">segment_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/utilities.html#merge_two_nearly_adjacent_segments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.utilities.merge_two_nearly_adjacent_segments" title="Link to this definition"></a></dt>
+<dd><p>Merge two nearly-adjacent LineStrings into one by snapping their endpoints.</p>
+<p>Calls <a class="reference internal" href="#rsqsim_api.fault.utilities.align_two_nearly_adjacent_segments" title="rsqsim_api.fault.utilities.align_two_nearly_adjacent_segments"><code class="xref py py-func docutils literal notranslate"><span class="pre">align_two_nearly_adjacent_segments()</span></code></a> to snap the
+closest endpoints to their midpoint, then merges the result into a
+single <code class="xref py py-class docutils literal notranslate"><span class="pre">LineString</span></code> with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">linemerge()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>segment_list</strong> (<em>list</em><em> of </em><em>shapely.geometry.LineString</em>) – Exactly two line segments.</p></li>
+<li><p><strong>tolerance</strong> (<em>float</em><em>, </em><em>optional</em>) – Maximum allowable gap (m) between segments.  Defaults to 200.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Merged single line.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>shapely.geometry.LineString</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.utilities.merge_multiple_nearly_adjacent_segments">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.utilities.</span></span><span class="sig-name descname"><span class="pre">merge_multiple_nearly_adjacent_segments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">segment_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/utilities.html#merge_multiple_nearly_adjacent_segments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.utilities.merge_multiple_nearly_adjacent_segments" title="Link to this definition"></a></dt>
+<dd><p>Iteratively merge a list of nearly-adjacent LineStrings into one.</p>
+<p>Repeatedly merges the first two segments using
+<a class="reference internal" href="#rsqsim_api.fault.utilities.merge_two_nearly_adjacent_segments" title="rsqsim_api.fault.utilities.merge_two_nearly_adjacent_segments"><code class="xref py py-func docutils literal notranslate"><span class="pre">merge_two_nearly_adjacent_segments()</span></code></a> until a single line
+remains.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>segment_list</strong> (<em>list</em><em> of </em><em>shapely.geometry.LineString</em>) – Two or more line segments to merge, ordered along the trace.</p></li>
+<li><p><strong>tolerance</strong> (<em>float</em><em>, </em><em>optional</em>) – Maximum allowable gap (m) between consecutive segments.
+Defaults to 200.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Single merged line.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>shapely.geometry.LineString</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">segment_list</span></code> contains fewer than 2 segments.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../splines/index.html" class="btn btn-neutral float-left" title="rsqsim_api.fault.splines" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../../io/index.html" class="btn btn-neutral float-right" title="rsqsim_api.io" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

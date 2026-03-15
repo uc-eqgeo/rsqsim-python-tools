@@ -1,0 +1,426 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.io.array_operations &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="rsqsim_api.io.bruce_shaw_utilities" href="../bruce_shaw_utilities/index.html" />
+    <link rel="prev" title="rsqsim_api.io" href="../index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">rsqsim_api</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../../catalogue/index.html">rsqsim_api.catalogue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../fault/index.html">rsqsim_api.fault</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../index.html">rsqsim_api.io</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../tsunami/index.html">rsqsim_api.tsunami</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../visualisation/index.html">rsqsim_api.visualisation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_fault/index.html">test_fault</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_catalogue/index.html">test_catalogue</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">rsqsim_api</a></li>
+          <li class="breadcrumb-item"><a href="../index.html">rsqsim_api.io</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.io.array_operations</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/io/array_operations/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.io.array_operations">
+<span id="rsqsim-api-io-array-operations"></span><h1>rsqsim_api.io.array_operations<a class="headerlink" href="#module-rsqsim_api.io.array_operations" title="Link to this heading"></a></h1>
+<p>Raster and grid I/O utilities for GeoTIFF and GMT NetCDF formats.</p>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.array_operations.read_grid" title="rsqsim_api.io.array_operations.read_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_grid</span></code></a>(raster_file[, nan_threshold, window, ...])</p></td>
+<td><p>Read a raster file into coordinate and value arrays.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.array_operations.read_tiff" title="rsqsim_api.io.array_operations.read_tiff"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_tiff</span></code></a>(tiff[, x_correct, y_correct, nan_threshold, ...])</p></td>
+<td><p>Read a GeoTIFF file into coordinate and value arrays.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.array_operations.read_gmt_grid" title="rsqsim_api.io.array_operations.read_gmt_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_gmt_grid</span></code></a>(grd_file)</p></td>
+<td><p>Read a GMT-compatible NetCDF4 grid file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.array_operations.write_tiff" title="rsqsim_api.io.array_operations.write_tiff"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_tiff</span></code></a>(filename, x, y, z[, epsg, reverse_y, ...])</p></td>
+<td><p>Write coordinate and data arrays to a GeoTIFF file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.array_operations.write_gmt_grd" title="rsqsim_api.io.array_operations.write_gmt_grd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_gmt_grd</span></code></a>(x_array, y_array, mesh, grid_name)</p></td>
+<td><p>Write coordinate and data arrays to a GMT-compatible NetCDF4 grid file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.array_operations.tiff2grd" title="rsqsim_api.io.array_operations.tiff2grd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tiff2grd</span></code></a>(tiff, grd[, x_correct, y_correct, window, buffer])</p></td>
+<td><p>Convert a GeoTIFF to a GMT NetCDF4 grid file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.array_operations.grd2tiff" title="rsqsim_api.io.array_operations.grd2tiff"><code class="xref py py-obj docutils literal notranslate"><span class="pre">grd2tiff</span></code></a>(grd, tiff[, x_correct, y_correct])</p></td>
+<td><p>Convert a GMT NetCDF4 grid file to a GeoTIFF.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.array_operations.array_to_gmt" title="rsqsim_api.io.array_operations.array_to_gmt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">array_to_gmt</span></code></a>(array, out_file)</p></td>
+<td><p>Write a NumPy array to a plain-text GMT-compatible file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.array_operations.clip_tiff" title="rsqsim_api.io.array_operations.clip_tiff"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clip_tiff</span></code></a>(in_tiff, out_tiff, window[, buffer])</p></td>
+<td><p>Clip a GeoTIFF to a spatial window and write the result.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.array_operations.reproject_tiff" title="rsqsim_api.io.array_operations.reproject_tiff"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reproject_tiff</span></code></a>(in_raster, out_raster[, dst_epsg, ...])</p></td>
+<td><p>Reproject a raster to a different coordinate reference system.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.array_operations.read_grid">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.array_operations.</span></span><span class="sig-name descname"><span class="pre">read_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raster_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nan_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_meta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/array_operations.html#read_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.array_operations.read_grid" title="Link to this definition"></a></dt>
+<dd><p>Read a raster file into coordinate and value arrays.</p>
+<p>Supports optional spatial windowing by bounding box or shapefile
+extent.  Values with absolute magnitude above <code class="docutils literal notranslate"><span class="pre">nan_threshold</span></code> are
+replaced with NaN.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>raster_file</strong> (<em>str</em>) – Path to the raster file (any format supported by rasterio).</p></li>
+<li><p><strong>nan_threshold</strong> (<em>float</em><em> | </em><em>int</em>) – Values with <code class="docutils literal notranslate"><span class="pre">|z|</span> <span class="pre">&gt;</span> <span class="pre">nan_threshold</span></code> are set to NaN.  Defaults
+to 100.</p></li>
+<li><p><strong>window</strong> (<em>str</em><em> | </em><em>list</em><em> | </em><em>tuple</em><em> | </em><em>numpy.ndarray</em>) – Optional spatial subset.  May be a path to a vector file (whose
+bounding box is used), or a 4-element sequence
+<code class="docutils literal notranslate"><span class="pre">[x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max]</span></code> in the raster’s CRS.</p></li>
+<li><p><strong>buffer</strong> (<em>float</em><em> | </em><em>int</em>) – Extra margin (in CRS units) added around the window bounds.
+Defaults to 100.</p></li>
+<li><p><strong>return_meta</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, also return the rasterio metadata dict updated to
+reflect the windowed read.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x</strong> (<em>numpy.ndarray</em>) – 1-D array of easting (column-centre) coordinates.</p></li>
+<li><p><strong>y</strong> (<em>numpy.ndarray</em>) – 1-D array of northing (row-centre) coordinates.</p></li>
+<li><p><strong>z</strong> (<em>numpy.ndarray of shape (len(y), len(x))</em>) – Data values with out-of-range entries set to NaN.</p></li>
+<li><p><strong>geo_meta</strong> (<em>dict, optional</em>) – Rasterio metadata dict (only returned when <code class="docutils literal notranslate"><span class="pre">return_meta=True</span></code>).</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">raster_file</span></code> does not exist, the window sequence does not
+have exactly 4 elements, or <code class="docutils literal notranslate"><span class="pre">x_max</span> <span class="pre">&lt;=</span> <span class="pre">x_min</span></code> / <code class="docutils literal notranslate"><span class="pre">y_max</span> <span class="pre">&lt;=</span> <span class="pre">y_min</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.array_operations.read_tiff">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.array_operations.</span></span><span class="sig-name descname"><span class="pre">read_tiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tiff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_correct</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_correct</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nan_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">make_y_ascending</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_meta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/array_operations.html#read_tiff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.array_operations.read_tiff" title="Link to this definition"></a></dt>
+<dd><p>Read a GeoTIFF file into coordinate and value arrays.</p>
+<p>Thin wrapper around <a class="reference internal" href="#rsqsim_api.io.array_operations.read_grid" title="rsqsim_api.io.array_operations.read_grid"><code class="xref py py-func docutils literal notranslate"><span class="pre">read_grid()</span></code></a> with GeoTIFF-specific defaults
+and optional coordinate offset correction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tiff</strong> (<em>str</em>) – Path to the GeoTIFF file.</p></li>
+<li><p><strong>x_correct</strong> (<em>float</em>) – Offset added to x coordinates to correct for pixel vs. gridline
+registration differences (GMT convention).</p></li>
+<li><p><strong>y_correct</strong> (<em>float</em>) – Offset added to y coordinates (same purpose as <code class="docutils literal notranslate"><span class="pre">x_correct</span></code>).</p></li>
+<li><p><strong>nan_threshold</strong> (<em>float</em><em> | </em><em>int</em>) – Values with <code class="docutils literal notranslate"><span class="pre">|z|</span> <span class="pre">&gt;</span> <span class="pre">nan_threshold</span></code> are set to NaN.  Defaults
+to 9000 (suitable for elevation data in metres).</p></li>
+<li><p><strong>make_y_ascending</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> and <code class="docutils literal notranslate"><span class="pre">y[0]</span> <span class="pre">&gt;</span> <span class="pre">y[-1]</span></code>, reverse y and the corresponding
+rows of z so that y increases monotonically.</p></li>
+<li><p><strong>window</strong> (<em>str</em><em> | </em><em>list</em><em> | </em><em>tuple</em><em> | </em><em>numpy.ndarray</em>) – Optional spatial subset passed to <a class="reference internal" href="#rsqsim_api.io.array_operations.read_grid" title="rsqsim_api.io.array_operations.read_grid"><code class="xref py py-func docutils literal notranslate"><span class="pre">read_grid()</span></code></a>.</p></li>
+<li><p><strong>buffer</strong> (<em>float</em><em> | </em><em>int</em>) – Buffer added around the window bounds in CRS units.</p></li>
+<li><p><strong>return_meta</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, also return the rasterio metadata dict.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x</strong> (<em>numpy.ndarray</em>) – 1-D easting coordinate array.</p></li>
+<li><p><strong>y</strong> (<em>numpy.ndarray</em>) – 1-D northing coordinate array.</p></li>
+<li><p><strong>z</strong> (<em>numpy.ndarray of shape (len(y), len(x))</em>) – Data values.</p></li>
+<li><p><strong>geo_meta</strong> (<em>dict, optional</em>) – Rasterio metadata (only returned when <code class="docutils literal notranslate"><span class="pre">return_meta=True</span></code>).</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">tiff</span></code> does not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.array_operations.read_gmt_grid">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.array_operations.</span></span><span class="sig-name descname"><span class="pre">read_gmt_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grd_file</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/array_operations.html#read_gmt_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.array_operations.read_gmt_grid" title="Link to this definition"></a></dt>
+<dd><p>Read a GMT-compatible NetCDF4 grid file.</p>
+<p>Reads variables named <code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">y</span></code>, and <code class="docutils literal notranslate"><span class="pre">z</span></code> from the file and
+fills any masked values with NaN.  Faster than using rasterio for
+NetCDF grids.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>grd_file</strong> (<em>str</em>) – Path to the GMT <code class="docutils literal notranslate"><span class="pre">.grd</span></code> NetCDF4 file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x</strong> (<em>numpy.ndarray</em>) – 1-D array of x (easting) coordinate values.</p></li>
+<li><p><strong>y</strong> (<em>numpy.ndarray</em>) – 1-D array of y (northing) coordinate values.</p></li>
+<li><p><strong>z</strong> (<em>numpy.ndarray of shape (len(y), len(x))</em>) – Grid data values; masked values replaced with NaN.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">grd_file</span></code> does not exist or if the file does not contain
+variables named <code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">y</span></code>, and <code class="docutils literal notranslate"><span class="pre">z</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.array_operations.write_tiff">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.array_operations.</span></span><span class="sig-name descname"><span class="pre">write_tiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2193</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reverse_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compress_lzw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/array_operations.html#write_tiff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.array_operations.write_tiff" title="Link to this definition"></a></dt>
+<dd><p>Write coordinate and data arrays to a GeoTIFF file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<em>str</em>) – Output GeoTIFF file path.</p></li>
+<li><p><strong>x</strong> (<em>numpy.ndarray</em>) – 1-D array of easting coordinates (column centres).</p></li>
+<li><p><strong>y</strong> (<em>numpy.ndarray</em>) – 1-D array of northing coordinates (row centres).</p></li>
+<li><p><strong>z</strong> (<em>numpy.ndarray</em><em> of </em><em>shape</em><em> (</em><em>len</em><em>(</em><em>y</em><em>)</em><em>, </em><em>len</em><em>(</em><em>x</em><em>)</em><em>)</em>) – Data values to write to band 1.</p></li>
+<li><p><strong>epsg</strong> (<em>int</em>) – EPSG code for the output coordinate reference system.  Defaults
+to 2193 (NZTM2000).</p></li>
+<li><p><strong>reverse_y</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, write the GeoTIFF with y decreasing (top-to-bottom),
+as preferred by some GIS applications.</p></li>
+<li><p><strong>compress_lzw</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), apply LZW compression.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">x</span></code> or <code class="docutils literal notranslate"><span class="pre">y</span></code> are not 1-D, or if <code class="docutils literal notranslate"><span class="pre">z.shape</span> <span class="pre">!=</span> <span class="pre">(len(y),</span> <span class="pre">len(x))</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.array_operations.write_gmt_grd">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.array_operations.</span></span><span class="sig-name descname"><span class="pre">write_gmt_grd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/array_operations.html#write_gmt_grd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.array_operations.write_gmt_grd" title="Link to this definition"></a></dt>
+<dd><p>Write coordinate and data arrays to a GMT-compatible NetCDF4 grid file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_array</strong> (<em>numpy.ndarray</em>) – 1-D array of x (easting) coordinate values.</p></li>
+<li><p><strong>y_array</strong> (<em>numpy.ndarray</em>) – 1-D array of y (northing) coordinate values.</p></li>
+<li><p><strong>mesh</strong> (<em>numpy.ndarray</em><em> of </em><em>shape</em><em> (</em><em>len</em><em>(</em><em>y_array</em><em>)</em><em>, </em><em>len</em><em>(</em><em>x_array</em><em>)</em><em>)</em>) – Data values (z) to store in the <code class="docutils literal notranslate"><span class="pre">z</span></code> variable.</p></li>
+<li><p><strong>grid_name</strong> (<em>str</em>) – Output file path, typically ending in <code class="docutils literal notranslate"><span class="pre">.grd</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">x_array</span></code> or <code class="docutils literal notranslate"><span class="pre">y_array</span></code> are not 1-D, or if
+<code class="docutils literal notranslate"><span class="pre">mesh.shape</span> <span class="pre">!=</span> <span class="pre">(len(y_array),</span> <span class="pre">len(x_array))</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.array_operations.tiff2grd">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.array_operations.</span></span><span class="sig-name descname"><span class="pre">tiff2grd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tiff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_correct</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_correct</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/array_operations.html#tiff2grd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.array_operations.tiff2grd" title="Link to this definition"></a></dt>
+<dd><p>Convert a GeoTIFF to a GMT NetCDF4 grid file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tiff</strong> (<em>str</em>) – Path to the input GeoTIFF file.</p></li>
+<li><p><strong>grd</strong> (<em>str</em>) – Path for the output GMT <code class="docutils literal notranslate"><span class="pre">.grd</span></code> file.</p></li>
+<li><p><strong>x_correct</strong> (<em>float</em>) – Offset applied to x coordinates to correct for pixel vs. gridline
+registration differences.</p></li>
+<li><p><strong>y_correct</strong> (<em>float</em>) – Offset applied to y coordinates (same purpose as <code class="docutils literal notranslate"><span class="pre">x_correct</span></code>).</p></li>
+<li><p><strong>window</strong> (<em>list</em><em> | </em><em>tuple</em><em> | </em><em>int</em>) – Optional spatial subset passed to <a class="reference internal" href="#rsqsim_api.io.array_operations.read_tiff" title="rsqsim_api.io.array_operations.read_tiff"><code class="xref py py-func docutils literal notranslate"><span class="pre">read_tiff()</span></code></a>.</p></li>
+<li><p><strong>buffer</strong> (<em>float</em><em> | </em><em>int</em>) – Buffer added around the window bounds in CRS units.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">tiff</span></code> does not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.array_operations.grd2tiff">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.array_operations.</span></span><span class="sig-name descname"><span class="pre">grd2tiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tiff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_correct</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_correct</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/array_operations.html#grd2tiff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.array_operations.grd2tiff" title="Link to this definition"></a></dt>
+<dd><p>Convert a GMT NetCDF4 grid file to a GeoTIFF.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>grd</strong> (<em>str</em>) – Path to the input GMT <code class="docutils literal notranslate"><span class="pre">.grd</span></code> file.</p></li>
+<li><p><strong>tiff</strong> (<em>str</em>) – Path for the output GeoTIFF file.</p></li>
+<li><p><strong>x_correct</strong> (<em>float</em>) – Offset applied to x coordinates after reading.</p></li>
+<li><p><strong>y_correct</strong> (<em>float</em>) – Offset applied to y coordinates after reading.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">grd</span></code> does not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.array_operations.array_to_gmt">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.array_operations.</span></span><span class="sig-name descname"><span class="pre">array_to_gmt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_file</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/array_operations.html#array_to_gmt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.array_operations.array_to_gmt" title="Link to this definition"></a></dt>
+<dd><p>Write a NumPy array to a plain-text GMT-compatible file.</p>
+<p>Each row of <code class="docutils literal notranslate"><span class="pre">array</span></code> is written as a space-separated line of values
+formatted to 4 decimal places.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>array</strong> (<em>numpy.ndarray</em>) – 1-D or 2-D array to write.  Must have at least 2 elements or
+columns.</p></li>
+<li><p><strong>out_file</strong> (<em>str</em>) – Output file path.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If the last dimension of <code class="docutils literal notranslate"><span class="pre">array</span></code> has fewer than 2 elements.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.array_operations.clip_tiff">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.array_operations.</span></span><span class="sig-name descname"><span class="pre">clip_tiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_tiff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_tiff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/array_operations.html#clip_tiff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.array_operations.clip_tiff" title="Link to this definition"></a></dt>
+<dd><p>Clip a GeoTIFF to a spatial window and write the result.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>in_tiff</strong> (<em>str</em>) – Path to the input GeoTIFF file.</p></li>
+<li><p><strong>out_tiff</strong> (<em>str</em>) – Path for the output clipped GeoTIFF.</p></li>
+<li><p><strong>window</strong> (<em>str</em><em> | </em><em>list</em><em> | </em><em>tuple</em><em> | </em><em>int</em>) – Spatial subset specifier: a path to a vector file or a 4-element
+sequence <code class="docutils literal notranslate"><span class="pre">[x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max]</span></code>.</p></li>
+<li><p><strong>buffer</strong> (<em>float</em><em> | </em><em>int</em>) – Extra margin added around the window bounds in CRS units.
+Defaults to 100.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">in_tiff</span></code> does not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.array_operations.reproject_tiff">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.array_operations.</span></span><span class="sig-name descname"><span class="pre">reproject_tiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_raster</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_raster</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dst_epsg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4326</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tiff'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/array_operations.html#reproject_tiff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.array_operations.reproject_tiff" title="Link to this definition"></a></dt>
+<dd><p>Reproject a raster to a different coordinate reference system.</p>
+<p>Reads the input raster, reprojects it to the target CRS using
+nearest-neighbour resampling, and writes the result as a GeoTIFF
+or GMT grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>in_raster</strong> (<em>str</em>) – Path to the input raster file.</p></li>
+<li><p><strong>out_raster</strong> (<em>str</em>) – Path for the output reprojected file.</p></li>
+<li><p><strong>dst_epsg</strong> (<em>int</em>) – Target EPSG code.  Defaults to 4326 (WGS84 geographic).</p></li>
+<li><p><strong>window</strong> (<em>str</em><em> | </em><em>list</em><em> | </em><em>tuple</em><em> | </em><em>int</em>) – Optional spatial subset applied before reprojection.</p></li>
+<li><p><strong>buffer</strong> (<em>float</em><em> | </em><em>int</em>) – Buffer added around the window bounds in CRS units.</p></li>
+<li><p><strong>out_format</strong> – Output format: <code class="docutils literal notranslate"><span class="pre">&quot;tiff&quot;</span></code> (default) or <code class="docutils literal notranslate"><span class="pre">&quot;grd&quot;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">out_format</span></code> is not <code class="docutils literal notranslate"><span class="pre">&quot;tiff&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;grd&quot;</span></code>.</p>
+</dd>
+</dl>
+<div class="admonition-notes admonition">
+<p class="admonition-title">Notes</p>
+<p>Based on the rasterio reprojection example from the rasterio
+documentation.</p>
+</div>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../index.html" class="btn btn-neutral float-left" title="rsqsim_api.io" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../bruce_shaw_utilities/index.html" class="btn btn-neutral float-right" title="rsqsim_api.io.bruce_shaw_utilities" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

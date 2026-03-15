@@ -1,0 +1,326 @@
+rsqsim_api.fault.utilities
+==========================
+
+.. py:module:: rsqsim_api.fault.utilities
+
+.. autoapi-nested-parse::
+
+   Geometric utility functions for fault-trace analysis and manipulation.
+
+   Provides bearing arithmetic, line operations (strike, dip direction,
+   reversal, smoothing), and helpers for merging nearly-adjacent
+   :class:`~shapely.geometry.LineString` segments into single traces.
+
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   rsqsim_api.fault.utilities.smallest_difference
+   rsqsim_api.fault.utilities.normalize_bearing
+   rsqsim_api.fault.utilities.bearing_leq
+   rsqsim_api.fault.utilities.bearing_geq
+   rsqsim_api.fault.utilities.reverse_bearing
+   rsqsim_api.fault.utilities.reverse_line
+   rsqsim_api.fault.utilities.fit_2d_line
+   rsqsim_api.fault.utilities.calculate_dip_direction
+   rsqsim_api.fault.utilities.calculate_strike
+   rsqsim_api.fault.utilities.optimize_point_spacing
+   rsqsim_api.fault.utilities.chaikins_corner_cutting
+   rsqsim_api.fault.utilities.smooth_trace
+   rsqsim_api.fault.utilities.straighten
+   rsqsim_api.fault.utilities.align_two_nearly_adjacent_segments
+   rsqsim_api.fault.utilities.merge_two_nearly_adjacent_segments
+   rsqsim_api.fault.utilities.merge_multiple_nearly_adjacent_segments
+
+
+Module Contents
+---------------
+
+.. py:function:: smallest_difference(value1, value2)
+
+   Return the smallest angular difference between two bearings.
+
+   Accounts for the circular nature of bearings so that, for example,
+   the difference between 350° and 10° is 20° rather than 340°.
+
+   :param value1: First bearing in degrees.
+   :type value1: float or int
+   :param value2: Second bearing in degrees.
+   :type value2: float or int
+
+   :returns: Smallest non-negative angular difference in degrees (0–180).
+   :rtype: float
+
+
+.. py:function:: normalize_bearing(bearing)
+
+   Normalise a bearing to the range [0, 360).
+
+   :param bearing: Input bearing in degrees (any value).
+   :type bearing: float or int
+
+   :returns: Equivalent bearing in the range [0, 360).
+   :rtype: float
+
+
+.. py:function:: bearing_leq(value, benchmark, tolerance = 0.1)
+
+   Check whether a bearing is anticlockwise of (less than) another bearing.
+
+   :param value: The bearing to test, in degrees.
+   :type value: int or float
+   :param benchmark: The reference bearing, in degrees.
+   :type benchmark: int or float
+   :param tolerance: Angular tolerance in degrees to account for rounding.
+                     Defaults to 0.1.
+   :type tolerance: int or float, optional
+
+   :returns: ``True`` if ``value`` is strictly anticlockwise of
+             ``benchmark`` (i.e. less than, within ``tolerance``).
+   :rtype: bool
+
+
+.. py:function:: bearing_geq(value, benchmark, tolerance = 0.1)
+
+   Check whether a bearing is clockwise of (greater than) another bearing.
+
+   :param value: The bearing to test, in degrees.
+   :type value: int or float
+   :param benchmark: The reference bearing, in degrees.
+   :type benchmark: int or float
+   :param tolerance: Angular tolerance in degrees to account for rounding.
+                     Defaults to 0.1.
+   :type tolerance: int or float, optional
+
+   :returns: ``True`` if ``value`` is strictly clockwise of ``benchmark``
+             (i.e. greater than, within ``tolerance``).
+   :rtype: bool
+
+
+.. py:function:: reverse_bearing(bearing)
+
+   Return the bearing 180° opposite to the supplied bearing.
+
+   :param bearing: Input bearing in degrees; must be in [0, 360].
+   :type bearing: int or float
+
+   :returns: Reversed bearing in the range [0, 360).
+   :rtype: float
+
+   :raises AssertionError: If ``bearing`` is not a float or int, or is outside [0, 360].
+
+
+.. py:function:: reverse_line(line)
+
+   Reverse the vertex order of a :class:`~shapely.geometry.LineString`.
+
+   Works with both 2-D and 3-D (has_z) lines.
+
+   :param line: Input line to reverse.
+   :type line: shapely.geometry.LineString
+
+   :returns: New line with vertices in the opposite order.
+   :rtype: shapely.geometry.LineString
+
+   :raises AssertionError: If ``line`` is not a :class:`~shapely.geometry.LineString`.
+
+
+.. py:function:: fit_2d_line(x, y)
+
+   Fit a straight line to a 2-D point cloud and return the dip angle.
+
+   Fits both ``y = f(x)`` and ``x = g(y)`` and selects whichever has
+   the smaller residual, then converts the gradient to a dip angle.
+
+   :param x: x-coordinates of the points.
+   :type x: numpy.ndarray
+   :param y: y-coordinates of the points.
+   :type y: numpy.ndarray
+
+   :returns: Dip angle in degrees measured from the horizontal.
+   :rtype: float
+
+   :raises AssertionError: If either ``x`` or ``y`` is not a :class:`numpy.ndarray`.
+
+
+.. py:function:: calculate_dip_direction(line)
+
+   Calculate the dip direction of a fault-trace LineString in NZTM.
+
+   Computes the strike of the line (best-fit gradient) and adds 90° to
+   obtain the dip direction.  The sign is chosen so that the dip
+   direction is consistent with the majority of vertices being to the
+   right of the strike vector.
+
+   :param line: Fault-surface trace in NZTM (EPSG:2193) coordinates.
+                A :class:`~shapely.geometry.MultiLineString` is first merged
+                into a single line.
+   :type line: shapely.geometry.LineString or MultiLineString
+
+   :returns: Dip direction in degrees, range [0, 360).
+   :rtype: float
+
+   :raises AssertionError: If ``line`` is not a LineString or MultiLineString.
+
+
+.. py:function:: calculate_strike(line, lt180 = False)
+
+   Calculate the strike of a fault-trace LineString in NZTM.
+
+   Fits a best-fit gradient to the trace coordinates and converts it
+   to an azimuthal strike.  When ``lt180`` is ``True`` the result is
+   reduced to the half-circle convention [0, 180).
+
+   :param line: Fault-surface trace in NZTM (EPSG:2193) coordinates.
+                A :class:`~shapely.geometry.MultiLineString` is first merged
+                into a single line.
+   :type line: shapely.geometry.LineString or MultiLineString
+   :param lt180: If ``True``, return a strike in [0, 180) instead of [0, 360).
+                 Defaults to ``False``.
+   :type lt180: bool, optional
+
+   :returns: Strike in degrees.
+   :rtype: float
+
+   :raises AssertionError: If ``line`` is not a LineString or MultiLineString.
+
+
+.. py:function:: optimize_point_spacing(line, spacing)
+
+   Re-sample a LineString to approximately uniform point spacing.
+
+   Interpolates ``num_points`` centre-points along the line, where
+   ``num_points`` is chosen to match ``spacing`` as closely as
+   possible.
+
+   :param line: Input line.  A :class:`~shapely.geometry.MultiLineString` is
+                first merged into a single line.
+   :type line: shapely.geometry.LineString or MultiLineString
+   :param spacing: Target point spacing in the same units as the line coordinates
+                   (metres for NZTM).
+   :type spacing: float
+
+   :returns: * **centre_points** (*list of shapely.geometry.Point*) -- Resampled centre points along the line.
+             * **new_width** (*float*) -- Actual spacing used (line length / number of points).
+
+   :raises AssertionError: If ``line`` is not a LineString or MultiLineString, or if
+       ``spacing`` is not a positive float.
+
+
+.. py:function:: chaikins_corner_cutting(coords, refinements=5)
+
+   Smooth a polyline using Chaikin's corner-cutting algorithm.
+
+   Each refinement pass replaces every edge with two new points at
+   the 1/4 and 3/4 positions, progressively rounding corners.
+
+   :param coords: Coordinate array of the polyline vertices.
+   :type coords: array-like of shape (n, 2) or (n, 3)
+   :param refinements: Number of corner-cutting passes to apply.  Defaults to 5.
+   :type refinements: int, optional
+
+   :returns: Smoothed coordinate array with approximately
+             ``n * 2 ** refinements`` vertices.
+   :rtype: numpy.ndarray
+
+
+.. py:function:: smooth_trace(trace, n_refinements = 5)
+
+   Smooth a fault-trace LineString using Chaikin's corner-cutting algorithm.
+
+   :param trace: Input trace to smooth.
+   :type trace: shapely.geometry.LineString
+   :param n_refinements: Number of corner-cutting passes.  Defaults to 5.
+   :type n_refinements: int, optional
+
+   :returns: Smoothed line with approximately
+             ``len(trace.coords) * 2 ** n_refinements`` vertices.
+   :rtype: shapely.geometry.LineString
+
+   :raises AssertionError: If ``trace`` is not a :class:`~shapely.geometry.LineString`.
+
+
+.. py:function:: straighten(line, strike, damping)
+
+   Straighten a 3-D line by damping its across-strike deviations.
+
+   Projects each vertex onto the along-strike and across-strike
+   directions, then reconstructs new positions with the across-strike
+   component multiplied by ``damping``.
+
+   :param line: Input 3-D line (z coordinate included in
+                :attr:`~shapely.geometry.LineString.coords`).
+   :type line: shapely.geometry.LineString
+   :param strike: Strike azimuth in degrees used to define the along/across
+                  direction.
+   :type strike: float
+   :param damping: Fractional weight applied to the across-strike displacement
+                   (0 = fully straight, 1 = unchanged).
+   :type damping: float
+
+   :returns: New line with reduced across-strike curvature.
+   :rtype: shapely.geometry.LineString
+
+
+.. py:function:: align_two_nearly_adjacent_segments(segment_list, tolerance = 200.0)
+
+   Snap the closest endpoints of two nearly-adjacent LineStrings to their midpoint.
+
+   Identifies which endpoints of the two segments are closest to each
+   other and replaces both with the midpoint, making the segments
+   exactly adjacent.
+
+   :param segment_list: Exactly two line segments.
+   :type segment_list: list of shapely.geometry.LineString
+   :param tolerance: Maximum allowable distance (m) between the nearest endpoints
+                     for the operation to be valid.  Defaults to 200.
+   :type tolerance: float, optional
+
+   :returns: Two new segments with snapped endpoints.
+   :rtype: tuple of shapely.geometry.LineString
+
+   :raises AssertionError: If ``segment_list`` does not contain exactly 2 segments, or
+       if the distance between them exceeds ``tolerance``.
+
+
+.. py:function:: merge_two_nearly_adjacent_segments(segment_list, tolerance = 200.0)
+
+   Merge two nearly-adjacent LineStrings into one by snapping their endpoints.
+
+   Calls :func:`align_two_nearly_adjacent_segments` to snap the
+   closest endpoints to their midpoint, then merges the result into a
+   single :class:`~shapely.geometry.LineString` with
+   :func:`~shapely.ops.linemerge`.
+
+   :param segment_list: Exactly two line segments.
+   :type segment_list: list of shapely.geometry.LineString
+   :param tolerance: Maximum allowable gap (m) between segments.  Defaults to 200.
+   :type tolerance: float, optional
+
+   :returns: Merged single line.
+   :rtype: shapely.geometry.LineString
+
+
+.. py:function:: merge_multiple_nearly_adjacent_segments(segment_list, tolerance = 200.0)
+
+   Iteratively merge a list of nearly-adjacent LineStrings into one.
+
+   Repeatedly merges the first two segments using
+   :func:`merge_two_nearly_adjacent_segments` until a single line
+   remains.
+
+   :param segment_list: Two or more line segments to merge, ordered along the trace.
+   :type segment_list: list of shapely.geometry.LineString
+   :param tolerance: Maximum allowable gap (m) between consecutive segments.
+                     Defaults to 200.
+   :type tolerance: float, optional
+
+   :returns: Single merged line.
+   :rtype: shapely.geometry.LineString
+
+   :raises AssertionError: If ``segment_list`` contains fewer than 2 segments.
+
+

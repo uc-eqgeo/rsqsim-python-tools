@@ -1,0 +1,338 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.io.mesh_utils &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.io.mesh_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for rsqsim_api.io.mesh_utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Utilities for converting between triangulated mesh formats and NumPy arrays.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">meshio</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<div class="viewcode-block" id="expected_formats">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/mesh_utils/index.html#rsqsim_api.io.mesh_utils.expected_formats">[docs]</a>
+<span class="n">expected_formats</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;stl&quot;</span><span class="p">,</span> <span class="s2">&quot;obj&quot;</span><span class="p">,</span> <span class="s2">&quot;e&quot;</span><span class="p">,</span> <span class="s2">&quot;txt&quot;</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="change_mesh_format">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/mesh_utils/index.html#rsqsim_api.io.mesh_utils.change_mesh_format">[docs]</a>
+<span class="k">def</span> <span class="nf">change_mesh_format</span><span class="p">(</span><span class="n">in_mesh</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">out_format</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">out_mesh</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a mesh file from one format to another.</span>
+
+<span class="sd">    Reads the input mesh with meshio and writes it in the requested output</span>
+<span class="sd">    format.  If ``out_format`` is ``&quot;txt&quot;``, the mesh is converted to a</span>
+<span class="sd">    flat NumPy array and saved with ``numpy.savetxt``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    in_mesh :</span>
+<span class="sd">        Path to the input mesh file (any format supported by meshio).</span>
+<span class="sd">    out_format :</span>
+<span class="sd">        Target format.  Must be one of ``&quot;stl&quot;``, ``&quot;obj&quot;``, ``&quot;e&quot;``,</span>
+<span class="sd">        or ``&quot;txt&quot;``.</span>
+<span class="sd">    out_mesh :</span>
+<span class="sd">        Output file path.  If ``None``, the input file stem is reused</span>
+<span class="sd">        with the new extension.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``in_mesh`` does not exist or ``out_format`` is not in the</span>
+<span class="sd">        allowed list.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">in_mesh</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">out_format</span> <span class="ow">in</span> <span class="n">expected_formats</span>
+
+    <span class="n">mesh</span> <span class="o">=</span> <span class="n">meshio</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">in_mesh</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">out_mesh</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">out_mesh_name</span> <span class="o">=</span> <span class="n">out_mesh</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">handle</span> <span class="o">=</span> <span class="n">in_mesh</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">out_mesh_name</span> <span class="o">=</span> <span class="n">handle</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">out_format</span>
+
+    <span class="k">if</span> <span class="n">out_format</span> <span class="o">==</span> <span class="s2">&quot;txt&quot;</span><span class="p">:</span>
+        <span class="n">mesh_as_array</span> <span class="o">=</span> <span class="n">mesh_to_array</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">out_mesh_name</span><span class="p">,</span> <span class="n">mesh_as_array</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%.4f</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mesh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">out_mesh_name</span><span class="p">,</span> <span class="n">file_format</span><span class="o">=</span><span class="n">out_format</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="mesh_to_array">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/mesh_utils/index.html#rsqsim_api.io.mesh_utils.mesh_to_array">[docs]</a>
+<span class="k">def</span> <span class="nf">mesh_to_array</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">meshio</span><span class="o">.</span><span class="n">Mesh</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a meshio Mesh to a flat NumPy triangle array.</span>
+
+<span class="sd">    Expands the indexed triangle representation into a dense array where</span>
+<span class="sd">    each row contains the (x, y, z) coordinates of all three corner</span>
+<span class="sd">    vertices of one triangle.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mesh :</span>
+<span class="sd">        meshio Mesh object containing at least one set of triangular cells.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray of shape (n_triangles, 9)</span>
+<span class="sd">        Each row is ``[x1,y1,z1, x2,y2,z2, x3,y3,z3]``.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If the mesh contains no triangular cells.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="s2">&quot;triangle&quot;</span> <span class="ow">in</span> <span class="n">mesh</span><span class="o">.</span><span class="n">cells_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="n">triangles</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">cells_dict</span><span class="p">[</span><span class="s2">&quot;triangle&quot;</span><span class="p">]</span>
+    <span class="n">point_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">point</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">points</span><span class="p">)}</span>
+    <span class="n">mesh_as_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">point_dict</span><span class="p">[</span><span class="n">vertex</span><span class="p">]</span> <span class="k">for</span> <span class="n">vertex</span> <span class="ow">in</span> <span class="n">tri</span><span class="p">])</span> <span class="k">for</span> <span class="n">tri</span> <span class="ow">in</span> <span class="n">triangles</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">mesh_as_array</span></div>
+
+
+
+<div class="viewcode-block" id="convert_multi">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/mesh_utils/index.html#rsqsim_api.io.mesh_utils.convert_multi">[docs]</a>
+<span class="k">def</span> <span class="nf">convert_multi</span><span class="p">(</span><span class="n">search_string</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">out_format</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert all mesh files matching a glob pattern to a target format.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    search_string :</span>
+<span class="sd">        Glob pattern used to find input mesh files, e.g.</span>
+<span class="sd">        ``&quot;/path/to/meshes/*.stl&quot;``.</span>
+<span class="sd">    out_format :</span>
+<span class="sd">        Target format passed to :func:`change_mesh_format`.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If no files match ``search_string``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">search_string</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+        <span class="n">change_mesh_format</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">out_format</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="array_to_mesh">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/mesh_utils/index.html#rsqsim_api.io.mesh_utils.array_to_mesh">[docs]</a>
+<span class="k">def</span> <span class="nf">array_to_mesh</span><span class="p">(</span><span class="n">triangle_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a flat triangle array to a meshio Mesh object.</span>
+
+<span class="sd">    Deduplicates the vertices across all triangles and builds an indexed</span>
+<span class="sd">    meshio Mesh with a single set of triangular cells.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    triangle_array : numpy.ndarray of shape (n_triangles, 9)</span>
+<span class="sd">        Each row contains the (x, y, z) coordinates of the three corner</span>
+<span class="sd">        vertices of one triangle: ``[x1,y1,z1, x2,y2,z2, x3,y3,z3]``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    meshio.Mesh</span>
+<span class="sd">        Mesh with unique ``points`` (shape ``(n_unique_verts, 3)``) and</span>
+<span class="sd">        triangular cells referencing them by index.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``triangle_array`` does not have exactly 9 columns.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">triangle_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">9</span>
+    <span class="c1"># Create list of all vertices</span>
+    <span class="n">all_vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">triangle_array</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">triangle_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">triangle_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)))</span>
+
+    <span class="c1"># Find unique vertices and assign them a number</span>
+    <span class="n">unique_vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">all_vertices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">vertex_dic</span> <span class="o">=</span> <span class="p">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">vertex</span><span class="p">):</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">vertex</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">unique_vertices</span><span class="p">)}</span>
+
+    <span class="c1"># Loop through triangles, building list of vertex numbers for each triangle</span>
+    <span class="n">tri_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">tri</span> <span class="ow">in</span> <span class="n">triangle_array</span><span class="p">:</span>
+        <span class="n">tri_list</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">vertex_dic</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">vi</span><span class="p">)]</span> <span class="k">for</span> <span class="n">vi</span> <span class="ow">in</span> <span class="n">tri</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))])</span>
+
+    <span class="c1"># Turn into a mesh object</span>
+    <span class="n">mesh</span> <span class="o">=</span> <span class="n">meshio</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="n">points</span><span class="o">=</span><span class="n">unique_vertices</span><span class="p">,</span> <span class="n">cells</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;triangle&quot;</span><span class="p">,</span> <span class="n">tri_list</span><span class="p">)])</span>
+
+    <span class="k">return</span> <span class="n">mesh</span></div>
+
+
+
+<div class="viewcode-block" id="tri_slip_rake_to_mesh">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/mesh_utils/index.html#rsqsim_api.io.mesh_utils.tri_slip_rake_to_mesh">[docs]</a>
+<span class="k">def</span> <span class="nf">tri_slip_rake_to_mesh</span><span class="p">(</span><span class="n">in_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a triangle array with slip and rake columns to a meshio Mesh.</span>
+
+<span class="sd">    Builds a mesh from the first 9 columns (vertex coordinates) and</span>
+<span class="sd">    attaches the slip rate and rake columns as cell data.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    in_array : numpy.ndarray of shape (n_triangles, 11)</span>
+<span class="sd">        Columns 0–8 are the (x,y,z) coordinates of the three triangle</span>
+<span class="sd">        corners (as in :func:`array_to_mesh`).  Column 9 is slip rate</span>
+<span class="sd">        in m/s and column 10 is rake in degrees.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    meshio.Mesh</span>
+<span class="sd">        Mesh with triangular cells and ``cell_data`` containing</span>
+<span class="sd">        ``&quot;slip_rate&quot;`` and ``&quot;rake&quot;`` arrays.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``in_array`` does not have exactly 11 columns.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check that mesh has 11 columns</span>
+    <span class="k">assert</span> <span class="n">in_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">11</span>
+    <span class="c1"># Build mesh from first 9 columns</span>
+    <span class="n">mesh</span> <span class="o">=</span> <span class="n">array_to_mesh</span><span class="p">(</span><span class="n">in_array</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">9</span><span class="p">])</span>
+
+    <span class="c1"># Dictionary containing slip rate and rake as arrays</span>
+    <span class="n">data_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;slip_rate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">in_array</span><span class="p">[:,</span> <span class="mi">9</span><span class="p">]</span>
+    <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;rake&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">in_array</span><span class="p">[:,</span> <span class="mi">10</span><span class="p">]</span>
+
+    <span class="c1"># Add dictionary to mesh as cell data</span>
+    <span class="n">mesh</span><span class="o">.</span><span class="n">cell_data</span> <span class="o">=</span> <span class="n">data_dict</span>
+
+    <span class="k">return</span> <span class="n">mesh</span></div>
+
+
+
+<div class="viewcode-block" id="quads_to_vtk">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/mesh_utils/index.html#rsqsim_api.io.mesh_utils.quads_to_vtk">[docs]</a>
+<span class="k">def</span> <span class="nf">quads_to_vtk</span><span class="p">(</span><span class="n">quads</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a list of quadrilateral patches to a meshio Mesh for VTK export.</span>
+
+<span class="sd">    Deduplicates vertices across all quads and builds an indexed meshio</span>
+<span class="sd">    Mesh with quad cells.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    quads :</span>
+<span class="sd">        Iterable of quadrilateral patches.  Each element should be an</span>
+<span class="sd">        array-like of shape (4, 3) giving the four corner (x, y, z)</span>
+<span class="sd">        coordinates in NZTM (metres).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    meshio.Mesh</span>
+<span class="sd">        Mesh with unique ``points`` and ``&quot;quad&quot;`` cells.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">rect</span> <span class="k">for</span> <span class="n">rect</span> <span class="ow">in</span> <span class="n">quads</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">vertex_dict</span> <span class="o">=</span> <span class="p">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">vertex</span><span class="p">):</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">vertex</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">vertices</span><span class="p">)}</span>
+    <span class="n">new_fault_rect_indices</span> <span class="o">=</span> <span class="p">[[</span><span class="n">vertex_dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">vertex</span><span class="p">)]</span> <span class="k">for</span> <span class="n">vertex</span> <span class="ow">in</span> <span class="n">quad</span><span class="p">]</span> <span class="k">for</span> <span class="n">quad</span> <span class="ow">in</span>
+                              <span class="n">quads</span><span class="p">]</span>
+    <span class="n">mesh</span> <span class="o">=</span> <span class="n">meshio</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="n">points</span><span class="o">=</span><span class="n">vertices</span><span class="p">,</span> <span class="n">cells</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;quad&quot;</span><span class="p">:</span> <span class="n">new_fault_rect_indices</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">mesh</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

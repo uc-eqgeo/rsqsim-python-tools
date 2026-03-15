@@ -1,0 +1,1464 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.catalogue.catalogue &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="rsqsim_api.catalogue.event" href="../event/index.html" />
+    <link rel="prev" title="rsqsim_api.catalogue" href="../index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">rsqsim_api</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="../index.html">rsqsim_api.catalogue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../fault/index.html">rsqsim_api.fault</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../io/index.html">rsqsim_api.io</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../tsunami/index.html">rsqsim_api.tsunami</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../visualisation/index.html">rsqsim_api.visualisation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_fault/index.html">test_fault</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_catalogue/index.html">test_catalogue</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">rsqsim_api</a></li>
+          <li class="breadcrumb-item"><a href="../index.html">rsqsim_api.catalogue</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.catalogue.catalogue</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/catalogue/catalogue/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.catalogue.catalogue">
+<span id="rsqsim-api-catalogue-catalogue"></span><h1>rsqsim_api.catalogue.catalogue<a class="headerlink" href="#module-rsqsim_api.catalogue.catalogue" title="Link to this heading"></a></h1>
+<p>RSQSim earthquake catalogue management and analysis.</p>
+<p>Provides <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimCatalogue</span></code></a> for loading, filtering, and analysing
+earthquake catalogues produced by RSQSim, along with module-level helper
+functions for reading Bruce Shaw run directories and combining spatial
+bounds.</p>
+<p>The catalogue stores per-event metadata (time, magnitude, location,
+area, duration) as a Pandas DataFrame alongside parallel flat arrays of
+per-patch slip, timing, and event identifiers that can be lazily resolved
+to <a class="reference internal" href="../event/index.html#rsqsim_api.catalogue.event.RsqSimEvent" title="rsqsim_api.catalogue.event.RsqSimEvent"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimEvent</span></code></a> objects.</p>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.rng" title="rsqsim_api.catalogue.catalogue.rng"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rng</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fint</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.sensible_ranges" title="rsqsim_api.catalogue.catalogue.sensible_ranges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sensible_ranges</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.list_file_suffixes" title="rsqsim_api.catalogue.catalogue.list_file_suffixes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_file_suffixes</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.extra_file_suffixes" title="rsqsim_api.catalogue.catalogue.extra_file_suffixes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extra_file_suffixes</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RsqSimCatalogue</span></code></a></p></td>
+<td><p>Container for an RSQSim earthquake catalogue with per-patch slip data.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.get_mask" title="rsqsim_api.catalogue.catalogue.get_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_mask</span></code></a>(ev_ls, min_patches, faults_with_patches, ...)</p></td>
+<td><p>Worker function: compute per-event patch masks and post results to a queue.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.read_bruce" title="rsqsim_api.catalogue.catalogue.read_bruce"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_bruce</span></code></a>([run_dir, fault_file, names_file, ...])</p></td>
+<td><p>Read a Bruce Shaw RSQSim run directory and return the fault model and catalogue.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.read_bruce_if_necessary" title="rsqsim_api.catalogue.catalogue.read_bruce_if_necessary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_bruce_if_necessary</span></code></a>([run_dir, fault_file, ...])</p></td>
+<td><p>Read a Bruce Shaw run directory only if the variables are not already in global scope.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.combine_boundaries" title="rsqsim_api.catalogue.catalogue.combine_boundaries"><code class="xref py py-obj docutils literal notranslate"><span class="pre">combine_boundaries</span></code></a>(bounds1, bounds2)</p></td>
+<td><p>Return the bounding box that encompasses both input bounding boxes.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.calculate_b_value" title="rsqsim_api.catalogue.catalogue.calculate_b_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_b_value</span></code></a>(magnitudes, time_interval_years[, ...])</p></td>
+<td><p>Estimate the Gutenberg-Richter b-value from a magnitude catalogue.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.rng">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.catalogue.</span></span><span class="sig-name descname"><span class="pre">rng</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#rng"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.rng" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.fint">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.catalogue.</span></span><span class="sig-name descname"><span class="pre">fint</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#fint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.fint" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.sensible_ranges">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.catalogue.</span></span><span class="sig-name descname"><span class="pre">sensible_ranges</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#sensible_ranges"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.sensible_ranges" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.list_file_suffixes">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.catalogue.</span></span><span class="sig-name descname"><span class="pre">list_file_suffixes</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('.pList',</span> <span class="pre">'.eList',</span> <span class="pre">'.dList',</span> <span class="pre">'.tList')</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#list_file_suffixes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.list_file_suffixes" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.extra_file_suffixes">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.catalogue.</span></span><span class="sig-name descname"><span class="pre">extra_file_suffixes</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('.dmuList',</span> <span class="pre">'.dsigmaList',</span> <span class="pre">'.dtauList',</span> <span class="pre">'.taupList')</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#extra_file_suffixes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.extra_file_suffixes" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.get_mask">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.catalogue.</span></span><span class="sig-name descname"><span class="pre">get_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ev_ls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_patches</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">faults_with_patches</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">queue</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#get_mask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.get_mask" title="Link to this definition"></a></dt>
+<dd><p>Worker function: compute per-event patch masks and post results to a queue.</p>
+<p>For each event index in <code class="docutils literal notranslate"><span class="pre">ev_ls</span></code>, finds the patches belonging to each
+fault segment and masks out segments that contribute fewer than
+<code class="docutils literal notranslate"><span class="pre">min_patches</span></code> patches.  Results are posted to <code class="docutils literal notranslate"><span class="pre">queue</span></code> as
+<code class="docutils literal notranslate"><span class="pre">(event_index,</span> <span class="pre">ev_indices,</span> <span class="pre">mask)</span></code> tuples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ev_ls</strong> (<em>array-like</em><em> of </em><em>int</em>) – Event indices to process in this worker.</p></li>
+<li><p><strong>min_patches</strong> (<em>int</em>) – Minimum patches per fault for a segment to be retained.</p></li>
+<li><p><strong>faults_with_patches</strong> (<em>dict</em>) – Mapping of patch number to fault segment number (integer IDs
+rather than objects, for serialisability).</p></li>
+<li><p><strong>event_list</strong> (<em>array-like</em><em> of </em><em>int</em>) – Flat array of event IDs for every patch entry in the catalogue.</p></li>
+<li><p><strong>patch_list</strong> (<em>array-like</em><em> of </em><em>int</em>) – Flat array of patch IDs parallel to <code class="docutils literal notranslate"><span class="pre">event_list</span></code>.</p></li>
+<li><p><strong>queue</strong> (<em>multiprocessing.Queue</em>) – Output queue; tuples of <code class="docutils literal notranslate"><span class="pre">(event_id,</span> <span class="pre">ev_indices,</span> <span class="pre">mask)</span></code> are
+placed here.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.catalogue.</span></span><span class="sig-name descname"><span class="pre">RsqSimCatalogue</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="Link to this definition"></a></dt>
+<dd><p>Container for an RSQSim earthquake catalogue with per-patch slip data.</p>
+<p>Stores the catalogue as a Pandas DataFrame together with four
+parallel flat arrays (event IDs, patch IDs, slip values, and rupture
+times) that cover the slip distribution for every event.  Provides
+methods to load data from RSQSim binary output files, filter by
+magnitude, time, location, or fault, retrieve fully populated
+<a class="reference internal" href="../event/index.html#rsqsim_api.catalogue.event.RsqSimEvent" title="rsqsim_api.catalogue.event.RsqSimEvent"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimEvent</span></code></a> objects, and
+produce diagnostic plots.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">t0,</span> <span class="pre">m0,</span> <span class="pre">mw</span></span></dt>
+<dd><p>Origin time (s), scalar moment (N·m), and moment magnitude
+arrays from the catalogue DataFrame (set lazily).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">x,</span> <span class="pre">y,</span> <span class="pre">z</span></span></dt>
+<dd><p>Hypocentre NZTM coordinates (m).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">area,</span> <span class="pre">dt</span></span></dt>
+<dd><p>Rupture areas (m²) and durations (s).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.catalogue_df">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">catalogue_df</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.catalogue_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.catalogue_df" title="Link to this definition"></a></dt>
+<dd><p>Per-event catalogue with 8 numeric columns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.check_list">
+<span class="sig-name descname"><span class="pre">check_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_type</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.check_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.check_list" title="Link to this definition"></a></dt>
+<dd><p>Validate a flat patch/event list array before assignment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_list</strong> (<em>numpy.ndarray</em>) – 1-D array to validate.</p></li>
+<li><p><strong>data_type</strong> (<em>str</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;i&quot;</span></code> for integer arrays (patch/event lists) or <code class="docutils literal notranslate"><span class="pre">&quot;d&quot;</span></code>
+for floating-point arrays (slip/time lists).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>AttributeError</strong> – If the catalogue DataFrame has not been loaded yet.</p></li>
+<li><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">data_type</span></code>, dtype, or dimensionality are invalid.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.event_list">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">event_list</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.event_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.event_list" title="Link to this definition"></a></dt>
+<dd><p>Flat integer array of event IDs, one per patch entry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.patch_list">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">patch_list</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.patch_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.patch_list" title="Link to this definition"></a></dt>
+<dd><p>Flat integer array of patch IDs, parallel to <code class="docutils literal notranslate"><span class="pre">event_list</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.patch_time_list">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">patch_time_list</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.patch_time_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.patch_time_list" title="Link to this definition"></a></dt>
+<dd><p>Rupture times (s) for each patch entry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.patch_slip">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">patch_slip</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.patch_slip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.patch_slip" title="Link to this definition"></a></dt>
+<dd><p>Slip magnitudes (m) for each patch entry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.accumulated_slip">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">accumulated_slip</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.accumulated_slip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.accumulated_slip" title="Link to this definition"></a></dt>
+<dd><p>Mapping of patch ID to total slip accumulated over all events.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.event_mean_slip">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">event_mean_slip</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.event_mean_slip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.event_mean_slip" title="Link to this definition"></a></dt>
+<dd><p>Mapping of event ID to mean slip (m); populated by <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.assign_event_mean_slip" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.assign_event_mean_slip"><code class="xref py py-meth docutils literal notranslate"><span class="pre">assign_event_mean_slip()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.event_mean_sdr">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">event_mean_sdr</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.event_mean_sdr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.event_mean_sdr" title="Link to this definition"></a></dt>
+<dd><p>Mapping of event ID to <code class="docutils literal notranslate"><span class="pre">[strike,</span> <span class="pre">dip,</span> <span class="pre">rake]</span></code>; populated by <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.assign_event_mean_sdr" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.assign_event_mean_sdr"><code class="xref py py-meth docutils literal notranslate"><span class="pre">assign_event_mean_sdr()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.event_length">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">event_length</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.event_length"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.event_length" title="Link to this definition"></a></dt>
+<dd><p>Mapping of event ID to rupture length (m); populated by <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.assign_event_length" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.assign_event_length"><code class="xref py py-meth docutils literal notranslate"><span class="pre">assign_event_length()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_dataframe">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reproject</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.from_dataframe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_dataframe" title="Link to this definition"></a></dt>
+<dd><p>Construct a catalogue from an existing DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> (<em>pandas.DataFrame</em>) – DataFrame with 8 numeric columns in the standard RSQSim
+catalogue column order (t0, m0, mw, x, y, z, area, dt).</p></li>
+<li><p><strong>reproject</strong> (<em>list</em><em> or </em><em>tuple</em><em> of </em><em>int</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[in_epsg,</span> <span class="pre">out_epsg]</span></code> pair.  If provided, the <code class="docutils literal notranslate"><span class="pre">x</span></code> and
+<code class="docutils literal notranslate"><span class="pre">y</span></code> columns are reprojected using PyProj.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Catalogue populated with the DataFrame (no patch lists).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue">RsqSimCatalogue</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_catalogue_file">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_catalogue_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reproject</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.from_catalogue_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_catalogue_file" title="Link to this definition"></a></dt>
+<dd><p>Construct a catalogue by reading an RSQSim <code class="docutils literal notranslate"><span class="pre">eqs.*.out</span></code> file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<em>str</em>) – Path to the RSQSim catalogue file.</p></li>
+<li><p><strong>reproject</strong> (<em>list</em><em> or </em><em>tuple</em><em> of </em><em>int</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[in_epsg,</span> <span class="pre">out_epsg]</span></code> pair for coordinate reprojection.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Catalogue populated from the file (no patch lists).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue">RsqSimCatalogue</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_catalogue_file_and_lists">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_catalogue_file_and_lists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">catalogue_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">list_file_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">list_file_prefix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_extra_lists</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reproject</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endian</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'little'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.from_catalogue_file_and_lists"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_catalogue_file_and_lists" title="Link to this definition"></a></dt>
+<dd><p>Construct a fully populated catalogue from an RSQSim output directory.</p>
+<p>Reads the <code class="docutils literal notranslate"><span class="pre">eqs.*.out</span></code> catalogue file together with the four
+binary list files (<code class="docutils literal notranslate"><span class="pre">.pList</span></code>, <code class="docutils literal notranslate"><span class="pre">.eList</span></code>, <code class="docutils literal notranslate"><span class="pre">.dList</span></code>, <code class="docutils literal notranslate"><span class="pre">.tList</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>catalogue_file</strong> (<em>str</em>) – Path to the <code class="docutils literal notranslate"><span class="pre">eqs.*.out</span></code> catalogue file.</p></li>
+<li><p><strong>list_file_directory</strong> (<em>str</em>) – Directory containing the <code class="docutils literal notranslate"><span class="pre">.pList</span></code>/<code class="docutils literal notranslate"><span class="pre">.eList</span></code>/<code class="docutils literal notranslate"><span class="pre">.dList</span></code>/
+<code class="docutils literal notranslate"><span class="pre">.tList</span></code> binary files.</p></li>
+<li><p><strong>list_file_prefix</strong> (<em>str</em>) – Common prefix for the list files (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;rundir4627&quot;</span></code>).</p></li>
+<li><p><strong>read_extra_lists</strong> (<em>bool</em><em>, </em><em>optional</em>) – Unused; reserved for future extra list support.</p></li>
+<li><p><strong>reproject</strong> (<em>list</em><em> or </em><em>tuple</em><em> of </em><em>int</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[in_epsg,</span> <span class="pre">out_epsg]</span></code> pair for coordinate reprojection.</p></li>
+<li><p><strong>serial</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, read list files as plain text rather than
+binary.  Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>endian</strong> (<em>str</em><em>, </em><em>optional</em>) – Byte order of the binary list files: <code class="docutils literal notranslate"><span class="pre">&quot;little&quot;</span></code> (default)
+or <code class="docutils literal notranslate"><span class="pre">&quot;big&quot;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Fully populated catalogue with patch slip distribution.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue">RsqSimCatalogue</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_dataframe_and_arrays">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_dataframe_and_arrays</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_slip</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_time_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reproject</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.from_dataframe_and_arrays"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_dataframe_and_arrays" title="Link to this definition"></a></dt>
+<dd><p>Construct a catalogue from a DataFrame and pre-loaded patch arrays.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> (<em>pandas.DataFrame</em>) – Per-event catalogue DataFrame.</p></li>
+<li><p><strong>event_list</strong> (<em>numpy.ndarray</em>) – Flat 1-D integer array of event IDs, one per patch entry.</p></li>
+<li><p><strong>patch_list</strong> (<em>numpy.ndarray</em>) – Flat 1-D integer array of patch IDs parallel to <code class="docutils literal notranslate"><span class="pre">event_list</span></code>.</p></li>
+<li><p><strong>patch_slip</strong> (<em>numpy.ndarray</em>) – Flat 1-D float array of slip magnitudes (m).</p></li>
+<li><p><strong>patch_time_list</strong> (<em>numpy.ndarray</em>) – Flat 1-D float array of rupture times (s).</p></li>
+<li><p><strong>reproject</strong> (<em>list</em><em> or </em><em>tuple</em><em> of </em><em>int</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[in_epsg,</span> <span class="pre">out_epsg]</span></code> pair for coordinate reprojection.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Fully populated catalogue.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue">RsqSimCatalogue</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_csv_and_arrays">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_csv_and_arrays</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reproject</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.from_csv_and_arrays"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_csv_and_arrays" title="Link to this definition"></a></dt>
+<dd><p>Construct a catalogue from a CSV and companion NumPy array files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prefix</strong> (<em>str</em>) – File path prefix used by <a class="reference internal" href="../../io/read_utils/index.html#rsqsim_api.io.read_utils.read_csv_and_array" title="rsqsim_api.io.read_utils.read_csv_and_array"><code class="xref py py-func docutils literal notranslate"><span class="pre">read_csv_and_array()</span></code></a>.</p></li>
+<li><p><strong>read_index</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to read the DataFrame index from the CSV.
+Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>reproject</strong> (<em>list</em><em> or </em><em>tuple</em><em> of </em><em>int</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[in_epsg,</span> <span class="pre">out_epsg]</span></code> pair for coordinate reprojection.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Fully populated catalogue.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue">RsqSimCatalogue</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.write_csv_and_arrays">
+<span class="sig-name descname"><span class="pre">write_csv_and_arrays</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.write_csv_and_arrays"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.write_csv_and_arrays" title="Link to this definition"></a></dt>
+<dd><p>Write the catalogue DataFrame and patch arrays to CSV and NumPy files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prefix</strong> (<em>str</em>) – File name prefix for the output files.</p></li>
+<li><p><strong>directory</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Output directory.  Created if it does not exist.  If
+<code class="docutils literal notranslate"><span class="pre">None</span></code>, files are written to the current directory.</p></li>
+<li><p><strong>write_index</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to write the DataFrame index to the CSV.
+Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.first_event">
+<span class="sig-name descname"><span class="pre">first_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.first_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.first_event" title="Link to this definition"></a></dt>
+<dd><p>Return the first event in the catalogue as an <a class="reference internal" href="../event/index.html#rsqsim_api.catalogue.event.RsqSimEvent" title="rsqsim_api.catalogue.event.RsqSimEvent"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimEvent</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>rsqsim_api.fault.multifault.RsqSimMultiFault</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.nth_event">
+<span class="sig-name descname"><span class="pre">nth_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.nth_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.nth_event" title="Link to this definition"></a></dt>
+<dd><p>Return the n-th event (1-based) from the catalogue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model for resolving patch slip distributions.</p></li>
+<li><p><strong>n</strong> (<em>int</em>) – 1-based index of the event to retrieve.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="../event/index.html#rsqsim_api.catalogue.event.RsqSimEvent" title="rsqsim_api.catalogue.event.RsqSimEvent">RsqSimEvent</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.first_n_events">
+<span class="sig-name descname"><span class="pre">first_n_events</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">number_of_events</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.first_n_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.first_n_events" title="Link to this definition"></a></dt>
+<dd><p>Return the first <code class="docutils literal notranslate"><span class="pre">number_of_events</span></code> events from the catalogue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>number_of_events</strong> (<em>int</em>) – Number of events to retrieve.</p></li>
+<li><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model for resolving patch slip distributions.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of <a class="reference internal" href="../event/index.html#rsqsim_api.catalogue.event.RsqSimEvent" title="rsqsim_api.catalogue.event.RsqSimEvent">RsqSimEvent</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.all_events">
+<span class="sig-name descname"><span class="pre">all_events</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.all_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.all_events" title="Link to this definition"></a></dt>
+<dd><p>Return all events in the catalogue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model for resolving patch slip distributions.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of <a class="reference internal" href="../event/index.html#rsqsim_api.catalogue.event.RsqSimEvent" title="rsqsim_api.catalogue.event.RsqSimEvent">RsqSimEvent</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.event_outlines">
+<span class="sig-name descname"><span class="pre">event_outlines</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_numbers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.event_outlines"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.event_outlines" title="Link to this definition"></a></dt>
+<dd><p>Return the Shapely exterior geometries for a set of events.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model for resolving patch slip distributions.</p></li>
+<li><p><strong>event_numbers</strong> (<em>iterable</em><em> of </em><em>int</em><em>, </em><em>optional</em>) – Event IDs to retrieve.  If <code class="docutils literal notranslate"><span class="pre">None</span></code>, all events are used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Unary-union patch outlines for each event.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of shapely.geometry.base.BaseGeometry</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df">
+<span class="sig-name descname"><span class="pre">filter_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">min_t0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_t0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_m0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_m0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_mw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_mw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_area</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_area</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.filter_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df" title="Link to this definition"></a></dt>
+<dd><p>Return a filtered view of the catalogue DataFrame.</p>
+<p>All parameters are optional range constraints.  Values outside
+<code class="docutils literal notranslate"><span class="pre">sensible_ranges</span></code> raise a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>min_t0</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Origin time bounds (s).</p></li>
+<li><p><strong>max_t0</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Origin time bounds (s).</p></li>
+<li><p><strong>min_m0</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Scalar moment bounds (N·m).</p></li>
+<li><p><strong>max_m0</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Scalar moment bounds (N·m).</p></li>
+<li><p><strong>min_mw</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Moment magnitude bounds.</p></li>
+<li><p><strong>max_mw</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Moment magnitude bounds.</p></li>
+<li><p><strong>min_x</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Horizontal coordinate bounds (NZTM metres).</p></li>
+<li><p><strong>max_x</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Horizontal coordinate bounds (NZTM metres).</p></li>
+<li><p><strong>min_y</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Horizontal coordinate bounds (NZTM metres).</p></li>
+<li><p><strong>max_y</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Horizontal coordinate bounds (NZTM metres).</p></li>
+<li><p><strong>min_z</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Depth bounds (m, negative downward).</p></li>
+<li><p><strong>max_z</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Depth bounds (m, negative downward).</p></li>
+<li><p><strong>min_area</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Rupture area bounds (m²).</p></li>
+<li><p><strong>max_area</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Rupture area bounds (m²).</p></li>
+<li><p><strong>min_dt</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Duration bounds (s).</p></li>
+<li><p><strong>max_dt</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Duration bounds (s).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Filtered DataFrame, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if no conditions were
+specified.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_whole_catalogue">
+<span class="sig-name descname"><span class="pre">filter_whole_catalogue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">min_t0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_t0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_m0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_m0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_mw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_mw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_area</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_area</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.filter_whole_catalogue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_whole_catalogue" title="Link to this definition"></a></dt>
+<dd><p>Return a new catalogue filtered by catalogue-level parameter ranges.</p>
+<p>Parameters are identical to <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df"><code class="xref py py-meth docutils literal notranslate"><span class="pre">filter_df()</span></code></a> with an additional
+<code class="docutils literal notranslate"><span class="pre">reset_index</span></code> option.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>min_t0</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>max_t0</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>min_m0</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>max_m0</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>min_mw</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>max_mw</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>min_x</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>max_x</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>min_y</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>max_y</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>min_z</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>max_z</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>min_area</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>max_area</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>min_dt</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>max_dt</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>reset_index</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<p>:param :
+:param min_y: See <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df"><code class="xref py py-meth docutils literal notranslate"><span class="pre">filter_df()</span></code></a>.
+:param max_y: See <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df"><code class="xref py py-meth docutils literal notranslate"><span class="pre">filter_df()</span></code></a>.
+:param min_z: See <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df"><code class="xref py py-meth docutils literal notranslate"><span class="pre">filter_df()</span></code></a>.
+:param max_z: See <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df"><code class="xref py py-meth docutils literal notranslate"><span class="pre">filter_df()</span></code></a>.
+:param min_area: See <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df"><code class="xref py py-meth docutils literal notranslate"><span class="pre">filter_df()</span></code></a>.
+:param max_area: See <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df"><code class="xref py py-meth docutils literal notranslate"><span class="pre">filter_df()</span></code></a>.
+:param min_dt: See <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df"><code class="xref py py-meth docutils literal notranslate"><span class="pre">filter_df()</span></code></a>.
+:param max_dt: See <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_df"><code class="xref py py-meth docutils literal notranslate"><span class="pre">filter_df()</span></code></a>.
+:param reset_index: If <code class="docutils literal notranslate"><span class="pre">True</span></code>, reindex the filtered catalogue starting from 0.
+:type reset_index: bool, optional</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>New catalogue containing only events within the specified
+parameter ranges.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue">RsqSimCatalogue</a></p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>min_t0</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>max_t0</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>min_m0</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>max_m0</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>min_mw</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>max_mw</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>min_x</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>max_x</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>min_y</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>max_y</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>min_z</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>max_z</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>min_area</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>max_area</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>min_dt</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>max_dt</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.fint" title="rsqsim_api.catalogue.catalogue.fint"><em>fint</em></a>)</p></li>
+<li><p><strong>reset_index</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_by_events">
+<span class="sig-name descname"><span class="pre">filter_by_events</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_number</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.filter_by_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_by_events" title="Link to this definition"></a></dt>
+<dd><p>Return a new catalogue containing only the specified events.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_number</strong> (<em>int</em><em> or </em><em>iterable</em><em> of </em><em>int</em>) – One or more event IDs to retain.</p></li>
+<li><p><strong>reset_index</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, reindex the filtered catalogue from 0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Catalogue containing only the selected events.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue">RsqSimCatalogue</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.drop_few_patches">
+<span class="sig-name descname"><span class="pre">drop_few_patches</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_patches</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.drop_few_patches"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.drop_few_patches" title="Link to this definition"></a></dt>
+<dd><p>Return a catalogue with events having fewer than <code class="docutils literal notranslate"><span class="pre">min_patches</span></code> dropped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model for resolving patch distributions.</p></li>
+<li><p><strong>min_patches</strong> (<em>int</em><em>, </em><em>optional</em>) – Minimum number of patches required for an event to be
+retained.  Defaults to 3.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Filtered catalogue.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue">RsqSimCatalogue</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_by_fault">
+<span class="sig-name descname"><span class="pre">filter_by_fault</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_or_faults</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimum_patches_per_fault</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.filter_by_fault"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_by_fault" title="Link to this definition"></a></dt>
+<dd><p>Return a catalogue filtered to events that rupture specified faults.</p>
+<p>An event is included if at least one of its patches belongs to
+any fault in <code class="docutils literal notranslate"><span class="pre">fault_or_faults</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_or_faults</strong> (<a class="reference internal" href="../../fault/segment/index.html#rsqsim_api.fault.segment.RsqSimSegment" title="rsqsim_api.fault.segment.RsqSimSegment"><em>RsqSimSegment</em></a><em>, </em><a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a><em>, </em><em>list</em><em>, or </em><em>tuple</em>) – Fault(s) to filter on.</p></li>
+<li><p><strong>minimum_patches_per_fault</strong> (<em>int</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – If given, an event is only included if it ruptures at least
+this many patches on at least one of the target faults.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Filtered catalogue, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if no matching events found.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue">RsqSimCatalogue</a> or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_not_on_fault">
+<span class="sig-name descname"><span class="pre">filter_not_on_fault</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_or_faults</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimum_patches_per_fault</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.filter_not_on_fault"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_not_on_fault" title="Link to this definition"></a></dt>
+<dd><p>Return a catalogue with events that rupture specified faults removed.</p>
+<p>The complement of <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_by_fault" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_by_fault"><code class="xref py py-meth docutils literal notranslate"><span class="pre">filter_by_fault()</span></code></a>: events are rejected if
+they rupture any patch on the target faults.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_or_faults</strong> (<a class="reference internal" href="../../fault/segment/index.html#rsqsim_api.fault.segment.RsqSimSegment" title="rsqsim_api.fault.segment.RsqSimSegment"><em>RsqSimSegment</em></a><em>, </em><a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a><em>, </em><em>list</em><em>, or </em><em>tuple</em>) – Fault(s) whose events should be excluded.</p></li>
+<li><p><strong>minimum_patches_per_fault</strong> (<em>int</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – If given, an event is only rejected if it ruptures at least
+this many patches on one of the target faults.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Filtered catalogue, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if no events remain, or
+<code class="docutils literal notranslate"><span class="pre">self</span></code> if no events were on the target faults.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue">RsqSimCatalogue</a> or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.find_surface_rupturing_events">
+<span class="sig-name descname"><span class="pre">find_surface_rupturing_events</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'vertex'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_patches</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_depth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_faults</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_flt_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">faults2ignore</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hikurangi'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.find_surface_rupturing_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.find_surface_rupturing_events" title="Link to this definition"></a></dt>
+<dd><p>Find catalogue event IDs that include surface rupture.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model used to resolve patch slip distributions.</p></li>
+<li><p><strong>min_slip</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum slip (m) for a patch to count as ruptured.
+Defaults to 0.1 m.</p></li>
+<li><p><strong>method</strong> (<em>str</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;vertex&quot;</span></code> (use the shallowest vertex) or <code class="docutils literal notranslate"><span class="pre">&quot;centroid&quot;</span></code>
+(use the centroid depth) for the depth criterion.</p></li>
+<li><p><strong>n_patches</strong> (<em>int</em><em>, </em><em>optional</em>) – Minimum number of qualifying surface patches per fault.
+Defaults to 1.</p></li>
+<li><p><strong>max_depth</strong> (<em>float</em><em>, </em><em>optional</em>) – Depth threshold (m, negative).  Defaults to -1000 m.</p></li>
+<li><p><strong>n_faults</strong> (<em>int</em><em>, </em><em>optional</em>) – Minimum number of surface-rupturing faults per event.
+Defaults to 1.</p></li>
+<li><p><strong>write_flt_dict</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, also return a dict mapping event IDs to lists
+of surface-rupturing fault names.</p></li>
+<li><p><strong>faults2ignore</strong> (<em>list</em><em> of </em><em>str</em><em> or </em><em>str</em><em>, </em><em>optional</em>) – Fault name(s) to exclude.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;hikurangi&quot;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>list of int</em> – Event IDs with surface rupture.</p></li>
+<li><p><em>dict, optional</em> – Only returned when <code class="docutils literal notranslate"><span class="pre">write_flt_dict=True</span></code>; maps event ID
+to the list of surface-rupturing fault names.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.find_multi_fault">
+<span class="sig-name descname"><span class="pre">find_multi_fault</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.find_multi_fault"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.find_multi_fault" title="Link to this definition"></a></dt>
+<dd><p>Identify events that rupture more than one named fault segment.</p>
+<p>Note that segmentation is based on the fault model’s segment
+names and may not correspond to other multi-fault definitions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model for resolving patch slip distributions.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>multifault</strong> (<em>list of RsqSimEvent</em>) – Events that involve more than one fault segment.</p></li>
+<li><p><strong>multi_cat</strong> (<em>RsqSimCatalogue</em>) – Sub-catalogue containing only those events.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_by_region">
+<span class="sig-name descname"><span class="pre">filter_by_region</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">region</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_numbers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.filter_by_region"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_by_region" title="Link to this definition"></a></dt>
+<dd><p>Filter events by geographic region.</p>
+<p>Not yet implemented.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>region</strong> (<em>Polygon</em><em> or </em><em>geopandas.GeoSeries</em>) – Region geometry (reserved for future use).</p></li>
+<li><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model (reserved for future use).</p></li>
+<li><p><strong>event_numbers</strong> (<em>iterable</em><em> of </em><em>int</em><em>, </em><em>optional</em>) – Reserved for future use.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_by_patch_numbers">
+<span class="sig-name descname"><span class="pre">filter_by_patch_numbers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">patch_numbers</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.filter_by_patch_numbers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_by_patch_numbers" title="Link to this definition"></a></dt>
+<dd><p>Return a catalogue containing only events that ruptured specified patches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>patch_numbers</strong> (<em>array-like</em><em> of </em><em>int</em>) – Patch IDs to filter on; events with at least one matching
+patch are retained.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Filtered catalogue, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if no events match.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue">RsqSimCatalogue</a> or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.events_by_number">
+<span class="sig-name descname"><span class="pre">events_by_number</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_number</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">child_processes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_patches</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.events_by_number"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.events_by_number" title="Link to this definition"></a></dt>
+<dd><p>Retrieve one or more events as fully populated <a class="reference internal" href="../event/index.html#rsqsim_api.catalogue.event.RsqSimEvent" title="rsqsim_api.catalogue.event.RsqSimEvent"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimEvent</span></code></a> objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_number</strong> (<em>int</em><em> or </em><em>iterable</em><em> of </em><em>int</em>) – Event ID(s) to retrieve.</p></li>
+<li><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model for resolving patch objects and fault associations.</p></li>
+<li><p><strong>child_processes</strong> (<em>int</em><em>, </em><em>optional</em>) – If &gt; 0, distribute event processing across this many child
+processes using shared memory.  Defaults to 0 (serial).</p></li>
+<li><p><strong>min_patches</strong> (<em>int</em><em>, </em><em>optional</em>) – Minimum patches per fault segment for an event to be
+considered.  Defaults to 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Fully populated events in the order they were requested.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of <a class="reference internal" href="../event/index.html#rsqsim_api.catalogue.event.RsqSimEvent" title="rsqsim_api.catalogue.event.RsqSimEvent">RsqSimEvent</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.assign_accumulated_slip">
+<span class="sig-name descname"><span class="pre">assign_accumulated_slip</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.assign_accumulated_slip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.assign_accumulated_slip" title="Link to this definition"></a></dt>
+<dd><p>Compute and cache total accumulated slip per patch.</p>
+<p>Sums <code class="docutils literal notranslate"><span class="pre">patch_slip</span></code> over all events for each unique patch ID
+and stores the result in <code class="xref py py-attr docutils literal notranslate"><span class="pre">_accumulated_slip</span></code>.  Subsequent
+accesses via <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.accumulated_slip" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.accumulated_slip"><code class="xref py py-attr docutils literal notranslate"><span class="pre">accumulated_slip</span></code></a> return the cached value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.assign_event_mean_slip">
+<span class="sig-name descname"><span class="pre">assign_event_mean_slip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.assign_event_mean_slip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.assign_event_mean_slip" title="Link to this definition"></a></dt>
+<dd><p>Compute and cache mean slip per event.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model for resolving patch objects.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.assign_event_mean_sdr">
+<span class="sig-name descname"><span class="pre">assign_event_mean_sdr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.assign_event_mean_sdr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.assign_event_mean_sdr" title="Link to this definition"></a></dt>
+<dd><p>Compute and cache mean strike, dip, and rake per event.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model for resolving patch objects.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.assign_event_length">
+<span class="sig-name descname"><span class="pre">assign_event_length</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.assign_event_length"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.assign_event_length" title="Link to this definition"></a></dt>
+<dd><p>Compute and cache rupture length per event.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model for resolving patch and fault objects.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.plot_accumulated_slip_2d">
+<span class="sig-name descname"><span class="pre">plot_accumulated_slip_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subduction_cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'plasma'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crustal_cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'viridis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subplots</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_max_sub_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_max_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(6.4,</span> <span class="pre">4.8)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hillshading_intensity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_rivers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_lakes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_highways</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_boundaries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_background</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coast_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hillshade_cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">cm.terrain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_log_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'magma'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_traces</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trace_colour</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pink'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_percentile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.plot_accumulated_slip_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.plot_accumulated_slip_2d" title="Link to this definition"></a></dt>
+<dd><p>Plot a 2-D map of accumulated slip across all events in the catalogue.</p>
+<p>Sums slip over the entire catalogue per patch and plots the
+result with separate colourmaps for subduction-interface and
+crustal faults.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model whose patches are coloured by accumulated slip.</p></li>
+<li><p><strong>subduction_cmap</strong> (<em>str</em><em>, </em><em>optional</em>) – Colourmap for subduction-interface patches.  Defaults to
+<code class="docutils literal notranslate"><span class="pre">&quot;plasma&quot;</span></code>.</p></li>
+<li><p><strong>crustal_cmap</strong> (<em>str</em><em>, </em><em>optional</em>) – Colourmap for crustal patches.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;viridis&quot;</span></code>.</p></li>
+<li><p><strong>show</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), call <code class="docutils literal notranslate"><span class="pre">plt.show()</span></code>.</p></li>
+<li><p><strong>write</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – File path to save the figure.</p></li>
+<li><p><strong>subplots</strong> (<em>tuple</em><em> or </em><em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Existing <code class="docutils literal notranslate"><span class="pre">(fig,</span> <span class="pre">ax)</span></code> or pickled figure to plot on.</p></li>
+<li><p><strong>global_max_sub_slip</strong> (<em>float</em><em>, </em><em>optional</em>) – Fixed colourbar maxima; 0 means per-data maximum.</p></li>
+<li><p><strong>global_max_slip</strong> (<em>float</em><em>, </em><em>optional</em>) – Fixed colourbar maxima; 0 means per-data maximum.</p></li>
+<li><p><strong>figsize</strong> (<em>tuple</em><em> of </em><em>float</em><em>, </em><em>optional</em>) – Figure size in inches.</p></li>
+<li><p><strong>hillshading_intensity</strong> (<em>float</em><em>, </em><em>optional</em>) – Hillshading intensity.</p></li>
+<li><p><strong>bounds</strong> (<em>tuple</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Map extent <code class="docutils literal notranslate"><span class="pre">(x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max)</span></code> in NZTM.</p></li>
+<li><p><strong>plot_rivers</strong> (<em>bool</em><em>, </em><em>optional</em>) – Toggle background map layers.</p></li>
+<li><p><strong>plot_lakes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Toggle background map layers.</p></li>
+<li><p><strong>plot_highways</strong> (<em>bool</em><em>, </em><em>optional</em>) – Toggle background map layers.</p></li>
+<li><p><strong>plot_boundaries</strong> (<em>bool</em><em>, </em><em>optional</em>) – Toggle background map layers.</p></li>
+<li><p><strong>create_background</strong> (<em>bool</em><em>, </em><em>optional</em>) – Render full background map.</p></li>
+<li><p><strong>coast_only</strong> (<em>bool</em><em>, </em><em>optional</em>) – Render coastline only as background.</p></li>
+<li><p><strong>hillshade_cmap</strong> (<em>LinearSegmentedColormap</em><em>, </em><em>optional</em>) – Hillshade colourmap.</p></li>
+<li><p><strong>plot_log_scale</strong> (<em>bool</em><em>, </em><em>optional</em>) – Use logarithmic colour scaling.</p></li>
+<li><p><strong>log_cmap</strong> (<em>optional</em>) – Parameters for log-scale colouring.</p></li>
+<li><p><strong>log_min</strong> (<em>optional</em>) – Parameters for log-scale colouring.</p></li>
+<li><p><strong>log_max</strong> (<em>optional</em>) – Parameters for log-scale colouring.</p></li>
+<li><p><strong>plot_traces</strong> (<em>bool</em><em>, </em><em>optional</em>) – Plot fault surface traces.</p></li>
+<li><p><strong>trace_colour</strong> (<em>str</em><em>, </em><em>optional</em>) – Colour for fault traces.</p></li>
+<li><p><strong>min_slip_percentile</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Slip percentile threshold below which patches are zeroed.</p></li>
+<li><p><strong>min_slip_value</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Slip value threshold (m) below which patches are zeroed.</p></li>
+<li><p><strong>plot_zeros</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), plot zero-slip patches.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Matplotlib <code class="docutils literal notranslate"><span class="pre">PolyCollection</span></code> objects for each fault plotted.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.plot_mfd">
+<span class="sig-name descname"><span class="pre">plot_mfd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plot_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'differential'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nSamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">80.0</span> <span class="pre">*</span> <span class="pre">csts.seconds_per_year</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instrumental_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inst_year_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1940</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_corrected_instrumental</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.plot_mfd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.plot_mfd" title="Link to this definition"></a></dt>
+<dd><p>Plot a magnitude–frequency distribution for the catalogue.</p>
+<p>Produces a Gutenberg-Richter plot (annual rates vs Mw) in either
+differential or cumulative form.  Random time-window samples can
+be overlaid to show variability.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>plot_type</strong> (<em>str</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;differential&quot;</span></code> (default) or <code class="docutils literal notranslate"><span class="pre">&quot;cumulative&quot;</span></code>.</p></li>
+<li><p><strong>nSamp</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of random time-window samples to draw for the
+variability envelope.  Defaults to 1000.</p></li>
+<li><p><strong>window</strong> (<em>float</em><em>, </em><em>optional</em>) – Duration (s) of each random sample window.  Defaults to
+80 years.</p></li>
+<li><p><strong>n_bins</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of magnitude bins.  Defaults to 50.</p></li>
+<li><p><strong>instrumental_path</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Path to an instrumental seismicity CSV file for comparison.</p></li>
+<li><p><strong>inst_year_min</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum year for the instrumental catalogue.  Defaults to
+1940.</p></li>
+<li><p><strong>show</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), call <code class="docutils literal notranslate"><span class="pre">plt.show()</span></code>.</p></li>
+<li><p><strong>write</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – File path to save the figure.</p></li>
+<li><p><strong>tmin</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Time range (s) to use.  Defaults to the catalogue range.</p></li>
+<li><p><strong>tmax</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Time range (s) to use.  Defaults to the catalogue range.</p></li>
+<li><p><strong>depth_min</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Depth range (km) for filtering the instrumental catalogue.</p></li>
+<li><p><strong>depth_max</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Depth range (km) for filtering the instrumental catalogue.</p></li>
+<li><p><strong>mmin</strong> (<em>float</em><em>, </em><em>optional</em>) – Magnitude range for the histogram/plot.  Defaults to
+4.5–9.5.</p></li>
+<li><p><strong>mmax</strong> (<em>float</em><em>, </em><em>optional</em>) – Magnitude range for the histogram/plot.  Defaults to
+4.5–9.5.</p></li>
+<li><p><strong>plot_corrected_instrumental</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), overlay a magnitude-corrected
+cumulative curve for the instrumental catalogue.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.plot_depth_hist">
+<span class="sig-name descname"><span class="pre">plot_depth_hist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.plot_depth_hist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.plot_depth_hist" title="Link to this definition"></a></dt>
+<dd><p>Plot a histogram of hypocentral depths alongside fault-base depths.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model used to extract fault base depths.</p></li>
+<li><p><strong>n_bins</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of depth bins.  Defaults to 10.</p></li>
+<li><p><strong>depth_min</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Minimum depth (km) for the plot.  Defaults to the shallowest
+hypocentre.</p></li>
+<li><p><strong>depth_max</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Maximum depth (km) for the plot.  Defaults to the deepest
+hypocentre.</p></li>
+<li><p><strong>write</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – File path to save the figure.</p></li>
+<li><p><strong>show</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), display the figure.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.plot_mean_slip_vs_mag">
+<span class="sig-name descname"><span class="pre">plot_mean_slip_vs_mag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_rel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.plot_mean_slip_vs_mag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.plot_mean_slip_vs_mag" title="Link to this definition"></a></dt>
+<dd><p>Scatter-plot mean patch slip vs moment magnitude for all events.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model for computing mean slip per event.</p></li>
+<li><p><strong>show</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), display the figure.</p></li>
+<li><p><strong>write</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – File path to save the figure.</p></li>
+<li><p><strong>plot_rel</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), overlay the best-fit trend and the
+expected 1/3-slope scaling-law line.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.plot_area_vs_mag">
+<span class="sig-name descname"><span class="pre">plot_area_vs_mag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_rel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.plot_area_vs_mag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.plot_area_vs_mag" title="Link to this definition"></a></dt>
+<dd><p>Scatter-plot rupture area vs moment magnitude for all events.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model for retrieving event areas.</p></li>
+<li><p><strong>show</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), display the figure.</p></li>
+<li><p><strong>write</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – File path to save the figure.</p></li>
+<li><p><strong>plot_rel</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), overlay the best-fit log-linear trend.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.stress_drops">
+<span class="sig-name descname"><span class="pre">stress_drops</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stress_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.44</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.stress_drops"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.stress_drops" title="Link to this definition"></a></dt>
+<dd><p>Compute stress drops for all events.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>stress_c</strong> (<em>float</em><em>, </em><em>optional</em>) – Shape constant (default 2.44 for a circular crack).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Stress drop in Pa for each event.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.scaling_c">
+<span class="sig-name descname"><span class="pre">scaling_c</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.scaling_c"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.scaling_c" title="Link to this definition"></a></dt>
+<dd><p>Compute the Gutenberg-Richter scaling parameter c for all events.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Scaling parameter c (<code class="docutils literal notranslate"><span class="pre">Mw</span> <span class="pre">-</span> <span class="pre">log10(area)</span> <span class="pre">+</span> <span class="pre">6</span></code>) per event.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.scaling_summary_statistics">
+<span class="sig-name descname"><span class="pre">scaling_summary_statistics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stress_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.44</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.scaling_summary_statistics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.scaling_summary_statistics" title="Link to this definition"></a></dt>
+<dd><p>Return summary statistics of scaling parameters for the catalogue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>stress_c</strong> (<em>float</em><em>, </em><em>optional</em>) – Shape constant passed to
+<a class="reference internal" href="../utilities/index.html#rsqsim_api.catalogue.utilities.summary_statistics" title="rsqsim_api.catalogue.utilities.summary_statistics"><code class="xref py py-func docutils literal notranslate"><span class="pre">summary_statistics()</span></code></a>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Summary statistics including max Mw and percentiles of c and
+stress drop.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.Series</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.all_slip_distributions_to_vtk">
+<span class="sig-name descname"><span class="pre">all_slip_distributions_to_vtk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.all_slip_distributions_to_vtk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.all_slip_distributions_to_vtk" title="Link to this definition"></a></dt>
+<dd><p>Write VTK slip distribution files for every event in the catalogue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model for resolving patch objects.</p></li>
+<li><p><strong>output_directory</strong> (<em>str</em>) – Existing directory to write <code class="docutils literal notranslate"><span class="pre">event&lt;id&gt;.vtk</span></code> files.</p></li>
+<li><p><strong>include_zeros</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, include zero-slip patches.  Defaults to
+<code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>min_slip_value</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Minimum slip threshold (m) passed to
+<a class="reference internal" href="../event/index.html#rsqsim_api.catalogue.event.RsqSimEvent.slip_dist_to_vtk" title="rsqsim_api.catalogue.event.RsqSimEvent.slip_dist_to_vtk"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_to_vtk()</span></code></a>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.calculate_b_value">
+<span class="sig-name descname"><span class="pre">calculate_b_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">min_mw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_mw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.calculate_b_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.calculate_b_value" title="Link to this definition"></a></dt>
+<dd><p>Estimate the Gutenberg-Richter b-value for the catalogue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>min_mw</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum magnitude bin centre to include.  Defaults to 0.0.</p></li>
+<li><p><strong>max_mw</strong> (<em>float</em><em>, </em><em>optional</em>) – Maximum magnitude bin centre to include.  Defaults to 10.0.</p></li>
+<li><p><strong>interval</strong> (<em>float</em><em>, </em><em>optional</em>) – Magnitude bin width.  Defaults to 0.1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">(b_value,</span> <span class="pre">intercept)</span></code> from the least-squares fit to the
+log-linear cumulative MFD.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple of float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.calculate_dominant_magnitudes">
+<span class="sig-name descname"><span class="pre">calculate_dominant_magnitudes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unfiltered_catalogue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_for_median</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.calculate_dominant_magnitudes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.calculate_dominant_magnitudes" title="Link to this definition"></a></dt>
+<dd><p>Compute the dominant (median cumulant) magnitude for each patch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model providing patch indices.</p></li>
+<li><p><strong>unfiltered_catalogue</strong> (<a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue"><em>RsqSimCatalogue</em></a><em> or </em><em>None</em><em>, </em><em>optional</em>) – If provided, use this catalogue’s magnitude arrays (useful
+when the current catalogue is a filtered subset).</p></li>
+<li><p><strong>min_for_median</strong> (<em>int</em><em>, </em><em>optional</em>) – Minimum number of matching events for the median to be
+computed.  Defaults to 5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dominant magnitude (Mw) for each patch in <code class="docutils literal notranslate"><span class="pre">fault_model</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.dominant_magnitudes">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">dominant_magnitudes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_patch_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">catalogue_patch_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_mws</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_m0s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_for_median</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.dominant_magnitudes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.dominant_magnitudes" title="Link to this definition"></a></dt>
+<dd><p>Numba-parallel computation of dominant magnitude per patch.</p>
+<p>For each patch index, finds all matching entries in the catalogue
+and computes the median cumulant magnitude.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_patch_indices</strong> (<em>numpy.ndarray</em><em> of </em><em>int</em>) – All patch IDs in the fault model.</p></li>
+<li><p><strong>catalogue_patch_array</strong> (<em>numpy.ndarray</em><em> of </em><em>int</em>) – Flat array of patch IDs from the catalogue (parallel to
+<code class="docutils literal notranslate"><span class="pre">event_list</span></code>).</p></li>
+<li><p><strong>event_mws</strong> (<em>numpy.ndarray</em><em> of </em><em>float</em>) – Mw for each entry in <code class="docutils literal notranslate"><span class="pre">catalogue_patch_array</span></code>.</p></li>
+<li><p><strong>event_m0s</strong> (<em>numpy.ndarray</em><em> of </em><em>float</em>) – M0 (N·m) for each entry in <code class="docutils literal notranslate"><span class="pre">catalogue_patch_array</span></code>.</p></li>
+<li><p><strong>min_for_median</strong> (<em>int</em><em>, </em><em>optional</em>) – Minimum matching events required to compute the median.
+Patches below this threshold receive 0.  Defaults to 5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dominant magnitude for each patch (0 if insufficient data).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray of float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_crustal_events">
+<span class="sig-name descname"><span class="pre">filter_crustal_events</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subduction_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('hikkerm',</span> <span class="pre">'puysegur')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_crustal_mw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.filter_crustal_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_crustal_events" title="Link to this definition"></a></dt>
+<dd><p>Return event IDs where crustal moment exceeds a magnitude threshold.</p>
+<p>Uses Numba-parallel processing to check each event’s crustal
+moment contribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model providing patch areas and crustal patch numbers.</p></li>
+<li><p><strong>subduction_names</strong> (<em>tuple</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Fault names classified as subduction interface; all other
+patches are considered crustal.</p></li>
+<li><p><strong>min_crustal_mw</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum crustal moment magnitude threshold.  Defaults to 6.0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Event IDs whose crustal moment meets the threshold.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray of int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_crustal_events_parallel">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">filter_crustal_events_parallel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crustal_patch_numbers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_slip</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_area_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_crustal_m0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.filter_crustal_events_parallel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.filter_crustal_events_parallel" title="Link to this definition"></a></dt>
+<dd><p>Numba-parallel filter: return events with crustal moment &gt;= threshold.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_indices</strong> (<em>numpy.ndarray</em><em> of </em><em>int</em>) – All event IDs to check.</p></li>
+<li><p><strong>crustal_patch_numbers</strong> (<em>numpy.ndarray</em><em> of </em><em>int</em>) – Patch IDs classified as crustal (non-subduction).</p></li>
+<li><p><strong>event_list</strong> (<em>numpy.ndarray</em><em> of </em><em>int</em>) – Flat catalogue event-ID array.</p></li>
+<li><p><strong>patch_list</strong> (<em>numpy.ndarray</em><em> of </em><em>int</em>) – Flat catalogue patch-ID array.</p></li>
+<li><p><strong>patch_slip</strong> (<em>numpy.ndarray</em><em> of </em><em>float</em>) – Slip (m) parallel to <code class="docutils literal notranslate"><span class="pre">patch_list</span></code>.</p></li>
+<li><p><strong>patch_area_list</strong> (<em>numpy.ndarray</em><em> of </em><em>float</em>) – Patch areas (m²) parallel to <code class="docutils literal notranslate"><span class="pre">patch_list</span></code>.</p></li>
+<li><p><strong>min_crustal_m0</strong> (<em>float</em>) – Minimum crustal scalar moment (N·m) threshold.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Event IDs whose crustal moment meets <code class="docutils literal notranslate"><span class="pre">min_crustal_m0</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray of int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.match_events_to_crustal_nshm_dicts">
+<span class="sig-name descname"><span class="pre">match_events_to_crustal_nshm_dicts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crustal_patch_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crustal_n_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subduction_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('hikkerm',</span> <span class="pre">'puysegur')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_proportion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.match_events_to_crustal_nshm_dicts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.match_events_to_crustal_nshm_dicts" title="Link to this definition"></a></dt>
+<dd><p>Match events to NSHM subsection indices using a KD-tree patch lookup.</p>
+<p>For each event, determines which NSHM subsection indices are
+ruptured based on the fraction of the subsection’s patches that
+slipped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model providing crustal patch numbers.</p></li>
+<li><p><strong>event_ids</strong> (<em>numpy.ndarray</em><em> of </em><em>int</em>) – Event IDs to process.</p></li>
+<li><p><strong>crustal_patch_dict</strong> (<em>dict</em>) – Mapping of NSHM subsection index (int) to a dict with
+<code class="docutils literal notranslate"><span class="pre">&quot;triangle_indices&quot;</span></code> giving the RSQSim patch IDs.</p></li>
+<li><p><strong>crustal_n_dict</strong> (<em>dict</em>) – Mapping of NSHM subsection index (int) to total number of
+RSQSim patches in that subsection.</p></li>
+<li><p><strong>subduction_names</strong> (<em>tuple</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Fault names excluded from the crustal analysis.</p></li>
+<li><p><strong>threshold_proportion</strong> (<em>float</em><em>, </em><em>optional</em>) – Fraction of subsection patches that must be ruptured for the
+subsection to be considered active.  Defaults to 0.5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Mapping of event ID (int32) to an array of NSHM subsection
+indices (int32) that were ruptured.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numba.typed.Dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.match_crustal_nshm_parallel">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">match_crustal_nshm_parallel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crustal_patch_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crustal_n_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crustal_patch_numbers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_proportion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.match_crustal_nshm_parallel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.match_crustal_nshm_parallel" title="Link to this definition"></a></dt>
+<dd><p>Numba JIT-compiled: map events to NSHM subsection indices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_ids</strong> (<em>numpy.ndarray</em><em> of </em><em>int32</em>) – Events to process.</p></li>
+<li><p><strong>event_list</strong> (<em>numpy.ndarray</em><em> of </em><em>int32</em>) – Flat catalogue event-ID array.</p></li>
+<li><p><strong>patch_list</strong> (<em>numpy.ndarray</em><em> of </em><em>int32</em>) – Flat catalogue patch-ID array.</p></li>
+<li><p><strong>crustal_patch_dict</strong> (<em>numba.typed.Dict</em>) – Mapping of subsection index to array of RSQSim patch IDs.</p></li>
+<li><p><strong>crustal_n_dict</strong> (<em>numba.typed.Dict</em>) – Mapping of subsection index to total patch count.</p></li>
+<li><p><strong>crustal_patch_numbers</strong> (<em>numpy.ndarray</em><em> of </em><em>int32</em>) – All crustal patch IDs.</p></li>
+<li><p><strong>threshold_proportion</strong> (<em>float</em><em>, </em><em>optional</em>) – Fraction threshold for subsection inclusion.  Defaults to
+0.5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Mapping of event ID (int32) to array of active subsection
+indices (int32).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numba.typed.Dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.read_bruce">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.catalogue.</span></span><span class="sig-name descname"><span class="pre">read_bruce</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fault_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bruce_faults.in'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bruce_names.in'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">catalogue_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eqs..out'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#read_bruce"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.read_bruce" title="Link to this definition"></a></dt>
+<dd><p>Read a Bruce Shaw RSQSim run directory and return the fault model and catalogue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>run_dir</strong> (<em>str</em>) – Path to the RSQSim run directory.</p></li>
+<li><p><strong>fault_file</strong> (<em>str</em><em>, </em><em>optional</em>) – Fault geometry file name.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;bruce_faults.in&quot;</span></code>.</p></li>
+<li><p><strong>names_file</strong> (<em>str</em><em>, </em><em>optional</em>) – Fault names file name.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;bruce_names.in&quot;</span></code>.</p></li>
+<li><p><strong>catalogue_file</strong> (<em>str</em><em>, </em><em>optional</em>) – Catalogue file name.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;eqs..out&quot;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>bruce_faults</strong> (<em>RsqSimMultiFault</em>) – Fault model with UTM coordinates transformed to NZTM.</p></li>
+<li><p><strong>catalogue</strong> (<em>RsqSimCatalogue</em>) – Fully populated catalogue.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.read_bruce_if_necessary">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.catalogue.</span></span><span class="sig-name descname"><span class="pre">read_bruce_if_necessary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fault_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bruce_faults.in'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bruce_names.in'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">catalogue_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eqs..out'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_faults</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bruce_faults'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_cat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'catalogue'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#read_bruce_if_necessary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.read_bruce_if_necessary" title="Link to this definition"></a></dt>
+<dd><p>Read a Bruce Shaw run directory only if the variables are not already in global scope.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>run_dir</strong> (<em>str</em>) – Path to the RSQSim run directory.</p></li>
+<li><p><strong>fault_file</strong> (<em>str</em><em>, </em><em>optional</em>) – File names for faults, fault names, and the catalogue.</p></li>
+<li><p><strong>names_file</strong> (<em>str</em><em>, </em><em>optional</em>) – File names for faults, fault names, and the catalogue.</p></li>
+<li><p><strong>catalogue_file</strong> (<em>str</em><em>, </em><em>optional</em>) – File names for faults, fault names, and the catalogue.</p></li>
+<li><p><strong>default_faults</strong> (<em>str</em><em>, </em><em>optional</em>) – Global variable name expected to hold the fault model.
+Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;bruce_faults&quot;</span></code>.</p></li>
+<li><p><strong>default_cat</strong> (<em>str</em><em>, </em><em>optional</em>) – Global variable name expected to hold the catalogue.
+Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;catalogue&quot;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Returns the fault model and catalogue if they were not already
+defined; otherwise returns <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple of (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault">RsqSimMultiFault</a>, <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue">RsqSimCatalogue</a>) or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.combine_boundaries">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.catalogue.</span></span><span class="sig-name descname"><span class="pre">combine_boundaries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bounds1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#combine_boundaries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.combine_boundaries" title="Link to this definition"></a></dt>
+<dd><p>Return the bounding box that encompasses both input bounding boxes.</p>
+<p>Takes the element-wise minimum for the lower two coordinates and the
+element-wise maximum for the upper two, producing a combined extent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bounds1</strong> (<em>list</em>) – First bounding box as <code class="docutils literal notranslate"><span class="pre">[min_x,</span> <span class="pre">min_y,</span> <span class="pre">max_x,</span> <span class="pre">max_y]</span></code>.</p></li>
+<li><p><strong>bounds2</strong> (<em>list</em>) – Second bounding box in the same format.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Combined bounding box <code class="docutils literal notranslate"><span class="pre">[min_x,</span> <span class="pre">min_y,</span> <span class="pre">max_x,</span> <span class="pre">max_y]</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">bounds1</span></code> and <code class="docutils literal notranslate"><span class="pre">bounds2</span></code> have different lengths.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.calculate_b_value">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.catalogue.</span></span><span class="sig-name descname"><span class="pre">calculate_b_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">magnitudes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_interval_years</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_mw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_mw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#calculate_b_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.calculate_b_value" title="Link to this definition"></a></dt>
+<dd><p>Estimate the Gutenberg-Richter b-value from a magnitude catalogue.</p>
+<p>Builds a cumulative MFD histogram, normalises by the observation
+interval, and fits a straight line to log₁₀(rate) vs Mw to obtain
+the b-value (negative slope) and the a-value (intercept).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>magnitudes</strong> (<em>array-like</em>) – Array of moment magnitudes.</p></li>
+<li><p><strong>time_interval_years</strong> (<em>float</em>) – Observation duration in years used to convert event counts to
+annual rates.</p></li>
+<li><p><strong>min_mw</strong> (<em>float</em><em>, </em><em>optional</em>) – Lower magnitude cutoff for the regression.  Defaults to 0.0.</p></li>
+<li><p><strong>max_mw</strong> (<em>float</em><em>, </em><em>optional</em>) – Upper magnitude cutoff for the regression.  Defaults to 10.0.</p></li>
+<li><p><strong>interval</strong> (<em>float</em><em>, </em><em>optional</em>) – Magnitude bin width.  Defaults to 0.1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>b_value</strong> (<em>float</em>) – Estimated b-value (positive, i.e. the negative of the fitted
+gradient).</p></li>
+<li><p><strong>intercept</strong> (<em>float</em>) – Log₁₀ a-value (y-intercept of the Gutenberg-Richter fit).</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../index.html" class="btn btn-neutral float-left" title="rsqsim_api.catalogue" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../event/index.html" class="btn btn-neutral float-right" title="rsqsim_api.catalogue.event" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,790 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.fault.multifault &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="rsqsim_api.fault.patch" href="../patch/index.html" />
+    <link rel="prev" title="rsqsim_api.fault" href="../index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">rsqsim_api</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../../catalogue/index.html">rsqsim_api.catalogue</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../index.html">rsqsim_api.fault</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../io/index.html">rsqsim_api.io</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../tsunami/index.html">rsqsim_api.tsunami</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../visualisation/index.html">rsqsim_api.visualisation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_fault/index.html">test_fault</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_catalogue/index.html">test_catalogue</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">rsqsim_api</a></li>
+          <li class="breadcrumb-item"><a href="../index.html">rsqsim_api.fault</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.fault.multifault</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/fault/multifault/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.fault.multifault">
+<span id="rsqsim-api-fault-multifault"></span><h1>rsqsim_api.fault.multifault<a class="headerlink" href="#module-rsqsim_api.fault.multifault" title="Link to this heading"></a></h1>
+<p>RSQSim multi-fault model container and related utilities.</p>
+<p>Provides <a class="reference internal" href="#rsqsim_api.fault.multifault.check_unique_vertices" title="rsqsim_api.fault.multifault.check_unique_vertices"><code class="xref py py-func docutils literal notranslate"><span class="pre">check_unique_vertices()</span></code></a> for duplicate-vertex detection
+and <a class="reference internal" href="#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimMultiFault</span></code></a> for managing a collection of
+<a class="reference internal" href="../segment/index.html#rsqsim_api.fault.segment.RsqSimSegment" title="rsqsim_api.fault.segment.RsqSimSegment"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimSegment</span></code></a> objects, including
+I/O from RSQSim/Bruce fault files, CFM tsurf directories, and various
+GIS export methods.</p>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RsqSimMultiFault</span></code></a></p></td>
+<td><p>Container for a collection of fault segments forming a complete fault model.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.multifault.check_unique_vertices" title="rsqsim_api.fault.multifault.check_unique_vertices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_unique_vertices</span></code></a>(vertex_array[, tolerance])</p></td>
+<td><p>Check whether any vertices in a 3-D array are potential duplicates.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.multifault.read_bruce" title="rsqsim_api.fault.multifault.read_bruce"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_bruce</span></code></a>([run_dir, fault_file, names_file])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.check_unique_vertices">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.multifault.</span></span><span class="sig-name descname"><span class="pre">check_unique_vertices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vertex_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#check_unique_vertices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.check_unique_vertices" title="Link to this definition"></a></dt>
+<dd><p>Check whether any vertices in a 3-D array are potential duplicates.</p>
+<p>Sorts the vertex array and computes distances between adjacent
+rows in the sorted order; vertices closer than <code class="docutils literal notranslate"><span class="pre">tolerance</span></code> are
+flagged as potential duplicates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vertex_array</strong> (<em>numpy.ndarray</em><em> of </em><em>shape</em><em> (</em><a class="reference internal" href="../segment/index.html#rsqsim_api.fault.segment.DisplacementArray.n" title="rsqsim_api.fault.segment.DisplacementArray.n"><em>n</em></a><em>, </em><em>3</em><em>)</em>) – 3-D vertex coordinates.</p></li>
+<li><p><strong>tolerance</strong> (<em>int</em><em> or </em><em>float</em><em>, </em><em>optional</em>) – Distance threshold (m) below which vertices are reported as
+potential duplicates.  Defaults to 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>num_closer</strong> (<em>int</em>) – Number of adjacent-sorted-vertex pairs closer than
+<code class="docutils literal notranslate"><span class="pre">tolerance</span></code>.</p></li>
+<li><p><strong>tolerance</strong> (<em>float</em>) – The tolerance value used.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.multifault.</span></span><span class="sig-name descname"><span class="pre">RsqSimMultiFault</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">faults</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2193</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault" title="Link to this definition"></a></dt>
+<dd><p>Container for a collection of fault segments forming a complete fault model.</p>
+<p>Aggregates <a class="reference internal" href="../segment/index.html#rsqsim_api.fault.segment.RsqSimSegment" title="rsqsim_api.fault.segment.RsqSimSegment"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimSegment</span></code></a>
+objects, provides name-based lookup, boundary computation, and
+I/O methods for RSQSim/Bruce fault files, CFM tsurf directories,
+and various GIS export formats.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>faults</strong> (<em>list</em><em> | </em><em>tuple</em><em> | </em><em>set</em>)</p></li>
+<li><p><strong>crs</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.faults">
+<span class="sig-name descname"><span class="pre">faults</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.faults"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.faults" title="Link to this definition"></a></dt>
+<dd><p>List of <a class="reference internal" href="../segment/index.html#rsqsim_api.fault.segment.RsqSimSegment" title="rsqsim_api.fault.segment.RsqSimSegment"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimSegment</span></code></a>
+(or nested <a class="reference internal" href="#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimMultiFault</span></code></a>) objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.patch_dic">
+<span class="sig-name descname"><span class="pre">patch_dic</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.patch_dic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.patch_dic" title="Link to this definition"></a></dt>
+<dd><p>Mapping of global patch number to patch object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.faults_with_patches">
+<span class="sig-name descname"><span class="pre">faults_with_patches</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.faults_with_patches"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.faults_with_patches" title="Link to this definition"></a></dt>
+<dd><p>Mapping of global patch number to the owning segment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id0">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">faults</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.faults"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id0" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">patch_dic</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.patch_dic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id1" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">faults_with_patches</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.faults_with_patches"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id2" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.filter_faults_by_patch_numbers">
+<span class="sig-name descname"><span class="pre">filter_faults_by_patch_numbers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">patch_ls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fault_from_single_patch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.filter_faults_by_patch_numbers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.filter_faults_by_patch_numbers" title="Link to this definition"></a></dt>
+<dd><p>Return the fault(s) associated with a given patch number or list of patch numbers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>patch_ls</strong> (<em>int</em><em> or </em><em>array-like</em><em> of </em><em>int</em>) – Patch number(s) to look up.</p></li>
+<li><p><strong>fault_from_single_patch</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> and a single patch number is given, return the
+owning <a class="reference internal" href="../segment/index.html#rsqsim_api.fault.segment.RsqSimSegment" title="rsqsim_api.fault.segment.RsqSimSegment"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimSegment</span></code></a>
+rather than the patch object.  Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The patch object, segment, or a new
+<a class="reference internal" href="#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimMultiFault</span></code></a> containing the relevant segments.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="../patch/index.html#rsqsim_api.fault.patch.RsqSimTriangularPatch" title="rsqsim_api.fault.patch.RsqSimTriangularPatch">RsqSimTriangularPatch</a> or <a class="reference internal" href="../segment/index.html#rsqsim_api.fault.segment.RsqSimSegment" title="rsqsim_api.fault.segment.RsqSimSegment">RsqSimSegment</a> or <a class="reference internal" href="#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault">RsqSimMultiFault</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.names">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">names</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.names" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.name_dic">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">name_dic</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.name_dic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.name_dic" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.get_names">
+<span class="sig-name descname"><span class="pre">get_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.get_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.get_names" title="Link to this definition"></a></dt>
+<dd><p>Populate <a class="reference internal" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.names" title="rsqsim_api.fault.multifault.RsqSimMultiFault.names"><code class="xref py py-attr docutils literal notranslate"><span class="pre">names</span></code></a> and <a class="reference internal" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.name_dic" title="rsqsim_api.fault.multifault.RsqSimMultiFault.name_dic"><code class="xref py py-attr docutils literal notranslate"><span class="pre">name_dic</span></code></a> from the loaded faults.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.bounds">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">bounds</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.bounds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.bounds" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.crs">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">crs</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.crs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.crs" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.v2_name_dic">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">v2_name_dic</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.v2_name_dic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.v2_name_dic" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.get_patch_areas">
+<span class="sig-name descname"><span class="pre">get_patch_areas</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.get_patch_areas"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.get_patch_areas" title="Link to this definition"></a></dt>
+<dd><p>Return a flat array of patch areas for all faults.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Patch areas in m².</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>numpy.ndarray of shape (n_total_patches,)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.make_v2_name_dic">
+<span class="sig-name descname"><span class="pre">make_v2_name_dic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path2cfm</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.make_v2_name_dic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.make_v2_name_dic" title="Link to this definition"></a></dt>
+<dd><p>Build a dictionary mapping Bruce-V2 fault names to CFM fault names.</p>
+<p>Uses fuzzy string matching to find the closest name in the CFM
+fault model GIS file, with hardcoded overrides for ambiguous
+cases (Wairau, Hikurangi, Puysegur).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path2cfm</strong> (<em>str</em>) – Path to the CFM fault model GIS file (shapefile or
+GeoJSON) containing a <code class="docutils literal notranslate"><span class="pre">&quot;Name&quot;</span></code> column.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Populates <a class="reference internal" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.v2_name_dic" title="rsqsim_api.fault.multifault.RsqSimMultiFault.v2_name_dic"><code class="xref py py-attr docutils literal notranslate"><span class="pre">v2_name_dic</span></code></a>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">path2cfm</span></code> does not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.read_fault_file">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">read_fault_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.read_fault_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.read_fault_file" title="Link to this definition"></a></dt>
+<dd><p>Read in opensha xml file?
+TODO: decide whether this is necessary, and if so finish it
+:param fault_file:
+:param verbose:
+:return:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_file</strong> (<em>str</em>)</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.read_fault_file_keith">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">read_fault_file_keith</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2193</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_slip_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.read_fault_file_keith"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.read_fault_file_keith" title="Link to this definition"></a></dt>
+<dd><p>Read an RSQSim fault file in Keith Richards-Dinger’s convention.</p>
+<p>The file has 13 whitespace-separated columns:
+<code class="docutils literal notranslate"><span class="pre">x1,y1,z1,</span> <span class="pre">x2,y2,z2,</span> <span class="pre">x3,y3,z3,</span> <span class="pre">rake,</span> <span class="pre">slip_rate,</span> <span class="pre">fault_num,</span> <span class="pre">fault_name</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_file</strong> (<em>str</em>) – Path to the RSQSim fault input file.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, print per-fault progress and duplicate-vertex
+warnings.  Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>crs</strong> (<em>int</em><em>, </em><em>optional</em>) – EPSG code for the coordinate reference system.
+Defaults to 2193 (NZTM).</p></li>
+<li><p><strong>read_slip_rate</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), populate patch slip rates.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault">RsqSimMultiFault</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.read_fault_file_bruce">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">read_fault_file_bruce</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">main_fault_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform_from_utm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_pickle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2193</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_slip_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.read_fault_file_bruce"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.read_fault_file_bruce" title="Link to this definition"></a></dt>
+<dd><p>Read an RSQSim fault model in Bruce Shaw’s format.</p>
+<p>Reads a two-file layout: a main CSV fault file and a companion
+names file.  Handles the case where multiple fault segments
+share the same name by appending a numeric suffix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>main_fault_file</strong> (<em>str</em>) – Path to the main fault geometry file (space-separated,
+13 columns: x1–z3, rake, slip_rate, fault_num, name).
+Can also be a pickled DataFrame if <code class="docutils literal notranslate"><span class="pre">from_pickle</span></code> is
+<code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>name_file</strong> (<em>str</em>) – Path to the text file listing fault names (one per line,
+in the same order as fault numbers).</p></li>
+<li><p><strong>transform_from_utm</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, transform vertex coordinates from UTM zone
+59S to NZTM.  Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>from_pickle</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, read the main file as a pickled DataFrame.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>crs</strong> (<em>int</em><em>, </em><em>optional</em>) – EPSG code.  Defaults to 2193 (NZTM).</p></li>
+<li><p><strong>read_slip_rate</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), populate patch slip rates.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault">RsqSimMultiFault</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.pickle_model">
+<span class="sig-name descname"><span class="pre">pickle_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.pickle_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.pickle_model" title="Link to this definition"></a></dt>
+<dd><p>Serialise all patch data to a pickled pandas DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>file</strong> (<em>str</em>) – Output pickle file path.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.read_cfm_directory">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">read_cfm_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shapefile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.read_cfm_directory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.read_cfm_directory" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>directory</strong> (<em>str</em>)</p></li>
+<li><p><strong>files</strong> (<em>str</em><em> | </em><em>list</em><em> | </em><em>tuple</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.plot_faults_2d">
+<span class="sig-name descname"><span class="pre">plot_faults_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.plot_faults_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.plot_faults_2d" title="Link to this definition"></a></dt>
+<dd><p>Plot selected fault segments in map view coloured by slip rate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_list</strong> (<em>iterable</em><em> of </em><em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Names of faults to plot.  Defaults to all faults.</p></li>
+<li><p><strong>show</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, call <code class="docutils literal notranslate"><span class="pre">fig.show()</span></code>.  Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>write</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Output file path for saving the figure.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.plot_fault_traces">
+<span class="sig-name descname"><span class="pre">plot_fault_traces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edgecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linewidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linestyle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'-'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">facecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'0.8'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.plot_fault_traces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.plot_fault_traces" title="Link to this definition"></a></dt>
+<dd><p>Plot fault surface traces on a map axes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_list</strong> (<em>iterable</em><em> of </em><em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Names of faults to plot.  Defaults to all faults.</p></li>
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Axes to draw onto.  A new figure is created if <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>edgecolor</strong> (<em>str</em><em>, </em><em>optional</em>) – Trace edge colour.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;r&quot;</span></code>.</p></li>
+<li><p><strong>linewidth</strong> (<em>int</em><em> or </em><em>float</em><em>, </em><em>optional</em>) – Line width.  Defaults to 0.1.</p></li>
+<li><p><strong>clip_bounds</strong> (<em>list</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[x1,</span> <span class="pre">y1,</span> <span class="pre">x2,</span> <span class="pre">y2]</span></code> bounding box for the coastline.</p></li>
+<li><p><strong>linestyle</strong> (<em>str</em><em>, </em><em>optional</em>) – Line style.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;-&quot;</span></code>.</p></li>
+<li><p><strong>facecolor</strong> (<em>str</em><em>, </em><em>optional</em>) – Not currently used.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;0.8&quot;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>matplotlib.axes.Axes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.write_fault_traces_to_gis">
+<span class="sig-name descname"><span class="pre">write_fault_traces_to_gis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'./bruce_faults'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'EPSG:2193'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.write_fault_traces_to_gis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.write_fault_traces_to_gis" title="Link to this definition"></a></dt>
+<dd><p>Write fault surface traces to shapefiles.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_list</strong> (<em>iterable</em><em> of </em><em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Names of faults to export.  Defaults to all faults.</p></li>
+<li><p><strong>prefix</strong> (<em>str</em><em>, </em><em>optional</em>) – Output file prefix.  Two shapefiles are written:
+<code class="docutils literal notranslate"><span class="pre">{prefix}.shp</span></code> and <code class="docutils literal notranslate"><span class="pre">{prefix}_traces.shp</span></code>.
+Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;./bruce_faults&quot;</span></code>.</p></li>
+<li><p><strong>crs</strong> (<em>str</em><em>, </em><em>optional</em>) – CRS string for the output shapefile.
+Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;EPSG:2193&quot;</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.write_fault_outlines_to_gis">
+<span class="sig-name descname"><span class="pre">write_fault_outlines_to_gis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'./bruce_faults'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'EPSG:2193'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.write_fault_outlines_to_gis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.write_fault_outlines_to_gis" title="Link to this definition"></a></dt>
+<dd><p>Write fault patch-outline polygons to a shapefile.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_list</strong> (<em>iterable</em><em> of </em><em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Names of faults to export.  Defaults to all faults.</p></li>
+<li><p><strong>prefix</strong> (<em>str</em><em>, </em><em>optional</em>) – Output file prefix; produces <code class="docutils literal notranslate"><span class="pre">{prefix}_outlines.shp</span></code>.
+Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;./bruce_faults&quot;</span></code>.</p></li>
+<li><p><strong>crs</strong> (<em>str</em><em>, </em><em>optional</em>) – CRS string.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;EPSG:2193&quot;</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.plot_slip_distribution_2d">
+<span class="sig-name descname"><span class="pre">plot_slip_distribution_2d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.plot_slip_distribution_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.plot_slip_distribution_2d" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.slip_rate_array">
+<span class="sig-name descname"><span class="pre">slip_rate_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">include_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nztm_to_lonlat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mm_per_year</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.slip_rate_array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.slip_rate_array" title="Link to this definition"></a></dt>
+<dd><p>Build a flat array of triangle vertex coordinates plus slip rate and rake.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>include_zeros</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default) and <code class="docutils literal notranslate"><span class="pre">min_slip_rate</span></code> is set,
+include below-threshold patches with slip and rake set to
+zero.</p></li>
+<li><p><strong>min_slip_rate</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Minimum slip rate (mm/yr if <code class="docutils literal notranslate"><span class="pre">mm_per_year</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>)
+for inclusion.  Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code> (include all).</p></li>
+<li><p><strong>nztm_to_lonlat</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, output vertex coordinates in WGS84
+(longitude, latitude).  Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>mm_per_year</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), convert slip rates from m/s to
+mm/yr.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Columns: <code class="docutils literal notranslate"><span class="pre">[x1,y1,z1,</span> <span class="pre">x2,y2,z2,</span> <span class="pre">x3,y3,z3,</span> <span class="pre">slip_rate,</span> <span class="pre">rake]</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray of shape (n_patches, 11)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.slip_rate_to_mesh">
+<span class="sig-name descname"><span class="pre">slip_rate_to_mesh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">include_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nztm_to_lonlat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mm_per_year</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.slip_rate_to_mesh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.slip_rate_to_mesh" title="Link to this definition"></a></dt>
+<dd><p>Build a <code class="xref py py-class docutils literal notranslate"><span class="pre">meshio.Mesh</span></code> containing slip rate and rake as cell data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>include_zeros</strong> (<em>bool</em><em>, </em><em>optional</em>) – Include below-threshold patches as zeros.  Defaults to
+<code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>min_slip_rate</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Minimum slip rate threshold.  Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>nztm_to_lonlat</strong> (<em>bool</em><em>, </em><em>optional</em>) – Output in WGS84.  Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>mm_per_year</strong> (<em>bool</em><em>, </em><em>optional</em>) – Convert to mm/yr.  Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>meshio.Mesh</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.slip_rate_to_vtk">
+<span class="sig-name descname"><span class="pre">slip_rate_to_vtk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vtk_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nztm_to_lonlat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mm_per_year</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.slip_rate_to_vtk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.slip_rate_to_vtk" title="Link to this definition"></a></dt>
+<dd><p>Write slip rate and rake data to a VTK file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vtk_file</strong> (<em>str</em>) – Output VTK file path.</p></li>
+<li><p><strong>include_zeros</strong> (<em>bool</em><em>, </em><em>optional</em>) – Include below-threshold patches.  Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>min_slip_rate</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Minimum slip rate threshold.  Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>nztm_to_lonlat</strong> (<em>bool</em><em>, </em><em>optional</em>) – Output in WGS84.  Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>mm_per_year</strong> (<em>bool</em><em>, </em><em>optional</em>) – Convert to mm/yr.  Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.write_rsqsim_input_file">
+<span class="sig-name descname"><span class="pre">write_rsqsim_input_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mm_yr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.write_rsqsim_input_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.write_rsqsim_input_file" title="Link to this definition"></a></dt>
+<dd><p>Write all faults to a single RSQSim fault input file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_file</strong> (<em>str</em>) – Output file path.</p></li>
+<li><p><strong>mm_yr</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), treat stored slip rates as mm/yr
+and convert to m/s for the output.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.write_b_value_file">
+<span class="sig-name descname"><span class="pre">write_b_value_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a_value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_a_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">difference_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_file</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.write_b_value_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.write_b_value_file" title="Link to this definition"></a></dt>
+<dd><p>Write per-patch b-values to a text file for use with RSQSim.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a_value</strong> (<em>float</em>) – Global a-value parameter (0–1).</p></li>
+<li><p><strong>default_a_b</strong> (<em>float</em>) – Default a − b value (negative float).</p></li>
+<li><p><strong>difference_dict</strong> (<em>dict</em>) – Mapping of fault name to (a − b) value override.</p></li>
+<li><p><strong>output_file</strong> (<em>str</em>) – Output text file path.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.tile_quads">
+<span class="sig-name descname"><span class="pre">tile_quads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tile_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation_distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manual_tiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.tile_quads"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.tile_quads" title="Link to this definition"></a></dt>
+<dd><p>Discretize all faults into rectangular tiles.</p>
+<p>Calls <a class="reference internal" href="../segment/index.html#rsqsim_api.fault.segment.RsqSimSegment.discretize_rectangular_tiles" title="rsqsim_api.fault.segment.RsqSimSegment.discretize_rectangular_tiles"><code class="xref py py-meth docutils literal notranslate"><span class="pre">discretize_rectangular_tiles()</span></code></a>
+on each fault.  Manual tile arrays can override individual
+faults.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tile_size</strong> (<em>float</em><em>, </em><em>optional</em>) – Target tile dimension (m).  Defaults to 5000.</p></li>
+<li><p><strong>interpolation_distance</strong> (<em>float</em><em>, </em><em>optional</em>) – Down-dip interpolation spacing (m).  Defaults to 1000.</p></li>
+<li><p><strong>manual_tiles</strong> (<em>dict</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Mapping of fault name to pre-computed tile array (loaded
+from a <code class="docutils literal notranslate"><span class="pre">.npy</span></code> file).  Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>output_file</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – If given, pickle the resulting dict to this file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Mapping of fault name to tile array (shape (n_tiles, 4, 3)).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.search_name">
+<span class="sig-name descname"><span class="pre">search_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">search_string</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.search_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.search_name" title="Link to this definition"></a></dt>
+<dd><p>Search fault names using a wildcard pattern.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>search_string</strong> (<em>str</em>) – Wildcard pattern (case-insensitive) to match against
+fault names.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Fault names that match the pattern.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.find_closest_patches">
+<span class="sig-name descname"><span class="pre">find_closest_patches</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.find_closest_patches"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.find_closest_patches" title="Link to this definition"></a></dt>
+<dd><p>Find the patches closest to given 2-D coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>float</em>) – Easting (NZTM) in metres.</p></li>
+<li><p><strong>y</strong> (<em>float</em>) – Northing (NZTM) in metres.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Patch numbers of the patches in the closest fault whose
+vertices include the nearest vertex.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.find_closest_patches_3d">
+<span class="sig-name descname"><span class="pre">find_closest_patches_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.find_closest_patches_3d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.find_closest_patches_3d" title="Link to this definition"></a></dt>
+<dd><p>Find the patches closest to given 3-D coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>float</em>) – Easting (NZTM) in metres.</p></li>
+<li><p><strong>y</strong> (<em>float</em>) – Northing (NZTM) in metres.</p></li>
+<li><p><strong>z</strong> (<em>float</em>) – Depth (negative metres below sea level).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Patch numbers of the patches in the closest fault whose
+vertices include the nearest vertex.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.traces">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">traces</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.traces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.traces" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.get_traces">
+<span class="sig-name descname"><span class="pre">get_traces</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.get_traces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.get_traces" title="Link to this definition"></a></dt>
+<dd><p>Build and cache a GeoDataFrame of all fault surface traces.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.outlines">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">outlines</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.outlines"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.outlines" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.get_outlines">
+<span class="sig-name descname"><span class="pre">get_outlines</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.get_outlines"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.get_outlines" title="Link to this definition"></a></dt>
+<dd><p>Build and cache a GeoDataFrame of all fault patch-outline polygons.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.merge_segments">
+<span class="sig-name descname"><span class="pre">merge_segments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">matching_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fault_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.merge_segments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.merge_segments" title="Link to this definition"></a></dt>
+<dd><p>Merge multiple fault segments matching a name pattern into one segment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>matching_string</strong> (<em>str</em>) – Wildcard pattern used to identify segments to merge.
+Without <code class="docutils literal notranslate"><span class="pre">name_dict</span></code>, matches names like
+<code class="docutils literal notranslate"><span class="pre">&quot;{matching_string}?&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;{matching_string}??&quot;</span></code>.</p></li>
+<li><p><strong>name_dict</strong> (<em>dict</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Mapping of internal segment name to an alternative name
+for pattern matching.</p></li>
+<li><p><strong>fault_name</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Name for the merged segment.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>New segment containing all patches from the matched
+segments, with merged surface trace.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="../segment/index.html#rsqsim_api.fault.segment.RsqSimSegment" title="rsqsim_api.fault.segment.RsqSimSegment">RsqSimSegment</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.get_subduction_patch_numbers">
+<span class="sig-name descname"><span class="pre">get_subduction_patch_numbers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subduction_faults</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('hikkerm',</span> <span class="pre">'puysegur')</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.get_subduction_patch_numbers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.get_subduction_patch_numbers" title="Link to this definition"></a></dt>
+<dd><p>Return patch numbers for all subduction-zone fault segments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>subduction_faults</strong> (<em>tuple</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Substrings used to identify subduction faults by name.
+Defaults to <code class="docutils literal notranslate"><span class="pre">(&quot;hikkerm&quot;,</span> <span class="pre">&quot;puysegur&quot;)</span></code>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>numpy.ndarray of int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.RsqSimMultiFault.get_crustal_patch_numbers">
+<span class="sig-name descname"><span class="pre">get_crustal_patch_numbers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subduction_faults</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('hikkerm',</span> <span class="pre">'puysegur')</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#RsqSimMultiFault.get_crustal_patch_numbers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.RsqSimMultiFault.get_crustal_patch_numbers" title="Link to this definition"></a></dt>
+<dd><p>Return patch numbers for all crustal (non-subduction) fault segments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>subduction_faults</strong> (<em>tuple</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Substrings identifying subduction faults to exclude.
+Defaults to <code class="docutils literal notranslate"><span class="pre">(&quot;hikkerm&quot;,</span> <span class="pre">&quot;puysegur&quot;)</span></code>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>numpy.ndarray of int</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.multifault.read_bruce">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.multifault.</span></span><span class="sig-name descname"><span class="pre">read_bruce</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fault_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bruce_faults.in'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bruce_names.in'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/multifault.html#read_bruce"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.multifault.read_bruce" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>run_dir</strong> (<em>str</em>)</p></li>
+<li><p><strong>fault_file</strong> (<em>str</em>)</p></li>
+<li><p><strong>names_file</strong> (<em>str</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../index.html" class="btn btn-neutral float-left" title="rsqsim_api.fault" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../patch/index.html" class="btn btn-neutral float-right" title="rsqsim_api.fault.patch" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

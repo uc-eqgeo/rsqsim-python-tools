@@ -1,0 +1,374 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.fault.slip &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.fault.slip</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for rsqsim_api.fault.slip</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Hikurangi subduction zone slip-rate and coupling utilities.</span>
+
+<span class="sd">Provides helper functions for computing along-trench distances,</span>
+<span class="sd">coupling coefficients, and convergence rates for the Hikurangi margin,</span>
+<span class="sd">as well as a general best-fit-plane routine.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">LineString</span><span class="p">,</span> <span class="n">Polygon</span><span class="p">,</span> <span class="n">Point</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">pyproj</span> <span class="kn">import</span> <span class="n">Transformer</span>
+
+<div class="viewcode-block" id="transformer">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.transformer">[docs]</a>
+<span class="n">transformer</span> <span class="o">=</span> <span class="n">Transformer</span><span class="o">.</span><span class="n">from_crs</span><span class="p">(</span><span class="mi">4326</span><span class="p">,</span> <span class="mi">2193</span><span class="p">,</span> <span class="n">always_xy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="trans_inv">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.trans_inv">[docs]</a>
+<span class="n">trans_inv</span> <span class="o">=</span> <span class="n">Transformer</span><span class="o">.</span><span class="n">from_crs</span><span class="p">(</span><span class="mi">2193</span><span class="p">,</span> <span class="mi">4326</span><span class="p">,</span> <span class="n">always_xy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="fit_plane_to_points">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.fit_plane_to_points">[docs]</a>
+<span class="k">def</span> <span class="nf">fit_plane_to_points</span><span class="p">(</span><span class="n">points</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">1.0e-5</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fit a best-fit plane to a set of 3-D points using SVD.</span>
+
+<span class="sd">    The plane is constrained to pass through the centroid of the</span>
+<span class="sd">    point cloud.  The normal is extracted from the last column of the</span>
+<span class="sd">    left singular matrix of the de-meaned covariance and is oriented</span>
+<span class="sd">    so that its z-component is positive.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    points : numpy.ndarray of shape (n, 3)</span>
+<span class="sd">        Array of 3-D point coordinates.</span>
+<span class="sd">    eps : float, optional</span>
+<span class="sd">        Threshold below which normal-vector components are set to</span>
+<span class="sd">        exactly zero.  Defaults to 1e-5.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    plane_normal : numpy.ndarray of shape (3,)</span>
+<span class="sd">        Unit normal vector to the best-fit plane (A, B, C).</span>
+<span class="sd">    plane_origin : numpy.ndarray of shape (3,)</span>
+<span class="sd">        Centroid of the input points, lying on the fitted plane.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Compute plane origin and subract it from the points array.</span>
+    <span class="n">plane_origin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">points</span> <span class="o">-</span> <span class="n">plane_origin</span>
+
+    <span class="c1"># Dot product to yield a 3x3 array.</span>
+    <span class="n">moment</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+
+    <span class="c1"># Extract single values from SVD computation to get normal.</span>
+    <span class="n">plane_normal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span><span class="n">moment</span><span class="p">)[</span><span class="mi">0</span><span class="p">][:,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">small</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">plane_normal</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">eps</span><span class="p">)</span>
+    <span class="n">plane_normal</span><span class="p">[</span><span class="n">small</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">plane_normal</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">plane_normal</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">plane_normal</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">):</span>
+        <span class="n">plane_normal</span> <span class="o">*=</span> <span class="o">-</span><span class="mf">1.0</span>
+
+    <span class="k">return</span> <span class="n">plane_normal</span><span class="p">,</span> <span class="n">plane_origin</span></div>
+
+
+
+<span class="c1"># Locations of points where slip rate changes</span>
+<div class="viewcode-block" id="east_cape">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.east_cape">[docs]</a>
+<span class="n">east_cape</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="mf">178.9916</span><span class="p">,</span> <span class="o">-</span><span class="mf">39.1775</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="start_0_2">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.start_0_2">[docs]</a>
+<span class="n">start_0_2</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="mf">180.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">37.00</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="end_0_2">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.end_0_2">[docs]</a>
+<span class="n">end_0_2</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="o">-</span><span class="mf">177.3995</span><span class="p">,</span> <span class="o">-</span><span class="mf">32.5061</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="start_0_5">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.start_0_5">[docs]</a>
+<span class="n">start_0_5</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="o">-</span><span class="mf">176.673</span><span class="p">,</span> <span class="o">-</span><span class="mf">31.016</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="convergence_start">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.convergence_start">[docs]</a>
+<span class="n">convergence_start</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="mf">179.098</span><span class="p">,</span> <span class="o">-</span><span class="mf">39.014</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="convergence_end">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.convergence_end">[docs]</a>
+<span class="n">convergence_end</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="o">-</span><span class="mf">174.162</span><span class="p">,</span> <span class="o">-</span><span class="mf">27.508</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="point_dist">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.point_dist">[docs]</a>
+<span class="k">def</span> <span class="nf">point_dist</span><span class="p">(</span><span class="n">point</span><span class="p">:</span> <span class="n">Point</span><span class="p">,</span> <span class="n">along_overall</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Project a WGS84 point onto an NZTM direction vector.</span>
+
+<span class="sd">    Transforms the point to NZTM (EPSG:2193) and computes its dot</span>
+<span class="sd">    product with the supplied unit direction vector.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    point : shapely.geometry.Point</span>
+<span class="sd">        Point in WGS84 (longitude, latitude) coordinates.</span>
+<span class="sd">    along_overall : numpy.ndarray of shape (2,)</span>
+<span class="sd">        2-D unit direction vector in NZTM coordinates.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Scalar projection of the transformed point onto</span>
+<span class="sd">        ``along_overall``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">along_overall</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">point</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">point</span><span class="o">.</span><span class="n">y</span><span class="p">)))</span></div>
+
+
+<div class="viewcode-block" id="point_dist_nztm">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.point_dist_nztm">[docs]</a>
+<span class="k">def</span> <span class="nf">point_dist_nztm</span><span class="p">(</span><span class="n">point</span><span class="p">:</span> <span class="n">Point</span><span class="p">,</span> <span class="n">along_overall</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Project an NZTM point onto a direction vector.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    point : shapely.geometry.Point</span>
+<span class="sd">        Point already in NZTM (EPSG:2193) coordinates.</span>
+<span class="sd">    along_overall : numpy.ndarray of shape (2,)</span>
+<span class="sd">        2-D unit direction vector.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Scalar projection of the point onto ``along_overall``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">along_overall</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">point</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">point</span><span class="o">.</span><span class="n">y</span><span class="p">])))</span></div>
+
+
+<div class="viewcode-block" id="east_cape_dist">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.east_cape_dist">[docs]</a>
+<span class="n">east_cape_dist</span> <span class="o">=</span> <span class="n">point_dist</span><span class="p">(</span><span class="n">east_cape</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="start_0_2_dist">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.start_0_2_dist">[docs]</a>
+<span class="n">start_0_2_dist</span> <span class="o">=</span> <span class="n">point_dist</span><span class="p">(</span><span class="n">start_0_2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="end_0_2_dist">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.end_0_2_dist">[docs]</a>
+<span class="n">end_0_2_dist</span> <span class="o">=</span> <span class="n">point_dist</span><span class="p">(</span><span class="n">end_0_2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="start_0_5_dist">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.start_0_5_dist">[docs]</a>
+<span class="n">start_0_5_dist</span> <span class="o">=</span> <span class="n">point_dist</span><span class="p">(</span><span class="n">start_0_5</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="convergence_start_dist">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.convergence_start_dist">[docs]</a>
+<span class="n">convergence_start_dist</span> <span class="o">=</span> <span class="n">point_dist</span><span class="p">(</span><span class="n">convergence_start</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="convergence_end_dist">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.convergence_end_dist">[docs]</a>
+<span class="n">convergence_end_dist</span> <span class="o">=</span> <span class="n">point_dist</span><span class="p">(</span><span class="n">convergence_end</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="coupling">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.coupling">[docs]</a>
+<span class="k">def</span> <span class="nf">coupling</span><span class="p">(</span><span class="n">dist</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the Hikurangi plate-interface coupling coefficient at a given along-trench distance.</span>
+
+<span class="sd">    Implements a piecewise model: 0.2 south of ``start_0_2``, 0.5</span>
+<span class="sd">    north of ``start_0_5``, and a linear gradient in between.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dist : float</span>
+<span class="sd">        Along-trench distance (m in NZTM projection) from east cape.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Coupling coefficient (dimensionless, 0–1).</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``dist`` is south of east cape (i.e. less than</span>
+<span class="sd">        ``east_cape_dist``).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">dist</span> <span class="o">&gt;=</span> <span class="n">east_cape_dist</span>
+    <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="n">start_0_2_dist</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mf">0.2</span>  <span class="c1"># * (dist - east_cape_dist) / (start_0_2_dist - east_cape_dist)</span>
+    <span class="k">elif</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="n">end_0_2_dist</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mf">0.2</span>
+
+    <span class="k">elif</span> <span class="n">dist</span> <span class="o">&gt;</span> <span class="n">start_0_5_dist</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mf">0.5</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Linear gradient in the middle between two uniform areas</span>
+        <span class="k">return</span> <span class="mf">0.2</span> <span class="o">+</span> <span class="p">(</span><span class="mf">0.5</span> <span class="o">-</span> <span class="mf">0.2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">dist</span> <span class="o">-</span> <span class="n">end_0_2_dist</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">start_0_5_dist</span> <span class="o">-</span> <span class="n">end_0_2_dist</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="convergence">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.convergence">[docs]</a>
+<span class="k">def</span> <span class="nf">convergence</span><span class="p">(</span><span class="n">dist</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the Hikurangi convergence rate at a given along-trench distance.</span>
+
+<span class="sd">    Linear interpolation between 49 mm/yr at the southern end</span>
+<span class="sd">    (``convergence_start``) and 85 mm/yr at the northern end</span>
+<span class="sd">    (``convergence_end``).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dist : float</span>
+<span class="sd">        Along-trench distance (m in NZTM projection).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Convergence rate in mm/yr.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">south_conv</span> <span class="o">=</span> <span class="mf">49.</span>
+    <span class="n">north_conv</span> <span class="o">=</span> <span class="mf">85.</span>
+
+    <span class="k">return</span> <span class="n">south_conv</span> <span class="o">+</span> <span class="p">(</span><span class="n">north_conv</span> <span class="o">-</span> <span class="n">south_conv</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">dist</span> <span class="o">-</span> <span class="n">convergence_start_dist</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">convergence_end_dist</span> <span class="o">-</span>
+                                                                                       <span class="n">convergence_start_dist</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="convergence_dist">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.convergence_dist">[docs]</a>
+<span class="k">def</span> <span class="nf">convergence_dist</span><span class="p">(</span><span class="n">dist</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="kermadec_slip_rate">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/slip/index.html#rsqsim_api.fault.slip.kermadec_slip_rate">[docs]</a>
+<span class="k">def</span> <span class="nf">kermadec_slip_rate</span><span class="p">(</span><span class="n">dist</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">modelled_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the Kermadec subduction zone slip rate at a given along-trench distance.</span>
+
+<span class="sd">    Blends the modelled slip rate with the convergence-rate-based</span>
+<span class="sd">    estimate using a linear fractional interpolation from east cape to</span>
+<span class="sd">    the 0.2-coupling start point.  If ``modelled_value`` is zero,</span>
+<span class="sd">    returns the pure convergence × coupling estimate.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dist : float</span>
+<span class="sd">        Along-trench distance (m in NZTM projection).</span>
+<span class="sd">    modelled_value : float, optional</span>
+<span class="sd">        Modelled slip rate (mm/yr) from the fault model.  If 0</span>
+<span class="sd">        (default), only coupling × convergence is used.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Slip rate in mm/yr.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">modelled_value</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">:</span>
+        <span class="n">frac</span> <span class="o">=</span> <span class="p">(</span><span class="n">dist</span> <span class="o">-</span> <span class="n">east_cape_dist</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">start_0_2_dist</span> <span class="o">-</span> <span class="n">east_cape_dist</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">frac</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">modelled_value</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">frac</span><span class="p">)</span> <span class="o">+</span> <span class="n">convergence</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span> <span class="o">*</span> <span class="n">coupling</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span> <span class="o">*</span> <span class="n">frac</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">convergence</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span> <span class="o">*</span> <span class="n">coupling</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

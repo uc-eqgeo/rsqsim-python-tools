@@ -1,0 +1,455 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.tsunami.tsunami &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="rsqsim_api.tsunami.tsunami_multiprocessing" href="../tsunami_multiprocessing/index.html" />
+    <link rel="prev" title="rsqsim_api.tsunami.gf_netcdf" href="../gf_netcdf/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">rsqsim_api</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../../catalogue/index.html">rsqsim_api.catalogue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../fault/index.html">rsqsim_api.fault</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../io/index.html">rsqsim_api.io</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../index.html">rsqsim_api.tsunami</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../visualisation/index.html">rsqsim_api.visualisation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_fault/index.html">test_fault</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_catalogue/index.html">test_catalogue</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">rsqsim_api</a></li>
+          <li class="breadcrumb-item"><a href="../index.html">rsqsim_api.tsunami</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.tsunami.tsunami</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/tsunami/tsunami/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.tsunami.tsunami">
+<span id="rsqsim-api-tsunami-tsunami"></span><h1>rsqsim_api.tsunami.tsunami<a class="headerlink" href="#module-rsqsim_api.tsunami.tsunami" title="Link to this heading"></a></h1>
+<p>Classes and functions for loading, manipulating, and plotting sea-surface displacement (SSD) fields.</p>
+<p>Provides <a class="reference internal" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements" title="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeaSurfaceDisplacements</span></code></a> for a single event’s SSD
+grid, <a class="reference internal" href="#rsqsim_api.tsunami.tsunami.MultiEventSeaSurface" title="rsqsim_api.tsunami.tsunami.MultiEventSeaSurface"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiEventSeaSurface</span></code></a> for a collection of events, and
+<a class="reference internal" href="#rsqsim_api.tsunami.tsunami.events_from_ssd_netcdf" title="rsqsim_api.tsunami.tsunami.events_from_ssd_netcdf"><code class="xref py py-func docutils literal notranslate"><span class="pre">events_from_ssd_netcdf()</span></code></a> for extracting SSD arrays from a
+pre-computed netCDF file.</p>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements" title="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SeaSurfaceDisplacements</span></code></a></p></td>
+<td><p>Sea-surface displacement grid for a single earthquake event.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.tsunami.tsunami.MultiEventSeaSurface" title="rsqsim_api.tsunami.tsunami.MultiEventSeaSurface"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MultiEventSeaSurface</span></code></a></p></td>
+<td><p>Collection of <a class="reference internal" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements" title="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeaSurfaceDisplacements</span></code></a> objects for multiple events.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.tsunami.tsunami.events_from_ssd_netcdf" title="rsqsim_api.tsunami.tsunami.events_from_ssd_netcdf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">events_from_ssd_netcdf</span></code></a>(event_ids, nc[, get_xy])</p></td>
+<td><p>Extract sea-surface displacement arrays from a netCDF SSD dataset.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">rsqsim_api.tsunami.tsunami.</span></span><span class="sig-name descname"><span class="pre">SeaSurfaceDisplacements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_number</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disps</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#SeaSurfaceDisplacements"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements" title="Link to this definition"></a></dt>
+<dd><p>Sea-surface displacement grid for a single earthquake event.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_number</strong> (<em>int</em>)</p></li>
+<li><p><strong>x_range</strong> (<em>numpy.ndarray</em>)</p></li>
+<li><p><strong>y_range</strong> (<em>numpy.ndarray</em>)</p></li>
+<li><p><strong>disps</strong> (<em>numpy.ndarray</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.event_number">
+<span class="sig-name descname"><span class="pre">event_number</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#SeaSurfaceDisplacements.event_number"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.event_number" title="Link to this definition"></a></dt>
+<dd><p>RSQSim event identifier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.x_range">
+<span class="sig-name descname"><span class="pre">x_range</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#SeaSurfaceDisplacements.x_range"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.x_range" title="Link to this definition"></a></dt>
+<dd><p>1-D easting coordinates (NZTM, m) of the grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.y_range">
+<span class="sig-name descname"><span class="pre">y_range</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#SeaSurfaceDisplacements.y_range"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.y_range" title="Link to this definition"></a></dt>
+<dd><p>1-D northing coordinates (NZTM, m) of the grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.disps">
+<span class="sig-name descname"><span class="pre">disps</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#SeaSurfaceDisplacements.disps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.disps" title="Link to this definition"></a></dt>
+<dd><p>Sea-surface displacement values in metres.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray of shape (len(<a class="reference internal" href="#id2" title="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.y_range">y_range</a>), len(<a class="reference internal" href="#id1" title="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.x_range">x_range</a>))</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">event_number</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#SeaSurfaceDisplacements.event_number"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id0" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">x_range</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#SeaSurfaceDisplacements.x_range"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id1" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">y_range</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#SeaSurfaceDisplacements.y_range"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id2" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id3">
+<span class="sig-name descname"><span class="pre">disps</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#SeaSurfaceDisplacements.disps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id3" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.from_netcdf_file">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_netcdf_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nc_file</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#SeaSurfaceDisplacements.from_netcdf_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.from_netcdf_file" title="Link to this definition"></a></dt>
+<dd><p>Load a single event’s SSD from a pre-computed netCDF file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_id</strong> (<em>int</em>) – RSQSim event identifier to extract.</p></li>
+<li><p><strong>nc_file</strong> (<em>str</em>) – Path to the netCDF file produced by
+<a class="reference internal" href="../gf_netcdf/index.html#rsqsim_api.tsunami.gf_netcdf.sea_surface_displacements_multi" title="rsqsim_api.tsunami.gf_netcdf.sea_surface_displacements_multi"><code class="xref py py-func docutils literal notranslate"><span class="pre">sea_surface_displacements_multi()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements" title="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements">SeaSurfaceDisplacements</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.data_bounds">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">data_bounds</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#SeaSurfaceDisplacements.data_bounds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.data_bounds" title="Link to this definition"></a></dt>
+<dd><p>Bounding box of grid cells where the displacement exceeds 5 mm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">[x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max]</span></code> in NZTM metres.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.get_data_bounds">
+<span class="sig-name descname"><span class="pre">get_data_bounds</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#SeaSurfaceDisplacements.get_data_bounds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.get_data_bounds" title="Link to this definition"></a></dt>
+<dd><p>Compute and cache <a class="reference internal" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.data_bounds" title="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.data_bounds"><code class="xref py py-attr docutils literal notranslate"><span class="pre">data_bounds</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.to_grid">
+<span class="sig-name descname"><span class="pre">to_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#SeaSurfaceDisplacements.to_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.to_grid" title="Link to this definition"></a></dt>
+<dd><p>Write the displacement grid to a GMT-format netCDF grid file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>grid_name</strong> (<em>str</em>) – Output file path (typically <code class="docutils literal notranslate"><span class="pre">*.grd</span></code>).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.to_tiff">
+<span class="sig-name descname"><span class="pre">to_tiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tiff_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2193</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#SeaSurfaceDisplacements.to_tiff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.to_tiff" title="Link to this definition"></a></dt>
+<dd><p>Write the displacement grid to a GeoTIFF file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tiff_name</strong> (<em>str</em>) – Output file path.</p></li>
+<li><p><strong>epsg</strong> (<em>int</em><em>, </em><em>optional</em>) – EPSG code for the output CRS.  Defaults to 2193 (NZTM).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.plot_ssd">
+<span class="sig-name descname"><span class="pre">plot_ssd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'RdBu_r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_coast</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subplots</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_cbar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_max_ssd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hide_axes_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#SeaSurfaceDisplacements.plot_ssd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.plot_ssd" title="Link to this definition"></a></dt>
+<dd><p>Plot the sea-surface displacement grid on a map.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmap</strong> (<em>str</em><em>, </em><em>optional</em>) – Colormap name.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;RdBu_r&quot;</span></code>.</p></li>
+<li><p><strong>show</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), call <code class="docutils literal notranslate"><span class="pre">plt.show()</span></code>.</p></li>
+<li><p><strong>write</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – File path to save the figure.</p></li>
+<li><p><strong>show_coast</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), overlay the New Zealand coastline.</p></li>
+<li><p><strong>subplots</strong> (<em>tuple</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">(fig,</span> <span class="pre">ax)</span></code> to draw onto.  A new figure is created if
+<code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>show_cbar</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), add a colourbar.</p></li>
+<li><p><strong>global_max_ssd</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum displacement (m) for the colour scale.
+Defaults to 10.</p></li>
+<li><p><strong>bounds</strong> (<em>iterable</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max]</span></code> clip bounds.  Defaults
+to <a class="reference internal" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.data_bounds" title="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements.data_bounds"><code class="xref py py-attr docutils literal notranslate"><span class="pre">data_bounds</span></code></a>.</p></li>
+<li><p><strong>hide_axes_labels</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, hide axis tick labels and ticks.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of matplotlib artist objects (currently empty).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.MultiEventSeaSurface">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">rsqsim_api.tsunami.tsunami.</span></span><span class="sig-name descname"><span class="pre">MultiEventSeaSurface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">events</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#MultiEventSeaSurface"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.MultiEventSeaSurface" title="Link to this definition"></a></dt>
+<dd><p>Collection of <a class="reference internal" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements" title="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeaSurfaceDisplacements</span></code></a> objects for multiple events.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>events</strong> (<em>collections.abc.Iterable</em><em>[</em><a class="reference internal" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements" title="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements"><em>SeaSurfaceDisplacements</em></a><em>]</em>)</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.MultiEventSeaSurface.event_ls">
+<span class="sig-name descname"><span class="pre">event_ls</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#MultiEventSeaSurface.event_ls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.MultiEventSeaSurface.event_ls" title="Link to this definition"></a></dt>
+<dd><p>List of individual event displacement grids.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of <a class="reference internal" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements" title="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements">SeaSurfaceDisplacements</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.MultiEventSeaSurface.event_dic">
+<span class="sig-name descname"><span class="pre">event_dic</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#MultiEventSeaSurface.event_dic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.MultiEventSeaSurface.event_dic" title="Link to this definition"></a></dt>
+<dd><p>Mapping of event number (int) to <a class="reference internal" href="#rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements" title="rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeaSurfaceDisplacements</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id4">
+<span class="sig-name descname"><span class="pre">event_ls</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#MultiEventSeaSurface.event_ls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id4" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id5">
+<span class="sig-name descname"><span class="pre">event_dic</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#MultiEventSeaSurface.event_dic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id5" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.MultiEventSeaSurface.from_netcdf_file">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_netcdf_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nc_file</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#MultiEventSeaSurface.from_netcdf_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.MultiEventSeaSurface.from_netcdf_file" title="Link to this definition"></a></dt>
+<dd><p>Load multiple events from a pre-computed netCDF SSD file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_ids</strong> (<em>int</em><em> or </em><em>iterable</em><em> of </em><em>int</em>) – RSQSim event identifiers to extract.</p></li>
+<li><p><strong>nc_file</strong> (<em>str</em>) – Path to the netCDF file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#rsqsim_api.tsunami.tsunami.MultiEventSeaSurface" title="rsqsim_api.tsunami.tsunami.MultiEventSeaSurface">MultiEventSeaSurface</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.MultiEventSeaSurface.to_gmt_grids">
+<span class="sig-name descname"><span class="pre">to_gmt_grids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#MultiEventSeaSurface.to_gmt_grids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.MultiEventSeaSurface.to_gmt_grids" title="Link to this definition"></a></dt>
+<dd><p>Write each event’s SSD to a GMT grid file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>prefix</strong> (<em>str</em>) – File-name prefix; each file is named
+<code class="docutils literal notranslate"><span class="pre">{prefix}{event_id}.grd</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.MultiEventSeaSurface.to_tiffs">
+<span class="sig-name descname"><span class="pre">to_tiffs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2193</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#MultiEventSeaSurface.to_tiffs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.MultiEventSeaSurface.to_tiffs" title="Link to this definition"></a></dt>
+<dd><p>Write each event’s SSD to a GeoTIFF file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prefix</strong> (<em>str</em>) – File-name prefix; each file is named
+<code class="docutils literal notranslate"><span class="pre">{prefix}{event_id}.tif</span></code>.</p></li>
+<li><p><strong>epsg</strong> (<em>int</em><em>, </em><em>optional</em>) – EPSG code for the output CRS.  Defaults to 2193.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.MultiEventSeaSurface.plot_2d">
+<span class="sig-name descname"><span class="pre">plot_2d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#MultiEventSeaSurface.plot_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.MultiEventSeaSurface.plot_2d" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami.events_from_ssd_netcdf">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.tsunami.tsunami.</span></span><span class="sig-name descname"><span class="pre">events_from_ssd_netcdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">get_xy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami.html#events_from_ssd_netcdf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami.events_from_ssd_netcdf" title="Link to this definition"></a></dt>
+<dd><p>Extract sea-surface displacement arrays from a netCDF SSD dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_ids</strong> (<em>int</em><em> or </em><em>iterable</em><em> of </em><em>int</em>) – RSQSim event identifier(s) to extract.</p></li>
+<li><p><strong>nc</strong> (<em>netCDF4.Dataset</em>) – Open netCDF4 dataset with variables <code class="docutils literal notranslate"><span class="pre">&quot;event_id&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;ssd&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;x&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">&quot;y&quot;</span></code>.</p></li>
+<li><p><strong>get_xy</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), also return the x and y coordinate
+arrays.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>If <code class="docutils literal notranslate"><span class="pre">get_xy</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> – x_range : numpy.ndarray
+y_range : numpy.ndarray
+disp_ls : list of numpy.ndarray</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">get_xy</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code> – disp_ls : list of numpy.ndarray</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>AssertionError</strong> – If any requested event ID is not found in the dataset.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../gf_netcdf/index.html" class="btn btn-neutral float-left" title="rsqsim_api.tsunami.gf_netcdf" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../tsunami_multiprocessing/index.html" class="btn btn-neutral float-right" title="rsqsim_api.tsunami.tsunami_multiprocessing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

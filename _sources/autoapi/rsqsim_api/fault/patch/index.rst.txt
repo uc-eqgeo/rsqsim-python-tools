@@ -1,0 +1,790 @@
+rsqsim_api.fault.patch
+======================
+
+.. py:module:: rsqsim_api.fault.patch
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   rsqsim_api.fault.patch.transformer_utm2nztm
+   rsqsim_api.fault.patch.transformer_nztm2wgs
+   rsqsim_api.fault.patch.transformer_wgs2nztm
+   rsqsim_api.fault.patch.anticlockwise90
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   rsqsim_api.fault.patch.RsqSimGenericPatch
+   rsqsim_api.fault.patch.RsqSimTriangularPatch
+   rsqsim_api.fault.patch.OpenQuakeRectangularPatch
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   rsqsim_api.fault.patch.norm_3d
+   rsqsim_api.fault.patch.cross_3d
+   rsqsim_api.fault.patch.normalize_bearing
+   rsqsim_api.fault.patch.unit_vector
+
+
+Module Contents
+---------------
+
+.. py:data:: transformer_utm2nztm
+
+.. py:data:: transformer_nztm2wgs
+
+.. py:data:: transformer_wgs2nztm
+
+.. py:data:: anticlockwise90
+
+.. py:function:: norm_3d(a)
+
+   Calculate the Euclidean (2-norm) length of a 3-dimensional vector.
+
+   :param a: Input 3-component vector.
+   :type a: array-like of shape (3,)
+
+   :returns: Scalar Euclidean norm of ``a``.
+   :rtype: float
+
+   .. admonition:: Notes
+
+      Compiled with ``numba.njit`` for performance inside tight loops.
+
+
+.. py:function:: cross_3d(a, b)
+
+   Calculate the cross product of two 3-dimensional vectors.
+
+   :param a: First input vector.
+   :type a: array-like of shape (3,)
+   :param b: Second input vector.
+   :type b: array-like of shape (3,)
+
+   :returns: Vector perpendicular to both ``a`` and ``b``, with magnitude
+             ``|a| * |b| * sin(theta)``, following the right-hand rule.
+   :rtype: numpy.ndarray of shape (3,)
+
+   .. admonition:: Notes
+
+      Compiled with ``numba.njit`` for performance inside tight loops.
+
+
+.. py:function:: normalize_bearing(bearing)
+
+   Wrap a bearing value into the half-open interval [0, 360).
+
+   :param bearing: Input bearing in degrees.  May be any real number.
+
+   :returns: Equivalent bearing constrained to [0, 360).
+   :rtype: float
+
+
+.. py:function:: unit_vector(vec1, vec2)
+
+   Compute the unit vector pointing from ``vec1`` to ``vec2``.
+
+   :param vec1: Origin point (tail of the vector).
+   :type vec1: numpy.ndarray of shape (3,)
+   :param vec2: Destination point (head of the vector).
+   :type vec2: numpy.ndarray of shape (3,)
+
+   :returns: Normalised direction vector from ``vec1`` to ``vec2``.
+   :rtype: numpy.ndarray of shape (3,)
+
+   .. admonition:: Notes
+
+      Compiled with ``numba.njit`` for performance inside tight loops.
+
+
+.. py:class:: RsqSimGenericPatch(segment, patch_number = 0, dip_slip = None, strike_slip = None, rake = None, total_slip = None)
+
+   Base class representing a single fault patch in an RSQSim fault model.
+
+   Stores patch identity, slip components, and the parent fault segment
+   reference.  Concrete subclasses add geometry (triangular, rectangular,
+   etc.).
+
+   :param segment: Parent fault segment object that owns this patch.
+   :param patch_number: Zero-based integer index identifying the patch within its segment.
+                        Defaults to 0.
+   :type patch_number: int, optional
+   :param dip_slip: Dip-slip component of displacement in metres.  Positive values
+                    indicate reverse/thrust motion.
+   :type dip_slip: float, optional
+   :param strike_slip: Strike-slip component of displacement in metres.  Positive values
+                       indicate right-lateral motion.
+   :type strike_slip: float, optional
+   :param rake: Rake angle in degrees, measured from the along-strike direction
+                following the Aki & Richards convention.  Stored normalised to
+                [0, 360).
+   :type rake: float, optional
+   :param total_slip: Total slip magnitude in metres (unused by the base class but
+                      accepted for interface consistency).
+   :type total_slip: float, optional
+
+   .. attribute:: segment
+
+      Reference to the parent fault segment.
+
+   .. attribute:: patch_number
+
+      Non-negative integer patch index.
+
+      :type: int
+
+   .. attribute:: dip_slip
+
+      Dip-slip component in metres.
+
+      :type: float or None
+
+   .. attribute:: strike_slip
+
+      Strike-slip component in metres.
+
+      :type: float or None
+
+   .. attribute:: rake
+
+      Rake angle in degrees, normalised to [0, 360).
+
+      :type: float or None
+
+
+   .. py:attribute:: segment
+
+
+   .. py:property:: patch_number
+
+      Non-negative integer index identifying this patch within its segment.
+
+
+   .. py:property:: dip_slip
+
+      Dip-slip displacement component in metres.
+
+      Setting this value also recomputes the rake if the strike-slip
+      component is already defined.
+
+
+   .. py:property:: strike_slip
+
+      Strike-slip displacement component in metres.
+
+      Setting this value also recomputes the rake if the dip-slip
+      component is already defined.
+
+
+   .. py:property:: rake
+
+      Rake angle in degrees, normalised to the interval [0, 360).
+
+      Setting this value calls :func:`normalize_bearing` automatically.
+
+
+   .. py:property:: vertices
+
+      Array of patch corner vertices in NZTM coordinates (metres).
+
+      Returns ``None`` until populated by a subclass setter.
+
+
+   .. py:property:: total_slip
+
+      Euclidean magnitude of the slip vector in metres.
+
+      Computed from ``strike_slip`` and ``dip_slip``; treats ``None``
+      components as zero.
+
+
+   .. py:method:: set_slip_rake(total_slip, rake)
+
+      Decompose a total slip magnitude and rake into strike-slip and dip-slip.
+
+      Sets ``strike_slip``, ``dip_slip``, and ``rake`` on the patch
+      directly without triggering the cross-update logic in the individual
+      property setters.
+
+      :param total_slip: Total slip magnitude in metres.
+      :param rake: Rake angle in degrees (stored normalised to [0, 360)).
+
+
+
+   .. py:method:: calculate_rake(strike_slip, dip_slip)
+      :staticmethod:
+
+
+      Compute rake from strike-slip and dip-slip components.
+
+      :param strike_slip: Strike-slip displacement component in metres.
+      :param dip_slip: Dip-slip displacement component in metres.
+
+      :returns: Rake angle in degrees, normalised to [0, 360) via
+                :func:`normalize_bearing`.
+      :rtype: float
+
+
+
+.. py:class:: RsqSimTriangularPatch(segment, vertices, patch_number = 0, dip_slip = None, strike_slip = None, patch_data = None, rake = None, total_slip = None)
+
+   Bases: :py:obj:`RsqSimGenericPatch`
+
+
+   A single triangular fault patch for use in RSQSim fault models.
+
+   Stores the three corner vertices and derives geometric quantities
+   (normal vector, down-dip vector, along-strike vector, dip, centre,
+   area) either from supplied ``patch_data`` or by computing them from
+   the vertices.
+
+   :param segment: Parent fault segment object that owns this patch.
+   :param vertices: Array-like of shape (3, 3) giving the (x, y, z) coordinates of
+                    the triangle corners in NZTM (metres).  If more than three rows
+                    are supplied only the first three are used.
+   :type vertices: list or numpy.ndarray or tuple
+   :param patch_number: Zero-based integer index identifying the patch.  Defaults to 0.
+   :type patch_number: int, optional
+   :param dip_slip: Dip-slip component of displacement in metres.
+   :type dip_slip: float, optional
+   :param strike_slip: Strike-slip component of displacement in metres.
+   :type strike_slip: float, optional
+   :param patch_data: Pre-computed geometry sequence of the form
+                      ``[normal_vector, down_dip_vector, dip, along_strike_vector,
+                      centre, area]``.  When provided the geometric calculations are
+                      skipped.
+   :type patch_data: list or numpy.ndarray or tuple, optional
+   :param rake: Rake angle in degrees.
+   :type rake: float, optional
+   :param total_slip: Total slip magnitude in metres.  When provided, ``set_slip_rake``
+                      is called using this value and the current rake.
+   :type total_slip: float, optional
+
+   .. attribute:: segment
+
+      Reference to the parent fault segment.
+
+   .. attribute:: patch_number
+
+      Non-negative integer patch index.
+
+      :type: int
+
+   .. attribute:: vertices
+
+      Triangle corner coordinates in NZTM (metres).
+
+      :type: numpy.ndarray of shape (3, 3)
+
+   .. attribute:: normal_vector
+
+      Unit normal vector of the patch pointing upward.
+
+      :type: numpy.ndarray of shape (3,)
+
+   .. attribute:: down_dip_vector
+
+      Vector pointing in the steepest down-dip direction.
+
+      :type: numpy.ndarray of shape (3,)
+
+   .. attribute:: along_strike_vector
+
+      Vector pointing along strike.
+
+      :type: numpy.ndarray of shape (3,)
+
+   .. attribute:: dip
+
+      Dip angle in degrees, measured from horizontal.
+
+      :type: float
+
+   .. attribute:: centre
+
+      Centroid of the triangle in NZTM (metres).
+
+      :type: numpy.ndarray of shape (3,)
+
+   .. attribute:: area
+
+      Area of the triangular patch in square metres.
+
+      :type: float
+
+
+   .. py:attribute:: vertices
+
+      Array of patch corner vertices in NZTM coordinates (metres).
+
+      Returns ``None`` until populated by a subclass setter.
+
+
+   .. py:property:: vertices_lonlat
+
+      Triangle corner coordinates transformed to WGS84 longitude/latitude.
+
+      :returns: Columns are (longitude, latitude, depth) for each of the three
+                corners, in degrees (WGS84) and metres depth.
+      :rtype: numpy.ndarray of shape (3, 3)
+
+
+   .. py:property:: centre_lonlat
+
+      Patch centroid transformed to WGS84 longitude/latitude.
+
+      :returns: (longitude, latitude, depth) of the patch centroid, in degrees
+                (WGS84) and metres depth.
+      :rtype: numpy.ndarray of shape (3,)
+
+
+   .. py:method:: calculate_normal_vector(vertices)
+      :staticmethod:
+
+
+      Compute the upward-pointing unit normal vector of a triangular patch.
+
+      Uses the cross product of two edge vectors.  If the raw cross
+      product points downward its sign is flipped so that the normal
+      always has a positive z-component.
+
+      :param vertices: Triangle corner coordinates (x, y, z) in any consistent
+                       Cartesian coordinate system.
+      :type vertices: numpy.ndarray of shape (3, 3)
+
+      :returns: Unit normal vector with non-negative z-component.
+      :rtype: numpy.ndarray of shape (3,)
+
+      .. admonition:: Notes
+
+         Compiled with ``numba.njit`` for performance.
+
+
+
+   .. py:property:: normal_vector
+
+      Upward-pointing unit normal vector of the triangular patch.
+
+
+   .. py:property:: down_dip_vector
+
+      Vector pointing in the steepest down-dip direction of the patch.
+
+
+   .. py:method:: calculate_down_dip_vector(normal_vector)
+      :staticmethod:
+
+
+      Derive the down-dip vector from a patch normal vector.
+
+      The down-dip direction is the steepest descent direction on the
+      fault plane.  For a vertical patch (zero z-component in the
+      normal) it defaults to straight down (0, 0, -1).
+
+      :param normal_vector: Upward-pointing unit normal of the fault patch.
+      :type normal_vector: numpy.ndarray of shape (3,)
+
+      :returns: Down-dip vector whose z-component is ``-xy_mag`` and whose
+                horizontal components are scaled by ``|dz| / xy_mag``.
+      :rtype: numpy.ndarray of shape (3,)
+
+      .. admonition:: Notes
+
+         Compiled with ``numba.njit`` for performance.
+
+
+
+   .. py:property:: dip
+
+      Dip angle of the patch in degrees, measured from horizontal.
+
+      Returns 90 for vertical patches and ``numpy.nan`` if the down-dip
+      vector contains NaN values.
+
+
+   .. py:method:: calculate_dip(down_dip_vector)
+      :staticmethod:
+
+
+      Calculate the dip angle in degrees from a down-dip vector.
+
+      :param down_dip_vector: Down-dip direction vector (need not be a unit vector).
+      :type down_dip_vector: numpy.ndarray of shape (3,)
+
+      :returns: Dip angle in degrees measured from horizontal.  Returns
+                ``numpy.nan`` if ``down_dip_vector[-1]`` is NaN, or 90.0
+                when the horizontal component magnitude is less than 1e-10
+                (effectively vertical patch).
+      :rtype: float
+
+      .. admonition:: Notes
+
+         Compiled with ``numba.njit`` for performance.
+
+
+
+   .. py:property:: along_strike_vector
+
+      Vector pointing along the strike direction of the patch.
+
+
+   .. py:property:: strike
+
+      Strike bearing of the patch in degrees, normalised to [0, 360).
+
+      Derived from the along-strike vector using the standard geographic
+      convention (clockwise from north).  Recomputes normal, down-dip,
+      and along-strike vectors if any are ``None``.
+
+
+   .. py:method:: calculate_along_strike_vector(normal_vector, down_dip_vector)
+      :staticmethod:
+
+
+      Compute the along-strike vector as the cross product of the normal
+      and down-dip vectors.
+
+      :param normal_vector: Upward-pointing unit normal of the fault patch.
+      :type normal_vector: numpy.ndarray of shape (3,)
+      :param down_dip_vector: Down-dip direction vector of the fault patch.
+      :type down_dip_vector: numpy.ndarray of shape (3,)
+
+      :returns: Along-strike vector (normal cross down-dip, right-hand rule).
+      :rtype: numpy.ndarray of shape (3,)
+
+      .. admonition:: Notes
+
+         Compiled with ``numba.njit`` for performance.
+
+
+
+   .. py:property:: centre
+
+      Centroid of the triangular patch in NZTM coordinates (metres).
+
+
+   .. py:method:: calculate_centre(vertices)
+      :staticmethod:
+
+
+      Calculate the centroid of a triangular patch.
+
+      :param vertices: Triangle corner coordinates (x, y, z) in NZTM (metres).
+      :type vertices: numpy.ndarray of shape (3, 3)
+
+      :returns: Mean of the three corner coordinates, i.e. the centroid.
+      :rtype: numpy.ndarray of shape (3,)
+
+      .. admonition:: Notes
+
+         ``numpy.mean`` is not supported by Numba's njit compiler, so the
+         centroid is computed as ``sum / len`` directly.  Compiled with
+         ``numba.njit`` for performance.
+
+
+
+   .. py:property:: area
+
+      Area of the triangular patch in square metres.
+
+
+   .. py:method:: calculate_area(vertices)
+      :staticmethod:
+
+
+      Calculate the area of a triangular patch from its three vertices.
+
+      Uses the cross-product formula: area = 0.5 * |a x b|, where ``a``
+      and ``b`` are two edge vectors meeting at the same vertex.
+
+      :param vertices: Triangle corner coordinates (x, y, z) in NZTM (metres).
+      :type vertices: numpy.ndarray of shape (3, 3)
+
+      :returns: Area of the triangle in square metres.
+      :rtype: float
+
+      .. admonition:: Notes
+
+         Compiled with ``numba.njit`` for performance.
+
+
+
+   .. py:method:: slip3d_to_ss_ds(x1_slip, x2_slip, x3_slip)
+
+      Decompose a 3-D slip vector into strike-slip and dip-slip components.
+
+      Projects the supplied Cartesian slip vector onto the along-strike
+      and (negated) down-dip directions of this patch.
+
+      :param x1_slip: Slip component in the x1 (easting) direction in metres.
+      :param x2_slip: Slip component in the x2 (northing) direction in metres.
+      :param x3_slip: Slip component in the x3 (vertical) direction in metres.
+
+      :returns: * **ds** (*float*) -- Dip-slip component in metres (projection onto the up-dip
+                  direction).
+                * **ss** (*float*) -- Strike-slip component in metres (projection onto the
+                  along-strike direction).
+
+
+
+   .. py:method:: horizontal_sv_to_ds_ss(slipvec, magnitude = 1)
+
+      Convert a horizontal slip-vector azimuth to dip-slip and strike-slip components.
+
+      :param slipvec: Azimuth of the slip vector measured clockwise from north,
+                      in degrees.
+      :param magnitude: Desired total magnitude of the output slip components.
+                        Results are normalised to this value.  Defaults to 1.
+
+      :returns: * **strike_perp** (*float*) -- Strike-perpendicular (dip-slip proxy) component, normalised
+                  to ``magnitude``.
+                * **strike_par** (*float*) -- Strike-parallel (strike-slip proxy) component, normalised
+                  to ``magnitude``.
+                * **rake** (*float*) -- Rake angle in degrees derived from
+                  ``arctan2(strike_perp, strike_par)``.
+
+      .. admonition:: Notes
+
+         The angle between the patch strike and the input azimuth is used
+         to project the horizontal slip direction onto the fault-plane
+         axes, accounting for the patch dip when resolving the
+         strike-perpendicular component.
+
+
+
+   .. py:method:: slip_vec_3d()
+
+      Compute the 3-D slip vector for this patch.
+
+      Combines the strike-slip and dip-slip components with their
+      respective direction vectors to produce the full 3-D displacement
+      vector in NZTM Cartesian coordinates (metres).
+
+      :returns: 3-D slip vector in NZTM (metres).
+      :rtype: numpy.ndarray of shape (3,)
+
+
+
+   .. py:method:: rake_from_stress_tensor(sigma1)
+
+      Set the rake to align with the shear stress resolved onto the patch.
+
+      Resolves the principal stress vector ``sigma1`` onto the fault
+      plane, extracts the shear-stress component, and sets the patch
+      rake to the angle between that shear stress and the along-strike
+      direction.  Assumes sigma2 = sigma3 = 0.
+
+      :param sigma1: Maximum principal stress vector (direction and relative
+                     magnitude).
+      :type sigma1: numpy.ndarray of shape (3,)
+
+      :raises AssertionError: If ``sigma1`` does not have exactly 3 elements, or if either
+          ``along_strike_vector`` or ``normal_vector`` is ``None``.
+
+      .. admonition:: Notes
+
+         Only the direction of ``sigma1`` influences the resulting rake;
+         sigma2 and sigma3 are not accounted for.
+
+
+
+   .. py:property:: vertical_slip
+
+      Vertical component of the dip-slip displacement in metres.
+
+      Computed as ``dip_slip * cos(dip)``, where dip is in degrees.
+      Positive when the hanging wall moves upward relative to the
+      footwall (reverse/thrust sense).
+
+
+   .. py:method:: as_polygon()
+
+      Return the triangular patch as a Shapely Polygon.
+
+      :returns: Polygon whose exterior ring is defined by the three patch
+                vertices.
+      :rtype: shapely.geometry.Polygon
+
+
+
+.. py:class:: OpenQuakeRectangularPatch(segment, patch_number = 0, dip_slip = None, strike_slip = None, rake = None)
+
+   Bases: :py:obj:`RsqSimGenericPatch`
+
+
+   A rectangular fault patch suitable for use with OpenQuake engine inputs.
+
+   Stores the four corner points of a planar rectangular fault surface
+   and derives geometric direction vectors from them.  Provides a class
+   method to construct a patch from a Shapely ``Polygon`` and an export
+   method for writing OpenQuake-compatible XML.
+
+   :param segment: Parent fault segment object that owns this patch.
+   :param patch_number: Zero-based integer index identifying the patch.  Defaults to 0.
+   :type patch_number: int, optional
+   :param dip_slip: Dip-slip component of displacement in metres.
+   :type dip_slip: float, optional
+   :param strike_slip: Strike-slip component of displacement in metres.
+   :type strike_slip: float, optional
+   :param rake: Rake angle in degrees.
+   :type rake: float, optional
+
+   .. attribute:: segment
+
+      Reference to the parent fault segment.
+
+   .. attribute:: patch_number
+
+      Non-negative integer patch index.
+
+      :type: int
+
+   .. attribute:: top_left
+
+      Top-left corner in NZTM (metres); populated after construction.
+
+      :type: numpy.ndarray of shape (3,) or None
+
+   .. attribute:: top_right
+
+      Top-right corner in NZTM (metres); populated after construction.
+
+      :type: numpy.ndarray of shape (3,) or None
+
+   .. attribute:: bottom_left
+
+      Bottom-left corner in NZTM (metres); populated after construction.
+
+      :type: numpy.ndarray of shape (3,) or None
+
+   .. attribute:: bottom_right
+
+      Bottom-right corner in NZTM (metres); populated after construction.
+
+      :type: numpy.ndarray of shape (3,) or None
+
+
+   .. py:property:: top_left
+
+      Top-left corner of the rectangular patch in NZTM (metres).
+
+
+   .. py:property:: top_right
+
+      Top-right corner of the rectangular patch in NZTM (metres).
+
+
+   .. py:property:: bottom_left
+
+      Bottom-left corner of the rectangular patch in NZTM (metres).
+
+
+   .. py:property:: bottom_right
+
+      Bottom-right corner of the rectangular patch in NZTM (metres).
+
+
+   .. py:property:: along_strike_vector
+
+      Unit vector pointing along strike, from top-left to top-right corner.
+
+
+   .. py:property:: top_centre
+
+      Midpoint of the top edge of the rectangular patch in NZTM (metres).
+
+
+   .. py:property:: bottom_centre
+
+      Midpoint of the bottom edge of the rectangular patch in NZTM (metres).
+
+
+   .. py:property:: down_dip_vector
+
+      Unit vector pointing down-dip, from top-centre to bottom-centre.
+
+
+   .. py:method:: from_polygon(polygon, segment=None, patch_number = 0, dip_slip = None, strike_slip = None, rake = None, wgs_to_nztm = False)
+      :classmethod:
+
+
+      Construct an ``OpenQuakeRectangularPatch`` from a Shapely Polygon.
+
+      Parses the four corners of a rectangular fault-surface polygon,
+      identifies which corners belong to the top and bottom edges based
+      on depth (z-coordinate), and assigns them as top-left, top-right,
+      bottom-left, and bottom-right using the along-strike direction to
+      determine left/right orientation.
+
+      :param polygon: Closed polygon with exactly 5 exterior coordinates (4 unique
+                      corners plus the closing repeat of the first).  Each
+                      coordinate must have three values (x, y, z); z is depth in
+                      metres using a negative-downward convention.
+      :type polygon: shapely.geometry.Polygon
+      :param segment: Parent fault segment object.  Defaults to ``None``.
+      :param patch_number: Zero-based patch index.  Defaults to 0.
+      :type patch_number: int, optional
+      :param dip_slip: Dip-slip displacement in metres.
+      :type dip_slip: float, optional
+      :param strike_slip: Strike-slip displacement in metres.
+      :type strike_slip: float, optional
+      :param rake: Rake angle in degrees.
+      :type rake: float, optional
+      :param wgs_to_nztm: If ``True``, the polygon coordinates are assumed to be in
+                          WGS84 (longitude, latitude, depth) and are reprojected to
+                          NZTM before assigning corners.  Defaults to ``False``.
+      :type wgs_to_nztm: bool, optional
+
+      :returns: New patch instance with all four corner coordinates set.
+      :rtype: OpenQuakeRectangularPatch
+
+      :raises AssertionError: If the polygon exterior does not have exactly 5 coordinate
+          rows (i.e. 4 unique corners).
+
+      .. admonition:: Notes
+
+         For vertical patches (where a top corner shares its horizontal
+         position with a bottom corner) the down-dip vector is set to
+         ``[0, 0, -1]`` and the along-strike vector is computed directly
+         from the top edge.  For non-vertical patches an across-strike
+         vector is projected horizontally and rotated 90 degrees
+         anti-clockwise using the module-level ``anticlockwise90`` matrix
+         to determine the along-strike direction, which in turn determines
+         the left/right assignment of corner pairs.
+
+
+
+   .. py:method:: to_oq_xml()
+
+      Serialise the patch as an OpenQuake ``planarSurface`` XML element.
+
+      Converts the four corner coordinates from NZTM (metres) to WGS84
+      longitude/latitude and depth in kilometres, then builds an
+      ``xml.etree.ElementTree.Element`` with child elements for each
+      corner.
+
+      :returns: ``<planarSurface>`` element containing four child elements
+                named ``topLeft``, ``topRight``, ``bottomLeft``, and
+                ``bottomRight``, each carrying ``depth`` (km, 4 d.p.),
+                ``lat`` (degrees, 4 d.p.), and ``lon`` (degrees, 4 d.p.)
+                attributes.
+      :rtype: xml.etree.ElementTree.Element
+
+      .. admonition:: Notes
+
+         Depth is stored as a positive value in kilometres following the
+         OpenQuake NRML convention, converted from the negative-downward
+         metres used internally via ``depth_km = -1e-3 * z``.
+
+
+

@@ -1,0 +1,25 @@
+rsqsim_api.fault
+================
+
+.. py:module:: rsqsim_api.fault
+
+.. autoapi-nested-parse::
+
+   Fault geometry, patch, and slip-rate model utilities.
+
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/rsqsim_api/fault/multifault/index
+   /autoapi/rsqsim_api/fault/patch/index
+   /autoapi/rsqsim_api/fault/segment/index
+   /autoapi/rsqsim_api/fault/slip/index
+   /autoapi/rsqsim_api/fault/splines/index
+   /autoapi/rsqsim_api/fault/utilities/index
+
+

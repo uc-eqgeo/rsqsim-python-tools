@@ -1,0 +1,243 @@
+rsqsim_api.tsunami.tsunami
+==========================
+
+.. py:module:: rsqsim_api.tsunami.tsunami
+
+.. autoapi-nested-parse::
+
+   Classes and functions for loading, manipulating, and plotting sea-surface displacement (SSD) fields.
+
+   Provides :class:`SeaSurfaceDisplacements` for a single event's SSD
+   grid, :class:`MultiEventSeaSurface` for a collection of events, and
+   :func:`events_from_ssd_netcdf` for extracting SSD arrays from a
+   pre-computed netCDF file.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   rsqsim_api.tsunami.tsunami.SeaSurfaceDisplacements
+   rsqsim_api.tsunami.tsunami.MultiEventSeaSurface
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   rsqsim_api.tsunami.tsunami.events_from_ssd_netcdf
+
+
+Module Contents
+---------------
+
+.. py:class:: SeaSurfaceDisplacements(event_number, x_range, y_range, disps)
+
+   Sea-surface displacement grid for a single earthquake event.
+
+   .. attribute:: event_number
+
+      RSQSim event identifier.
+
+      :type: int
+
+   .. attribute:: x_range
+
+      1-D easting coordinates (NZTM, m) of the grid.
+
+      :type: numpy.ndarray
+
+   .. attribute:: y_range
+
+      1-D northing coordinates (NZTM, m) of the grid.
+
+      :type: numpy.ndarray
+
+   .. attribute:: disps
+
+      Sea-surface displacement values in metres.
+
+      :type: numpy.ndarray of shape (len(y_range), len(x_range))
+
+
+   .. py:attribute:: event_number
+
+
+   .. py:attribute:: x_range
+
+
+   .. py:attribute:: y_range
+
+
+   .. py:attribute:: disps
+
+
+   .. py:method:: from_netcdf_file(event_id, nc_file)
+      :classmethod:
+
+
+      Load a single event's SSD from a pre-computed netCDF file.
+
+      :param event_id: RSQSim event identifier to extract.
+      :type event_id: int
+      :param nc_file: Path to the netCDF file produced by
+                      :func:`~rsqsim_api.tsunami.gf_netcdf.sea_surface_displacements_multi`.
+      :type nc_file: str
+
+      :rtype: SeaSurfaceDisplacements
+
+
+
+   .. py:property:: data_bounds
+
+      Bounding box of grid cells where the displacement exceeds 5 mm.
+
+      :returns: ``[x_min, y_min, x_max, y_max]`` in NZTM metres.
+      :rtype: list of float
+
+
+   .. py:method:: get_data_bounds()
+
+      Compute and cache :attr:`data_bounds`.
+
+
+
+   .. py:method:: to_grid(grid_name)
+
+      Write the displacement grid to a GMT-format netCDF grid file.
+
+      :param grid_name: Output file path (typically ``*.grd``).
+      :type grid_name: str
+
+
+
+   .. py:method:: to_tiff(tiff_name, epsg = 2193)
+
+      Write the displacement grid to a GeoTIFF file.
+
+      :param tiff_name: Output file path.
+      :type tiff_name: str
+      :param epsg: EPSG code for the output CRS.  Defaults to 2193 (NZTM).
+      :type epsg: int, optional
+
+
+
+   .. py:method:: plot_ssd(cmap='RdBu_r', show = True, write = None, show_coast = True, subplots = None, show_cbar = True, global_max_ssd = 10, bounds = None, hide_axes_labels = False)
+
+      Plot the sea-surface displacement grid on a map.
+
+      :param cmap: Colormap name.  Defaults to ``"RdBu_r"``.
+      :type cmap: str, optional
+      :param show: If ``True`` (default), call ``plt.show()``.
+      :type show: bool, optional
+      :param write: File path to save the figure.
+      :type write: str or None, optional
+      :param show_coast: If ``True`` (default), overlay the New Zealand coastline.
+      :type show_coast: bool, optional
+      :param subplots: ``(fig, ax)`` to draw onto.  A new figure is created if
+                       ``None``.
+      :type subplots: tuple or None, optional
+      :param show_cbar: If ``True`` (default), add a colourbar.
+      :type show_cbar: bool, optional
+      :param global_max_ssd: Maximum displacement (m) for the colour scale.
+                             Defaults to 10.
+      :type global_max_ssd: int, optional
+      :param bounds: ``[x_min, y_min, x_max, y_max]`` clip bounds.  Defaults
+                     to :attr:`data_bounds`.
+      :type bounds: iterable or None, optional
+      :param hide_axes_labels: If ``True``, hide axis tick labels and ticks.
+                               Defaults to ``False``.
+      :type hide_axes_labels: bool, optional
+
+      :returns: List of matplotlib artist objects (currently empty).
+      :rtype: list
+
+
+
+.. py:class:: MultiEventSeaSurface(events)
+
+   Collection of :class:`SeaSurfaceDisplacements` objects for multiple events.
+
+   .. attribute:: event_ls
+
+      List of individual event displacement grids.
+
+      :type: list of SeaSurfaceDisplacements
+
+   .. attribute:: event_dic
+
+      Mapping of event number (int) to :class:`SeaSurfaceDisplacements`.
+
+      :type: dict
+
+
+   .. py:attribute:: event_ls
+
+
+   .. py:attribute:: event_dic
+
+
+   .. py:method:: from_netcdf_file(event_ids, nc_file)
+      :classmethod:
+
+
+      Load multiple events from a pre-computed netCDF SSD file.
+
+      :param event_ids: RSQSim event identifiers to extract.
+      :type event_ids: int or iterable of int
+      :param nc_file: Path to the netCDF file.
+      :type nc_file: str
+
+      :rtype: MultiEventSeaSurface
+
+
+
+   .. py:method:: to_gmt_grids(prefix)
+
+      Write each event's SSD to a GMT grid file.
+
+      :param prefix: File-name prefix; each file is named
+                     ``{prefix}{event_id}.grd``.
+      :type prefix: str
+
+
+
+   .. py:method:: to_tiffs(prefix, epsg = 2193)
+
+      Write each event's SSD to a GeoTIFF file.
+
+      :param prefix: File-name prefix; each file is named
+                     ``{prefix}{event_id}.tif``.
+      :type prefix: str
+      :param epsg: EPSG code for the output CRS.  Defaults to 2193.
+      :type epsg: int, optional
+
+
+
+   .. py:method:: plot_2d()
+
+
+.. py:function:: events_from_ssd_netcdf(event_ids, nc, get_xy = True)
+
+   Extract sea-surface displacement arrays from a netCDF SSD dataset.
+
+   :param event_ids: RSQSim event identifier(s) to extract.
+   :type event_ids: int or iterable of int
+   :param nc: Open netCDF4 dataset with variables ``"event_id"``,
+              ``"ssd"``, ``"x"``, and ``"y"``.
+   :type nc: netCDF4.Dataset
+   :param get_xy: If ``True`` (default), also return the x and y coordinate
+                  arrays.
+   :type get_xy: bool, optional
+
+   :returns: * If ``get_xy`` is ``True`` -- x_range : numpy.ndarray
+               y_range : numpy.ndarray
+               disp_ls : list of numpy.ndarray
+             * If ``get_xy`` is ``False`` -- disp_ls : list of numpy.ndarray
+
+   :raises AssertionError: If any requested event ID is not found in the dataset.
+
+

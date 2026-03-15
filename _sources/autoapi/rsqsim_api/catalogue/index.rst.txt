@@ -1,0 +1,23 @@
+rsqsim_api.catalogue
+====================
+
+.. py:module:: rsqsim_api.catalogue
+
+.. autoapi-nested-parse::
+
+   Earthquake catalogue reading, filtering, and analysis utilities.
+
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/rsqsim_api/catalogue/catalogue/index
+   /autoapi/rsqsim_api/catalogue/event/index
+   /autoapi/rsqsim_api/catalogue/nshm_utilities/index
+   /autoapi/rsqsim_api/catalogue/utilities/index
+
+

@@ -1,0 +1,416 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.catalogue.utilities &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="rsqsim_api.fault" href="../../fault/index.html" />
+    <link rel="prev" title="rsqsim_api.catalogue.nshm_utilities" href="../nshm_utilities/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">rsqsim_api</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="../index.html">rsqsim_api.catalogue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../fault/index.html">rsqsim_api.fault</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../io/index.html">rsqsim_api.io</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../tsunami/index.html">rsqsim_api.tsunami</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../visualisation/index.html">rsqsim_api.visualisation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_fault/index.html">test_fault</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_catalogue/index.html">test_catalogue</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">rsqsim_api</a></li>
+          <li class="breadcrumb-item"><a href="../index.html">rsqsim_api.catalogue</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.catalogue.utilities</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/catalogue/utilities/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.catalogue.utilities">
+<span id="rsqsim-api-catalogue-utilities"></span><h1>rsqsim_api.catalogue.utilities<a class="headerlink" href="#module-rsqsim_api.catalogue.utilities" title="Link to this heading"></a></h1>
+<p>Utility functions for RSQSim catalogue statistics and seismological calculations.</p>
+<p>Provides magnitude–moment conversions, b-value estimation, stress drop
+and scaling-parameter calculations, and helper functions for computing
+weighted circular statistics.</p>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.utilities.calculate_b_value_kijko_smit" title="rsqsim_api.catalogue.utilities.calculate_b_value_kijko_smit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_b_value_kijko_smit</span></code></a>(magnitudes[, min_mw, max_mw])</p></td>
+<td><p>Estimate the Gutenberg-Richter b-value using the Kijko and Smit (2012) method.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.utilities.calculate_scaling_c" title="rsqsim_api.catalogue.utilities.calculate_scaling_c"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_scaling_c</span></code></a>(magnitudes, areas)</p></td>
+<td><p>Calculate the Gutenberg-Richter scaling parameter c.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.utilities.calculate_stress_drop" title="rsqsim_api.catalogue.utilities.calculate_stress_drop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_stress_drop</span></code></a>(seismic_moments, areas[, stress_c])</p></td>
+<td><p>Calculate stress drop from seismic moments and rupture areas.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.utilities.summary_statistics" title="rsqsim_api.catalogue.utilities.summary_statistics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">summary_statistics</span></code></a>(dataframe[, stress_c])</p></td>
+<td><p>Compute summary statistics for a catalogue DataFrame.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.utilities.mw_to_m0" title="rsqsim_api.catalogue.utilities.mw_to_m0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mw_to_m0</span></code></a>(magnitudes)</p></td>
+<td><p>Convert moment magnitude to scalar seismic moment.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.utilities.m0_to_mw" title="rsqsim_api.catalogue.utilities.m0_to_mw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">m0_to_mw</span></code></a>(seismic_moment)</p></td>
+<td><p>Convert scalar seismic moment to moment magnitude.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.utilities.weighted_circular_mean" title="rsqsim_api.catalogue.utilities.weighted_circular_mean"><code class="xref py py-obj docutils literal notranslate"><span class="pre">weighted_circular_mean</span></code></a>(azimuths, weights)</p></td>
+<td><p>Compute the weighted circular (angular) mean of a set of azimuths.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.utilities.median_cumulant" title="rsqsim_api.catalogue.utilities.median_cumulant"><code class="xref py py-obj docutils literal notranslate"><span class="pre">median_cumulant</span></code></a>(m0_array, mw_array)</p></td>
+<td><p>Compute the median cumulant magnitude for a set of events on a patch.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.utilities.jit_intersect" title="rsqsim_api.catalogue.utilities.jit_intersect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jit_intersect</span></code></a>(l1, l2)</p></td>
+<td><p>JIT-compiled intersection of two integer arrays.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.utilities.mw_from_area_and_scaling_c" title="rsqsim_api.catalogue.utilities.mw_from_area_and_scaling_c"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mw_from_area_and_scaling_c</span></code></a>(area, c)</p></td>
+<td><p>Calculate moment magnitude from rupture area and scaling parameter c.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.utilities.slip_from_area_and_scaling_c" title="rsqsim_api.catalogue.utilities.slip_from_area_and_scaling_c"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slip_from_area_and_scaling_c</span></code></a>(area, c[, mu])</p></td>
+<td><p>Calculate mean slip from rupture area and scaling parameter c.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.utilities.calculate_b_value_kijko_smit">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.utilities.</span></span><span class="sig-name descname"><span class="pre">calculate_b_value_kijko_smit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">magnitudes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_mw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_mw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/utilities.html#calculate_b_value_kijko_smit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.utilities.calculate_b_value_kijko_smit" title="Link to this definition"></a></dt>
+<dd><p>Estimate the Gutenberg-Richter b-value using the Kijko and Smit (2012) method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>magnitudes</strong> (<em>numpy.ndarray</em>) – Array of moment magnitudes.</p></li>
+<li><p><strong>min_mw</strong> (<em>float</em><em>, </em><em>optional</em>) – Lower magnitude cutoff.  Events below this are excluded.
+Defaults to 0.0.</p></li>
+<li><p><strong>max_mw</strong> (<em>float</em><em>, </em><em>optional</em>) – Upper magnitude cutoff.  Events above this are excluded.
+Defaults to 10.0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Estimated b-value (log₁₀ base).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.utilities.calculate_scaling_c">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.utilities.</span></span><span class="sig-name descname"><span class="pre">calculate_scaling_c</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">magnitudes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areas</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/utilities.html#calculate_scaling_c"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.utilities.calculate_scaling_c" title="Link to this definition"></a></dt>
+<dd><p>Calculate the Gutenberg-Richter scaling parameter c.</p>
+<p>The parameter <code class="docutils literal notranslate"><span class="pre">c</span></code> is defined as <code class="docutils literal notranslate"><span class="pre">Mw</span> <span class="pre">-</span> <span class="pre">log10(area)</span> <span class="pre">+</span> <span class="pre">6</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">area</span></code> is in m².</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>magnitudes</strong> (<em>numpy.ndarray</em>) – Array of moment magnitudes.</p></li>
+<li><p><strong>areas</strong> (<em>numpy.ndarray</em>) – Array of rupture areas in m².</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Scaling parameter c for each event.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.utilities.calculate_stress_drop">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.utilities.</span></span><span class="sig-name descname"><span class="pre">calculate_stress_drop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seismic_moments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stress_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.44</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/utilities.html#calculate_stress_drop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.utilities.calculate_stress_drop" title="Link to this definition"></a></dt>
+<dd><p>Calculate stress drop from seismic moments and rupture areas.</p>
+<p>Uses the relation <code class="docutils literal notranslate"><span class="pre">Δσ</span> <span class="pre">=</span> <span class="pre">C</span> <span class="pre">*</span> <span class="pre">M0</span> <span class="pre">/</span> <span class="pre">A^1.5</span></code>.  Typical values of <code class="docutils literal notranslate"><span class="pre">C</span></code>
+are 2.44 for a circular crack, and 2.53, 3.02, 5.21 for rectangular
+cracks with aspect ratios of 1, 4, and 16, respectively.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seismic_moments</strong> (<em>numpy.ndarray</em>) – Scalar seismic moments in N·m.</p></li>
+<li><p><strong>areas</strong> (<em>numpy.ndarray</em>) – Rupture areas in m².</p></li>
+<li><p><strong>stress_c</strong> (<em>float</em><em>, </em><em>optional</em>) – Shape constant.  Defaults to 2.44 (circular crack).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Stress drop in Pa for each event.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.utilities.summary_statistics">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.utilities.</span></span><span class="sig-name descname"><span class="pre">summary_statistics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stress_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.44</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/utilities.html#summary_statistics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.utilities.summary_statistics" title="Link to this definition"></a></dt>
+<dd><p>Compute summary statistics for a catalogue DataFrame.</p>
+<p>Calculates the 5th, 50th, and 95th percentiles of the scaling
+parameter c and the stress drop, together with the maximum magnitude.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataframe</strong> (<em>pandas.DataFrame</em>) – Catalogue DataFrame with columns <code class="docutils literal notranslate"><span class="pre">&quot;mw&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;area&quot;</span></code>
+(m²), and <code class="docutils literal notranslate"><span class="pre">&quot;m0&quot;</span></code> (N·m).</p></li>
+<li><p><strong>stress_c</strong> (<em>float</em><em>, </em><em>optional</em>) – Shape constant passed to <a class="reference internal" href="#rsqsim_api.catalogue.utilities.calculate_stress_drop" title="rsqsim_api.catalogue.utilities.calculate_stress_drop"><code class="xref py py-func docutils literal notranslate"><span class="pre">calculate_stress_drop()</span></code></a>.
+Defaults to 2.44.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Series with index
+<code class="docutils literal notranslate"><span class="pre">[&quot;Max</span> <span class="pre">Mw,</span> <span class="pre">5th</span> <span class="pre">C,</span> <span class="pre">50th</span> <span class="pre">C,</span> <span class="pre">95th</span> <span class="pre">C,</span> <span class="pre">5th</span> <span class="pre">SD,</span> <span class="pre">50th</span> <span class="pre">SD,</span> <span class="pre">95th</span> <span class="pre">SD&quot;]</span></code>
+where <code class="docutils literal notranslate"><span class="pre">C</span></code> is the scaling parameter and <code class="docutils literal notranslate"><span class="pre">SD</span></code> is the stress
+drop in MPa.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.Series</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.utilities.mw_to_m0">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.utilities.</span></span><span class="sig-name descname"><span class="pre">mw_to_m0</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">magnitudes</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/utilities.html#mw_to_m0"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.utilities.mw_to_m0" title="Link to this definition"></a></dt>
+<dd><p>Convert moment magnitude to scalar seismic moment.</p>
+<p>Uses the relation <code class="docutils literal notranslate"><span class="pre">M0</span> <span class="pre">=</span> <span class="pre">10^(1.5</span> <span class="pre">*</span> <span class="pre">Mw</span> <span class="pre">+</span> <span class="pre">9.05)</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>magnitudes</strong> (<em>numpy.ndarray</em>) – Array of moment magnitudes.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Scalar seismic moments in N·m.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.utilities.m0_to_mw">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.utilities.</span></span><span class="sig-name descname"><span class="pre">m0_to_mw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seismic_moment</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/utilities.html#m0_to_mw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.utilities.m0_to_mw" title="Link to this definition"></a></dt>
+<dd><p>Convert scalar seismic moment to moment magnitude.</p>
+<p>Uses the relation <code class="docutils literal notranslate"><span class="pre">Mw</span> <span class="pre">=</span> <span class="pre">(log10(M0)</span> <span class="pre">-</span> <span class="pre">9.05)</span> <span class="pre">/</span> <span class="pre">1.5</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>seismic_moment</strong> (<em>float</em>) – Scalar seismic moment in N·m.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Moment magnitude.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.utilities.weighted_circular_mean">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.utilities.</span></span><span class="sig-name descname"><span class="pre">weighted_circular_mean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">azimuths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/utilities.html#weighted_circular_mean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.utilities.weighted_circular_mean" title="Link to this definition"></a></dt>
+<dd><p>Compute the weighted circular (angular) mean of a set of azimuths.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>azimuths</strong> (<em>numpy.ndarray</em>) – Azimuth values in degrees.</p></li>
+<li><p><strong>weights</strong> (<em>numpy.ndarray</em>) – Weights for each azimuth (e.g. patch areas or seismic moments).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Weighted circular mean azimuth in degrees.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.utilities.median_cumulant">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.utilities.</span></span><span class="sig-name descname"><span class="pre">median_cumulant</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">m0_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mw_array</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/utilities.html#median_cumulant"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.utilities.median_cumulant" title="Link to this definition"></a></dt>
+<dd><p>Compute the median cumulant magnitude for a set of events on a patch.</p>
+<p>Sorts events by M0, forms the normalised cumulative sum of Mw, and
+returns the Mw at the index where the cumulative sum first reaches
+0.5.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>m0_array</strong> (<em>numpy.ndarray</em>) – Scalar seismic moments (N·m) for all events rupturing a patch.</p></li>
+<li><p><strong>mw_array</strong> (<em>numpy.ndarray</em>) – Corresponding moment magnitudes.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Moment magnitude at the median of the cumulative M0 distribution.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.utilities.jit_intersect">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.utilities.</span></span><span class="sig-name descname"><span class="pre">jit_intersect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">l1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/utilities.html#jit_intersect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.utilities.jit_intersect" title="Link to this definition"></a></dt>
+<dd><p>JIT-compiled intersection of two integer arrays.</p>
+<p>Returns the unique values that appear in both <code class="docutils literal notranslate"><span class="pre">l1</span></code> and <code class="docutils literal notranslate"><span class="pre">l2</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>l1</strong> (<em>numpy.ndarray</em><em> of </em><em>int32</em>) – First integer array.</p></li>
+<li><p><strong>l2</strong> (<em>numpy.ndarray</em><em> of </em><em>int32</em>) – Second integer array.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Sorted unique values present in both arrays.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray of int32</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.utilities.mw_from_area_and_scaling_c">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.utilities.</span></span><span class="sig-name descname"><span class="pre">mw_from_area_and_scaling_c</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/utilities.html#mw_from_area_and_scaling_c"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.utilities.mw_from_area_and_scaling_c" title="Link to this definition"></a></dt>
+<dd><p>Calculate moment magnitude from rupture area and scaling parameter c.</p>
+<p>Uses the relation <code class="docutils literal notranslate"><span class="pre">Mw</span> <span class="pre">=</span> <span class="pre">log10(area)</span> <span class="pre">-</span> <span class="pre">6</span> <span class="pre">+</span> <span class="pre">c</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>area</strong> (<em>float</em>) – Rupture area in m².</p></li>
+<li><p><strong>c</strong> (<em>float</em>) – Scaling parameter (typically ~4.2 for New Zealand crustal faults).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Moment magnitude.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.utilities.slip_from_area_and_scaling_c">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.utilities.</span></span><span class="sig-name descname"><span class="pre">slip_from_area_and_scaling_c</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30000000000.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/utilities.html#slip_from_area_and_scaling_c"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.utilities.slip_from_area_and_scaling_c" title="Link to this definition"></a></dt>
+<dd><p>Calculate mean slip from rupture area and scaling parameter c.</p>
+<p>Computes the seismic moment from the area and <code class="docutils literal notranslate"><span class="pre">c</span></code>, then divides by
+<code class="docutils literal notranslate"><span class="pre">mu</span> <span class="pre">*</span> <span class="pre">area</span></code> to give the average slip.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>area</strong> (<em>float</em>) – Rupture area in m².</p></li>
+<li><p><strong>c</strong> (<em>float</em>) – Scaling parameter (typically ~4.2 for New Zealand crustal faults).</p></li>
+<li><p><strong>mu</strong> (<em>float</em><em>, </em><em>optional</em>) – Shear modulus in Pa.  Defaults to 3×10¹⁰ Pa (30 GPa).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Average slip in metres.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../nshm_utilities/index.html" class="btn btn-neutral float-left" title="rsqsim_api.catalogue.nshm_utilities" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../../fault/index.html" class="btn btn-neutral float-right" title="rsqsim_api.fault" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

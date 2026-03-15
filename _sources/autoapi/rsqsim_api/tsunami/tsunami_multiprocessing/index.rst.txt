@@ -1,0 +1,142 @@
+rsqsim_api.tsunami.tsunami_multiprocessing
+==========================================
+
+.. py:module:: rsqsim_api.tsunami.tsunami_multiprocessing
+
+.. autoapi-nested-parse::
+
+   Multiprocessing utilities for computing tsunami Green's functions in parallel.
+
+   Distributes the per-patch Green's-function computation across multiple
+   worker processes and writes the results incrementally to a set of
+   netCDF output files via a producer/consumer pattern.
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   rsqsim_api.tsunami.tsunami_multiprocessing.sentinel
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   rsqsim_api.tsunami.tsunami_multiprocessing.multiprocess_gf_to_hdf
+   rsqsim_api.tsunami.tsunami_multiprocessing.handle_output
+   rsqsim_api.tsunami.tsunami_multiprocessing.handle_output_netcdf
+   rsqsim_api.tsunami.tsunami_multiprocessing.patch_greens_functions
+
+
+Module Contents
+---------------
+
+.. py:data:: sentinel
+   :value: None
+
+
+.. py:function:: multiprocess_gf_to_hdf(fault, x_range, y_range, out_file_prefix, x_grid = None, y_grid = None, z_grid = None, slip_magnitude = 1.0, num_processors = None, num_write = 8)
+
+   Compute tsunami Green's functions for all patches and write to netCDF files.
+
+   Distributes patch computations across ``num_processors`` worker
+   processes and writes results to ``num_write`` netCDF output files
+   via per-file output queues.  Patches are randomly shuffled before
+   distribution to balance load.
+
+   :param fault: Fault model containing the patches to process.
+   :type fault: RsqSimSegment or RsqSimMultiFault
+   :param x_range: 1-D easting coordinate array (NZTM metres).
+   :type x_range: numpy.ndarray of shape (nx,)
+   :param y_range: 1-D northing coordinate array (NZTM metres).
+   :type y_range: numpy.ndarray of shape (ny,)
+   :param out_file_prefix: Prefix for output netCDF files; files are named
+                           ``{out_file_prefix}{i}.nc`` for ``i`` in
+                           ``range(num_write)``.
+   :type out_file_prefix: str
+   :param x_grid: 2-D easting grid of shape ``(ny, nx)``.  If ``None``,
+                  constructed from ``x_range`` and ``y_range`` via meshgrid.
+   :type x_grid: numpy.ndarray or None, optional
+   :param y_grid: 2-D northing grid; must match ``x_grid`` shape.
+   :type y_grid: numpy.ndarray or None, optional
+   :param z_grid: 2-D elevation grid (m); defaults to all zeros.
+   :type z_grid: numpy.ndarray or None, optional
+   :param slip_magnitude: Unit slip magnitude used for the Green's function calculation.
+                          Defaults to 1.
+   :type slip_magnitude: float or int, optional
+   :param num_processors: Number of worker processes.  Defaults to half the available
+                          CPU count.
+   :type num_processors: int or None, optional
+   :param num_write: Number of output netCDF files (and output processes).
+                     Defaults to 8.
+   :type num_write: int, optional
+
+
+.. py:function:: handle_output(output_queue, output_file, dset_shape)
+
+   Consumer process that writes sea-surface displacement data to an HDF5 file.
+
+   Reads ``(index, vert_disp)`` tuples from the queue until the
+   sentinel value is received.
+
+   :param output_queue: Queue delivering ``(index, disp_array)`` tuples.
+   :type output_queue: multiprocessing.Queue
+   :param output_file: Output HDF5 file path.
+   :type output_file: str
+   :param dset_shape: Shape of the ``"ssd_1m"`` dataset.
+   :type dset_shape: tuple
+
+
+.. py:function:: handle_output_netcdf(output_queue, patch_indices, output_file, dset_shape, x_range, y_range)
+
+   Consumer process that writes sea-surface displacement data to a netCDF4 file.
+
+   Creates a netCDF4 file with dimensions ``(npatch, y, x)`` and
+   reads ``(index, patch_index, disp_array)`` tuples from the queue
+   until the sentinel value is received.
+
+   :param output_queue: Queue delivering ``(local_index, patch_index, disp_array)``
+                        tuples.
+   :type output_queue: multiprocessing.Queue
+   :param patch_indices: Array of global patch indices stored in this file.
+   :type patch_indices: numpy.ndarray
+   :param output_file: Output netCDF4 file path.
+   :type output_file: str
+   :param dset_shape: Shape ``(n_patches, ny, nx)`` of the SSD variable.
+   :type dset_shape: tuple of int
+   :param x_range: 1-D easting coordinate array.
+   :type x_range: numpy.ndarray
+   :param y_range: 1-D northing coordinate array.
+   :type y_range: numpy.ndarray
+
+
+.. py:function:: patch_greens_functions(in_queue, x_sites, y_sites, z_sites, out_queue_dic, grid_shape, slip_magnitude = 1)
+
+   Worker process that computes Green's functions for patches received from the input queue.
+
+   Reads ``(file_no, file_index, patch_number, patch)`` tuples from
+   ``in_queue``, calls
+   :meth:`~rsqsim_api.fault.patch.RsqSimTriangularPatch.calculate_tsunami_greens_functions`,
+   and forwards the result to the appropriate output queue.
+
+   :param in_queue: Input queue of ``(file_no, file_index, patch_number, patch)``
+                    tuples.  A ``None`` sentinel signals termination.
+   :type in_queue: multiprocessing.Queue
+   :param x_sites: Flattened easting coordinates of the output grid.
+   :type x_sites: numpy.ndarray
+   :param y_sites: Flattened northing coordinates.
+   :type y_sites: numpy.ndarray
+   :param z_sites: Flattened elevation coordinates.
+   :type z_sites: numpy.ndarray
+   :param out_queue_dic: Mapping of file index to output queue.
+   :type out_queue_dic: dict
+   :param grid_shape: Shape of the output displacement grid.
+   :type grid_shape: tuple
+   :param slip_magnitude: Unit slip magnitude.  Defaults to 1.
+   :type slip_magnitude: int or float, optional
+
+

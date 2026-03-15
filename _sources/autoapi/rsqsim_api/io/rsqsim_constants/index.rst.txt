@@ -1,0 +1,26 @@
+rsqsim_api.io.rsqsim_constants
+==============================
+
+.. py:module:: rsqsim_api.io.rsqsim_constants
+
+.. autoapi-nested-parse::
+
+   Physical and temporal constants used throughout rsqsim_api.
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   rsqsim_api.io.rsqsim_constants.seconds_per_year
+
+
+Module Contents
+---------------
+
+.. py:data:: seconds_per_year
+   :value: 31557600.0
+
+

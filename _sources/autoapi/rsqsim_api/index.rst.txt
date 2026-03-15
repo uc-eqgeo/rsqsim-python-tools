@@ -1,0 +1,19 @@
+rsqsim_api
+==========
+
+.. py:module:: rsqsim_api
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/rsqsim_api/catalogue/index
+   /autoapi/rsqsim_api/fault/index
+   /autoapi/rsqsim_api/io/index
+   /autoapi/rsqsim_api/tsunami/index
+   /autoapi/rsqsim_api/visualisation/index
+
+

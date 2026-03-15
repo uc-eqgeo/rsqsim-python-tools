@@ -1,0 +1,483 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.io.tsurf &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.io.tsurf</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for rsqsim_api.io.tsurf</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Reader and writer for GOCAD TSurf triangulated surface files.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">six</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">meshio</span>
+
+<div class="viewcode-block" id="tsurf">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/tsurf/index.html#rsqsim_api.io.tsurf.tsurf">[docs]</a>
+<span class="k">class</span> <span class="nc">tsurf</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read, create, and write GOCAD TSurf triangulated surface files.</span>
+
+<span class="sd">    Supports construction from a ``.ts`` file path or from raw coordinate</span>
+<span class="sd">    and connectivity arrays.  Provides access to the triangulated mesh via</span>
+<span class="sd">    the ``triangles`` property and can export back to the GOCAD TSurf format.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    *args :</span>
+<span class="sd">        Either a single ``filename`` string (reads from file), or four</span>
+<span class="sd">        positional arguments ``x, y, z, cells`` (constructs from arrays).</span>
+<span class="sd">    solid_color : tuple of float, optional</span>
+<span class="sd">        RGBA colour tuple for visualisation.  Defaults to cyan ``(0,1,1,1)``.</span>
+<span class="sd">    visible : str, optional</span>
+<span class="sd">        GOCAD visibility flag string.  Defaults to ``&quot;false&quot;``.</span>
+<span class="sd">    name : str, optional</span>
+<span class="sd">        Surface name stored in the TSurf header.  Defaults to</span>
+<span class="sd">        ``&quot;Undefined&quot;``.</span>
+<span class="sd">    NAME : str, optional</span>
+<span class="sd">        GOCAD coordinate system ``NAME`` field.  Defaults to</span>
+<span class="sd">        ``&quot;Default&quot;``.</span>
+<span class="sd">    AXIS_NAME : str, optional</span>
+<span class="sd">        GOCAD coordinate system ``AXIS_NAME`` field.  Defaults to</span>
+<span class="sd">        ``&#39;&quot;X&quot; &quot;Y&quot; &quot;Z&quot;&#39;``.</span>
+<span class="sd">    AXIS_UNIT : str, optional</span>
+<span class="sd">        GOCAD coordinate system ``AXIS_UNIT`` field.  Defaults to</span>
+<span class="sd">        ``&#39;&quot;m&quot; &quot;m&quot; &quot;m&quot;&#39;``.</span>
+<span class="sd">    ZPOSITIVE : str, optional</span>
+<span class="sd">        GOCAD coordinate system ``ZPOSITIVE`` field.  Defaults to</span>
+<span class="sd">        ``&quot;Elevation&quot;``.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mesh : meshio.Mesh</span>
+<span class="sd">        Internal mesh representation holding ``points`` and ``cells``.</span>
+<span class="sd">    x, y, z :</span>
+<span class="sd">        Sequences of point coordinates.</span>
+<span class="sd">    header : dict</span>
+<span class="sd">        GOCAD header key-value pairs.</span>
+<span class="sd">    csInfo : dict</span>
+<span class="sd">        GOCAD coordinate system key-value pairs.</span>
+<span class="sd">    name : str</span>
+<span class="sd">        Surface name.</span>
+<span class="sd">    solid_color : tuple</span>
+<span class="sd">        RGBA visualisation colour.</span>
+<span class="sd">    visible : str</span>
+<span class="sd">        Visibility flag.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If the number of positional arguments is not 1 or 4.</span>
+<span class="sd">    IOError</span>
+<span class="sd">        If a filename is supplied that does not start with ``GOCAD TSurf``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="tsurf.default_name">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/tsurf/index.html#rsqsim_api.io.tsurf.tsurf.default_name">[docs]</a>
+    <span class="n">default_name</span> <span class="o">=</span> <span class="s1">&#39;Undefined&#39;</span></div>
+
+<div class="viewcode-block" id="tsurf.default_solid_color">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/tsurf/index.html#rsqsim_api.io.tsurf.tsurf.default_solid_color">[docs]</a>
+    <span class="n">default_solid_color</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="tsurf.default_visible">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/tsurf/index.html#rsqsim_api.io.tsurf.tsurf.default_visible">[docs]</a>
+    <span class="n">default_visible</span> <span class="o">=</span> <span class="s1">&#39;false&#39;</span></div>
+
+<div class="viewcode-block" id="tsurf.default_NAME">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/tsurf/index.html#rsqsim_api.io.tsurf.tsurf.default_NAME">[docs]</a>
+    <span class="n">default_NAME</span> <span class="o">=</span> <span class="s1">&#39;Default&#39;</span></div>
+
+<div class="viewcode-block" id="tsurf.default_AXIS_NAME">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/tsurf/index.html#rsqsim_api.io.tsurf.tsurf.default_AXIS_NAME">[docs]</a>
+    <span class="n">default_AXIS_NAME</span> <span class="o">=</span> <span class="s1">&#39;&quot;X&quot; &quot;Y&quot; &quot;Z&quot;&#39;</span></div>
+
+<div class="viewcode-block" id="tsurf.default_AXIS_UNIT">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/tsurf/index.html#rsqsim_api.io.tsurf.tsurf.default_AXIS_UNIT">[docs]</a>
+    <span class="n">default_AXIS_UNIT</span> <span class="o">=</span> <span class="s1">&#39;&quot;m&quot; &quot;m&quot; &quot;m&quot;&#39;</span></div>
+
+<div class="viewcode-block" id="tsurf.default_ZPOSITIVE">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/tsurf/index.html#rsqsim_api.io.tsurf.tsurf.default_ZPOSITIVE">[docs]</a>
+    <span class="n">default_ZPOSITIVE</span> <span class="o">=</span> <span class="s1">&#39;Elevation&#39;</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialise a tsurf object from a file or from coordinate arrays.</span>
+
+<span class="sd">        Accepts either a single filename or 4 arguments: x, y, z, cells.</span>
+<span class="sd">        keyword arguments are: ``solid_color``, ``visible``, ``name``,</span>
+<span class="sd">        ``NAME``, ``AXIS_NAME``, ``AXIS_UNIT``, ``ZPOSITIVE``.</span>
+
+<span class="sd">        If a filename is given, the tsurf is read from the file.</span>
+
+<span class="sd">        Otherwise, ``x``, ``y``, ``z`` are sequences of the x, y, and z</span>
+<span class="sd">        coordinates of the points, and ``cells`` is a sequence of the</span>
+<span class="sd">        indices of the coord arrays making up each triangle in the mesh,</span>
+<span class="sd">        e.g. ``[[0, 1, 2], [2, 1, 3], ...]``.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        *args :</span>
+<span class="sd">            One string (filename) or four sequences (x, y, z, cells).</span>
+<span class="sd">        **kwargs :</span>
+<span class="sd">            Optional overrides for header and coordinate system fields.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If the number of positional arguments is not 1 or 4.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_read_tsurf</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_init_from_xyz</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid input arguments&#39;</span><span class="p">)</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;solid_color&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">visible</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;visible&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">solid_color</span> <span class="o">=</span> <span class="n">color</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="k">if</span> <span class="n">visible</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="n">visible</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;solid*color&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solid_color</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;visible&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">visible</span>
+
+        <span class="n">NAME</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;NAME&#39;</span><span class="p">)</span>
+        <span class="n">AXIS_NAME</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;AXIS_NAME&#39;</span><span class="p">)</span>
+        <span class="n">AXIS_UNIT</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;AXIS_UNIT&#39;</span><span class="p">)</span>
+        <span class="n">ZPOSITIVE</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ZPOSITIVE&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">NAME</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">NAME</span> <span class="o">=</span> <span class="n">NAME</span>
+        <span class="k">if</span> <span class="n">AXIS_NAME</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">AXIS_NAME</span> <span class="o">=</span> <span class="n">AXIS_NAME</span>
+        <span class="k">if</span> <span class="n">AXIS_UNIT</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">AXIS_UNIT</span> <span class="o">=</span> <span class="n">AXIS_UNIT</span>
+        <span class="k">if</span> <span class="n">ZPOSITIVE</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ZPOSITIVE</span> <span class="o">=</span> <span class="n">ZPOSITIVE</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">csInfo</span><span class="p">[</span><span class="s1">&#39;NAME&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">NAME</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">csInfo</span><span class="p">[</span><span class="s1">&#39;AXIS_NAME&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">AXIS_NAME</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">csInfo</span><span class="p">[</span><span class="s1">&#39;AXIS_UNIT&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">AXIS_UNIT</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">csInfo</span><span class="p">[</span><span class="s1">&#39;ZPOSITIVE&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ZPOSITIVE</span>
+
+
+    <span class="k">def</span> <span class="nf">_read_tsurf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse a GOCAD TSurf file and populate the instance attributes.</span>
+
+<span class="sd">        Reads the HEADER block, GOCAD_ORIGINAL_COORDINATE_SYSTEM block,</span>
+<span class="sd">        and the VRTX/PVRTX/TRGL data lines.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filename :</span>
+<span class="sd">            Path to the GOCAD TSurf ``.ts`` file.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        IOError</span>
+<span class="sd">            If the file does not start with ``GOCAD TSurf``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">infile</span><span class="p">:</span>
+            <span class="n">firstline</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">firstline</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;GOCAD TSurf&#39;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;This is not a valid TSurf file!&#39;</span><span class="p">)</span>
+
+            <span class="c1"># Parse Header</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">csInfo</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;HEADER&#39;</span><span class="p">):</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">while</span> <span class="s1">&#39;}&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="n">key</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">)]</span> <span class="o">=</span> <span class="n">value</span>
+                    <span class="n">line</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">solid_color</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;solid*color&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">solid_color</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">solid_color</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">solid_color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_solid_color</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;visible&#39;</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_visible</span>
+
+            <span class="c1"># Parse coordinate system info</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;GOCAD_ORIGINAL_COORDINATE_SYSTEM&#39;</span><span class="p">):</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">while</span> <span class="s1">&#39;END_ORIGINAL_COORDINATE_SYSTEM&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">csInfo</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+                    <span class="n">line</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">NAME</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">csInfo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;NAME&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">NAME</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_NAME</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ZPOSITIVE</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">csInfo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ZPOSITIVE&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ZPOSITIVE</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_ZPOSITIVE</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">AXIS_NAME</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">csInfo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;AXIS_NAME&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">AXIS_NAME</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_AXIS_NAME</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">AXIS_UNIT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">csInfo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;AXIS_UNIT&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">AXIS_UNIT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_AXIS_UNIT</span>
+
+            <span class="c1"># Read points and cells</span>
+            <span class="c1"># if not next(infile).startswith(&#39;TFACE&#39;):</span>
+            <span class="c1">#     raise IOError(&#39;Only &quot;TFACE&quot; format TSurf files are supported&#39;)</span>
+            <span class="n">points</span><span class="p">,</span> <span class="n">cellArray</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">infile</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;VRTX&#39;</span><span class="p">,</span> <span class="s1">&#39;PVRTX&#39;</span><span class="p">]:</span>
+                    <span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">line</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">5</span><span class="p">]])</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;TRGL&#39;</span><span class="p">:</span>
+                    <span class="n">cellArray</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">item</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">:]])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">points</span><span class="p">)</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">))</span>
+        <span class="n">cellArray</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cellArray</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+        <span class="n">cells</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;triangle&quot;</span><span class="p">,</span> <span class="n">cellArray</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="o">=</span> <span class="n">meshio</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">cells</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="tsurf.triangles">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/tsurf/index.html#rsqsim_api.io.tsurf.tsurf.triangles">[docs]</a>
+    <span class="k">def</span> <span class="nf">triangles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Triangle vertex coordinates as a deduplicated array.</span>
+
+<span class="sd">        Builds a lookup dictionary from vertex index to coordinate, then</span>
+<span class="sd">        assembles each triangle&#39;s three corners into a row of 9 values</span>
+<span class="sd">        ``[x1,y1,z1, x2,y2,z2, x3,y3,z3]``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray of shape (n_unique_triangles, 9)</span>
+<span class="sd">            Unique triangles, sorted lexicographically by</span>
+<span class="sd">            ``numpy.unique``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">triangle_numbers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">cells</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">vertex_dic</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span><span class="n">vertex</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">vertex</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">points</span><span class="p">)}</span>
+        <span class="n">triangle_array</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">numpy</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">vertex_dic</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">triangle</span><span class="p">])</span> <span class="k">for</span> <span class="n">triangle</span> <span class="ow">in</span> <span class="n">triangle_numbers</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">triangle_array</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+
+
+
+    <span class="k">def</span> <span class="nf">_init_from_xyz</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">cells</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialise the tsurf from raw coordinate and cell arrays.</span>
+
+<span class="sd">        Sets default header and coordinate system values and constructs</span>
+<span class="sd">        the internal ``meshio.Mesh`` from the supplied data.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x :</span>
+<span class="sd">            Sequence of x-coordinates of the mesh points.</span>
+<span class="sd">        y :</span>
+<span class="sd">            Sequence of y-coordinates of the mesh points.</span>
+<span class="sd">        z :</span>
+<span class="sd">            Sequence of z-coordinates of the mesh points.</span>
+<span class="sd">        cells :</span>
+<span class="sd">            Sequence of triangle connectivity lists, each containing</span>
+<span class="sd">            three zero-based vertex indices, e.g.</span>
+<span class="sd">            ``[[0, 1, 2], [2, 1, 3], ...]``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span>
+        <span class="n">cells</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;triangle&quot;</span><span class="p">:</span> <span class="n">cells</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solid_color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_solid_color</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_visible</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="o">=</span> <span class="n">meshio</span><span class="o">.</span><span class="n">Mesh</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">cells</span><span class="p">)</span>
+        <span class="c1"># Deleting the following default values since I have no idea</span>
+        <span class="c1"># what they are.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        self.header = {&#39;moveAs&#39;:&#39;2&#39;, &#39;drawAs&#39;:&#39;2&#39;, &#39;line&#39;:&#39;3&#39;,</span>
+<span class="sd">                    &#39;clip&#39;:&#39;0&#39;, &#39;intersect&#39;:&#39;0&#39;, &#39;intercolor&#39;:&#39; 1 0 0 1&#39;}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">csInfo</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">NAME</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_NAME</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ZPOSITIVE</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_ZPOSITIVE</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">AXIS_NAME</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_AXIS_NAME</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">AXIS_UNIT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_AXIS_UNIT</span>
+
+<div class="viewcode-block" id="tsurf.write">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/tsurf/index.html#rsqsim_api.io.tsurf.tsurf.write">[docs]</a>
+    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outname</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write the tsurf to a GOCAD TSurf ``.ts`` file.</span>
+
+<span class="sd">        Writes the HEADER block, GOCAD_ORIGINAL_COORDINATE_SYSTEM block,</span>
+<span class="sd">        TFACE data (VRTX lines followed by TRGL lines), and the END</span>
+<span class="sd">        marker.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        outname :</span>
+<span class="sd">            Output file path for the TSurf file.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Triangle connectivity is written with 1-based vertex indices as</span>
+<span class="sd">        required by the GOCAD TSurf format specification.  Only the first</span>
+<span class="sd">        cell block is written; multi-block meshes are not supported.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">outname</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+            <span class="c1"># Write Header...</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;GOCAD TSurf 1</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;HEADER {</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            for key in [&#39;name&#39;, &#39;color&#39;, &#39;moveAs&#39;, &#39;drawAs&#39;, &#39;line&#39;, &#39;clip&#39;,</span>
+<span class="sd">                        &#39;intersect&#39;, &#39;intercolor&#39;]:</span>
+<span class="sd">                value = self.header[key]</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">value</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span>
+                    <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">:</span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;*</span><span class="si">{}</span><span class="s1">:</span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+            <span class="c1"># Write CS info...</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;GOCAD_ORIGINAL_COORDINATE_SYSTEM</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="c1"># for key, value in six.iteritems(self.csInfo):</span>
+            <span class="c1"># It seems likely the CS keys should be in a particular order.</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;NAME&#39;</span><span class="p">,</span> <span class="s1">&#39;AXIS_NAME&#39;</span><span class="p">,</span> <span class="s1">&#39;AXIS_UNIT&#39;</span><span class="p">,</span> <span class="s1">&#39;ZPOSITIVE&#39;</span><span class="p">]:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">csInfo</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">value</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;END_ORIGINAL_COORDINATE_SYSTEM</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+            <span class="c1"># Write data...</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;TFACE</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">points</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">template</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;VRTX </span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">{: &gt;9.3f}</span><span class="s1">&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">))</span>
+            <span class="c1"># For now, assume only one set of cells, and that they are all</span>
+            <span class="c1"># triangles.</span>
+            <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">cells</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+                <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;TRGL </span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">a</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">b</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;END</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

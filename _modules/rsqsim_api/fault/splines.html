@@ -1,0 +1,218 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.fault.splines &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.fault.splines</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for rsqsim_api.fault.splines</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Spline utilities for constructing idealised slip distributions on fault patches.</span>
+
+<span class="sd">Provides functions that build :class:`scipy.interpolate.UnivariateSpline`</span>
+<span class="sd">objects encoding along-fault and depth-dependent slip profiles, suitable</span>
+<span class="sd">for imposing prescribed slip distributions in RSQSim or other fault models.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">UnivariateSpline</span>
+
+<div class="viewcode-block" id="fault_edge_spline">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/splines/index.html#rsqsim_api.fault.splines.fault_edge_spline">[docs]</a>
+<span class="k">def</span> <span class="nf">fault_edge_spline</span><span class="p">(</span><span class="n">max_slip</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">distance_width</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">total_width</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">min_slip_fraction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">line_stop_fraction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">gradient_change</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.2</span><span class="p">,</span>
+                      <span class="n">spline_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">spline_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">resolution</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build a univariate spline encoding slip as a function of along-fault distance.</span>
+
+<span class="sd">    Constructs an interpolated spline that ramps from a minimum slip</span>
+<span class="sd">    fraction at the fault edge up to the maximum slip, with a</span>
+<span class="sd">    piecewise-linear interpolant shaped by the supplied parameters.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    max_slip : float</span>
+<span class="sd">        Maximum slip value (m or m/yr) at the centre of the fault.</span>
+<span class="sd">    distance_width : float</span>
+<span class="sd">        Along-fault distance (m) at which ``max_slip`` is reached.</span>
+<span class="sd">    total_width : float</span>
+<span class="sd">        Total along-fault width (m) of the spline domain.</span>
+<span class="sd">    min_slip_fraction : float, optional</span>
+<span class="sd">        Fraction of ``max_slip`` at the fault edge (distance = 0).</span>
+<span class="sd">        Defaults to 0.</span>
+<span class="sd">    line_stop_fraction : float, optional</span>
+<span class="sd">        Fraction of ``distance_width`` at which the initial ramp</span>
+<span class="sd">        levels off before the gradient change.  Defaults to 0.5.</span>
+<span class="sd">    gradient_change : float, optional</span>
+<span class="sd">        Multiplicative factor applied to the intermediate y value to</span>
+<span class="sd">        create a smooth overshoot before the final ramp.  Defaults to</span>
+<span class="sd">        1.2.</span>
+<span class="sd">    spline_k : int, optional</span>
+<span class="sd">        Degree of the smoothing spline.  Defaults to 3 (cubic).</span>
+<span class="sd">    spline_s : float, optional</span>
+<span class="sd">        Smoothing factor passed to</span>
+<span class="sd">        :class:`~scipy.interpolate.UnivariateSpline`.  Defaults to</span>
+<span class="sd">        0.0 (interpolating spline).</span>
+<span class="sd">    resolution : float, optional</span>
+<span class="sd">        Sample spacing (m) used when building the x-axis for</span>
+<span class="sd">        interpolation.  Defaults to 10.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    scipy.interpolate.UnivariateSpline</span>
+<span class="sd">        Spline object; call with an x array (metres from edge) to</span>
+<span class="sd">        evaluate the slip profile.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">x_points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">distance_width</span> <span class="o">*</span> <span class="n">line_stop_fraction</span> <span class="o">+</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">resolution</span><span class="p">),</span>
+                            <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">distance_width</span><span class="p">,</span> <span class="n">total_width</span> <span class="o">+</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)])</span>
+
+    <span class="n">x_for_interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="n">distance_width</span> <span class="o">*</span> <span class="n">line_stop_fraction</span><span class="p">,</span> <span class="n">distance_width</span><span class="p">,</span> <span class="n">total_width</span><span class="p">])</span>
+    <span class="n">y_for_interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">max_slip</span> <span class="o">*</span> <span class="n">min_slip_fraction</span><span class="p">,</span> <span class="n">gradient_change</span> <span class="o">*</span>
+                             <span class="p">(</span><span class="n">max_slip</span> <span class="o">*</span> <span class="n">min_slip_fraction</span> <span class="o">+</span> <span class="n">line_stop_fraction</span> <span class="o">*</span> <span class="n">max_slip</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">min_slip_fraction</span><span class="p">)),</span>
+                             <span class="n">max_slip</span><span class="p">,</span> <span class="n">max_slip</span><span class="p">])</span>
+
+    <span class="n">interpolated_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">x_points</span><span class="p">,</span> <span class="n">x_for_interp</span><span class="p">,</span> <span class="n">y_for_interp</span><span class="p">)</span>
+    <span class="n">out_spline</span> <span class="o">=</span> <span class="n">UnivariateSpline</span><span class="p">(</span><span class="n">x_points</span><span class="p">,</span> <span class="n">interpolated_y</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">spline_k</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="n">spline_s</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out_spline</span></div>
+
+
+<div class="viewcode-block" id="fault_depth_spline">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/splines/index.html#rsqsim_api.fault.splines.fault_depth_spline">[docs]</a>
+<span class="k">def</span> <span class="nf">fault_depth_spline</span><span class="p">(</span><span class="n">gradient_change_x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">after_change_fract</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">resolution</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
+                       <span class="n">after_change_gradient</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.2</span><span class="p">,</span> <span class="n">spline_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">spline_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build a univariate spline encoding normalised slip as a function of normalised depth.</span>
+
+<span class="sd">    Produces a spline on [0, 1] (normalised depth fraction) that is</span>
+<span class="sd">    approximately flat at 1 down to ``gradient_change_x``, then ramps</span>
+<span class="sd">    linearly to 0 at the base of the fault, with an optional gradient</span>
+<span class="sd">    overshoot controlled by ``after_change_gradient``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gradient_change_x : float</span>
+<span class="sd">        Normalised depth (0–1) at which the gradient begins to change.</span>
+<span class="sd">    after_change_fract : float</span>
+<span class="sd">        Fraction of the remaining depth below ``gradient_change_x``</span>
+<span class="sd">        over which the gradient change is applied.</span>
+<span class="sd">    resolution : float, optional</span>
+<span class="sd">        Sample spacing in normalised depth used when building the</span>
+<span class="sd">        spline.  Defaults to 0.01.</span>
+<span class="sd">    after_change_gradient : float, optional</span>
+<span class="sd">        Multiplicative factor that controls the magnitude of the</span>
+<span class="sd">        gradient overshoot.  Defaults to 1.2.</span>
+<span class="sd">    spline_k : int, optional</span>
+<span class="sd">        Degree of the smoothing spline.  Defaults to 3 (cubic).</span>
+<span class="sd">    spline_s : float, optional</span>
+<span class="sd">        Smoothing factor passed to</span>
+<span class="sd">        :class:`~scipy.interpolate.UnivariateSpline`.  Defaults to</span>
+<span class="sd">        0.0 (interpolating spline).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    scipy.interpolate.UnivariateSpline</span>
+<span class="sd">        Spline object; call with a normalised-depth array to evaluate</span>
+<span class="sd">        the depth-dependent slip multiplier.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x_points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">gradient_change_x</span> <span class="o">+</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">resolution</span><span class="p">),</span>
+                            <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">gradient_change_x</span><span class="p">)</span> <span class="o">*</span> <span class="n">after_change_fract</span><span class="p">,</span> <span class="mf">1.</span> <span class="o">+</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)])</span>
+    <span class="n">x_for_interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="n">gradient_change_x</span><span class="p">,</span> <span class="mf">1.</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">gradient_change_x</span><span class="p">)</span> <span class="o">*</span> <span class="n">after_change_fract</span><span class="p">,</span> <span class="mf">1.</span><span class="p">])</span>
+    <span class="n">y_for_interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="n">after_change_gradient</span> <span class="o">*</span> <span class="n">after_change_fract</span><span class="p">,</span> <span class="mf">0.</span><span class="p">])</span>
+    <span class="n">interpolated_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">x_points</span><span class="p">,</span> <span class="n">x_for_interp</span><span class="p">,</span> <span class="n">y_for_interp</span><span class="p">)</span>
+    <span class="n">out_spline</span> <span class="o">=</span> <span class="n">UnivariateSpline</span><span class="p">(</span><span class="n">x_points</span><span class="p">,</span> <span class="n">interpolated_y</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">spline_k</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="n">spline_s</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out_spline</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,438 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.io.read_utils &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="rsqsim_api.io.rsqsim_constants" href="../rsqsim_constants/index.html" />
+    <link rel="prev" title="rsqsim_api.io.multiprocessing_utils" href="../multiprocessing_utils/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">rsqsim_api</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../../catalogue/index.html">rsqsim_api.catalogue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../fault/index.html">rsqsim_api.fault</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../index.html">rsqsim_api.io</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../tsunami/index.html">rsqsim_api.tsunami</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../visualisation/index.html">rsqsim_api.visualisation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_fault/index.html">test_fault</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_catalogue/index.html">test_catalogue</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">rsqsim_api</a></li>
+          <li class="breadcrumb-item"><a href="../index.html">rsqsim_api.io</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.io.read_utils</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/io/read_utils/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.io.read_utils">
+<span id="rsqsim-api-io-read-utils"></span><h1>rsqsim_api.io.read_utils<a class="headerlink" href="#module-rsqsim_api.io.read_utils" title="Link to this heading"></a></h1>
+<p>Utilities for reading RSQSim output files in text, binary, CSV, DXF, STL, and VTK formats.</p>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.read_utils.catalogue_columns" title="rsqsim_api.io.read_utils.catalogue_columns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">catalogue_columns</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.read_utils.read_text" title="rsqsim_api.io.read_utils.read_text"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_text</span></code></a>(file, format)</p></td>
+<td><p>Read scalar values from a text file output by RSQSim.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.read_utils.read_binary" title="rsqsim_api.io.read_utils.read_binary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_binary</span></code></a>(file, format[, endian])</p></td>
+<td><p>Read scalar values from a binary file output by RSQSim.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.read_utils.read_csv_and_array" title="rsqsim_api.io.read_utils.read_csv_and_array"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_csv_and_array</span></code></a>(prefix[, read_index])</p></td>
+<td><p>Read a catalogue CSV and its associated NumPy array files from a common prefix.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.read_utils.read_earthquakes" title="rsqsim_api.io.read_utils.read_earthquakes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_earthquakes</span></code></a>(earthquake_file[, get_patch, ...])</p></td>
+<td><p>Read earthquake event data, inferring companion file names from the event file prefix.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.read_utils.read_earthquake_catalogue" title="rsqsim_api.io.read_utils.read_earthquake_catalogue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_earthquake_catalogue</span></code></a>(catalogue_file)</p></td>
+<td><p>Read an RSQSim earthquake catalogue text file into a DataFrame.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.read_utils.read_ts_coords" title="rsqsim_api.io.read_utils.read_ts_coords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_ts_coords</span></code></a>(filename)</p></td>
+<td><p>Read vertex and triangle data from a tsurf (<code class="docutils literal notranslate"><span class="pre">.ts</span></code>) file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.read_utils.read_dxf" title="rsqsim_api.io.read_utils.read_dxf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_dxf</span></code></a>(dxf_file)</p></td>
+<td><p>Read a triangulated mesh and boundary polyline from a DXF file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.read_utils.read_stl" title="rsqsim_api.io.read_utils.read_stl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_stl</span></code></a>(stl_file[, min_point_sep])</p></td>
+<td><p>Read a triangulated surface mesh from an STL file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.read_utils.read_vtk" title="rsqsim_api.io.read_utils.read_vtk"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_vtk</span></code></a>(vtk_file[, min_point_sep])</p></td>
+<td><p>Read a triangulated surface mesh with slip and rake data from a VTK file.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.io.read_utils.catalogue_columns">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.read_utils.</span></span><span class="sig-name descname"><span class="pre">catalogue_columns</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['t0',</span> <span class="pre">'m0',</span> <span class="pre">'mw',</span> <span class="pre">'x',</span> <span class="pre">'y',</span> <span class="pre">'z',</span> <span class="pre">'area',</span> <span class="pre">'dt']</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/read_utils.html#catalogue_columns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.read_utils.catalogue_columns" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.read_utils.read_text">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.read_utils.</span></span><span class="sig-name descname"><span class="pre">read_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/read_utils.html#read_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.read_utils.read_text" title="Link to this definition"></a></dt>
+<dd><p>Read scalar values from a text file output by RSQSim.</p>
+<p>Produced when RSQSim is compiled with serial (text) output mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file</strong> (<em>str</em>) – Path to the text file to read.</p></li>
+<li><p><strong>format</strong> (<em>str</em>) – Data type specifier: <code class="docutils literal notranslate"><span class="pre">&quot;d&quot;</span></code> for double (float64) or <code class="docutils literal notranslate"><span class="pre">&quot;i&quot;</span></code>
+for integer (int32).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Flattened 1-D array of values read from the file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">format</span></code> is not <code class="docutils literal notranslate"><span class="pre">&quot;d&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;i&quot;</span></code>, or if <code class="docutils literal notranslate"><span class="pre">file</span></code> does not
+exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.read_utils.read_binary">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.read_utils.</span></span><span class="sig-name descname"><span class="pre">read_binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endian</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'little'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/read_utils.html#read_binary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.read_utils.read_binary" title="Link to this definition"></a></dt>
+<dd><p>Read scalar values from a binary file output by RSQSim.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file</strong> (<em>str</em>) – Path to the binary file to read.</p></li>
+<li><p><strong>format</strong> (<em>str</em>) – Data type specifier: <code class="docutils literal notranslate"><span class="pre">&quot;d&quot;</span></code> for double (float64) or <code class="docutils literal notranslate"><span class="pre">&quot;i&quot;</span></code>
+for integer (int32).</p></li>
+<li><p><strong>endian</strong> (<em>str</em>) – Byte order of the file.  <code class="docutils literal notranslate"><span class="pre">&quot;little&quot;</span></code> (default) is standard for
+most modern x86 systems; use <code class="docutils literal notranslate"><span class="pre">&quot;big&quot;</span></code> for non-standard platforms.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Flattened 1-D array of values read from the file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">endian</span></code> is not <code class="docutils literal notranslate"><span class="pre">&quot;little&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;big&quot;</span></code>, if <code class="docutils literal notranslate"><span class="pre">format</span></code> is
+not <code class="docutils literal notranslate"><span class="pre">&quot;d&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;i&quot;</span></code>, or if <code class="docutils literal notranslate"><span class="pre">file</span></code> does not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.read_utils.read_csv_and_array">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.read_utils.</span></span><span class="sig-name descname"><span class="pre">read_csv_and_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/read_utils.html#read_csv_and_array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.read_utils.read_csv_and_array" title="Link to this definition"></a></dt>
+<dd><p>Read a catalogue CSV and its associated NumPy array files from a common prefix.</p>
+<p>Expects files named <code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;_catalogue.csv</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;_events.npy</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;_patches.npy</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;_slip.npy</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;_slip_time.npy</span></code> to exist on disk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prefix</strong> (<em>str</em>) – File path prefix (with or without trailing underscore).</p></li>
+<li><p><strong>read_index</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), read the first column of the CSV as the
+DataFrame index.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">[df,</span> <span class="pre">events,</span> <span class="pre">patches,</span> <span class="pre">slip,</span> <span class="pre">slip_time]</span></code> where <code class="docutils literal notranslate"><span class="pre">df</span></code> is a
+<code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code> and the remaining elements are NumPy arrays
+loaded from the corresponding <code class="docutils literal notranslate"><span class="pre">.npy</span></code> files.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">prefix</span></code> is an empty string.</p></li>
+<li><p><strong>FileNotFoundError</strong> – If any of the five expected files is missing.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.read_utils.read_earthquakes">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.read_utils.</span></span><span class="sig-name descname"><span class="pre">read_earthquakes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">earthquake_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">get_patch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eq_start_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eq_end_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endian</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'little'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/read_utils.html#read_earthquakes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.read_utils.read_earthquakes" title="Link to this definition"></a></dt>
+<dd><p>Read earthquake event data, inferring companion file names from the event file prefix.</p>
+<p>Based on R scripts by Keith Richards-Dinger.  The earthquake file is
+expected to follow the naming convention <code class="docutils literal notranslate"><span class="pre">eqs.&lt;prefix&gt;.out</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>earthquake_file</strong> (<em>str</em>) – Path to the RSQSim earthquake output file, usually with a
+<code class="docutils literal notranslate"><span class="pre">.out</span></code> suffix and named <code class="docutils literal notranslate"><span class="pre">eqs.&lt;prefix&gt;.out</span></code>.</p></li>
+<li><p><strong>get_patch</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, also read per-patch rupture data.  Currently unused
+placeholder.</p></li>
+<li><p><strong>eq_start_index</strong> (<em>int</em>) – Zero-based index of the first earthquake to read.  Both
+<code class="docutils literal notranslate"><span class="pre">eq_start_index</span></code> and <code class="docutils literal notranslate"><span class="pre">eq_end_index</span></code> must be provided together.</p></li>
+<li><p><strong>eq_end_index</strong> (<em>int</em>) – Zero-based index of the last earthquake to read (exclusive).</p></li>
+<li><p><strong>endian</strong> (<em>str</em>) – Byte order for binary companion files.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;little&quot;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">endian</span></code> is not <code class="docutils literal notranslate"><span class="pre">&quot;little&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;big&quot;</span></code>, or if
+<code class="docutils literal notranslate"><span class="pre">earthquake_file</span></code> does not exist.</p></li>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">eq_start_index</span> <span class="pre">&gt;=</span> <span class="pre">eq_end_index</span></code> when both are provided.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.read_utils.read_earthquake_catalogue">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.read_utils.</span></span><span class="sig-name descname"><span class="pre">read_earthquake_catalogue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">catalogue_file</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/read_utils.html#read_earthquake_catalogue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.read_utils.read_earthquake_catalogue" title="Link to this definition"></a></dt>
+<dd><p>Read an RSQSim earthquake catalogue text file into a DataFrame.</p>
+<p>Parses the catalogue file produced by RSQSim, skipping the header
+block that ends with the line <code class="docutils literal notranslate"><span class="pre">%%%</span> <span class="pre">end</span> <span class="pre">input</span> <span class="pre">files</span></code>, and loads the
+subsequent rows into a DataFrame with the standard catalogue columns
+<code class="docutils literal notranslate"><span class="pre">t0,</span> <span class="pre">m0,</span> <span class="pre">mw,</span> <span class="pre">x,</span> <span class="pre">y,</span> <span class="pre">z,</span> <span class="pre">area,</span> <span class="pre">dt</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>catalogue_file</strong> (<em>str</em>) – Path to the RSQSim catalogue text file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>DataFrame with columns <code class="docutils literal notranslate"><span class="pre">[&quot;t0&quot;,</span> <span class="pre">&quot;m0&quot;,</span> <span class="pre">&quot;mw&quot;,</span> <span class="pre">&quot;x&quot;,</span> <span class="pre">&quot;y&quot;,</span> <span class="pre">&quot;z&quot;,</span>
+<span class="pre">&quot;area&quot;,</span> <span class="pre">&quot;dt&quot;]</span></code>, one row per earthquake event.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">catalogue_file</span></code> does not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.read_utils.read_ts_coords">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.read_utils.</span></span><span class="sig-name descname"><span class="pre">read_ts_coords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/read_utils.html#read_ts_coords"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.read_utils.read_ts_coords" title="Link to this definition"></a></dt>
+<dd><p>Read vertex and triangle data from a tsurf (<code class="docutils literal notranslate"><span class="pre">.ts</span></code>) file.</p>
+<p>Parses the SCEC Community Fault Model tsurf format, extracting
+vertex coordinates and triangle connectivity.  Based on the MATLAB
+script <code class="docutils literal notranslate"><span class="pre">ReadAndSaveCfm.m</span></code> by Brendan Meade.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> – Path to the tsurf <code class="docutils literal notranslate"><span class="pre">.ts</span></code> file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>vrtx</strong> (<em>numpy.ndarray of shape (n_vertices, 4)</em>) – Vertex data array.  Each row is <code class="docutils literal notranslate"><span class="pre">[vertex_id,</span> <span class="pre">x,</span> <span class="pre">y,</span> <span class="pre">z]</span></code>.</p></li>
+<li><p><strong>trgl</strong> (<em>numpy.ndarray of shape (n_triangles, 3), dtype int</em>) – Triangle connectivity array.  Each row gives the three vertex IDs
+forming a triangle.</p></li>
+<li><p><strong>tri</strong> (<em>numpy.ndarray of shape (n_triangles, 9)</em>) – Triangle data array.  Each row contains the (x, y, z) coordinates
+of all three corners concatenated: <code class="docutils literal notranslate"><span class="pre">[x1,y1,z1,</span> <span class="pre">x2,y2,z2,</span> <span class="pre">x3,y3,z3]</span></code>.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition-notes admonition">
+<p class="admonition-title">Notes</p>
+<p>Copyright Paul Kaeufl, July 2014.
+Original MATLAB script:
+<a class="reference external" href="http://structure.rc.fas.harvard.edu/cfm/download/meade/ReadAndSaveCfm.m">http://structure.rc.fas.harvard.edu/cfm/download/meade/ReadAndSaveCfm.m</a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.read_utils.read_dxf">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.read_utils.</span></span><span class="sig-name descname"><span class="pre">read_dxf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dxf_file</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/read_utils.html#read_dxf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.read_utils.read_dxf" title="Link to this definition"></a></dt>
+<dd><p>Read a triangulated mesh and boundary polyline from a DXF file.</p>
+<p>Expects a DXF file exported from Move containing exactly one
+<code class="docutils literal notranslate"><span class="pre">POLYLINE</span></code> boundary and one or more <code class="docutils literal notranslate"><span class="pre">3DFACE</span></code> triangles.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dxf_file</strong> (<em>str</em>) – Path to the DXF file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>triangle_array</strong> (<em>numpy.ndarray of shape (n_triangles, 9)</em>) – Each row contains the (x, y, z) coordinates of the three triangle
+corners concatenated: <code class="docutils literal notranslate"><span class="pre">[x1,y1,z1,</span> <span class="pre">x2,y2,z2,</span> <span class="pre">x3,y3,z3]</span></code>.</p></li>
+<li><p><strong>boundary_array</strong> (<em>numpy.ndarray of shape (n_points, 3)</em>) – (x, y, z) coordinates of the boundary polyline vertices.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">dxf_file</span></code> does not exist, or if the file does not contain
+both <code class="docutils literal notranslate"><span class="pre">3DFACE</span></code> and <code class="docutils literal notranslate"><span class="pre">POLYLINE</span></code> entities.</p></li>
+<li><p><strong>ValueError</strong> – If the file contains more than one <code class="docutils literal notranslate"><span class="pre">POLYLINE</span></code> boundary.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.read_utils.read_stl">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.read_utils.</span></span><span class="sig-name descname"><span class="pre">read_stl</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stl_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_point_sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/read_utils.html#read_stl"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.read_utils.read_stl" title="Link to this definition"></a></dt>
+<dd><p>Read a triangulated surface mesh from an STL file.</p>
+<p>Merges near-duplicate vertices (within <code class="docutils literal notranslate"><span class="pre">min_point_sep</span></code>) by averaging
+their positions and removing degenerate triangles that result from the
+merge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stl_file</strong> (<em>str</em>) – Path to the STL mesh file.</p></li>
+<li><p><strong>min_point_sep</strong> – Minimum separation in metres below which two vertices are
+considered duplicates and merged.  Defaults to 100.0 m.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Each row contains the (x, y, z) coordinates of the three triangle
+corners: <code class="docutils literal notranslate"><span class="pre">[x1,y1,z1,</span> <span class="pre">x2,y2,z2,</span> <span class="pre">x3,y3,z3]</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray of shape (n_triangles, 9)</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">stl_file</span></code> does not exist or if the mesh contains no
+triangular cells.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.read_utils.read_vtk">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.read_utils.</span></span><span class="sig-name descname"><span class="pre">read_vtk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vtk_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_point_sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/read_utils.html#read_vtk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.read_utils.read_vtk" title="Link to this definition"></a></dt>
+<dd><p>Read a triangulated surface mesh with slip and rake data from a VTK file.</p>
+<p>Merges near-duplicate vertices (within <code class="docutils literal notranslate"><span class="pre">min_point_sep</span></code>) and removes
+degenerate triangles, preserving the associated slip and rake cell data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vtk_file</strong> (<em>str</em>) – Path to the VTK mesh file.</p></li>
+<li><p><strong>min_point_sep</strong> – Minimum separation in metres below which two vertices are
+considered duplicates and merged.  Defaults to 1.0 m.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>mesh_as_array</strong> (<em>numpy.ndarray of shape (n_triangles, 9)</em>) – Each row contains the (x, y, z) coordinates of the three triangle
+corners: <code class="docutils literal notranslate"><span class="pre">[x1,y1,z1,</span> <span class="pre">x2,y2,z2,</span> <span class="pre">x3,y3,z3]</span></code>.</p></li>
+<li><p><strong>slip</strong> (<em>numpy.ndarray of shape (n_triangles,)</em>) – Slip magnitude (metres) for each triangle after duplicate removal.</p></li>
+<li><p><strong>rake</strong> (<em>numpy.ndarray of shape (n_triangles,)</em>) – Rake angle (degrees) for each triangle after duplicate removal.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">vtk_file</span></code> does not exist, if the mesh contains no triangular
+cells, or if the <code class="docutils literal notranslate"><span class="pre">slip</span></code> and <code class="docutils literal notranslate"><span class="pre">rake</span></code> cell data arrays are absent.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../multiprocessing_utils/index.html" class="btn btn-neutral float-left" title="rsqsim_api.io.multiprocessing_utils" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../rsqsim_constants/index.html" class="btn btn-neutral float-right" title="rsqsim_api.io.rsqsim_constants" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

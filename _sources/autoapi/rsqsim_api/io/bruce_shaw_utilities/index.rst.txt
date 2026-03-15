@@ -1,0 +1,26 @@
+rsqsim_api.io.bruce_shaw_utilities
+==================================
+
+.. py:module:: rsqsim_api.io.bruce_shaw_utilities
+
+.. autoapi-nested-parse::
+
+   Fault-name lists and lookup data specific to Bruce Shaw's RSQSim model configurations.
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   rsqsim_api.io.bruce_shaw_utilities.bruce_subduction
+
+
+Module Contents
+---------------
+
+.. py:data:: bruce_subduction
+   :value: ['hikhbaymax', 'hikraukmax', 'hikwgtnmax', 'fiordsz03', 'fiordpusz09', 'subduction']
+
+

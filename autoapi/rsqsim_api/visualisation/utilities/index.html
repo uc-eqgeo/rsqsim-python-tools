@@ -1,0 +1,693 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.visualisation.utilities &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="rsqsim_api.visualisation.visualisation_3d" href="../visualisation_3d/index.html" />
+    <link rel="prev" title="rsqsim_api.visualisation.animation" href="../animation/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">rsqsim_api</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../../catalogue/index.html">rsqsim_api.catalogue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../fault/index.html">rsqsim_api.fault</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../io/index.html">rsqsim_api.io</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../tsunami/index.html">rsqsim_api.tsunami</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../index.html">rsqsim_api.visualisation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_fault/index.html">test_fault</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_catalogue/index.html">test_catalogue</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">rsqsim_api</a></li>
+          <li class="breadcrumb-item"><a href="../index.html">rsqsim_api.visualisation</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.visualisation.utilities</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/visualisation/utilities/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.visualisation.utilities">
+<span id="rsqsim-api-visualisation-utilities"></span><h1>rsqsim_api.visualisation.utilities<a class="headerlink" href="#module-rsqsim_api.visualisation.utilities" title="Link to this heading"></a></h1>
+<p>Visualisation utilities for plotting New Zealand map backgrounds,
+coastlines, hillshading, and GIS vector layers.</p>
+<p>Provides functions to clip and overlay the NZ coastline shapefile,
+render hillshade rasters, plot GIS line and polygon features (roads,
+rivers, lakes, regional boundaries, Hikurangi boundary), format
+WGS84 axis tick labels, and compose composite map backgrounds via
+<code class="docutils literal notranslate"><span class="pre">plot_background</span></code>.</p>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.coast_shp_fine_name" title="rsqsim_api.visualisation.utilities.coast_shp_fine_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coast_shp_fine_name</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.coast_shp_coarse_name" title="rsqsim_api.visualisation.utilities.coast_shp_coarse_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coast_shp_coarse_name</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.coast_nat_earth_name" title="rsqsim_api.visualisation.utilities.coast_nat_earth_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coast_nat_earth_name</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.coast_shp_fine" title="rsqsim_api.visualisation.utilities.coast_shp_fine"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coast_shp_fine</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.coast_shp_coarse" title="rsqsim_api.visualisation.utilities.coast_shp_coarse"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coast_shp_coarse</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.coast_nat_earth" title="rsqsim_api.visualisation.utilities.coast_nat_earth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coast_nat_earth</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.roads" title="rsqsim_api.visualisation.utilities.roads"><code class="xref py py-obj docutils literal notranslate"><span class="pre">roads</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.lakes" title="rsqsim_api.visualisation.utilities.lakes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lakes</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.rivers" title="rsqsim_api.visualisation.utilities.rivers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rivers</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.regions" title="rsqsim_api.visualisation.utilities.regions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">regions</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.hk_boundary" title="rsqsim_api.visualisation.utilities.hk_boundary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hk_boundary</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.niwa" title="rsqsim_api.visualisation.utilities.niwa"><code class="xref py py-obj docutils literal notranslate"><span class="pre">niwa</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.min_x1" title="rsqsim_api.visualisation.utilities.min_x1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_x1</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.min_y1" title="rsqsim_api.visualisation.utilities.min_y1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_y1</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.max_x2" title="rsqsim_api.visualisation.utilities.max_x2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">max_x2</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.max_y2" title="rsqsim_api.visualisation.utilities.max_y2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">max_y2</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.min_x1_wgs" title="rsqsim_api.visualisation.utilities.min_x1_wgs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_x1_wgs</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.max_x2_wgs" title="rsqsim_api.visualisation.utilities.max_x2_wgs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">max_x2_wgs</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.min_y1_wgs" title="rsqsim_api.visualisation.utilities.min_y1_wgs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_y1_wgs</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.max_y2_wgs" title="rsqsim_api.visualisation.utilities.max_y2_wgs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">max_y2_wgs</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.clip_coast_with_trim" title="rsqsim_api.visualisation.utilities.clip_coast_with_trim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clip_coast_with_trim</span></code></a>(x1, y1, x2, y2[, wgs, coarse, fine])</p></td>
+<td><p>Clip the NZ coastline to a bounding box and trim polygon boundaries.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.clip_coast" title="rsqsim_api.visualisation.utilities.clip_coast"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clip_coast</span></code></a>(x1, y1, x2, y2[, wgs, coarse, fine])</p></td>
+<td><p>Clip the NZ coastline to a bounding box using coordinate indexing.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.plot_gis_lines" title="rsqsim_api.visualisation.utilities.plot_gis_lines"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_gis_lines</span></code></a>(gis_file, ax, color[, linewidth, ...])</p></td>
+<td><p>Plot line features from a GIS vector file onto a matplotlib axis.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.plot_gis_polygons" title="rsqsim_api.visualisation.utilities.plot_gis_polygons"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_gis_polygons</span></code></a>(gis_file, ax, edgecolor[, ...])</p></td>
+<td><p>Plot polygon features from a GIS vector file onto a matplotlib axis.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.plot_highway_lines" title="rsqsim_api.visualisation.utilities.plot_highway_lines"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_highway_lines</span></code></a>(ax[, color, linewidth, ...])</p></td>
+<td><p>Overlay NZ state highway lines on a matplotlib axis.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.plot_river_lines" title="rsqsim_api.visualisation.utilities.plot_river_lines"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_river_lines</span></code></a>(ax[, color, linewidth, clip_bounds, ...])</p></td>
+<td><p>Overlay NZ major river lines on a matplotlib axis.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.plot_boundary_polygons" title="rsqsim_api.visualisation.utilities.plot_boundary_polygons"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_boundary_polygons</span></code></a>(ax[, edgecolor, linewidth, ...])</p></td>
+<td><p>Overlay NZ regional boundary polygons on a matplotlib axis.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.plot_lake_polygons" title="rsqsim_api.visualisation.utilities.plot_lake_polygons"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_lake_polygons</span></code></a>(ax[, edgecolor, linewidth, ...])</p></td>
+<td><p>Overlay NZ lake polygons on a matplotlib axis.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.plot_hk_boundary" title="rsqsim_api.visualisation.utilities.plot_hk_boundary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_hk_boundary</span></code></a>(ax[, edgecolor, linewidth, ...])</p></td>
+<td><p>Overlay the Hikurangi subduction zone clipping-area polygon.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.plot_coast" title="rsqsim_api.visualisation.utilities.plot_coast"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_coast</span></code></a>(ax[, clip_boundary, edgecolor, facecolor, ...])</p></td>
+<td><p>Overlay the NZ coastline on a matplotlib axis.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.plot_hillshade" title="rsqsim_api.visualisation.utilities.plot_hillshade"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_hillshade</span></code></a>(ax[, alpha, vertical_exaggeration, ...])</p></td>
+<td><p>Overlay a hillshaded bathymetry/topography raster on a matplotlib axis.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.plot_hillshade_niwa" title="rsqsim_api.visualisation.utilities.plot_hillshade_niwa"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_hillshade_niwa</span></code></a>(ax[, alpha, ...])</p></td>
+<td><p>Overlay a hillshaded NIWA NZTM raster on a matplotlib axis.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.format_label_text_wgs" title="rsqsim_api.visualisation.utilities.format_label_text_wgs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">format_label_text_wgs</span></code></a>(ax[, xspacing, yspacing, y_only])</p></td>
+<td><p>Format axis tick labels as degree notation for WGS84 plots.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.visualisation.utilities.plot_background" title="rsqsim_api.visualisation.utilities.plot_background"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_background</span></code></a>([figsize, hillshading_intensity, ...])</p></td>
+<td><p>Compose a NZ map background figure with optional GIS overlays.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.coast_shp_fine_name">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">coast_shp_fine_name</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'data/coastline/nz-coastlines-and-islands-polygons-topo-150k.shp'</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#coast_shp_fine_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.coast_shp_fine_name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.coast_shp_coarse_name">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">coast_shp_coarse_name</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'data/coastline/nz-coastlines-and-islands-polygons-topo-1500k.shp'</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#coast_shp_coarse_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.coast_shp_coarse_name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.coast_nat_earth_name">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">coast_nat_earth_name</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'data/coastline/natural_earth_nztm.shp'</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#coast_nat_earth_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.coast_nat_earth_name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.coast_shp_fine">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">coast_shp_fine</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#coast_shp_fine"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.coast_shp_fine" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.coast_shp_coarse">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">coast_shp_coarse</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#coast_shp_coarse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.coast_shp_coarse" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.coast_nat_earth">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">coast_nat_earth</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#coast_nat_earth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.coast_nat_earth" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.roads">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">roads</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#roads"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.roads" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.lakes">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">lakes</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#lakes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.lakes" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.rivers">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">rivers</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#rivers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.rivers" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.regions">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">regions</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#regions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.regions" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.hk_boundary">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">hk_boundary</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#hk_boundary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.hk_boundary" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.niwa">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">niwa</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#niwa"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.niwa" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.min_x1">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">min_x1</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">800000</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#min_x1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.min_x1" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.min_y1">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">min_y1</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4000000</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#min_y1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.min_y1" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.max_x2">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">max_x2</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3200000</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#max_x2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.max_x2" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.max_y2">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">max_y2</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">7500000</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#max_y2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.max_y2" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.min_x1_wgs">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">min_x1_wgs</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">160.0</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#min_x1_wgs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.min_x1_wgs" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.max_x2_wgs">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">max_x2_wgs</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">185.0</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#max_x2_wgs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.max_x2_wgs" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.min_y1_wgs">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">min_y1_wgs</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">-51.0</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#min_y1_wgs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.min_y1_wgs" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.max_y2_wgs">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">max_y2_wgs</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">-33.0</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#max_y2_wgs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.max_y2_wgs" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.clip_coast_with_trim">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">clip_coast_with_trim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wgs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coarse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#clip_coast_with_trim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.clip_coast_with_trim" title="Link to this definition"></a></dt>
+<dd><p>Clip the NZ coastline to a bounding box and trim polygon boundaries.</p>
+<p>Uses <code class="docutils literal notranslate"><span class="pre">geopandas.clip</span></code> to trim coastline polygons to the bounding
+box, then returns the individual polygon geometries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x1</strong> (<em>int</em><em> or </em><em>float</em>) – Bottom-left easting (NZTM metres, or longitude if <code class="docutils literal notranslate"><span class="pre">wgs=True</span></code>).</p></li>
+<li><p><strong>y1</strong> (<em>int</em><em> or </em><em>float</em>) – Bottom-left northing (NZTM metres, or latitude if <code class="docutils literal notranslate"><span class="pre">wgs=True</span></code>).</p></li>
+<li><p><strong>x2</strong> (<em>int</em><em> or </em><em>float</em>) – Top-right easting.</p></li>
+<li><p><strong>y2</strong> (<em>int</em><em> or </em><em>float</em>) – Top-right northing.</p></li>
+<li><p><strong>wgs</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, interpret coordinates as WGS84 longitude/latitude.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>coarse</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, use the coarse Natural Earth coastline.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>fine</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, use the fine 150 k topo coastline.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Clipped coastline polygons in NZTM (EPSG:2193).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>geopandas.GeoSeries</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.clip_coast">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">clip_coast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wgs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coarse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#clip_coast"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.clip_coast" title="Link to this definition"></a></dt>
+<dd><p>Clip the NZ coastline to a bounding box using coordinate indexing.</p>
+<p>Uses the <code class="docutils literal notranslate"><span class="pre">cx</span></code> indexer rather than <code class="docutils literal notranslate"><span class="pre">geopandas.clip</span></code>, so polygons
+that overlap the boundary are kept whole rather than trimmed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x1</strong> (<em>int</em><em> or </em><em>float</em>) – Bottom-left easting (NZTM metres, or longitude if <code class="docutils literal notranslate"><span class="pre">wgs=True</span></code>).</p></li>
+<li><p><strong>y1</strong> (<em>int</em><em> or </em><em>float</em>) – Bottom-left northing (NZTM metres, or latitude if <code class="docutils literal notranslate"><span class="pre">wgs=True</span></code>).</p></li>
+<li><p><strong>x2</strong> (<em>int</em><em> or </em><em>float</em>) – Top-right easting.</p></li>
+<li><p><strong>y2</strong> (<em>int</em><em> or </em><em>float</em>) – Top-right northing.</p></li>
+<li><p><strong>wgs</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, interpret coordinates as WGS84 longitude/latitude.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>coarse</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, use the coarse Natural Earth coastline.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>fine</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, use the fine 150 k topo coastline.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Coastline polygons intersecting the bounding box, in NZTM.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>geopandas.GeoSeries</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.plot_gis_lines">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">plot_gis_lines</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gis_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linewidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linestyle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'-'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#plot_gis_lines"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.plot_gis_lines" title="Link to this definition"></a></dt>
+<dd><p>Plot line features from a GIS vector file onto a matplotlib axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gis_file</strong> (<em>str</em><em> or </em><em>pathlib.Path</em>) – Path to the GIS file (shapefile, GeoPackage, etc.).</p></li>
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – Axis to draw onto.</p></li>
+<li><p><strong>color</strong> (<em>str</em>) – Line colour.</p></li>
+<li><p><strong>linewidth</strong> (<em>int</em><em>, </em><em>optional</em>) – Line width in points.  Defaults to 0.3.</p></li>
+<li><p><strong>clip_bounds</strong> (<em>list</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max]</span></code> bounding box for clipping.
+If <code class="docutils literal notranslate"><span class="pre">None</span></code>, all features are plotted.</p></li>
+<li><p><strong>linestyle</strong> (<em>str</em><em>, </em><em>optional</em>) – Matplotlib line-style string.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;-&quot;</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.plot_gis_polygons">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">plot_gis_polygons</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gis_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edgecolor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linewidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linestyle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'-'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">facecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#plot_gis_polygons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.plot_gis_polygons" title="Link to this definition"></a></dt>
+<dd><p>Plot polygon features from a GIS vector file onto a matplotlib axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gis_file</strong> (<em>str</em><em> or </em><em>pathlib.Path</em>) – Path to the GIS file (shapefile, GeoPackage, etc.).</p></li>
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – Axis to draw onto.</p></li>
+<li><p><strong>edgecolor</strong> (<em>str</em>) – Polygon edge colour.</p></li>
+<li><p><strong>linewidth</strong> (<em>int</em><em>, </em><em>optional</em>) – Edge line width in points.  Defaults to 0.3.</p></li>
+<li><p><strong>clip_bounds</strong> (<em>list</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max]</span></code> bounding box for clipping.
+If <code class="docutils literal notranslate"><span class="pre">None</span></code>, all features are plotted.</p></li>
+<li><p><strong>linestyle</strong> (<em>str</em><em>, </em><em>optional</em>) – Matplotlib line-style string.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;-&quot;</span></code>.</p></li>
+<li><p><strong>facecolor</strong> (<em>str</em><em>, </em><em>optional</em>) – Polygon fill colour.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code> (transparent).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.plot_highway_lines">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">plot_highway_lines</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linewidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linestyle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'-'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#plot_highway_lines"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.plot_highway_lines" title="Link to this definition"></a></dt>
+<dd><p>Overlay NZ state highway lines on a matplotlib axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – Axis to draw onto.</p></li>
+<li><p><strong>color</strong> (<em>str</em><em>, </em><em>optional</em>) – Line colour.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;r&quot;</span></code>.</p></li>
+<li><p><strong>linewidth</strong> (<em>int</em><em>, </em><em>optional</em>) – Line width in points.  Defaults to 1.</p></li>
+<li><p><strong>clip_bounds</strong> (<em>list</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max]</span></code> clipping bounds.</p></li>
+<li><p><strong>linestyle</strong> (<em>str</em><em>, </em><em>optional</em>) – Matplotlib line-style string.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;-&quot;</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.plot_river_lines">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">plot_river_lines</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linewidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linestyle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'-'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#plot_river_lines"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.plot_river_lines" title="Link to this definition"></a></dt>
+<dd><p>Overlay NZ major river lines on a matplotlib axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – Axis to draw onto.</p></li>
+<li><p><strong>color</strong> (<em>str</em><em>, </em><em>optional</em>) – Line colour.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;b&quot;</span></code>.</p></li>
+<li><p><strong>linewidth</strong> (<em>int</em><em>, </em><em>optional</em>) – Line width in points.  Defaults to 0.3.</p></li>
+<li><p><strong>clip_bounds</strong> (<em>list</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max]</span></code> clipping bounds.</p></li>
+<li><p><strong>linestyle</strong> (<em>str</em><em>, </em><em>optional</em>) – Matplotlib line-style string.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;-&quot;</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.plot_boundary_polygons">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">plot_boundary_polygons</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edgecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'k'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linewidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linestyle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'--'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">facecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#plot_boundary_polygons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.plot_boundary_polygons" title="Link to this definition"></a></dt>
+<dd><p>Overlay NZ regional boundary polygons on a matplotlib axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – Axis to draw onto.</p></li>
+<li><p><strong>edgecolor</strong> (<em>str</em><em>, </em><em>optional</em>) – Edge colour.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;k&quot;</span></code>.</p></li>
+<li><p><strong>linewidth</strong> (<em>int</em><em>, </em><em>optional</em>) – Edge line width in points.  Defaults to 0.3.</p></li>
+<li><p><strong>clip_bounds</strong> (<em>list</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max]</span></code> clipping bounds.</p></li>
+<li><p><strong>linestyle</strong> (<em>str</em><em>, </em><em>optional</em>) – Matplotlib line-style string.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;--&quot;</span></code>.</p></li>
+<li><p><strong>facecolor</strong> (<em>str</em><em>, </em><em>optional</em>) – Fill colour.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code> (transparent).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.plot_lake_polygons">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">plot_lake_polygons</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edgecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linewidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linestyle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'-'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">facecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'b'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#plot_lake_polygons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.plot_lake_polygons" title="Link to this definition"></a></dt>
+<dd><p>Overlay NZ lake polygons on a matplotlib axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – Axis to draw onto.</p></li>
+<li><p><strong>edgecolor</strong> (<em>str</em><em>, </em><em>optional</em>) – Edge colour.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;b&quot;</span></code>.</p></li>
+<li><p><strong>linewidth</strong> (<em>int</em><em>, </em><em>optional</em>) – Edge line width in points.  Defaults to 0.3.</p></li>
+<li><p><strong>clip_bounds</strong> (<em>list</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max]</span></code> clipping bounds.</p></li>
+<li><p><strong>linestyle</strong> (<em>str</em><em>, </em><em>optional</em>) – Matplotlib line-style string.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;-&quot;</span></code>.</p></li>
+<li><p><strong>facecolor</strong> (<em>str</em><em>, </em><em>optional</em>) – Fill colour.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;b&quot;</span></code> (blue).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.plot_hk_boundary">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">plot_hk_boundary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edgecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linewidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linestyle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'-'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">facecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'0.8'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#plot_hk_boundary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.plot_hk_boundary" title="Link to this definition"></a></dt>
+<dd><p>Overlay the Hikurangi subduction zone clipping-area polygon.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – Axis to draw onto.</p></li>
+<li><p><strong>edgecolor</strong> (<em>str</em><em>, </em><em>optional</em>) – Edge colour.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;r&quot;</span></code>.</p></li>
+<li><p><strong>linewidth</strong> (<em>int</em><em>, </em><em>optional</em>) – Edge line width in points.  Defaults to 0.1.</p></li>
+<li><p><strong>clip_bounds</strong> (<em>list</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max]</span></code> clipping bounds.</p></li>
+<li><p><strong>linestyle</strong> (<em>str</em><em>, </em><em>optional</em>) – Matplotlib line-style string.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;-&quot;</span></code>.</p></li>
+<li><p><strong>facecolor</strong> (<em>str</em><em>, </em><em>optional</em>) – Fill colour.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;0.8&quot;</span></code> (light grey).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.plot_coast">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">plot_coast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edgecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'0.5'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">facecolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'none'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linewidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trim_polygons</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wgs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coarse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#plot_coast"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.plot_coast" title="Link to this definition"></a></dt>
+<dd><p>Overlay the NZ coastline on a matplotlib axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – Axis to draw onto.</p></li>
+<li><p><strong>clip_boundary</strong> (<em>list</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max]</span></code> clipping bounds.  Defaults to
+the full NZ extent.</p></li>
+<li><p><strong>edgecolor</strong> (<em>str</em><em>, </em><em>optional</em>) – Coastline edge colour.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;0.5&quot;</span></code> (mid-grey).</p></li>
+<li><p><strong>facecolor</strong> (<em>str</em><em>, </em><em>optional</em>) – Land fill colour.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code> (transparent).</p></li>
+<li><p><strong>linewidth</strong> (<em>int</em><em>, </em><em>optional</em>) – Edge line width.  Defaults to 0.3.</p></li>
+<li><p><strong>trim_polygons</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), use <a class="reference internal" href="#rsqsim_api.visualisation.utilities.clip_coast_with_trim" title="rsqsim_api.visualisation.utilities.clip_coast_with_trim"><code class="xref py py-func docutils literal notranslate"><span class="pre">clip_coast_with_trim()</span></code></a> to trim
+polygons to the bounding box; otherwise use <a class="reference internal" href="#rsqsim_api.visualisation.utilities.clip_coast" title="rsqsim_api.visualisation.utilities.clip_coast"><code class="xref py py-func docutils literal notranslate"><span class="pre">clip_coast()</span></code></a>.</p></li>
+<li><p><strong>wgs</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, use WGS84 (lon/lat) coordinates.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>coarse</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, use the coarse Natural Earth coastline.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>fine</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, use the fine 150 k topo coastline.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>x1, y1, x2, y2</strong> – The clipping bounds actually used.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.plot_hillshade">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">plot_hillshade</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vertical_exaggeration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-10000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#plot_hillshade"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.plot_hillshade" title="Link to this definition"></a></dt>
+<dd><p>Overlay a hillshaded bathymetry/topography raster on a matplotlib axis.</p>
+<p>Uses a combined 10 000-m resolution NIWA raster.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – Axis to draw onto.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em><em>, </em><em>optional</em>) – Transparency of the hillshade overlay (0–1).  Defaults to 0.3.</p></li>
+<li><p><strong>vertical_exaggeration</strong> (<em>float</em><em>, </em><em>optional</em>) – Vertical exaggeration for the light-source shading.
+Defaults to 0.01.</p></li>
+<li><p><strong>cmap</strong> (<em>LinearSegmentedColormap</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Colourmap for the hillshade.  Defaults to <code class="docutils literal notranslate"><span class="pre">plt.cm.gist_earth</span></code>.</p></li>
+<li><p><strong>vmin</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum value for the colour scale.  Defaults to -10 000.</p></li>
+<li><p><strong>vmax</strong> (<em>float</em><em>, </em><em>optional</em>) – Maximum value for the colour scale.  Defaults to 10 000.</p></li>
+<li><p><strong>clip_bounds</strong> (<em>list</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max]</span></code> bounds for clipping the raster.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.plot_hillshade_niwa">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">plot_hillshade_niwa</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vertical_exaggeration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-10000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#plot_hillshade_niwa"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.plot_hillshade_niwa" title="Link to this definition"></a></dt>
+<dd><p>Overlay a hillshaded NIWA NZTM raster on a matplotlib axis.</p>
+<p>Uses the high-resolution <code class="docutils literal notranslate"><span class="pre">niwa_nztm.tif</span></code> raster.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – Axis to draw onto.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em><em>, </em><em>optional</em>) – Transparency of the hillshade overlay (0–1).  Defaults to 0.3.</p></li>
+<li><p><strong>vertical_exaggeration</strong> (<em>float</em><em>, </em><em>optional</em>) – Vertical exaggeration for the light-source shading.
+Defaults to 0.01.</p></li>
+<li><p><strong>clip_bounds</strong> (<em>list</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max]</span></code> bounds for clipping the raster.</p></li>
+<li><p><strong>cmap</strong> (<em>LinearSegmentedColormap</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Colourmap for the hillshade.  Defaults to <code class="docutils literal notranslate"><span class="pre">plt.cm.terrain</span></code>.</p></li>
+<li><p><strong>vmin</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum value for the colour scale.  Defaults to -10 000.</p></li>
+<li><p><strong>vmax</strong> (<em>float</em><em>, </em><em>optional</em>) – Maximum value for the colour scale.  Defaults to 10 000.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.format_label_text_wgs">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">format_label_text_wgs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xspacing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yspacing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#format_label_text_wgs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.format_label_text_wgs" title="Link to this definition"></a></dt>
+<dd><p>Format axis tick labels as degree notation for WGS84 plots.</p>
+<p>Converts raw longitude/latitude tick values to degree strings,
+handling longitudes &gt; 180° by converting to negative (west) values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – Axis whose tick labels to format.</p></li>
+<li><p><strong>xspacing</strong> (<em>int</em><em>, </em><em>optional</em>) – Longitude tick spacing in degrees.  Defaults to 5.</p></li>
+<li><p><strong>yspacing</strong> (<em>int</em><em>, </em><em>optional</em>) – Latitude tick spacing in degrees.  Defaults to 5.</p></li>
+<li><p><strong>y_only</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, only format the y (latitude) axis.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.visualisation.utilities.plot_background">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.visualisation.utilities.</span></span><span class="sig-name descname"><span class="pre">plot_background</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(6.4,</span> <span class="pre">4.8)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hillshading_intensity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_rivers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_lakes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hillshade_fine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_highways</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_boundaries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subplots</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pickle_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hillshade_cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">cm.terrain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_edge_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_hk</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_fault_outlines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wgs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">land_color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'antiquewhite'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_sub_cbar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_slip_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_crust_cbar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crust_slip_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subduction_cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">cm.plasma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crust_cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">cm.viridis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slider_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aotearoa</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/visualisation/utilities.html#plot_background"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.visualisation.utilities.plot_background" title="Link to this definition"></a></dt>
+<dd><p>Compose a NZ map background figure with optional GIS overlays.</p>
+<p>Creates a <code class="docutils literal notranslate"><span class="pre">subplot_mosaic</span></code> figure with a main map panel and
+optional colourbar and slider axes.  Overlays the coastline,
+optional hillshade, lakes, rivers, highways, regional boundaries,
+and/or the Hikurangi clipping area.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>figsize</strong> (<em>tuple</em><em>, </em><em>optional</em>) – Figure size <code class="docutils literal notranslate"><span class="pre">(width,</span> <span class="pre">height)</span></code> in inches.  Defaults to
+<code class="docutils literal notranslate"><span class="pre">(6.4,</span> <span class="pre">4.8)</span></code>.</p></li>
+<li><p><strong>hillshading_intensity</strong> (<em>float</em><em>, </em><em>optional</em>) – Hillshade alpha (0–1).  If 0 (default), no hillshade is drawn.</p></li>
+<li><p><strong>bounds</strong> (<em>tuple</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">(x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max)</span></code> map bounds.</p></li>
+<li><p><strong>plot_rivers</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), overlay river lines.</p></li>
+<li><p><strong>plot_lakes</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), overlay lake polygons.</p></li>
+<li><p><strong>hillshade_fine</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, use the high-resolution NIWA hillshade raster.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>plot_highways</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), overlay state highway lines.</p></li>
+<li><p><strong>plot_boundaries</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, overlay regional boundary polygons.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>subplots</strong> (<em>tuple</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">(fig,</span> <span class="pre">ax)</span></code> to draw onto.  A new figure is created if
+<code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>pickle_name</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – If provided, pickle the <code class="docutils literal notranslate"><span class="pre">(fig,</span> <span class="pre">ax)</span></code> tuple to this path.</p></li>
+<li><p><strong>hillshade_cmap</strong> (<em>LinearSegmentedColormap</em><em>, </em><em>optional</em>) – Colourmap for the hillshade.  Defaults to <code class="docutils literal notranslate"><span class="pre">cm.terrain</span></code>.</p></li>
+<li><p><strong>plot_edge_label</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), show axis tick labels.</p></li>
+<li><p><strong>plot_hk</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, overlay the Hikurangi clipping-area polygon.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>plot_fault_outlines</strong> (<em>bool</em><em>, </em><em>optional</em>) – Reserved for future use.  Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>wgs</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, use WGS84 coordinates.  Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>land_color</strong> (<em>str</em><em>, </em><em>optional</em>) – Land fill colour.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;antiquewhite&quot;</span></code>.</p></li>
+<li><p><strong>plot_sub_cbar</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, add a subduction slip colourbar panel.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>sub_slip_max</strong> (<em>float</em><em>, </em><em>optional</em>) – Maximum subduction slip (m) for the colourbar.
+Defaults to 20.</p></li>
+<li><p><strong>plot_crust_cbar</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, add a crustal slip colourbar panel.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>crust_slip_max</strong> (<em>float</em><em>, </em><em>optional</em>) – Maximum crustal slip (m) for the colourbar.  Defaults to 10.</p></li>
+<li><p><strong>subduction_cmap</strong> (<em>LinearSegmentedColormap</em><em>, </em><em>optional</em>) – Colourmap for the subduction colourbar.  Defaults to
+<code class="docutils literal notranslate"><span class="pre">cm.plasma</span></code>.</p></li>
+<li><p><strong>crust_cmap</strong> (<em>LinearSegmentedColormap</em><em>, </em><em>optional</em>) – Colourmap for the crustal colourbar.  Defaults to
+<code class="docutils literal notranslate"><span class="pre">cm.viridis</span></code>.</p></li>
+<li><p><strong>slider_axis</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, add a slider and year-label axes row.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>aotearoa</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), draw the NZ coastline and GIS overlays.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>fig</strong> (<em>matplotlib.figure.Figure</em>) – The composed figure.</p></li>
+<li><p><strong>ax</strong> (<em>dict or matplotlib.axes.Axes</em>) – Axis dict (from <code class="docutils literal notranslate"><span class="pre">subplot_mosaic</span></code>) or the provided <code class="docutils literal notranslate"><span class="pre">ax</span></code>.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../animation/index.html" class="btn btn-neutral float-left" title="rsqsim_api.visualisation.animation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../visualisation_3d/index.html" class="btn btn-neutral float-right" title="rsqsim_api.visualisation.visualisation_3d" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

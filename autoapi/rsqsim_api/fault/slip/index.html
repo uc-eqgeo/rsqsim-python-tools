@@ -1,0 +1,425 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.fault.slip &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="rsqsim_api.fault.splines" href="../splines/index.html" />
+    <link rel="prev" title="rsqsim_api.fault.segment" href="../segment/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">rsqsim_api</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../../catalogue/index.html">rsqsim_api.catalogue</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../index.html">rsqsim_api.fault</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../io/index.html">rsqsim_api.io</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../tsunami/index.html">rsqsim_api.tsunami</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../visualisation/index.html">rsqsim_api.visualisation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_fault/index.html">test_fault</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_catalogue/index.html">test_catalogue</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">rsqsim_api</a></li>
+          <li class="breadcrumb-item"><a href="../index.html">rsqsim_api.fault</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.fault.slip</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/fault/slip/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.fault.slip">
+<span id="rsqsim-api-fault-slip"></span><h1>rsqsim_api.fault.slip<a class="headerlink" href="#module-rsqsim_api.fault.slip" title="Link to this heading"></a></h1>
+<p>Hikurangi subduction zone slip-rate and coupling utilities.</p>
+<p>Provides helper functions for computing along-trench distances,
+coupling coefficients, and convergence rates for the Hikurangi margin,
+as well as a general best-fit-plane routine.</p>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.transformer" title="rsqsim_api.fault.slip.transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transformer</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.trans_inv" title="rsqsim_api.fault.slip.trans_inv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trans_inv</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.east_cape" title="rsqsim_api.fault.slip.east_cape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">east_cape</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.start_0_2" title="rsqsim_api.fault.slip.start_0_2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">start_0_2</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.end_0_2" title="rsqsim_api.fault.slip.end_0_2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">end_0_2</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.start_0_5" title="rsqsim_api.fault.slip.start_0_5"><code class="xref py py-obj docutils literal notranslate"><span class="pre">start_0_5</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.convergence_start" title="rsqsim_api.fault.slip.convergence_start"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convergence_start</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.convergence_end" title="rsqsim_api.fault.slip.convergence_end"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convergence_end</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.east_cape_dist" title="rsqsim_api.fault.slip.east_cape_dist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">east_cape_dist</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.start_0_2_dist" title="rsqsim_api.fault.slip.start_0_2_dist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">start_0_2_dist</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.end_0_2_dist" title="rsqsim_api.fault.slip.end_0_2_dist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">end_0_2_dist</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.start_0_5_dist" title="rsqsim_api.fault.slip.start_0_5_dist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">start_0_5_dist</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.convergence_start_dist" title="rsqsim_api.fault.slip.convergence_start_dist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convergence_start_dist</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.convergence_end_dist" title="rsqsim_api.fault.slip.convergence_end_dist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convergence_end_dist</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.fit_plane_to_points" title="rsqsim_api.fault.slip.fit_plane_to_points"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_plane_to_points</span></code></a>(points[, eps])</p></td>
+<td><p>Fit a best-fit plane to a set of 3-D points using SVD.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.point_dist" title="rsqsim_api.fault.slip.point_dist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">point_dist</span></code></a>(point, along_overall)</p></td>
+<td><p>Project a WGS84 point onto an NZTM direction vector.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.point_dist_nztm" title="rsqsim_api.fault.slip.point_dist_nztm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">point_dist_nztm</span></code></a>(point, along_overall)</p></td>
+<td><p>Project an NZTM point onto a direction vector.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.coupling" title="rsqsim_api.fault.slip.coupling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coupling</span></code></a>(dist)</p></td>
+<td><p>Return the Hikurangi plate-interface coupling coefficient at a given along-trench distance.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.convergence" title="rsqsim_api.fault.slip.convergence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convergence</span></code></a>(dist)</p></td>
+<td><p>Return the Hikurangi convergence rate at a given along-trench distance.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.convergence_dist" title="rsqsim_api.fault.slip.convergence_dist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convergence_dist</span></code></a>(dist)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.slip.kermadec_slip_rate" title="rsqsim_api.fault.slip.kermadec_slip_rate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kermadec_slip_rate</span></code></a>(dist[, modelled_value])</p></td>
+<td><p>Compute the Kermadec subduction zone slip rate at a given along-trench distance.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.transformer">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">transformer</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#transformer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.transformer" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.trans_inv">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">trans_inv</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#trans_inv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.trans_inv" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.fit_plane_to_points">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">fit_plane_to_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#fit_plane_to_points"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.fit_plane_to_points" title="Link to this definition"></a></dt>
+<dd><p>Fit a best-fit plane to a set of 3-D points using SVD.</p>
+<p>The plane is constrained to pass through the centroid of the
+point cloud.  The normal is extracted from the last column of the
+left singular matrix of the de-meaned covariance and is oriented
+so that its z-component is positive.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> (<em>numpy.ndarray</em><em> of </em><em>shape</em><em> (</em><a class="reference internal" href="../segment/index.html#rsqsim_api.fault.segment.DisplacementArray.n" title="rsqsim_api.fault.segment.DisplacementArray.n"><em>n</em></a><em>, </em><em>3</em><em>)</em>) – Array of 3-D point coordinates.</p></li>
+<li><p><strong>eps</strong> (<em>float</em><em>, </em><em>optional</em>) – Threshold below which normal-vector components are set to
+exactly zero.  Defaults to 1e-5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>plane_normal</strong> (<em>numpy.ndarray of shape (3,)</em>) – Unit normal vector to the best-fit plane (A, B, C).</p></li>
+<li><p><strong>plane_origin</strong> (<em>numpy.ndarray of shape (3,)</em>) – Centroid of the input points, lying on the fitted plane.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.east_cape">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">east_cape</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#east_cape"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.east_cape" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.start_0_2">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">start_0_2</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#start_0_2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.start_0_2" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.end_0_2">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">end_0_2</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#end_0_2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.end_0_2" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.start_0_5">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">start_0_5</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#start_0_5"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.start_0_5" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.convergence_start">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">convergence_start</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#convergence_start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.convergence_start" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.convergence_end">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">convergence_end</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#convergence_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.convergence_end" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.point_dist">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">point_dist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">along_overall</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#point_dist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.point_dist" title="Link to this definition"></a></dt>
+<dd><p>Project a WGS84 point onto an NZTM direction vector.</p>
+<p>Transforms the point to NZTM (EPSG:2193) and computes its dot
+product with the supplied unit direction vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>point</strong> (<em>shapely.geometry.Point</em>) – Point in WGS84 (longitude, latitude) coordinates.</p></li>
+<li><p><strong>along_overall</strong> (<em>numpy.ndarray</em><em> of </em><em>shape</em><em> (</em><em>2</em><em>,</em><em>)</em>) – 2-D unit direction vector in NZTM coordinates.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Scalar projection of the transformed point onto
+<code class="docutils literal notranslate"><span class="pre">along_overall</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.point_dist_nztm">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">point_dist_nztm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">along_overall</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#point_dist_nztm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.point_dist_nztm" title="Link to this definition"></a></dt>
+<dd><p>Project an NZTM point onto a direction vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>point</strong> (<em>shapely.geometry.Point</em>) – Point already in NZTM (EPSG:2193) coordinates.</p></li>
+<li><p><strong>along_overall</strong> (<em>numpy.ndarray</em><em> of </em><em>shape</em><em> (</em><em>2</em><em>,</em><em>)</em>) – 2-D unit direction vector.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Scalar projection of the point onto <code class="docutils literal notranslate"><span class="pre">along_overall</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.east_cape_dist">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">east_cape_dist</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#east_cape_dist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.east_cape_dist" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.start_0_2_dist">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">start_0_2_dist</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#start_0_2_dist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.start_0_2_dist" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.end_0_2_dist">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">end_0_2_dist</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#end_0_2_dist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.end_0_2_dist" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.start_0_5_dist">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">start_0_5_dist</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#start_0_5_dist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.start_0_5_dist" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.convergence_start_dist">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">convergence_start_dist</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#convergence_start_dist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.convergence_start_dist" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.convergence_end_dist">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">convergence_end_dist</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#convergence_end_dist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.convergence_end_dist" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.coupling">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">coupling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dist</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#coupling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.coupling" title="Link to this definition"></a></dt>
+<dd><p>Return the Hikurangi plate-interface coupling coefficient at a given along-trench distance.</p>
+<p>Implements a piecewise model: 0.2 south of <code class="docutils literal notranslate"><span class="pre">start_0_2</span></code>, 0.5
+north of <code class="docutils literal notranslate"><span class="pre">start_0_5</span></code>, and a linear gradient in between.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dist</strong> (<em>float</em>) – Along-trench distance (m in NZTM projection) from east cape.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Coupling coefficient (dimensionless, 0–1).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <code class="docutils literal notranslate"><span class="pre">dist</span></code> is south of east cape (i.e. less than
+<code class="docutils literal notranslate"><span class="pre">east_cape_dist</span></code>).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.convergence">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">convergence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dist</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#convergence"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.convergence" title="Link to this definition"></a></dt>
+<dd><p>Return the Hikurangi convergence rate at a given along-trench distance.</p>
+<p>Linear interpolation between 49 mm/yr at the southern end
+(<code class="docutils literal notranslate"><span class="pre">convergence_start</span></code>) and 85 mm/yr at the northern end
+(<code class="docutils literal notranslate"><span class="pre">convergence_end</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dist</strong> (<em>float</em>) – Along-trench distance (m in NZTM projection).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Convergence rate in mm/yr.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.convergence_dist">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">convergence_dist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dist</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#convergence_dist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.convergence_dist" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.slip.kermadec_slip_rate">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.slip.</span></span><span class="sig-name descname"><span class="pre">kermadec_slip_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dist</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modelled_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/slip.html#kermadec_slip_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.slip.kermadec_slip_rate" title="Link to this definition"></a></dt>
+<dd><p>Compute the Kermadec subduction zone slip rate at a given along-trench distance.</p>
+<p>Blends the modelled slip rate with the convergence-rate-based
+estimate using a linear fractional interpolation from east cape to
+the 0.2-coupling start point.  If <code class="docutils literal notranslate"><span class="pre">modelled_value</span></code> is zero,
+returns the pure convergence × coupling estimate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dist</strong> (<em>float</em>) – Along-trench distance (m in NZTM projection).</p></li>
+<li><p><strong>modelled_value</strong> (<em>float</em><em>, </em><em>optional</em>) – Modelled slip rate (mm/yr) from the fault model.  If 0
+(default), only coupling × convergence is used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Slip rate in mm/yr.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../segment/index.html" class="btn btn-neutral float-left" title="rsqsim_api.fault.segment" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../splines/index.html" class="btn btn-neutral float-right" title="rsqsim_api.fault.splines" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

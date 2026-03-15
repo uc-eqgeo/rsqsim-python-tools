@@ -1,0 +1,42 @@
+rsqsim_api.io.compressed_pickle
+===============================
+
+.. py:module:: rsqsim_api.io.compressed_pickle
+
+.. autoapi-nested-parse::
+
+   Utilities for saving and loading Python objects as bz2-compressed pickles.
+
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   rsqsim_api.io.compressed_pickle.compressed_pickle
+   rsqsim_api.io.compressed_pickle.decompress_pickle
+
+
+Module Contents
+---------------
+
+.. py:function:: compressed_pickle(title, data)
+
+   Serialise and compress a Python object to a bz2 pickle file.
+
+   :param title: Output file path without extension. The suffix ``.pbz2`` is
+                 appended automatically.
+   :param data: Any picklable Python object to serialise.
+
+
+.. py:function:: decompress_pickle(file)
+
+   Load and decompress a Python object from a bz2 pickle file.
+
+   :param file: Path to the ``.pbz2`` file to read.
+
+   :returns: The deserialised Python object stored in the file.
+   :rtype: object
+
+

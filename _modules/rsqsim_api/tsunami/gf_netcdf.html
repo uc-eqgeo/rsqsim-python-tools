@@ -1,0 +1,292 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.tsunami.gf_netcdf &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.tsunami.gf_netcdf</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for rsqsim_api.tsunami.gf_netcdf</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Utilities for reading and computing Green&#39;s-function sea-surface displacement (SSD) from netCDF files.</span>
+
+<span class="sd">Provides :class:`LookupPatch` for indexing individual patch Green&#39;s</span>
+<span class="sd">functions within multi-file netCDF datasets, and functions for</span>
+<span class="sd">computing and saving per-event SSD grids using superposition of patch</span>
+<span class="sd">responses.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">netCDF4</span>
+<span class="kn">from</span> <span class="nn">glob</span> <span class="kn">import</span> <span class="n">glob</span>
+<span class="kn">from</span> <span class="nn">concurrent.futures</span> <span class="kn">import</span> <span class="n">ThreadPoolExecutor</span>
+
+
+<div class="viewcode-block" id="LookupPatch">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/tsunami/gf_netcdf/index.html#rsqsim_api.tsunami.gf_netcdf.LookupPatch">[docs]</a>
+<span class="k">class</span> <span class="nc">LookupPatch</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Index entry mapping a fault patch to its location within a netCDF Green&#39;s-function dataset.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    patch_index : int</span>
+<span class="sd">        Global patch identifier.</span>
+<span class="sd">    dset : netCDF4.Dataset</span>
+<span class="sd">        Open netCDF4 dataset containing the Green&#39;s-function data for</span>
+<span class="sd">        this patch.</span>
+<span class="sd">    dset_index : int</span>
+<span class="sd">        Local index of this patch within ``dset``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">patch_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dset</span><span class="p">:</span> <span class="n">netCDF4</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">dset_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        patch_index : int</span>
+<span class="sd">            Global patch identifier.</span>
+<span class="sd">        dset : netCDF4.Dataset</span>
+<span class="sd">            Open netCDF4 dataset.</span>
+<span class="sd">        dset_index : int</span>
+<span class="sd">            Local index of the patch within ``dset``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="LookupPatch.patch_index">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/tsunami/gf_netcdf/index.html#rsqsim_api.tsunami.gf_netcdf.LookupPatch.patch_index">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patch_index</span> <span class="o">=</span> <span class="n">patch_index</span></div>
+
+<div class="viewcode-block" id="LookupPatch.dset">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/tsunami/gf_netcdf/index.html#rsqsim_api.tsunami.gf_netcdf.LookupPatch.dset">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dset</span> <span class="o">=</span> <span class="n">dset</span></div>
+
+<div class="viewcode-block" id="LookupPatch.dset_index">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/tsunami/gf_netcdf/index.html#rsqsim_api.tsunami.gf_netcdf.LookupPatch.dset_index">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dset_index</span> <span class="o">=</span> <span class="n">dset_index</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="create_lookup_dict">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/tsunami/gf_netcdf/index.html#rsqsim_api.tsunami.gf_netcdf.create_lookup_dict">[docs]</a>
+<span class="k">def</span> <span class="nf">create_lookup_dict</span><span class="p">(</span><span class="n">search_string</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build a patch-lookup dictionary from a set of netCDF Green&#39;s-function files.</span>
+
+<span class="sd">    Opens all files matching ``search_string`` and constructs a</span>
+<span class="sd">    mapping from global patch index to :class:`LookupPatch` objects.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    search_string : str</span>
+<span class="sd">        Glob pattern for the netCDF files, e.g.</span>
+<span class="sd">        ``&quot;/path/to/gf_files/*.nc&quot;``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        Mapping of patch index (int) to :class:`LookupPatch`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">lookup_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">nc_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="n">search_string</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+        <span class="n">nc_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">netCDF4</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">dset</span> <span class="ow">in</span> <span class="n">nc_list</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">local_i</span><span class="p">,</span> <span class="n">patch_i</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dset</span><span class="p">[</span><span class="s2">&quot;index&quot;</span><span class="p">][:]):</span>
+            <span class="n">lookup_dict</span><span class="p">[</span><span class="n">patch_i</span><span class="p">]</span> <span class="o">=</span> <span class="n">LookupPatch</span><span class="p">(</span><span class="n">patch_i</span><span class="p">,</span> <span class="n">dset</span><span class="p">,</span> <span class="n">local_i</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">lookup_dict</span></div>
+
+
+
+<div class="viewcode-block" id="sea_surface_displacements">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/tsunami/gf_netcdf/index.html#rsqsim_api.tsunami.gf_netcdf.sea_surface_displacements">[docs]</a>
+<span class="k">def</span> <span class="nf">sea_surface_displacements</span><span class="p">(</span><span class="n">input_tuple</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the sea-surface displacement grid for a single event.</span>
+
+<span class="sd">    Superposes the per-patch Green&#39;s functions scaled by the</span>
+<span class="sd">    event&#39;s patch slip values.  Returns NaN-filled arrays for events</span>
+<span class="sd">    whose patches are not all present in the lookup dictionary.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    input_tuple : tuple</span>
+<span class="sd">        ``(event, lookup)`` where ``event`` is an</span>
+<span class="sd">        :class:`~rsqsim_api.catalogue.event.RsqSimEvent` and</span>
+<span class="sd">        ``lookup`` is a dict mapping patch index to</span>
+<span class="sd">        :class:`LookupPatch`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    event_id : int</span>
+<span class="sd">        The event identifier.</span>
+<span class="sd">    disp : numpy.ndarray</span>
+<span class="sd">        Sea-surface displacement grid (shape matches the Green&#39;s</span>
+<span class="sd">        function grid).  Filled with ``NaN`` if any patch is missing</span>
+<span class="sd">        from the lookup.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">event</span><span class="p">,</span> <span class="n">lookup</span> <span class="o">=</span> <span class="n">input_tuple</span>
+    <span class="n">event_id</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">event_id</span>
+    <span class="n">disp_shape</span> <span class="o">=</span> <span class="n">lookup</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dset</span><span class="p">[</span><span class="s2">&quot;ssd&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">disp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">disp_shape</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">slip</span><span class="p">,</span> <span class="n">patch</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">patch_slip</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">patches</span><span class="p">):</span>
+            <span class="n">patch_gf</span> <span class="o">=</span> <span class="n">lookup</span><span class="p">[</span><span class="n">patch</span><span class="o">.</span><span class="n">patch_number</span><span class="p">]</span>
+            <span class="n">disp</span> <span class="o">+=</span> <span class="n">slip</span> <span class="o">*</span> <span class="n">patch_gf</span><span class="o">.</span><span class="n">dset</span><span class="p">[</span><span class="s2">&quot;ssd&quot;</span><span class="p">][</span><span class="n">patch_gf</span><span class="o">.</span><span class="n">dset_index</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">disp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">disp_shape</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="k">return</span> <span class="n">event_id</span><span class="p">,</span> <span class="n">disp</span></div>
+
+
+
+<div class="viewcode-block" id="sea_surface_displacements_multi">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/tsunami/gf_netcdf/index.html#rsqsim_api.tsunami.gf_netcdf.sea_surface_displacements_multi">[docs]</a>
+<span class="k">def</span> <span class="nf">sea_surface_displacements_multi</span><span class="p">(</span><span class="n">event_ls</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">lookup</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">out_netcdf</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">num_processes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute and save sea-surface displacements for multiple events to a netCDF file.</span>
+
+<span class="sd">    Uses a :class:`~concurrent.futures.ThreadPoolExecutor` to compute</span>
+<span class="sd">    displacements in parallel, then writes the results to a new netCDF</span>
+<span class="sd">    file with dimensions ``(event_id, y, x)``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    event_ls : list</span>
+<span class="sd">        List of :class:`~rsqsim_api.catalogue.event.RsqSimEvent`</span>
+<span class="sd">        objects.</span>
+<span class="sd">    lookup : dict</span>
+<span class="sd">        Patch-lookup dictionary from :func:`create_lookup_dict`.</span>
+<span class="sd">    out_netcdf : str</span>
+<span class="sd">        Output netCDF file path.</span>
+<span class="sd">    num_processes : int or None, optional</span>
+<span class="sd">        Maximum number of worker threads.  Defaults to ``None``</span>
+<span class="sd">        (determined by :class:`~concurrent.futures.ThreadPoolExecutor`</span>
+<span class="sd">        default).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">num_processes</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">sea_surface_displacements</span><span class="p">,</span> <span class="p">[(</span><span class="n">event</span><span class="p">,</span> <span class="n">lookup</span><span class="p">)</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">event_ls</span><span class="p">])</span>
+    <span class="n">template_dset</span> <span class="o">=</span> <span class="n">lookup</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dset</span>
+    <span class="n">x_data</span> <span class="o">=</span> <span class="n">template_dset</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">][:]</span>
+    <span class="n">y_data</span> <span class="o">=</span> <span class="n">template_dset</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">][:]</span>
+
+    <span class="n">event_id_ls</span> <span class="o">=</span> <span class="p">[</span><span class="n">event</span><span class="o">.</span><span class="n">event_id</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">event_ls</span><span class="p">]</span>
+
+    <span class="n">out_dset</span> <span class="o">=</span> <span class="n">netCDF4</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">out_netcdf</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+    <span class="n">out_dset</span><span class="o">.</span><span class="n">set_always_mask</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">dim_len</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="s2">&quot;event_id&quot;</span><span class="p">],</span> <span class="p">[</span><span class="n">x_data</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">y_data</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_ls</span><span class="p">)]):</span>
+        <span class="n">out_dset</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">dim_len</span><span class="p">)</span>
+    <span class="n">out_dset</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,))</span>
+    <span class="n">out_dset</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">,))</span>
+    <span class="n">out_dset</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">x_data</span>
+    <span class="n">out_dset</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">y_data</span>
+    <span class="n">out_dset</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s2">&quot;event_id&quot;</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;event_id&quot;</span><span class="p">,))</span>
+    <span class="n">out_dset</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s2">&quot;ssd&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;event_id&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">),</span> <span class="n">zlib</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">result_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+    <span class="n">result_id_ls</span> <span class="o">=</span> <span class="p">[</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">result_list</span><span class="p">]</span>
+
+    <span class="n">num_events</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_id_ls</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">event_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">event_id_ls</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">num_events</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">event_index</span> <span class="o">=</span> <span class="n">result_id_ls</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">event_id</span><span class="p">)</span>
+        <span class="n">event_disp</span> <span class="o">=</span> <span class="n">result_list</span><span class="p">[</span><span class="n">event_index</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">out_dset</span><span class="p">[</span><span class="s2">&quot;event_id&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">event_id</span>
+        <span class="n">out_dset</span><span class="p">[</span><span class="s2">&quot;ssd&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">event_disp</span>
+
+    <span class="n">out_dset</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

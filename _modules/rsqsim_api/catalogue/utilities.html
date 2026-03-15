@@ -1,0 +1,418 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.catalogue.utilities &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.catalogue.utilities</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for rsqsim_api.catalogue.utilities</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Utility functions for RSQSim catalogue statistics and seismological calculations.</span>
+
+<span class="sd">Provides magnitude–moment conversions, b-value estimation, stress drop</span>
+<span class="sd">and scaling-parameter calculations, and helper functions for computing</span>
+<span class="sd">weighted circular statistics.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">numba</span> <span class="kn">import</span> <span class="n">njit</span><span class="p">,</span> <span class="n">int32</span>
+
+<div class="viewcode-block" id="calculate_b_value_kijko_smit">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/catalogue/utilities/index.html#rsqsim_api.catalogue.utilities.calculate_b_value_kijko_smit">[docs]</a>
+<span class="k">def</span> <span class="nf">calculate_b_value_kijko_smit</span><span class="p">(</span><span class="n">magnitudes</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">min_mw</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">max_mw</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate the Gutenberg-Richter b-value using the Kijko and Smit (2012) method.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    magnitudes : numpy.ndarray</span>
+<span class="sd">        Array of moment magnitudes.</span>
+<span class="sd">    min_mw : float, optional</span>
+<span class="sd">        Lower magnitude cutoff.  Events below this are excluded.</span>
+<span class="sd">        Defaults to 0.0.</span>
+<span class="sd">    max_mw : float, optional</span>
+<span class="sd">        Upper magnitude cutoff.  Events above this are excluded.</span>
+<span class="sd">        Defaults to 10.0.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Estimated b-value (log₁₀ base).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">magnitudes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">magnitudes</span><span class="p">)</span>
+    <span class="n">trimmed_magnitudes</span> <span class="o">=</span> <span class="n">magnitudes</span><span class="p">[(</span><span class="n">magnitudes</span> <span class="o">&gt;=</span> <span class="n">min_mw</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">magnitudes</span> <span class="o">&lt;=</span> <span class="n">max_mw</span><span class="p">)]</span>
+    <span class="n">mw</span> <span class="o">=</span> <span class="n">trimmed_magnitudes</span>
+    <span class="n">mu1</span> <span class="o">=</span> <span class="n">mw</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">mu2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">mw</span> <span class="o">-</span> <span class="n">mu1</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">mw</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">mu3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">mw</span> <span class="o">-</span> <span class="n">mu1</span><span class="p">)</span> <span class="o">**</span> <span class="mi">3</span><span class="p">)</span> <span class="o">/</span> <span class="n">mw</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">mu2</span> <span class="o">/</span> <span class="n">mu3</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">b</span></div>
+
+
+<div class="viewcode-block" id="calculate_scaling_c">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/catalogue/utilities/index.html#rsqsim_api.catalogue.utilities.calculate_scaling_c">[docs]</a>
+<span class="k">def</span> <span class="nf">calculate_scaling_c</span><span class="p">(</span><span class="n">magnitudes</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">areas</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the Gutenberg-Richter scaling parameter c.</span>
+
+<span class="sd">    The parameter ``c`` is defined as ``Mw - log10(area) + 6``, where</span>
+<span class="sd">    ``area`` is in m².</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    magnitudes : numpy.ndarray</span>
+<span class="sd">        Array of moment magnitudes.</span>
+<span class="sd">    areas : numpy.ndarray</span>
+<span class="sd">        Array of rupture areas in m².</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        Scaling parameter c for each event.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">magnitudes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">magnitudes</span><span class="p">)</span>
+    <span class="n">areas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">areas</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">magnitudes</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">areas</span><span class="p">)</span> <span class="o">+</span> <span class="mf">6.</span></div>
+
+
+<div class="viewcode-block" id="calculate_stress_drop">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/catalogue/utilities/index.html#rsqsim_api.catalogue.utilities.calculate_stress_drop">[docs]</a>
+<span class="k">def</span> <span class="nf">calculate_stress_drop</span><span class="p">(</span><span class="n">seismic_moments</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">areas</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">stress_c</span><span class="o">=</span><span class="mf">2.44</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate stress drop from seismic moments and rupture areas.</span>
+
+<span class="sd">    Uses the relation ``Δσ = C * M0 / A^1.5``.  Typical values of ``C``</span>
+<span class="sd">    are 2.44 for a circular crack, and 2.53, 3.02, 5.21 for rectangular</span>
+<span class="sd">    cracks with aspect ratios of 1, 4, and 16, respectively.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    seismic_moments : numpy.ndarray</span>
+<span class="sd">        Scalar seismic moments in N·m.</span>
+<span class="sd">    areas : numpy.ndarray</span>
+<span class="sd">        Rupture areas in m².</span>
+<span class="sd">    stress_c : float, optional</span>
+<span class="sd">        Shape constant.  Defaults to 2.44 (circular crack).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        Stress drop in Pa for each event.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">seismic_moments</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">seismic_moments</span><span class="p">)</span>
+    <span class="n">areas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">areas</span><span class="p">)</span>
+    <span class="k">return</span>  <span class="n">stress_c</span> <span class="o">*</span> <span class="p">(</span><span class="n">seismic_moments</span> <span class="o">/</span> <span class="n">areas</span><span class="o">**</span><span class="mf">1.5</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="summary_statistics">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/catalogue/utilities/index.html#rsqsim_api.catalogue.utilities.summary_statistics">[docs]</a>
+<span class="k">def</span> <span class="nf">summary_statistics</span><span class="p">(</span><span class="n">dataframe</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">stress_c</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.44</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute summary statistics for a catalogue DataFrame.</span>
+
+<span class="sd">    Calculates the 5th, 50th, and 95th percentiles of the scaling</span>
+<span class="sd">    parameter c and the stress drop, together with the maximum magnitude.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dataframe : pandas.DataFrame</span>
+<span class="sd">        Catalogue DataFrame with columns ``&quot;mw&quot;``, ``&quot;area&quot;``</span>
+<span class="sd">        (m²), and ``&quot;m0&quot;`` (N·m).</span>
+<span class="sd">    stress_c : float, optional</span>
+<span class="sd">        Shape constant passed to :func:`calculate_stress_drop`.</span>
+<span class="sd">        Defaults to 2.44.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.Series</span>
+<span class="sd">        Series with index</span>
+<span class="sd">        ``[&quot;Max Mw, 5th C, 50th C, 95th C, 5th SD, 50th SD, 95th SD&quot;]``</span>
+<span class="sd">        where ``C`` is the scaling parameter and ``SD`` is the stress</span>
+<span class="sd">        drop in MPa.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">magnitudes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;mw&quot;</span><span class="p">])</span>
+    <span class="n">areas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;area&quot;</span><span class="p">])</span>
+    <span class="n">seismic_moments</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;m0&quot;</span><span class="p">])</span>
+    <span class="n">c_value</span> <span class="o">=</span> <span class="n">calculate_scaling_c</span><span class="p">(</span><span class="n">magnitudes</span><span class="p">,</span> <span class="n">areas</span><span class="p">)</span>
+    <span class="n">stress_drop</span> <span class="o">=</span> <span class="n">calculate_stress_drop</span><span class="p">(</span><span class="n">seismic_moments</span><span class="p">,</span> <span class="n">areas</span><span class="p">,</span> <span class="n">stress_c</span><span class="o">=</span><span class="n">stress_c</span><span class="p">)</span>
+    <span class="n">c_value_percentiles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">c_value</span><span class="p">,</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">95</span><span class="p">])</span>
+    <span class="n">stress_drop_percentiles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">stress_drop</span><span class="p">,</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">95</span><span class="p">])</span> <span class="o">/</span> <span class="mf">1e6</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Max Mw, 5th C, 50th C, 95th C, 5th SD, 50th SD, 95th SD&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">magnitudes</span><span class="p">),</span> <span class="o">*</span><span class="n">c_value_percentiles</span><span class="p">,</span> <span class="o">*</span><span class="n">stress_drop_percentiles</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span></div>
+
+
+<span class="nd">@njit</span>
+<div class="viewcode-block" id="mw_to_m0">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/catalogue/utilities/index.html#rsqsim_api.catalogue.utilities.mw_to_m0">[docs]</a>
+<span class="k">def</span> <span class="nf">mw_to_m0</span><span class="p">(</span><span class="n">magnitudes</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert moment magnitude to scalar seismic moment.</span>
+
+<span class="sd">    Uses the relation ``M0 = 10^(1.5 * Mw + 9.05)``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    magnitudes : numpy.ndarray</span>
+<span class="sd">        Array of moment magnitudes.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        Scalar seismic moments in N·m.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="mi">10</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.5</span> <span class="o">*</span> <span class="n">magnitudes</span> <span class="o">+</span> <span class="mf">9.05</span><span class="p">)</span></div>
+
+
+<span class="nd">@njit</span>
+<div class="viewcode-block" id="m0_to_mw">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/catalogue/utilities/index.html#rsqsim_api.catalogue.utilities.m0_to_mw">[docs]</a>
+<span class="k">def</span> <span class="nf">m0_to_mw</span><span class="p">(</span><span class="n">seismic_moment</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert scalar seismic moment to moment magnitude.</span>
+
+<span class="sd">    Uses the relation ``Mw = (log10(M0) - 9.05) / 1.5``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    seismic_moment : float</span>
+<span class="sd">        Scalar seismic moment in N·m.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Moment magnitude.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">seismic_moment</span><span class="p">)</span> <span class="o">-</span> <span class="mf">9.05</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1.5</span></div>
+
+
+<div class="viewcode-block" id="weighted_circular_mean">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/catalogue/utilities/index.html#rsqsim_api.catalogue.utilities.weighted_circular_mean">[docs]</a>
+<span class="k">def</span> <span class="nf">weighted_circular_mean</span><span class="p">(</span><span class="n">azimuths</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">weights</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the weighted circular (angular) mean of a set of azimuths.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    azimuths : numpy.ndarray</span>
+<span class="sd">        Azimuth values in degrees.</span>
+<span class="sd">    weights : numpy.ndarray</span>
+<span class="sd">        Weights for each azimuth (e.g. patch areas or seismic moments).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Weighted circular mean azimuth in degrees.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mean_sin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">azimuths</span><span class="p">)),</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+    <span class="n">mean_cos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">azimuths</span><span class="p">)),</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+    <span class="n">mean_az</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">mean_sin</span><span class="p">,</span> <span class="n">mean_cos</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">mean_az</span></div>
+
+
+<span class="nd">@njit</span>
+<div class="viewcode-block" id="median_cumulant">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/catalogue/utilities/index.html#rsqsim_api.catalogue.utilities.median_cumulant">[docs]</a>
+<span class="k">def</span> <span class="nf">median_cumulant</span><span class="p">(</span><span class="n">m0_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">mw_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the median cumulant magnitude for a set of events on a patch.</span>
+
+<span class="sd">    Sorts events by M0, forms the normalised cumulative sum of Mw, and</span>
+<span class="sd">    returns the Mw at the index where the cumulative sum first reaches</span>
+<span class="sd">    0.5.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    m0_array : numpy.ndarray</span>
+<span class="sd">        Scalar seismic moments (N·m) for all events rupturing a patch.</span>
+<span class="sd">    mw_array : numpy.ndarray</span>
+<span class="sd">        Corresponding moment magnitudes.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Moment magnitude at the median of the cumulative M0 distribution.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Sort the arrays by M0</span>
+    <span class="n">sorted_m0_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">m0_array</span><span class="p">)</span>
+    <span class="n">sorted_m0</span> <span class="o">=</span> <span class="n">m0_array</span><span class="p">[</span><span class="n">sorted_m0_indices</span><span class="p">]</span>
+    <span class="n">sorted_mw</span> <span class="o">=</span> <span class="n">mw_array</span><span class="p">[</span><span class="n">sorted_m0_indices</span><span class="p">]</span>
+    <span class="c1"># Calculate the cumulative sum moment of the sorted m0</span>
+    <span class="n">norm_cumulative_m0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">sorted_mw</span><span class="p">)</span> <span class="o">/</span> <span class="n">sorted_m0</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="c1"># Find median cumulant (last index where norm_cumulative_m0 &lt; 0.5)</span>
+    <span class="n">med_cumulant_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">norm_cumulative_m0</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="c1"># Return MW for relevant index</span>
+    <span class="k">return</span> <span class="n">sorted_mw</span><span class="p">[</span><span class="n">med_cumulant_index</span><span class="p">]</span></div>
+
+
+<span class="nd">@njit</span><span class="p">(</span><span class="n">int32</span><span class="p">[:](</span><span class="n">int32</span><span class="p">[:],</span> <span class="n">int32</span><span class="p">[:]))</span>
+<div class="viewcode-block" id="jit_intersect">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/catalogue/utilities/index.html#rsqsim_api.catalogue.utilities.jit_intersect">[docs]</a>
+<span class="k">def</span> <span class="nf">jit_intersect</span><span class="p">(</span><span class="n">l1</span><span class="p">,</span> <span class="n">l2</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    JIT-compiled intersection of two integer arrays.</span>
+
+<span class="sd">    Returns the unique values that appear in both ``l1`` and ``l2``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    l1 : numpy.ndarray of int32</span>
+<span class="sd">        First integer array.</span>
+<span class="sd">    l2 : numpy.ndarray of int32</span>
+<span class="sd">        Second integer array.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray of int32</span>
+<span class="sd">        Sorted unique values present in both arrays.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">l3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">l1</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">l2</span> <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">j</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">l3</span><span class="p">)</span> <span class="c1"># and i not in crossSec]</span></div>
+
+
+<div class="viewcode-block" id="mw_from_area_and_scaling_c">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/catalogue/utilities/index.html#rsqsim_api.catalogue.utilities.mw_from_area_and_scaling_c">[docs]</a>
+<span class="k">def</span> <span class="nf">mw_from_area_and_scaling_c</span><span class="p">(</span><span class="n">area</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate moment magnitude from rupture area and scaling parameter c.</span>
+
+<span class="sd">    Uses the relation ``Mw = log10(area) - 6 + c``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    area : float</span>
+<span class="sd">        Rupture area in m².</span>
+<span class="sd">    c : float</span>
+<span class="sd">        Scaling parameter (typically ~4.2 for New Zealand crustal faults).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Moment magnitude.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">area</span><span class="p">)</span> <span class="o">-</span> <span class="mf">6.</span> <span class="o">+</span> <span class="n">c</span></div>
+
+
+
+<div class="viewcode-block" id="slip_from_area_and_scaling_c">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/catalogue/utilities/index.html#rsqsim_api.catalogue.utilities.slip_from_area_and_scaling_c">[docs]</a>
+<span class="k">def</span> <span class="nf">slip_from_area_and_scaling_c</span><span class="p">(</span><span class="n">area</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">mu</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span><span class="mf">3.e10</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate mean slip from rupture area and scaling parameter c.</span>
+
+<span class="sd">    Computes the seismic moment from the area and ``c``, then divides by</span>
+<span class="sd">    ``mu * area`` to give the average slip.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    area : float</span>
+<span class="sd">        Rupture area in m².</span>
+<span class="sd">    c : float</span>
+<span class="sd">        Scaling parameter (typically ~4.2 for New Zealand crustal faults).</span>
+<span class="sd">    mu : float, optional</span>
+<span class="sd">        Shear modulus in Pa.  Defaults to 3×10¹⁰ Pa (30 GPa).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Average slip in metres.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">m0</span> <span class="o">=</span> <span class="n">mw_to_m0</span><span class="p">(</span><span class="n">mw_from_area_and_scaling_c</span><span class="p">(</span><span class="n">area</span><span class="p">,</span> <span class="n">c</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">m0</span> <span class="o">/</span> <span class="p">(</span><span class="n">mu</span> <span class="o">*</span> <span class="n">area</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

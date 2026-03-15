@@ -1,0 +1,126 @@
+rsqsim_api.tsunami.gf_netcdf
+============================
+
+.. py:module:: rsqsim_api.tsunami.gf_netcdf
+
+.. autoapi-nested-parse::
+
+   Utilities for reading and computing Green's-function sea-surface displacement (SSD) from netCDF files.
+
+   Provides :class:`LookupPatch` for indexing individual patch Green's
+   functions within multi-file netCDF datasets, and functions for
+   computing and saving per-event SSD grids using superposition of patch
+   responses.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   rsqsim_api.tsunami.gf_netcdf.LookupPatch
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   rsqsim_api.tsunami.gf_netcdf.create_lookup_dict
+   rsqsim_api.tsunami.gf_netcdf.sea_surface_displacements
+   rsqsim_api.tsunami.gf_netcdf.sea_surface_displacements_multi
+
+
+Module Contents
+---------------
+
+.. py:class:: LookupPatch(patch_index, dset, dset_index)
+
+   Index entry mapping a fault patch to its location within a netCDF Green's-function dataset.
+
+   .. attribute:: patch_index
+
+      Global patch identifier.
+
+      :type: int
+
+   .. attribute:: dset
+
+      Open netCDF4 dataset containing the Green's-function data for
+      this patch.
+
+      :type: netCDF4.Dataset
+
+   .. attribute:: dset_index
+
+      Local index of this patch within ``dset``.
+
+      :type: int
+
+
+   .. py:attribute:: patch_index
+
+
+   .. py:attribute:: dset
+
+
+   .. py:attribute:: dset_index
+
+
+.. py:function:: create_lookup_dict(search_string)
+
+   Build a patch-lookup dictionary from a set of netCDF Green's-function files.
+
+   Opens all files matching ``search_string`` and constructs a
+   mapping from global patch index to :class:`LookupPatch` objects.
+
+   :param search_string: Glob pattern for the netCDF files, e.g.
+                         ``"/path/to/gf_files/*.nc"``.
+   :type search_string: str
+
+   :returns: Mapping of patch index (int) to :class:`LookupPatch`.
+   :rtype: dict
+
+
+.. py:function:: sea_surface_displacements(input_tuple)
+
+   Compute the sea-surface displacement grid for a single event.
+
+   Superposes the per-patch Green's functions scaled by the
+   event's patch slip values.  Returns NaN-filled arrays for events
+   whose patches are not all present in the lookup dictionary.
+
+   :param input_tuple: ``(event, lookup)`` where ``event`` is an
+                       :class:`~rsqsim_api.catalogue.event.RsqSimEvent` and
+                       ``lookup`` is a dict mapping patch index to
+                       :class:`LookupPatch`.
+   :type input_tuple: tuple
+
+   :returns: * **event_id** (*int*) -- The event identifier.
+             * **disp** (*numpy.ndarray*) -- Sea-surface displacement grid (shape matches the Green's
+               function grid).  Filled with ``NaN`` if any patch is missing
+               from the lookup.
+
+
+.. py:function:: sea_surface_displacements_multi(event_ls, lookup, out_netcdf, num_processes = None)
+
+   Compute and save sea-surface displacements for multiple events to a netCDF file.
+
+   Uses a :class:`~concurrent.futures.ThreadPoolExecutor` to compute
+   displacements in parallel, then writes the results to a new netCDF
+   file with dimensions ``(event_id, y, x)``.
+
+   :param event_ls: List of :class:`~rsqsim_api.catalogue.event.RsqSimEvent`
+                    objects.
+   :type event_ls: list
+   :param lookup: Patch-lookup dictionary from :func:`create_lookup_dict`.
+   :type lookup: dict
+   :param out_netcdf: Output netCDF file path.
+   :type out_netcdf: str
+   :param num_processes: Maximum number of worker threads.  Defaults to ``None``
+                         (determined by :class:`~concurrent.futures.ThreadPoolExecutor`
+                         default).
+   :type num_processes: int or None, optional
+
+

@@ -1,0 +1,712 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.io.array_operations &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.io.array_operations</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for rsqsim_api.io.array_operations</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Raster and grid I/O utilities for GeoTIFF and GMT NetCDF formats.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">netCDF4</span> <span class="kn">import</span> <span class="n">Dataset</span>
+<span class="kn">import</span> <span class="nn">rasterio</span>
+<span class="kn">from</span> <span class="nn">rasterio.warp</span> <span class="kn">import</span> <span class="n">calculate_default_transform</span><span class="p">,</span> <span class="n">reproject</span><span class="p">,</span> <span class="n">Resampling</span>
+
+
+<div class="viewcode-block" id="read_grid">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/array_operations/index.html#rsqsim_api.io.array_operations.read_grid">[docs]</a>
+<span class="k">def</span> <span class="nf">read_grid</span><span class="p">(</span><span class="n">raster_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">nan_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+              <span class="n">window</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+              <span class="n">buffer</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">return_meta</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read a raster file into coordinate and value arrays.</span>
+
+<span class="sd">    Supports optional spatial windowing by bounding box or shapefile</span>
+<span class="sd">    extent.  Values with absolute magnitude above ``nan_threshold`` are</span>
+<span class="sd">    replaced with NaN.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    raster_file :</span>
+<span class="sd">        Path to the raster file (any format supported by rasterio).</span>
+<span class="sd">    nan_threshold :</span>
+<span class="sd">        Values with ``|z| &gt; nan_threshold`` are set to NaN.  Defaults</span>
+<span class="sd">        to 100.</span>
+<span class="sd">    window :</span>
+<span class="sd">        Optional spatial subset.  May be a path to a vector file (whose</span>
+<span class="sd">        bounding box is used), or a 4-element sequence</span>
+<span class="sd">        ``[x_min, y_min, x_max, y_max]`` in the raster&#39;s CRS.</span>
+<span class="sd">    buffer :</span>
+<span class="sd">        Extra margin (in CRS units) added around the window bounds.</span>
+<span class="sd">        Defaults to 100.</span>
+<span class="sd">    return_meta :</span>
+<span class="sd">        If ``True``, also return the rasterio metadata dict updated to</span>
+<span class="sd">        reflect the windowed read.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    x : numpy.ndarray</span>
+<span class="sd">        1-D array of easting (column-centre) coordinates.</span>
+<span class="sd">    y : numpy.ndarray</span>
+<span class="sd">        1-D array of northing (row-centre) coordinates.</span>
+<span class="sd">    z : numpy.ndarray of shape (len(y), len(x))</span>
+<span class="sd">        Data values with out-of-range entries set to NaN.</span>
+<span class="sd">    geo_meta : dict, optional</span>
+<span class="sd">        Rasterio metadata dict (only returned when ``return_meta=True``).</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``raster_file`` does not exist, the window sequence does not</span>
+<span class="sd">        have exactly 4 elements, or ``x_max &lt;= x_min`` / ``y_max &lt;= y_min``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">raster_file</span><span class="p">)</span>
+    <span class="n">raster</span> <span class="o">=</span> <span class="n">rasterio</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">raster_file</span><span class="p">)</span>
+    <span class="n">no_data</span> <span class="o">=</span> <span class="n">raster</span><span class="o">.</span><span class="n">nodata</span>
+
+
+    <span class="k">if</span> <span class="n">window</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">window</span><span class="p">)</span>
+            <span class="n">shp</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">window</span><span class="p">)</span>
+            <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">shp</span><span class="o">.</span><span class="n">bounds</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">window</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span>
+            <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">window</span><span class="p">[:]</span>
+
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">x2</span> <span class="o">&gt;</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">&gt;</span> <span class="n">y1</span><span class="p">])</span>
+        <span class="n">buffer_value</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">buffer</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">buffer</span>
+        <span class="k">if</span> <span class="n">x1</span> <span class="o">&lt;</span> <span class="n">raster</span><span class="o">.</span><span class="n">bounds</span><span class="o">.</span><span class="n">left</span><span class="p">:</span>
+            <span class="n">x1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">raster</span><span class="o">.</span><span class="n">bounds</span><span class="o">.</span><span class="n">left</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">lowest</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">raster</span><span class="o">.</span><span class="n">bounds</span><span class="o">.</span><span class="n">bottom</span><span class="p">,</span> <span class="n">raster</span><span class="o">.</span><span class="n">bounds</span><span class="o">.</span><span class="n">top</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">y1</span> <span class="o">&lt;</span> <span class="n">lowest</span><span class="p">:</span>
+            <span class="n">y1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">lowest</span> <span class="o">+</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">raster</span><span class="o">.</span><span class="n">bounds</span><span class="o">.</span><span class="n">top</span> <span class="o">&lt;</span> <span class="n">raster</span><span class="o">.</span><span class="n">bounds</span><span class="o">.</span><span class="n">bottom</span><span class="p">:</span>
+            <span class="n">window_object</span> <span class="o">=</span> <span class="n">rasterio</span><span class="o">.</span><span class="n">windows</span><span class="o">.</span><span class="n">from_bounds</span><span class="p">(</span><span class="n">x1</span> <span class="o">-</span> <span class="n">buffer_value</span><span class="p">,</span> <span class="n">y2</span> <span class="o">+</span> <span class="n">buffer_value</span><span class="p">,</span>
+                                                         <span class="n">x2</span> <span class="o">+</span> <span class="n">buffer_value</span><span class="p">,</span> <span class="n">y1</span> <span class="o">-</span> <span class="n">buffer_value</span><span class="p">,</span>
+                                                         <span class="n">transform</span><span class="o">=</span><span class="n">raster</span><span class="o">.</span><span class="n">transform</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">window_object</span> <span class="o">=</span> <span class="n">rasterio</span><span class="o">.</span><span class="n">windows</span><span class="o">.</span><span class="n">from_bounds</span><span class="p">(</span><span class="n">x1</span> <span class="o">-</span> <span class="n">buffer_value</span><span class="p">,</span> <span class="n">y1</span> <span class="o">-</span> <span class="n">buffer_value</span><span class="p">,</span>
+                                                         <span class="n">x2</span> <span class="o">+</span> <span class="n">buffer_value</span><span class="p">,</span> <span class="n">y2</span> <span class="o">+</span> <span class="n">buffer_value</span><span class="p">,</span>
+                                                         <span class="n">transform</span><span class="o">=</span><span class="n">raster</span><span class="o">.</span><span class="n">transform</span><span class="p">)</span>
+
+        <span class="n">z</span> <span class="o">=</span> <span class="n">raster</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">window_object</span><span class="p">)</span>
+        <span class="n">geo_transform</span> <span class="o">=</span> <span class="n">raster</span><span class="o">.</span><span class="n">window_transform</span><span class="p">(</span><span class="n">window_object</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">raster</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># Get affine transform from raster</span>
+        <span class="n">geo_transform</span> <span class="o">=</span> <span class="n">raster</span><span class="o">.</span><span class="n">transform</span>
+
+    <span class="k">if</span> <span class="n">return_meta</span><span class="p">:</span>
+        <span class="n">geo_meta</span> <span class="o">=</span> <span class="n">raster</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">geo_meta</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;width&quot;</span><span class="p">:</span> <span class="n">z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                         <span class="s2">&quot;height&quot;</span><span class="p">:</span> <span class="n">z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                         <span class="s2">&quot;transform&quot;</span><span class="p">:</span> <span class="n">geo_transform</span><span class="p">})</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">geo_meta</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># extract origin, pixel width and pixel height from affine transform</span>
+    <span class="n">origin_x</span> <span class="o">=</span> <span class="n">geo_transform</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">origin_y</span> <span class="o">=</span> <span class="n">geo_transform</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+    <span class="n">pixel_width</span> <span class="o">=</span> <span class="n">geo_transform</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">pixel_height</span> <span class="o">=</span> <span class="n">geo_transform</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+
+    <span class="c1"># Width and height of raster in pixels</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># Turn into X and Y coordinates</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">origin_x</span> <span class="o">+</span> <span class="n">pixel_width</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">origin_y</span> <span class="o">+</span> <span class="n">pixel_height</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+
+    <span class="c1"># Set values above threshold to NaN</span>
+    <span class="k">if</span> <span class="n">no_data</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">:</span>
+        <span class="n">z</span><span class="p">[</span><span class="n">z</span> <span class="o">&lt;</span> <span class="o">-</span><span class="n">nan_threshold</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span>
+        <span class="n">z</span><span class="p">[</span><span class="n">z</span> <span class="o">&gt;</span> <span class="n">nan_threshold</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span>
+
+    <span class="c1"># Close raster</span>
+    <span class="n">raster</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">return_meta</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">geo_meta</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span></div>
+
+
+
+<div class="viewcode-block" id="read_tiff">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/array_operations/index.html#rsqsim_api.io.array_operations.read_tiff">[docs]</a>
+<span class="k">def</span> <span class="nf">read_tiff</span><span class="p">(</span><span class="n">tiff</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">x_correct</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">y_correct</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">nan_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">9000</span><span class="p">,</span>
+              <span class="n">make_y_ascending</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+              <span class="n">buffer</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">return_meta</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read a GeoTIFF file into coordinate and value arrays.</span>
+
+<span class="sd">    Thin wrapper around :func:`read_grid` with GeoTIFF-specific defaults</span>
+<span class="sd">    and optional coordinate offset correction.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tiff :</span>
+<span class="sd">        Path to the GeoTIFF file.</span>
+<span class="sd">    x_correct :</span>
+<span class="sd">        Offset added to x coordinates to correct for pixel vs. gridline</span>
+<span class="sd">        registration differences (GMT convention).</span>
+<span class="sd">    y_correct :</span>
+<span class="sd">        Offset added to y coordinates (same purpose as ``x_correct``).</span>
+<span class="sd">    nan_threshold :</span>
+<span class="sd">        Values with ``|z| &gt; nan_threshold`` are set to NaN.  Defaults</span>
+<span class="sd">        to 9000 (suitable for elevation data in metres).</span>
+<span class="sd">    make_y_ascending :</span>
+<span class="sd">        If ``True`` and ``y[0] &gt; y[-1]``, reverse y and the corresponding</span>
+<span class="sd">        rows of z so that y increases monotonically.</span>
+<span class="sd">    window :</span>
+<span class="sd">        Optional spatial subset passed to :func:`read_grid`.</span>
+<span class="sd">    buffer :</span>
+<span class="sd">        Buffer added around the window bounds in CRS units.</span>
+<span class="sd">    return_meta :</span>
+<span class="sd">        If ``True``, also return the rasterio metadata dict.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    x : numpy.ndarray</span>
+<span class="sd">        1-D easting coordinate array.</span>
+<span class="sd">    y : numpy.ndarray</span>
+<span class="sd">        1-D northing coordinate array.</span>
+<span class="sd">    z : numpy.ndarray of shape (len(y), len(x))</span>
+<span class="sd">        Data values.</span>
+<span class="sd">    geo_meta : dict, optional</span>
+<span class="sd">        Rasterio metadata (only returned when ``return_meta=True``).</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``tiff`` does not exist.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">tiff</span><span class="p">)</span>
+
+    <span class="c1"># Read grid into x, y ,z</span>
+    <span class="k">if</span> <span class="n">return_meta</span><span class="p">:</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">geo_meta</span> <span class="o">=</span> <span class="n">read_grid</span><span class="p">(</span><span class="n">tiff</span><span class="p">,</span> <span class="n">nan_threshold</span><span class="o">=</span><span class="n">nan_threshold</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="n">buffer</span><span class="p">,</span>
+                                      <span class="n">return_meta</span><span class="o">=</span><span class="n">return_meta</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">read_grid</span><span class="p">(</span><span class="n">tiff</span><span class="p">,</span> <span class="n">nan_threshold</span><span class="o">=</span><span class="n">nan_threshold</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="n">buffer</span><span class="p">)</span>
+        <span class="n">geo_meta</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">make_y_ascending</span> <span class="ow">and</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">z</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+
+    <span class="c1"># If necessary, sort out problems with pixel vs. gridline registration (need to supply values)</span>
+    <span class="k">if</span> <span class="n">x_correct</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">+=</span> <span class="n">x_correct</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Adjusting for GMT-Tiff difference&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">y_correct</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">y</span> <span class="o">+=</span> <span class="n">y_correct</span>
+
+    <span class="k">if</span> <span class="n">return_meta</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">geo_meta</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span></div>
+
+
+
+<div class="viewcode-block" id="read_gmt_grid">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/array_operations/index.html#rsqsim_api.io.array_operations.read_gmt_grid">[docs]</a>
+<span class="k">def</span> <span class="nf">read_gmt_grid</span><span class="p">(</span><span class="n">grd_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read a GMT-compatible NetCDF4 grid file.</span>
+
+<span class="sd">    Reads variables named ``x``, ``y``, and ``z`` from the file and</span>
+<span class="sd">    fills any masked values with NaN.  Faster than using rasterio for</span>
+<span class="sd">    NetCDF grids.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    grd_file :</span>
+<span class="sd">        Path to the GMT ``.grd`` NetCDF4 file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    x : numpy.ndarray</span>
+<span class="sd">        1-D array of x (easting) coordinate values.</span>
+<span class="sd">    y : numpy.ndarray</span>
+<span class="sd">        1-D array of y (northing) coordinate values.</span>
+<span class="sd">    z : numpy.ndarray of shape (len(y), len(x))</span>
+<span class="sd">        Grid data values; masked values replaced with NaN.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``grd_file`` does not exist or if the file does not contain</span>
+<span class="sd">        variables named ``x``, ``y``, and ``z``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">grd_file</span><span class="p">)</span>
+    <span class="c1"># Open dataset and check that x,y,z are variable names</span>
+    <span class="n">fid</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span><span class="n">grd_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">a</span> <span class="ow">in</span> <span class="n">fid</span><span class="o">.</span><span class="n">variables</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">)])</span>
+    <span class="n">xm</span><span class="p">,</span> <span class="n">ym</span><span class="p">,</span> <span class="n">zm</span> <span class="o">=</span> <span class="p">[</span><span class="n">fid</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">a</span><span class="p">][:]</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">)]</span>
+    <span class="n">fid</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="c1"># Check arrays are either numpy arrays or masked arrays</span>
+    <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="n">xm</span><span class="p">,</span> <span class="n">ym</span><span class="p">,</span> <span class="n">zm</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">any</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)])</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">xm</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">xm</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">xm</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">ym</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ym</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">ym</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">zm</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">zm</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">zm</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">z</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="write_tiff">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/array_operations/index.html#rsqsim_api.io.array_operations.write_tiff">[docs]</a>
+<span class="k">def</span> <span class="nf">write_tiff</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">epsg</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2193</span><span class="p">,</span> <span class="n">reverse_y</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+               <span class="n">compress_lzw</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Write coordinate and data arrays to a GeoTIFF file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    filename :</span>
+<span class="sd">        Output GeoTIFF file path.</span>
+<span class="sd">    x :</span>
+<span class="sd">        1-D array of easting coordinates (column centres).</span>
+<span class="sd">    y :</span>
+<span class="sd">        1-D array of northing coordinates (row centres).</span>
+<span class="sd">    z : numpy.ndarray of shape (len(y), len(x))</span>
+<span class="sd">        Data values to write to band 1.</span>
+<span class="sd">    epsg :</span>
+<span class="sd">        EPSG code for the output coordinate reference system.  Defaults</span>
+<span class="sd">        to 2193 (NZTM2000).</span>
+<span class="sd">    reverse_y :</span>
+<span class="sd">        If ``True``, write the GeoTIFF with y decreasing (top-to-bottom),</span>
+<span class="sd">        as preferred by some GIS applications.</span>
+<span class="sd">    compress_lzw :</span>
+<span class="sd">        If ``True`` (default), apply LZW compression.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``x`` or ``y`` are not 1-D, or if ``z.shape != (len(y), len(x))``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check data have correct dimensions</span>
+    <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)])</span>
+    <span class="k">assert</span> <span class="n">z</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+    <span class="c1"># Change into y-ascending format (reverse_y option changes it back later)</span>
+    <span class="k">if</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">z</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+
+    <span class="c1"># To allow writing in correct format</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+    <span class="c1"># Calculate x and y spacing</span>
+    <span class="n">x_spacing</span> <span class="o">=</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">y_spacing</span> <span class="o">=</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">y</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Set affine transform from x and y</span>
+    <span class="k">if</span> <span class="n">reverse_y</span><span class="p">:</span>
+        <span class="c1"># Sometimes GIS prefer y values to descend.</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">rasterio</span><span class="o">.</span><span class="n">transform</span><span class="o">.</span><span class="n">Affine</span><span class="p">(</span><span class="n">x_spacing</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="mf">0.</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">y_spacing</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">rasterio</span><span class="o">.</span><span class="n">transform</span><span class="o">.</span><span class="n">Affine</span><span class="p">(</span><span class="n">x_spacing</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">y_spacing</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+
+    <span class="c1"># create tiff profile (no. bands, data type etc.)</span>
+    <span class="n">profile</span> <span class="o">=</span> <span class="n">rasterio</span><span class="o">.</span><span class="n">profiles</span><span class="o">.</span><span class="n">DefaultGTiffProfile</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
+                                                    <span class="n">height</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+
+    <span class="c1"># Set coordinate system if specified</span>
+    <span class="k">if</span> <span class="n">epsg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">epsg</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">2193</span><span class="p">,</span> <span class="mi">4326</span><span class="p">,</span> <span class="mi">32759</span><span class="p">,</span> <span class="mi">32760</span><span class="p">,</span> <span class="mi">27200</span><span class="p">]:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;EPSG:</span><span class="si">{:d}</span><span class="s2"> Not a recognised NZ coordinate system...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">epsg</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Writing anyway...&quot;</span><span class="p">)</span>
+        <span class="n">crs</span> <span class="o">=</span> <span class="n">rasterio</span><span class="o">.</span><span class="n">crs</span><span class="o">.</span><span class="n">CRS</span><span class="o">.</span><span class="n">from_epsg</span><span class="p">(</span><span class="n">epsg</span><span class="p">)</span>
+        <span class="n">profile</span><span class="p">[</span><span class="s2">&quot;crs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">crs</span>
+
+    <span class="c1"># Add compression if desired</span>
+    <span class="k">if</span> <span class="n">compress_lzw</span><span class="p">:</span>
+        <span class="n">profile</span><span class="p">[</span><span class="s2">&quot;compress&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;lzw&quot;</span>
+
+    <span class="c1"># Open raster file for writing</span>
+    <span class="n">fid</span> <span class="o">=</span> <span class="n">rasterio</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">profile</span><span class="p">)</span>
+    <span class="c1"># Write z to band one (depending whether y ascending/descending required).</span>
+    <span class="k">if</span> <span class="n">reverse_y</span><span class="p">:</span>
+        <span class="n">fid</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fid</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># Close file</span>
+    <span class="n">fid</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="write_gmt_grd">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/array_operations/index.html#rsqsim_api.io.array_operations.write_gmt_grd">[docs]</a>
+<span class="k">def</span> <span class="nf">write_gmt_grd</span><span class="p">(</span><span class="n">x_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">mesh</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">grid_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Write coordinate and data arrays to a GMT-compatible NetCDF4 grid file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x_array :</span>
+<span class="sd">        1-D array of x (easting) coordinate values.</span>
+<span class="sd">    y_array :</span>
+<span class="sd">        1-D array of y (northing) coordinate values.</span>
+<span class="sd">    mesh : numpy.ndarray of shape (len(y_array), len(x_array))</span>
+<span class="sd">        Data values (z) to store in the ``z`` variable.</span>
+<span class="sd">    grid_name :</span>
+<span class="sd">        Output file path, typically ending in ``.grd``.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``x_array`` or ``y_array`` are not 1-D, or if</span>
+<span class="sd">        ``mesh.shape != (len(y_array), len(x_array))``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="n">x_array</span><span class="p">,</span> <span class="n">y_array</span><span class="p">)])</span>
+    <span class="k">assert</span> <span class="n">mesh</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y_array</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_array</span><span class="p">))</span>
+    <span class="c1"># Reverse y axis if necessary</span>
+    <span class="k">if</span> <span class="n">y_array</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">y_array</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="n">y_array</span> <span class="o">=</span> <span class="n">y_array</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">mesh</span> <span class="o">=</span> <span class="n">mesh</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="c1"># Open NetCDF file</span>
+    <span class="n">fid</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span><span class="n">grid_name</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+    <span class="c1"># Create x- and y-dimensions</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">fid</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_array</span><span class="p">))</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">fid</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_array</span><span class="p">))</span>
+    <span class="c1"># Create variables using these dimensions</span>
+    <span class="n">x_var</span> <span class="o">=</span> <span class="n">fid</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,),</span> <span class="n">zlib</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">y_var</span> <span class="o">=</span> <span class="n">fid</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,),</span> <span class="n">zlib</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">z_var</span> <span class="o">=</span> <span class="n">fid</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s1">&#39;z&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">),</span> <span class="n">zlib</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># Set variable values</span>
+    <span class="n">x_var</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">x_array</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="n">y_var</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">y_array</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="n">z_var</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">mesh</span>
+    <span class="c1"># Close file</span>
+    <span class="n">fid</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="tiff2grd">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/array_operations/index.html#rsqsim_api.io.array_operations.tiff2grd">[docs]</a>
+<span class="k">def</span> <span class="nf">tiff2grd</span><span class="p">(</span><span class="n">tiff</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">grd</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">x_correct</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">y_correct</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+             <span class="n">window</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">buffer</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a GeoTIFF to a GMT NetCDF4 grid file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tiff :</span>
+<span class="sd">        Path to the input GeoTIFF file.</span>
+<span class="sd">    grd :</span>
+<span class="sd">        Path for the output GMT ``.grd`` file.</span>
+<span class="sd">    x_correct :</span>
+<span class="sd">        Offset applied to x coordinates to correct for pixel vs. gridline</span>
+<span class="sd">        registration differences.</span>
+<span class="sd">    y_correct :</span>
+<span class="sd">        Offset applied to y coordinates (same purpose as ``x_correct``).</span>
+<span class="sd">    window :</span>
+<span class="sd">        Optional spatial subset passed to :func:`read_tiff`.</span>
+<span class="sd">    buffer :</span>
+<span class="sd">        Buffer added around the window bounds in CRS units.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``tiff`` does not exist.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">tiff</span><span class="p">)</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">read_tiff</span><span class="p">(</span><span class="n">tiff</span><span class="p">,</span> <span class="n">x_correct</span><span class="o">=</span><span class="n">x_correct</span><span class="p">,</span> <span class="n">y_correct</span><span class="o">=</span><span class="n">y_correct</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="n">buffer</span><span class="p">)</span>
+    <span class="n">write_gmt_grd</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">grd</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="grd2tiff">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/array_operations/index.html#rsqsim_api.io.array_operations.grd2tiff">[docs]</a>
+<span class="k">def</span> <span class="nf">grd2tiff</span><span class="p">(</span><span class="n">grd</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tiff</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">x_correct</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">y_correct</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a GMT NetCDF4 grid file to a GeoTIFF.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    grd :</span>
+<span class="sd">        Path to the input GMT ``.grd`` file.</span>
+<span class="sd">    tiff :</span>
+<span class="sd">        Path for the output GeoTIFF file.</span>
+<span class="sd">    x_correct :</span>
+<span class="sd">        Offset applied to x coordinates after reading.</span>
+<span class="sd">    y_correct :</span>
+<span class="sd">        Offset applied to y coordinates after reading.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``grd`` does not exist.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">grd</span><span class="p">)</span>
+    <span class="c1"># Read in grid</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">read_gmt_grid</span><span class="p">(</span><span class="n">grd</span><span class="p">)</span>
+    <span class="c1"># Correct if necessary</span>
+    <span class="k">if</span> <span class="n">x_correct</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">x_correct</span> <span class="o">-=</span> <span class="n">x_correct</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Adjusting for GMT-Tiff difference&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">y_correct</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">y</span> <span class="o">-=</span> <span class="n">y_correct</span>
+    <span class="n">write_tiff</span><span class="p">(</span><span class="n">tiff</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="array_to_gmt">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/array_operations/index.html#rsqsim_api.io.array_operations.array_to_gmt">[docs]</a>
+<span class="k">def</span> <span class="nf">array_to_gmt</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">out_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Write a NumPy array to a plain-text GMT-compatible file.</span>
+
+<span class="sd">    Each row of ``array`` is written as a space-separated line of values</span>
+<span class="sd">    formatted to 4 decimal places.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    array :</span>
+<span class="sd">        1-D or 2-D array to write.  Must have at least 2 elements or</span>
+<span class="sd">        columns.</span>
+<span class="sd">    out_file :</span>
+<span class="sd">        Output file path.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If the last dimension of ``array`` has fewer than 2 elements.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;Need 2 or more elements or columns&quot;</span>
+    <span class="n">out_id</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">out_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">array</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">out_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{:.4f}</span><span class="s2"> &quot;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">array</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">out_id</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">out_str</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">array</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">out_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{:.4f}</span><span class="s2"> &quot;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">array</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:])</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">array</span><span class="p">:</span>
+            <span class="n">out_id</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">out_str</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">row</span><span class="p">))</span>
+    <span class="n">out_id</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="clip_tiff">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/array_operations/index.html#rsqsim_api.io.array_operations.clip_tiff">[docs]</a>
+<span class="k">def</span> <span class="nf">clip_tiff</span><span class="p">(</span><span class="n">in_tiff</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">out_tiff</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span> <span class="n">buffer</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Clip a GeoTIFF to a spatial window and write the result.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    in_tiff :</span>
+<span class="sd">        Path to the input GeoTIFF file.</span>
+<span class="sd">    out_tiff :</span>
+<span class="sd">        Path for the output clipped GeoTIFF.</span>
+<span class="sd">    window :</span>
+<span class="sd">        Spatial subset specifier: a path to a vector file or a 4-element</span>
+<span class="sd">        sequence ``[x_min, y_min, x_max, y_max]``.</span>
+<span class="sd">    buffer :</span>
+<span class="sd">        Extra margin added around the window bounds in CRS units.</span>
+<span class="sd">        Defaults to 100.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``in_tiff`` does not exist.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">in_tiff</span><span class="p">)</span>
+
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">read_tiff</span><span class="p">(</span><span class="n">in_tiff</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="n">buffer</span><span class="p">)</span>
+
+    <span class="n">write_tiff</span><span class="p">(</span><span class="n">out_tiff</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="reproject_tiff">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/array_operations/index.html#rsqsim_api.io.array_operations.reproject_tiff">[docs]</a>
+<span class="k">def</span> <span class="nf">reproject_tiff</span><span class="p">(</span><span class="n">in_raster</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">out_raster</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dst_epsg</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4326</span><span class="p">,</span>
+                   <span class="n">window</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">buffer</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">out_format</span><span class="o">=</span><span class="s2">&quot;tiff&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reproject a raster to a different coordinate reference system.</span>
+
+<span class="sd">    Reads the input raster, reprojects it to the target CRS using</span>
+<span class="sd">    nearest-neighbour resampling, and writes the result as a GeoTIFF</span>
+<span class="sd">    or GMT grid.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    in_raster :</span>
+<span class="sd">        Path to the input raster file.</span>
+<span class="sd">    out_raster :</span>
+<span class="sd">        Path for the output reprojected file.</span>
+<span class="sd">    dst_epsg :</span>
+<span class="sd">        Target EPSG code.  Defaults to 4326 (WGS84 geographic).</span>
+<span class="sd">    window :</span>
+<span class="sd">        Optional spatial subset applied before reprojection.</span>
+<span class="sd">    buffer :</span>
+<span class="sd">        Buffer added around the window bounds in CRS units.</span>
+<span class="sd">    out_format :</span>
+<span class="sd">        Output format: ``&quot;tiff&quot;`` (default) or ``&quot;grd&quot;``.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AssertionError</span>
+<span class="sd">        If ``out_format`` is not ``&quot;tiff&quot;`` or ``&quot;grd&quot;``.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Based on the rasterio reprojection example from the rasterio</span>
+<span class="sd">    documentation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">assert</span> <span class="n">out_format</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;tiff&quot;</span><span class="p">,</span> <span class="s2">&quot;grd&quot;</span><span class="p">)</span>
+    <span class="n">dst_crs</span> <span class="o">=</span> <span class="s2">&quot;EPSG:</span><span class="si">{:d}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dst_epsg</span><span class="p">)</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">src_meta</span> <span class="o">=</span> <span class="n">read_tiff</span><span class="p">(</span><span class="n">in_raster</span><span class="p">,</span> <span class="n">return_meta</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="n">buffer</span><span class="p">)</span>
+
+    <span class="n">transform</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">calculate_default_transform</span><span class="p">(</span><span class="n">src_meta</span><span class="p">[</span><span class="s2">&quot;crs&quot;</span><span class="p">],</span>
+                                                           <span class="n">dst_crs</span><span class="p">,</span>
+                                                           <span class="n">src_meta</span><span class="p">[</span><span class="s2">&quot;width&quot;</span><span class="p">],</span>
+                                                           <span class="n">src_meta</span><span class="p">[</span><span class="s2">&quot;height&quot;</span><span class="p">],</span> <span class="nb">min</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="n">src_meta</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+                   <span class="s1">&#39;crs&#39;</span><span class="p">:</span> <span class="n">dst_crs</span><span class="p">,</span>
+                   <span class="s1">&#39;transform&#39;</span><span class="p">:</span> <span class="n">transform</span><span class="p">,</span>
+                   <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="n">width</span><span class="p">,</span>
+                   <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="n">height</span>
+                   <span class="p">})</span>
+
+    <span class="n">new_z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">))</span>
+
+    <span class="n">reproject</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+        <span class="n">destination</span><span class="o">=</span><span class="n">new_z</span><span class="p">,</span>
+        <span class="n">src_transform</span><span class="o">=</span><span class="n">src_meta</span><span class="p">[</span><span class="s2">&quot;transform&quot;</span><span class="p">],</span>
+        <span class="n">src_crs</span><span class="o">=</span><span class="n">src_meta</span><span class="p">[</span><span class="s2">&quot;crs&quot;</span><span class="p">],</span>
+        <span class="n">dst_transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span>
+        <span class="n">dst_crs</span><span class="o">=</span><span class="n">dst_crs</span><span class="p">,</span>
+        <span class="n">resampling</span><span class="o">=</span><span class="n">Resampling</span><span class="o">.</span><span class="n">nearest</span><span class="p">)</span>
+
+    <span class="n">origin_x</span> <span class="o">=</span> <span class="n">transform</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">origin_y</span> <span class="o">=</span> <span class="n">transform</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+    <span class="n">pixel_width</span> <span class="o">=</span> <span class="n">transform</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">pixel_height</span> <span class="o">=</span> <span class="n">transform</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+
+    <span class="c1"># Width and height of raster in pixels</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="n">width</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="n">height</span>
+
+    <span class="c1"># Turn into X and Y coordinates</span>
+    <span class="n">new_x</span> <span class="o">=</span> <span class="n">origin_x</span> <span class="o">+</span> <span class="n">pixel_width</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+    <span class="n">new_y</span> <span class="o">=</span> <span class="n">origin_y</span> <span class="o">+</span> <span class="n">pixel_height</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">out_format</span> <span class="o">==</span> <span class="s2">&quot;tiff&quot;</span><span class="p">:</span>
+        <span class="n">write_tiff</span><span class="p">(</span><span class="n">out_raster</span><span class="p">,</span> <span class="n">new_x</span><span class="p">,</span> <span class="n">new_y</span><span class="p">,</span> <span class="n">new_z</span><span class="p">,</span> <span class="n">epsg</span><span class="o">=</span><span class="n">dst_epsg</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">write_gmt_grd</span><span class="p">(</span><span class="n">new_x</span><span class="p">,</span> <span class="n">new_y</span><span class="p">,</span> <span class="n">new_z</span><span class="p">,</span> <span class="n">out_raster</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

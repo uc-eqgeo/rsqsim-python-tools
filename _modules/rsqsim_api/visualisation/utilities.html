@@ -1,0 +1,969 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.visualisation.utilities &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.visualisation.utilities</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for rsqsim_api.visualisation.utilities</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Visualisation utilities for plotting New Zealand map backgrounds,</span>
+<span class="sd">coastlines, hillshading, and GIS vector layers.</span>
+
+<span class="sd">Provides functions to clip and overlay the NZ coastline shapefile,</span>
+<span class="sd">render hillshade rasters, plot GIS line and polygon features (roads,</span>
+<span class="sd">rivers, lakes, regional boundaries, Hikurangi boundary), format</span>
+<span class="sd">WGS84 axis tick labels, and compose composite map backgrounds via</span>
+<span class="sd">``plot_background``.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
+<span class="kn">import</span> <span class="nn">pathlib</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">Polygon</span><span class="p">,</span> <span class="n">MultiPolygon</span><span class="p">,</span> <span class="n">box</span>
+<span class="kn">from</span> <span class="nn">rsqsim_api.io.array_operations</span> <span class="kn">import</span> <span class="n">read_tiff</span>
+<span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="kn">import</span> <span class="n">LightSource</span><span class="p">,</span> <span class="n">LinearSegmentedColormap</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">cm</span><span class="p">,</span> <span class="n">colors</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.ticker</span> <span class="k">as</span> <span class="nn">plticker</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">from</span> <span class="nn">matplotlib.cm</span> <span class="kn">import</span> <span class="n">ScalarMappable</span>
+<span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="kn">import</span> <span class="n">LogNorm</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.axes_grid1</span> <span class="kn">import</span> <span class="n">make_axes_locatable</span>
+
+<span class="kn">import</span> <span class="nn">rioxarray</span>
+
+<div class="viewcode-block" id="coast_shp_fine_name">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.coast_shp_fine_name">[docs]</a>
+<span class="n">coast_shp_fine_name</span> <span class="o">=</span> <span class="s2">&quot;data/coastline/nz-coastlines-and-islands-polygons-topo-150k.shp&quot;</span></div>
+
+<div class="viewcode-block" id="coast_shp_coarse_name">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.coast_shp_coarse_name">[docs]</a>
+<span class="n">coast_shp_coarse_name</span> <span class="o">=</span> <span class="s2">&quot;data/coastline/nz-coastlines-and-islands-polygons-topo-1500k.shp&quot;</span></div>
+
+<div class="viewcode-block" id="coast_nat_earth_name">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.coast_nat_earth_name">[docs]</a>
+<span class="n">coast_nat_earth_name</span> <span class="o">=</span> <span class="s2">&quot;data/coastline/natural_earth_nztm.shp&quot;</span></div>
+
+<div class="viewcode-block" id="coast_shp_fine">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.coast_shp_fine">[docs]</a>
+<span class="n">coast_shp_fine</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="n">coast_shp_fine_name</span></div>
+
+<div class="viewcode-block" id="coast_shp_coarse">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.coast_shp_coarse">[docs]</a>
+<span class="n">coast_shp_coarse</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="n">coast_shp_coarse_name</span></div>
+
+<div class="viewcode-block" id="coast_nat_earth">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.coast_nat_earth">[docs]</a>
+<span class="n">coast_nat_earth</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="n">coast_nat_earth_name</span></div>
+
+
+<div class="viewcode-block" id="roads">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.roads">[docs]</a>
+<span class="n">roads</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;data/other_lines/state_highways.shp&quot;</span></div>
+
+<div class="viewcode-block" id="lakes">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.lakes">[docs]</a>
+<span class="n">lakes</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;data/other_lines/nz-lake-polygons-topo-1250k.shp&quot;</span></div>
+
+<div class="viewcode-block" id="rivers">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.rivers">[docs]</a>
+<span class="n">rivers</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;data/other_lines/nz-major-rivers.shp&quot;</span></div>
+
+<div class="viewcode-block" id="regions">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.regions">[docs]</a>
+<span class="n">regions</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;data/other_lines/nz-major-rivers.shp&quot;</span></div>
+
+<div class="viewcode-block" id="hk_boundary">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.hk_boundary">[docs]</a>
+<span class="n">hk_boundary</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;data/faults/hk_clipping_area.gpkg&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="niwa">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.niwa">[docs]</a>
+<span class="n">niwa</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="min_x1">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.min_x1">[docs]</a>
+<span class="n">min_x1</span> <span class="o">=</span> <span class="mi">800000</span></div>
+
+<div class="viewcode-block" id="min_y1">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.min_y1">[docs]</a>
+<span class="n">min_y1</span> <span class="o">=</span> <span class="mi">4000000</span></div>
+
+<div class="viewcode-block" id="max_x2">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.max_x2">[docs]</a>
+<span class="n">max_x2</span> <span class="o">=</span> <span class="mi">3200000</span></div>
+
+<div class="viewcode-block" id="max_y2">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.max_y2">[docs]</a>
+<span class="n">max_y2</span> <span class="o">=</span> <span class="mi">7500000</span></div>
+
+
+<div class="viewcode-block" id="min_x1_wgs">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.min_x1_wgs">[docs]</a>
+<span class="n">min_x1_wgs</span> <span class="o">=</span> <span class="mf">160.</span></div>
+
+<div class="viewcode-block" id="max_x2_wgs">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.max_x2_wgs">[docs]</a>
+<span class="n">max_x2_wgs</span> <span class="o">=</span> <span class="mf">185.</span></div>
+
+<div class="viewcode-block" id="min_y1_wgs">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.min_y1_wgs">[docs]</a>
+<span class="n">min_y1_wgs</span> <span class="o">=</span> <span class="o">-</span><span class="mf">51.</span></div>
+
+<div class="viewcode-block" id="max_y2_wgs">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.max_y2_wgs">[docs]</a>
+<span class="n">max_y2_wgs</span> <span class="o">=</span> <span class="o">-</span><span class="mf">33.</span></div>
+
+
+
+<div class="viewcode-block" id="clip_coast_with_trim">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.clip_coast_with_trim">[docs]</a>
+<span class="k">def</span> <span class="nf">clip_coast_with_trim</span><span class="p">(</span><span class="n">x1</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">y1</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">x2</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">y2</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+                         <span class="n">wgs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">coarse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">fine</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Clip the NZ coastline to a bounding box and trim polygon boundaries.</span>
+
+<span class="sd">    Uses ``geopandas.clip`` to trim coastline polygons to the bounding</span>
+<span class="sd">    box, then returns the individual polygon geometries.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x1 : int or float</span>
+<span class="sd">        Bottom-left easting (NZTM metres, or longitude if ``wgs=True``).</span>
+<span class="sd">    y1 : int or float</span>
+<span class="sd">        Bottom-left northing (NZTM metres, or latitude if ``wgs=True``).</span>
+<span class="sd">    x2 : int or float</span>
+<span class="sd">        Top-right easting.</span>
+<span class="sd">    y2 : int or float</span>
+<span class="sd">        Top-right northing.</span>
+<span class="sd">    wgs : bool, optional</span>
+<span class="sd">        If ``True``, interpret coordinates as WGS84 longitude/latitude.</span>
+<span class="sd">        Defaults to ``False``.</span>
+<span class="sd">    coarse : bool, optional</span>
+<span class="sd">        If ``True``, use the coarse Natural Earth coastline.</span>
+<span class="sd">        Defaults to ``False``.</span>
+<span class="sd">    fine : bool, optional</span>
+<span class="sd">        If ``True``, use the fine 150 k topo coastline.</span>
+<span class="sd">        Defaults to ``False``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    geopandas.GeoSeries</span>
+<span class="sd">        Clipped coastline polygons in NZTM (EPSG:2193).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">coarse</span><span class="p">,</span> <span class="n">fine</span><span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">wgs</span><span class="p">:</span>
+        <span class="n">conditions</span> <span class="o">=</span> <span class="p">[</span><span class="n">x1</span> <span class="o">&gt;=</span> <span class="n">min_x1</span><span class="p">,</span> <span class="n">y1</span> <span class="o">&gt;=</span> <span class="n">min_y1</span><span class="p">,</span> <span class="n">x2</span> <span class="o">&lt;=</span> <span class="n">max_x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">&lt;=</span> <span class="n">max_y2</span><span class="p">,</span> <span class="n">x1</span> <span class="o">&lt;</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y1</span> <span class="o">&lt;</span> <span class="n">y2</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">conditions</span><span class="p">),</span> <span class="s2">&quot;Check coordinates&quot;</span>
+
+    <span class="k">if</span> <span class="n">wgs</span><span class="p">:</span>
+        <span class="n">boundary</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoSeries</span><span class="p">(</span><span class="n">Polygon</span><span class="p">(([</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">],</span> <span class="p">[</span><span class="n">x1</span><span class="p">,</span> <span class="n">y2</span><span class="p">],</span> <span class="p">[</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">],</span> <span class="p">[</span><span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">])),</span> <span class="n">crs</span><span class="o">=</span><span class="mi">4326</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">boundary</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoSeries</span><span class="p">(</span><span class="n">Polygon</span><span class="p">(([</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">],</span> <span class="p">[</span><span class="n">x1</span><span class="p">,</span> <span class="n">y2</span><span class="p">],</span> <span class="p">[</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">],</span> <span class="p">[</span><span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">])),</span> <span class="n">crs</span><span class="o">=</span><span class="mi">2193</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">coarse</span><span class="p">:</span>
+        <span class="n">coast_df</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">coast_nat_earth</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">fine</span><span class="p">:</span>
+        <span class="n">coast_df</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">coast_shp_fine</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">coast_df</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">coast_shp_coarse</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">wgs</span><span class="p">:</span>
+        <span class="n">coast_df</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">epsg</span><span class="o">=</span><span class="mi">4326</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">trimmed_df</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">coast_df</span><span class="p">,</span> <span class="n">boundary</span><span class="p">)</span>
+    <span class="n">poly_ls</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">trimmed_df</span><span class="o">.</span><span class="n">geometry</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">Polygon</span><span class="p">):</span>
+            <span class="n">poly_ls</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">MultiPolygon</span><span class="p">):</span>
+            <span class="n">poly_ls</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">geoms</span><span class="p">)</span>
+    <span class="n">polygon_geoseries</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoSeries</span><span class="p">(</span><span class="n">poly_ls</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="mi">2193</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">polygon_geoseries</span></div>
+
+
+
+<div class="viewcode-block" id="clip_coast">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.clip_coast">[docs]</a>
+<span class="k">def</span> <span class="nf">clip_coast</span><span class="p">(</span><span class="n">x1</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">y1</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">x2</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">y2</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+               <span class="n">wgs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">coarse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">fine</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Clip the NZ coastline to a bounding box using coordinate indexing.</span>
+
+<span class="sd">    Uses the ``cx`` indexer rather than ``geopandas.clip``, so polygons</span>
+<span class="sd">    that overlap the boundary are kept whole rather than trimmed.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x1 : int or float</span>
+<span class="sd">        Bottom-left easting (NZTM metres, or longitude if ``wgs=True``).</span>
+<span class="sd">    y1 : int or float</span>
+<span class="sd">        Bottom-left northing (NZTM metres, or latitude if ``wgs=True``).</span>
+<span class="sd">    x2 : int or float</span>
+<span class="sd">        Top-right easting.</span>
+<span class="sd">    y2 : int or float</span>
+<span class="sd">        Top-right northing.</span>
+<span class="sd">    wgs : bool, optional</span>
+<span class="sd">        If ``True``, interpret coordinates as WGS84 longitude/latitude.</span>
+<span class="sd">        Defaults to ``False``.</span>
+<span class="sd">    coarse : bool, optional</span>
+<span class="sd">        If ``True``, use the coarse Natural Earth coastline.</span>
+<span class="sd">        Defaults to ``False``.</span>
+<span class="sd">    fine : bool, optional</span>
+<span class="sd">        If ``True``, use the fine 150 k topo coastline.</span>
+<span class="sd">        Defaults to ``False``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    geopandas.GeoSeries</span>
+<span class="sd">        Coastline polygons intersecting the bounding box, in NZTM.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">coarse</span><span class="p">,</span> <span class="n">fine</span><span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">wgs</span><span class="p">:</span>
+        <span class="n">conditions</span> <span class="o">=</span> <span class="p">[</span><span class="n">x1</span> <span class="o">&gt;=</span> <span class="n">min_x1</span><span class="p">,</span> <span class="n">y1</span> <span class="o">&gt;=</span> <span class="n">min_y1</span><span class="p">,</span> <span class="n">x2</span> <span class="o">&lt;=</span> <span class="n">max_x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">&lt;=</span> <span class="n">max_y2</span><span class="p">,</span> <span class="n">x1</span> <span class="o">&lt;</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y1</span> <span class="o">&lt;</span> <span class="n">y2</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">conditions</span><span class="p">),</span> <span class="s2">&quot;Check coordinates&quot;</span>
+
+    <span class="k">if</span> <span class="n">coarse</span><span class="p">:</span>
+        <span class="n">coast_df</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">coast_nat_earth</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">fine</span><span class="p">:</span>
+        <span class="n">coast_df</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">coast_shp_fine</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">coast_df</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">coast_shp_coarse</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">wgs</span><span class="p">:</span>
+        <span class="n">coast_df</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">epsg</span><span class="o">=</span><span class="mi">4326</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">trimmed_df</span> <span class="o">=</span> <span class="n">coast_df</span><span class="o">.</span><span class="n">cx</span><span class="p">[</span><span class="n">x1</span><span class="p">:</span><span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">:</span><span class="n">y2</span><span class="p">]</span>
+
+    <span class="n">poly_ls</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">trimmed_df</span><span class="o">.</span><span class="n">geometry</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">Polygon</span><span class="p">):</span>
+            <span class="n">poly_ls</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">MultiPolygon</span><span class="p">):</span>
+            <span class="n">poly_ls</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">geoms</span><span class="p">)</span>
+    <span class="n">polygon_geoseries</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoSeries</span><span class="p">(</span><span class="n">poly_ls</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="mi">2193</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">polygon_geoseries</span></div>
+
+
+<div class="viewcode-block" id="plot_gis_lines">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.plot_gis_lines">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_gis_lines</span><span class="p">(</span><span class="n">gis_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">,</span> <span class="n">color</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">linewidth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                   <span class="n">linestyle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot line features from a GIS vector file onto a matplotlib axis.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gis_file : str or pathlib.Path</span>
+<span class="sd">        Path to the GIS file (shapefile, GeoPackage, etc.).</span>
+<span class="sd">    ax : matplotlib.axes.Axes</span>
+<span class="sd">        Axis to draw onto.</span>
+<span class="sd">    color : str</span>
+<span class="sd">        Line colour.</span>
+<span class="sd">    linewidth : int, optional</span>
+<span class="sd">        Line width in points.  Defaults to 0.3.</span>
+<span class="sd">    clip_bounds : list or None, optional</span>
+<span class="sd">        ``[x_min, y_min, x_max, y_max]`` bounding box for clipping.</span>
+<span class="sd">        If ``None``, all features are plotted.</span>
+<span class="sd">    linestyle : str, optional</span>
+<span class="sd">        Matplotlib line-style string.  Defaults to ``&quot;-&quot;``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">gis_file</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">clip_bounds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">clipping_poly</span> <span class="o">=</span> <span class="n">box</span><span class="p">(</span><span class="o">*</span><span class="n">clip_bounds</span><span class="p">)</span>
+        <span class="n">clipped_data</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">clipping_poly</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">clipped_data</span> <span class="o">=</span> <span class="n">data</span>
+
+    <span class="n">clipped_data</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">linewidth</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="n">linestyle</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="plot_gis_polygons">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.plot_gis_polygons">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_gis_polygons</span><span class="p">(</span><span class="n">gis_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">,</span> <span class="n">edgecolor</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">linewidth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                      <span class="n">linestyle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot polygon features from a GIS vector file onto a matplotlib axis.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gis_file : str or pathlib.Path</span>
+<span class="sd">        Path to the GIS file (shapefile, GeoPackage, etc.).</span>
+<span class="sd">    ax : matplotlib.axes.Axes</span>
+<span class="sd">        Axis to draw onto.</span>
+<span class="sd">    edgecolor : str</span>
+<span class="sd">        Polygon edge colour.</span>
+<span class="sd">    linewidth : int, optional</span>
+<span class="sd">        Edge line width in points.  Defaults to 0.3.</span>
+<span class="sd">    clip_bounds : list or None, optional</span>
+<span class="sd">        ``[x_min, y_min, x_max, y_max]`` bounding box for clipping.</span>
+<span class="sd">        If ``None``, all features are plotted.</span>
+<span class="sd">    linestyle : str, optional</span>
+<span class="sd">        Matplotlib line-style string.  Defaults to ``&quot;-&quot;``.</span>
+<span class="sd">    facecolor : str, optional</span>
+<span class="sd">        Polygon fill colour.  Defaults to ``&quot;none&quot;`` (transparent).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">gis_file</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">clip_bounds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">clipping_poly</span> <span class="o">=</span> <span class="n">box</span><span class="p">(</span><span class="o">*</span><span class="n">clip_bounds</span><span class="p">)</span>
+        <span class="n">clipped_data</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">clipping_poly</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">clipped_data</span> <span class="o">=</span> <span class="n">data</span>
+
+    <span class="n">clipped_data</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">edgecolor</span><span class="o">=</span><span class="n">edgecolor</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">linewidth</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="n">linestyle</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="n">facecolor</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="plot_highway_lines">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.plot_highway_lines">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_highway_lines</span><span class="p">(</span><span class="n">ax</span><span class="p">:</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">,</span> <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">linestyle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Overlay NZ state highway lines on a matplotlib axis.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ax : matplotlib.axes.Axes</span>
+<span class="sd">        Axis to draw onto.</span>
+<span class="sd">    color : str, optional</span>
+<span class="sd">        Line colour.  Defaults to ``&quot;r&quot;``.</span>
+<span class="sd">    linewidth : int, optional</span>
+<span class="sd">        Line width in points.  Defaults to 1.</span>
+<span class="sd">    clip_bounds : list or None, optional</span>
+<span class="sd">        ``[x_min, y_min, x_max, y_max]`` clipping bounds.</span>
+<span class="sd">    linestyle : str, optional</span>
+<span class="sd">        Matplotlib line-style string.  Defaults to ``&quot;-&quot;``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plot_gis_lines</span><span class="p">(</span><span class="n">roads</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">linewidth</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="o">=</span><span class="n">clip_bounds</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="n">linestyle</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="plot_river_lines">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.plot_river_lines">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_river_lines</span><span class="p">(</span><span class="n">ax</span><span class="p">:</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">,</span> <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">linestyle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Overlay NZ major river lines on a matplotlib axis.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ax : matplotlib.axes.Axes</span>
+<span class="sd">        Axis to draw onto.</span>
+<span class="sd">    color : str, optional</span>
+<span class="sd">        Line colour.  Defaults to ``&quot;b&quot;``.</span>
+<span class="sd">    linewidth : int, optional</span>
+<span class="sd">        Line width in points.  Defaults to 0.3.</span>
+<span class="sd">    clip_bounds : list or None, optional</span>
+<span class="sd">        ``[x_min, y_min, x_max, y_max]`` clipping bounds.</span>
+<span class="sd">    linestyle : str, optional</span>
+<span class="sd">        Matplotlib line-style string.  Defaults to ``&quot;-&quot;``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plot_gis_lines</span><span class="p">(</span><span class="n">rivers</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">linewidth</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="o">=</span><span class="n">clip_bounds</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="n">linestyle</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="plot_boundary_polygons">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.plot_boundary_polygons">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_boundary_polygons</span><span class="p">(</span><span class="n">ax</span><span class="p">:</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">,</span> <span class="n">edgecolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">linestyle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">facecolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;none&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Overlay NZ regional boundary polygons on a matplotlib axis.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ax : matplotlib.axes.Axes</span>
+<span class="sd">        Axis to draw onto.</span>
+<span class="sd">    edgecolor : str, optional</span>
+<span class="sd">        Edge colour.  Defaults to ``&quot;k&quot;``.</span>
+<span class="sd">    linewidth : int, optional</span>
+<span class="sd">        Edge line width in points.  Defaults to 0.3.</span>
+<span class="sd">    clip_bounds : list or None, optional</span>
+<span class="sd">        ``[x_min, y_min, x_max, y_max]`` clipping bounds.</span>
+<span class="sd">    linestyle : str, optional</span>
+<span class="sd">        Matplotlib line-style string.  Defaults to ``&quot;--&quot;``.</span>
+<span class="sd">    facecolor : str, optional</span>
+<span class="sd">        Fill colour.  Defaults to ``&quot;none&quot;`` (transparent).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plot_gis_polygons</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="n">edgecolor</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">linewidth</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="o">=</span><span class="n">clip_bounds</span><span class="p">,</span>
+                      <span class="n">linestyle</span><span class="o">=</span><span class="n">linestyle</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="n">facecolor</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="plot_lake_polygons">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.plot_lake_polygons">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_lake_polygons</span><span class="p">(</span><span class="n">ax</span><span class="p">:</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">,</span> <span class="n">edgecolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">linestyle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">facecolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Overlay NZ lake polygons on a matplotlib axis.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ax : matplotlib.axes.Axes</span>
+<span class="sd">        Axis to draw onto.</span>
+<span class="sd">    edgecolor : str, optional</span>
+<span class="sd">        Edge colour.  Defaults to ``&quot;b&quot;``.</span>
+<span class="sd">    linewidth : int, optional</span>
+<span class="sd">        Edge line width in points.  Defaults to 0.3.</span>
+<span class="sd">    clip_bounds : list or None, optional</span>
+<span class="sd">        ``[x_min, y_min, x_max, y_max]`` clipping bounds.</span>
+<span class="sd">    linestyle : str, optional</span>
+<span class="sd">        Matplotlib line-style string.  Defaults to ``&quot;-&quot;``.</span>
+<span class="sd">    facecolor : str, optional</span>
+<span class="sd">        Fill colour.  Defaults to ``&quot;b&quot;`` (blue).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plot_gis_polygons</span><span class="p">(</span><span class="n">lakes</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="n">edgecolor</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">linewidth</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="o">=</span><span class="n">clip_bounds</span><span class="p">,</span>
+                      <span class="n">linestyle</span><span class="o">=</span><span class="n">linestyle</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="n">facecolor</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="plot_hk_boundary">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.plot_hk_boundary">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_hk_boundary</span><span class="p">(</span><span class="n">ax</span><span class="p">:</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">,</span> <span class="n">edgecolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">linestyle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">facecolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;0.8&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Overlay the Hikurangi subduction zone clipping-area polygon.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ax : matplotlib.axes.Axes</span>
+<span class="sd">        Axis to draw onto.</span>
+<span class="sd">    edgecolor : str, optional</span>
+<span class="sd">        Edge colour.  Defaults to ``&quot;r&quot;``.</span>
+<span class="sd">    linewidth : int, optional</span>
+<span class="sd">        Edge line width in points.  Defaults to 0.1.</span>
+<span class="sd">    clip_bounds : list or None, optional</span>
+<span class="sd">        ``[x_min, y_min, x_max, y_max]`` clipping bounds.</span>
+<span class="sd">    linestyle : str, optional</span>
+<span class="sd">        Matplotlib line-style string.  Defaults to ``&quot;-&quot;``.</span>
+<span class="sd">    facecolor : str, optional</span>
+<span class="sd">        Fill colour.  Defaults to ``&quot;0.8&quot;`` (light grey).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plot_gis_polygons</span><span class="p">(</span><span class="n">hk_boundary</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="n">edgecolor</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">linewidth</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="o">=</span><span class="n">clip_bounds</span><span class="p">,</span>
+                      <span class="n">linestyle</span><span class="o">=</span><span class="n">linestyle</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="n">facecolor</span><span class="p">)</span></div>
+
+
+
+
+
+
+
+<div class="viewcode-block" id="plot_coast">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.plot_coast">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_coast</span><span class="p">(</span><span class="n">ax</span><span class="p">:</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">,</span> <span class="n">clip_boundary</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">edgecolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;0.5&quot;</span><span class="p">,</span> <span class="n">facecolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">,</span>
+               <span class="n">trim_polygons</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">wgs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">coarse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">fine</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Overlay the NZ coastline on a matplotlib axis.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ax : matplotlib.axes.Axes</span>
+<span class="sd">        Axis to draw onto.</span>
+<span class="sd">    clip_boundary : list or None, optional</span>
+<span class="sd">        ``[x_min, y_min, x_max, y_max]`` clipping bounds.  Defaults to</span>
+<span class="sd">        the full NZ extent.</span>
+<span class="sd">    edgecolor : str, optional</span>
+<span class="sd">        Coastline edge colour.  Defaults to ``&quot;0.5&quot;`` (mid-grey).</span>
+<span class="sd">    facecolor : str, optional</span>
+<span class="sd">        Land fill colour.  Defaults to ``&quot;none&quot;`` (transparent).</span>
+<span class="sd">    linewidth : int, optional</span>
+<span class="sd">        Edge line width.  Defaults to 0.3.</span>
+<span class="sd">    trim_polygons : bool, optional</span>
+<span class="sd">        If ``True`` (default), use :func:`clip_coast_with_trim` to trim</span>
+<span class="sd">        polygons to the bounding box; otherwise use :func:`clip_coast`.</span>
+<span class="sd">    wgs : bool, optional</span>
+<span class="sd">        If ``True``, use WGS84 (lon/lat) coordinates.</span>
+<span class="sd">        Defaults to ``False``.</span>
+<span class="sd">    coarse : bool, optional</span>
+<span class="sd">        If ``True``, use the coarse Natural Earth coastline.</span>
+<span class="sd">        Defaults to ``False``.</span>
+<span class="sd">    fine : bool, optional</span>
+<span class="sd">        If ``True``, use the fine 150 k topo coastline.</span>
+<span class="sd">        Defaults to ``False``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    x1, y1, x2, y2 : float</span>
+<span class="sd">        The clipping bounds actually used.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">coarse</span><span class="p">,</span> <span class="n">fine</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">clip_boundary</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">wgs</span><span class="p">:</span>
+            <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="p">[</span><span class="n">min_x1_wgs</span><span class="p">,</span> <span class="n">min_y1_wgs</span><span class="p">,</span> <span class="n">max_x2_wgs</span><span class="p">,</span> <span class="n">max_y2_wgs</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="p">[</span><span class="n">min_x1</span><span class="p">,</span> <span class="n">min_y1</span><span class="p">,</span> <span class="n">max_x2</span><span class="p">,</span> <span class="n">max_y2</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">clip_boundary</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">clip_boundary</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span>
+        <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">clip_boundary</span>
+    <span class="k">if</span> <span class="n">trim_polygons</span><span class="p">:</span>
+        <span class="n">clipped_gs</span> <span class="o">=</span> <span class="n">clip_coast_with_trim</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">wgs</span><span class="o">=</span><span class="n">wgs</span><span class="p">,</span> <span class="n">coarse</span><span class="o">=</span><span class="n">coarse</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">clipped_gs</span> <span class="o">=</span> <span class="n">clip_coast</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">wgs</span><span class="o">=</span><span class="n">wgs</span><span class="p">,</span> <span class="n">coarse</span><span class="o">=</span><span class="n">coarse</span><span class="p">)</span>
+    <span class="n">clipped_gs</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="n">edgecolor</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="n">facecolor</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">linewidth</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">wgs</span><span class="p">:</span>
+        <span class="n">aspect</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">])))</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="n">aspect</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span></div>
+
+
+
+<div class="viewcode-block" id="plot_hillshade">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.plot_hillshade">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_hillshade</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">,</span> <span class="n">vertical_exaggeration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span> <span class="n">cmap</span><span class="p">:</span> <span class="n">LinearSegmentedColormap</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                   <span class="n">vmin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">10000.</span><span class="p">,</span> <span class="n">vmax</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Overlay a hillshaded bathymetry/topography raster on a matplotlib axis.</span>
+
+<span class="sd">    Uses a combined 10 000-m resolution NIWA raster.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ax : matplotlib.axes.Axes</span>
+<span class="sd">        Axis to draw onto.</span>
+<span class="sd">    alpha : float, optional</span>
+<span class="sd">        Transparency of the hillshade overlay (0–1).  Defaults to 0.3.</span>
+<span class="sd">    vertical_exaggeration : float, optional</span>
+<span class="sd">        Vertical exaggeration for the light-source shading.</span>
+<span class="sd">        Defaults to 0.01.</span>
+<span class="sd">    cmap : LinearSegmentedColormap or None, optional</span>
+<span class="sd">        Colourmap for the hillshade.  Defaults to ``plt.cm.gist_earth``.</span>
+<span class="sd">    vmin : float, optional</span>
+<span class="sd">        Minimum value for the colour scale.  Defaults to -10 000.</span>
+<span class="sd">    vmax : float, optional</span>
+<span class="sd">        Maximum value for the colour scale.  Defaults to 10 000.</span>
+<span class="sd">    clip_bounds : list or None, optional</span>
+<span class="sd">        ``[x_min, y_min, x_max, y_max]`` bounds for clipping the raster.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">hillshade_name</span> <span class="o">=</span> <span class="s2">&quot;data/bathymetry/niwa_combined_10000.tif&quot;</span>
+    <span class="n">hillshade</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="n">hillshade_name</span>
+    <span class="n">xds</span> <span class="o">=</span> <span class="n">rioxarray</span><span class="o">.</span><span class="n">open_rasterio</span><span class="p">(</span><span class="n">hillshade</span><span class="p">)</span>
+    <span class="n">clipped</span> <span class="o">=</span> <span class="n">xds</span><span class="o">.</span><span class="n">rio</span><span class="o">.</span><span class="n">clip_box</span><span class="p">(</span><span class="o">*</span><span class="n">clip_bounds</span><span class="p">)</span>
+    <span class="n">xds</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">clipped</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">z</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">clipped</span><span class="o">.</span><span class="n">x</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">clipped</span><span class="o">.</span><span class="n">y</span>
+    <span class="k">if</span> <span class="n">cmap</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">terrain</span> <span class="o">=</span> <span class="n">cmap</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">terrain</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gist_earth</span>
+    <span class="n">ls</span> <span class="o">=</span> <span class="n">LightSource</span><span class="p">(</span><span class="n">azdeg</span><span class="o">=</span><span class="mi">315</span><span class="p">,</span> <span class="n">altdeg</span><span class="o">=</span><span class="mi">45</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">ls</span><span class="o">.</span><span class="n">shade</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">blend_mode</span><span class="o">=</span><span class="s2">&quot;overlay&quot;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">terrain</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span> <span class="n">vert_exag</span><span class="o">=</span><span class="n">vertical_exaggeration</span><span class="p">),</span>
+              <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">)],</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
+    <span class="n">clipped</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="plot_hillshade_niwa">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.plot_hillshade_niwa">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_hillshade_niwa</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">,</span> <span class="n">vertical_exaggeration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="n">cmap</span><span class="p">:</span> <span class="n">LinearSegmentedColormap</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">vmin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">10000.</span><span class="p">,</span> <span class="n">vmax</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Overlay a hillshaded NIWA NZTM raster on a matplotlib axis.</span>
+
+<span class="sd">    Uses the high-resolution ``niwa_nztm.tif`` raster.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ax : matplotlib.axes.Axes</span>
+<span class="sd">        Axis to draw onto.</span>
+<span class="sd">    alpha : float, optional</span>
+<span class="sd">        Transparency of the hillshade overlay (0–1).  Defaults to 0.3.</span>
+<span class="sd">    vertical_exaggeration : float, optional</span>
+<span class="sd">        Vertical exaggeration for the light-source shading.</span>
+<span class="sd">        Defaults to 0.01.</span>
+<span class="sd">    clip_bounds : list or None, optional</span>
+<span class="sd">        ``[x_min, y_min, x_max, y_max]`` bounds for clipping the raster.</span>
+<span class="sd">    cmap : LinearSegmentedColormap or None, optional</span>
+<span class="sd">        Colourmap for the hillshade.  Defaults to ``plt.cm.terrain``.</span>
+<span class="sd">    vmin : float, optional</span>
+<span class="sd">        Minimum value for the colour scale.  Defaults to -10 000.</span>
+<span class="sd">    vmax : float, optional</span>
+<span class="sd">        Maximum value for the colour scale.  Defaults to 10 000.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">hillshade_name</span> <span class="o">=</span> <span class="s2">&quot;data/bathymetry/niwa_nztm.tif&quot;</span>
+    <span class="n">hillshade</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="n">hillshade_name</span>
+    <span class="n">xds</span> <span class="o">=</span> <span class="n">rioxarray</span><span class="o">.</span><span class="n">open_rasterio</span><span class="p">(</span><span class="n">hillshade</span><span class="p">)</span>
+    <span class="n">clipped</span> <span class="o">=</span> <span class="n">xds</span><span class="o">.</span><span class="n">rio</span><span class="o">.</span><span class="n">clip_box</span><span class="p">(</span><span class="o">*</span><span class="n">clip_bounds</span><span class="p">)</span>
+    <span class="n">xds</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">clipped</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">z</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">clipped</span><span class="o">.</span><span class="n">x</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">clipped</span><span class="o">.</span><span class="n">y</span>
+    <span class="k">if</span> <span class="n">cmap</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">terrain</span> <span class="o">=</span> <span class="n">cmap</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">terrain</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">terrain</span>
+    <span class="n">ls</span> <span class="o">=</span> <span class="n">LightSource</span><span class="p">(</span><span class="n">azdeg</span><span class="o">=</span><span class="mi">315</span><span class="p">,</span> <span class="n">altdeg</span><span class="o">=</span><span class="mi">45</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">ls</span><span class="o">.</span><span class="n">shade</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">blend_mode</span><span class="o">=</span><span class="s2">&quot;overlay&quot;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">terrain</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span> <span class="n">vert_exag</span><span class="o">=</span><span class="n">vertical_exaggeration</span><span class="p">),</span>
+              <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y</span><span class="p">)],</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
+    <span class="n">clipped</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="format_label_text_wgs">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.format_label_text_wgs">[docs]</a>
+<span class="k">def</span> <span class="nf">format_label_text_wgs</span><span class="p">(</span><span class="n">ax</span><span class="p">:</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">,</span> <span class="n">xspacing</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">yspacing</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">y_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Format axis tick labels as degree notation for WGS84 plots.</span>
+
+<span class="sd">    Converts raw longitude/latitude tick values to degree strings,</span>
+<span class="sd">    handling longitudes &gt; 180° by converting to negative (west) values.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ax : matplotlib.axes.Axes</span>
+<span class="sd">        Axis whose tick labels to format.</span>
+<span class="sd">    xspacing : int, optional</span>
+<span class="sd">        Longitude tick spacing in degrees.  Defaults to 5.</span>
+<span class="sd">    yspacing : int, optional</span>
+<span class="sd">        Latitude tick spacing in degrees.  Defaults to 5.</span>
+<span class="sd">    y_only : bool, optional</span>
+<span class="sd">        If ``True``, only format the y (latitude) axis.</span>
+<span class="sd">        Defaults to ``False``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="n">locx</span> <span class="o">=</span> <span class="n">plticker</span><span class="o">.</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">base</span><span class="o">=</span><span class="n">xspacing</span><span class="p">)</span>  <span class="c1"># this locator puts ticks at regular intervals</span>
+    <span class="n">locy</span> <span class="o">=</span> <span class="n">plticker</span><span class="o">.</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">base</span><span class="o">=</span><span class="n">yspacing</span><span class="p">)</span>  <span class="c1"># this locator puts ticks at regular intervals</span>
+
+    <span class="n">xlim</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+    <span class="n">ylim</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">locy</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">y_only</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">locx</span><span class="p">)</span>
+        <span class="n">xlocs</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">get_ticklocs</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_ticks</span><span class="p">(</span><span class="n">xlocs</span><span class="p">)</span>
+        <span class="n">xlabels</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">get_ticklabels</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">loc</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">xlabels</span><span class="p">,</span> <span class="n">xlocs</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">loc</span> <span class="o">&lt;=</span> <span class="mf">180.</span><span class="p">:</span>
+                <span class="n">label</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="s2">&quot;+&quot;</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">loc</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;$^</span><span class="se">\\</span><span class="s2">circ$&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">new_value</span> <span class="o">=</span> <span class="n">loc</span> <span class="o">-</span> <span class="mi">360</span>
+                <span class="n">label</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">new_value</span><span class="p">)</span><span class="si">}</span><span class="s2">$^</span><span class="se">\\</span><span class="s2">circ$&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">(</span><span class="n">xlabels</span><span class="p">)</span>
+
+    <span class="n">ylocs</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">get_ticklocs</span><span class="p">()</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_ticks</span><span class="p">(</span><span class="n">ylocs</span><span class="p">)</span>
+    <span class="n">ylabels</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">get_ticklabels</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">loc</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">ylabels</span><span class="p">,</span> <span class="n">ylocs</span><span class="p">):</span>
+        <span class="n">label</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">loc</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;$^</span><span class="se">\\</span><span class="s2">circ$&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">(</span><span class="n">ylabels</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">*</span><span class="n">xlim</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">*</span><span class="n">ylim</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="plot_background">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/utilities/index.html#rsqsim_api.visualisation.utilities.plot_background">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_background</span><span class="p">(</span><span class="n">figsize</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">(</span><span class="mf">6.4</span><span class="p">,</span> <span class="mf">4.8</span><span class="p">),</span> <span class="n">hillshading_intensity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">bounds</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">plot_rivers</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">plot_lakes</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">hillshade_fine</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="n">plot_highways</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">plot_boundaries</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">subplots</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">pickle_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">hillshade_cmap</span><span class="p">:</span> <span class="n">colors</span><span class="o">.</span><span class="n">LinearSegmentedColormap</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">terrain</span><span class="p">,</span><span class="n">plot_edge_label</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="n">plot_hk</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">plot_fault_outlines</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">wgs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span>  <span class="kc">False</span><span class="p">,</span> <span class="n">land_color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span><span class="s1">&#39;antiquewhite&#39;</span><span class="p">,</span>
+                    <span class="n">plot_sub_cbar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">sub_slip_max</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">20.</span><span class="p">,</span> <span class="n">plot_crust_cbar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">crust_slip_max</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.</span><span class="p">,</span>
+                    <span class="n">subduction_cmap</span><span class="p">:</span> <span class="n">colors</span><span class="o">.</span><span class="n">LinearSegmentedColormap</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">plasma</span><span class="p">,</span> <span class="n">crust_cmap</span><span class="p">:</span> <span class="n">colors</span><span class="o">.</span><span class="n">LinearSegmentedColormap</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">viridis</span><span class="p">,</span>
+                    <span class="n">slider_axis</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">aotearoa</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compose a NZ map background figure with optional GIS overlays.</span>
+
+<span class="sd">        Creates a ``subplot_mosaic`` figure with a main map panel and</span>
+<span class="sd">        optional colourbar and slider axes.  Overlays the coastline,</span>
+<span class="sd">        optional hillshade, lakes, rivers, highways, regional boundaries,</span>
+<span class="sd">        and/or the Hikurangi clipping area.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        figsize : tuple, optional</span>
+<span class="sd">            Figure size ``(width, height)`` in inches.  Defaults to</span>
+<span class="sd">            ``(6.4, 4.8)``.</span>
+<span class="sd">        hillshading_intensity : float, optional</span>
+<span class="sd">            Hillshade alpha (0–1).  If 0 (default), no hillshade is drawn.</span>
+<span class="sd">        bounds : tuple, optional</span>
+<span class="sd">            ``(x_min, y_min, x_max, y_max)`` map bounds.</span>
+<span class="sd">        plot_rivers : bool, optional</span>
+<span class="sd">            If ``True`` (default), overlay river lines.</span>
+<span class="sd">        plot_lakes : bool, optional</span>
+<span class="sd">            If ``True`` (default), overlay lake polygons.</span>
+<span class="sd">        hillshade_fine : bool, optional</span>
+<span class="sd">            If ``True``, use the high-resolution NIWA hillshade raster.</span>
+<span class="sd">            Defaults to ``False``.</span>
+<span class="sd">        plot_highways : bool, optional</span>
+<span class="sd">            If ``True`` (default), overlay state highway lines.</span>
+<span class="sd">        plot_boundaries : bool, optional</span>
+<span class="sd">            If ``True``, overlay regional boundary polygons.</span>
+<span class="sd">            Defaults to ``False``.</span>
+<span class="sd">        subplots : tuple or None, optional</span>
+<span class="sd">            ``(fig, ax)`` to draw onto.  A new figure is created if</span>
+<span class="sd">            ``None``.</span>
+<span class="sd">        pickle_name : str or None, optional</span>
+<span class="sd">            If provided, pickle the ``(fig, ax)`` tuple to this path.</span>
+<span class="sd">        hillshade_cmap : LinearSegmentedColormap, optional</span>
+<span class="sd">            Colourmap for the hillshade.  Defaults to ``cm.terrain``.</span>
+<span class="sd">        plot_edge_label : bool, optional</span>
+<span class="sd">            If ``True`` (default), show axis tick labels.</span>
+<span class="sd">        plot_hk : bool, optional</span>
+<span class="sd">            If ``True``, overlay the Hikurangi clipping-area polygon.</span>
+<span class="sd">            Defaults to ``False``.</span>
+<span class="sd">        plot_fault_outlines : bool, optional</span>
+<span class="sd">            Reserved for future use.  Defaults to ``True``.</span>
+<span class="sd">        wgs : bool, optional</span>
+<span class="sd">            If ``True``, use WGS84 coordinates.  Defaults to ``False``.</span>
+<span class="sd">        land_color : str, optional</span>
+<span class="sd">            Land fill colour.  Defaults to ``&quot;antiquewhite&quot;``.</span>
+<span class="sd">        plot_sub_cbar : bool, optional</span>
+<span class="sd">            If ``True``, add a subduction slip colourbar panel.</span>
+<span class="sd">            Defaults to ``False``.</span>
+<span class="sd">        sub_slip_max : float, optional</span>
+<span class="sd">            Maximum subduction slip (m) for the colourbar.</span>
+<span class="sd">            Defaults to 20.</span>
+<span class="sd">        plot_crust_cbar : bool, optional</span>
+<span class="sd">            If ``True``, add a crustal slip colourbar panel.</span>
+<span class="sd">            Defaults to ``False``.</span>
+<span class="sd">        crust_slip_max : float, optional</span>
+<span class="sd">            Maximum crustal slip (m) for the colourbar.  Defaults to 10.</span>
+<span class="sd">        subduction_cmap : LinearSegmentedColormap, optional</span>
+<span class="sd">            Colourmap for the subduction colourbar.  Defaults to</span>
+<span class="sd">            ``cm.plasma``.</span>
+<span class="sd">        crust_cmap : LinearSegmentedColormap, optional</span>
+<span class="sd">            Colourmap for the crustal colourbar.  Defaults to</span>
+<span class="sd">            ``cm.viridis``.</span>
+<span class="sd">        slider_axis : bool, optional</span>
+<span class="sd">            If ``True``, add a slider and year-label axes row.</span>
+<span class="sd">            Defaults to ``False``.</span>
+<span class="sd">        aotearoa : bool, optional</span>
+<span class="sd">            If ``True`` (default), draw the NZ coastline and GIS overlays.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        fig : matplotlib.figure.Figure</span>
+<span class="sd">            The composed figure.</span>
+<span class="sd">        ax : dict or matplotlib.axes.Axes</span>
+<span class="sd">            Axis dict (from ``subplot_mosaic``) or the provided ``ax``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">subplots</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">subplots</span>
+            <span class="n">main_ax</span> <span class="o">=</span> <span class="n">ax</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">plot_sub_cbar</span> <span class="ow">or</span> <span class="n">plot_crust_cbar</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">plot_sub_cbar</span><span class="p">,</span> <span class="n">plot_crust_cbar</span><span class="p">]):</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">slider_axis</span><span class="p">:</span>
+                        <span class="n">mosaic</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">&quot;main_figure&quot;</span><span class="p">,</span> <span class="s2">&quot;cbar&quot;</span><span class="p">]]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">mosaic</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">&quot;main_figure&quot;</span><span class="p">,</span> <span class="s2">&quot;cbar&quot;</span><span class="p">],</span>
+                                  <span class="p">[</span><span class="s2">&quot;slider&quot;</span><span class="p">,</span> <span class="s2">&quot;year&quot;</span><span class="p">]]</span>
+                        <span class="n">height_ratio</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">]</span>
+                    <span class="n">width_ratio</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">]</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">slider_axis</span><span class="p">:</span>
+                        <span class="n">mosaic</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">&quot;main_figure&quot;</span><span class="p">,</span> <span class="s2">&quot;sub_cbar&quot;</span><span class="p">,</span> <span class="s2">&quot;crust_cbar&quot;</span><span class="p">]]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">mosaic</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">&quot;main_figure&quot;</span><span class="p">,</span> <span class="s2">&quot;sub_cbar&quot;</span><span class="p">,</span> <span class="s2">&quot;crust_cbar&quot;</span><span class="p">],</span>
+                                  <span class="p">[</span><span class="s2">&quot;slider&quot;</span><span class="p">,</span> <span class="s2">&quot;year&quot;</span><span class="p">,</span> <span class="s2">&quot;year&quot;</span><span class="p">]]</span>
+                        <span class="n">height_ratio</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">]</span>
+                    <span class="n">width_ratio</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">slider_axis</span><span class="p">:</span>
+                    <span class="n">mosaic</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">&quot;main_figure&quot;</span><span class="p">]]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">mosaic</span> <span class="o">=</span><span class="p">[[</span><span class="s2">&quot;main_figure&quot;</span><span class="p">],[</span><span class="s2">&quot;slider&quot;</span><span class="p">,</span><span class="s2">&quot;year&quot;</span><span class="p">,</span><span class="s2">&quot;year&quot;</span><span class="p">]]</span>
+                    <span class="n">height_ratio</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mf">0.1</span><span class="p">]</span>
+                <span class="n">width_ratio</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+
+            <span class="k">if</span> <span class="n">slider_axis</span><span class="p">:</span>
+                <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot_mosaic</span><span class="p">(</span><span class="n">mosaic</span><span class="p">,</span> <span class="n">gridspec_kw</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;height_ratios&quot;</span><span class="p">:</span> <span class="n">height_ratio</span><span class="p">,</span>
+                                                                  <span class="s2">&quot;width_ratios&quot;</span><span class="p">:</span> <span class="n">width_ratio</span><span class="p">},</span>
+                                             <span class="n">layout</span><span class="o">=</span><span class="s2">&quot;constrained&quot;</span><span class="p">)</span>
+                <span class="n">year_ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="s2">&quot;year&quot;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot_mosaic</span><span class="p">(</span><span class="n">mosaic</span><span class="p">,</span>
+                                             <span class="n">gridspec_kw</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;width_ratios&quot;</span><span class="p">:</span> <span class="n">width_ratio</span><span class="p">},</span>
+                                             <span class="n">layout</span><span class="o">=</span><span class="s2">&quot;constrained&quot;</span><span class="p">)</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">set_size_inches</span><span class="p">(</span><span class="n">figsize</span><span class="p">)</span>
+            <span class="n">main_ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="s2">&quot;main_figure&quot;</span><span class="p">]</span>
+
+
+        <span class="n">plot_bounds</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">bounds</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">aotearoa</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hillshading_intensity</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">plot_coast</span><span class="p">(</span><span class="n">main_ax</span><span class="p">,</span> <span class="n">clip_boundary</span><span class="o">=</span><span class="n">plot_bounds</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="n">land_color</span><span class="p">)</span>
+                <span class="n">x_lim</span> <span class="o">=</span> <span class="n">main_ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+                <span class="n">y_lim</span> <span class="o">=</span> <span class="n">main_ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">hillshade_fine</span><span class="p">:</span>
+                    <span class="n">plot_hillshade_niwa</span><span class="p">(</span><span class="n">main_ax</span><span class="p">,</span> <span class="n">hillshading_intensity</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="o">=</span><span class="n">plot_bounds</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">hillshade_cmap</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">plot_hillshade</span><span class="p">(</span><span class="n">main_ax</span><span class="p">,</span> <span class="n">hillshading_intensity</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="o">=</span><span class="n">plot_bounds</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">hillshade_cmap</span><span class="p">)</span>
+                <span class="n">main_ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">x_lim</span><span class="p">)</span>
+                <span class="n">main_ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">y_lim</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">plot_coast</span><span class="p">(</span><span class="n">main_ax</span><span class="p">,</span> <span class="n">clip_boundary</span><span class="o">=</span><span class="n">plot_bounds</span><span class="p">,</span><span class="n">wgs</span><span class="o">=</span><span class="n">wgs</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="n">land_color</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">plot_lakes</span><span class="p">:</span>
+                <span class="n">plot_lake_polygons</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">main_ax</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="o">=</span><span class="n">plot_bounds</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">plot_rivers</span><span class="p">:</span>
+                <span class="n">plot_river_lines</span><span class="p">(</span><span class="n">main_ax</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="o">=</span><span class="n">plot_bounds</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">plot_highways</span><span class="p">:</span>
+                <span class="n">plot_highway_lines</span><span class="p">(</span><span class="n">main_ax</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="o">=</span><span class="n">plot_bounds</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">plot_boundaries</span><span class="p">:</span>
+                <span class="n">plot_boundary_polygons</span><span class="p">(</span><span class="n">main_ax</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="o">=</span><span class="n">plot_bounds</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">plot_hk</span><span class="p">:</span>
+                <span class="n">plot_hk_boundary</span><span class="p">(</span><span class="n">main_ax</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="o">=</span><span class="n">plot_bounds</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">plot_fault_outlines</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+        <span class="n">main_ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">)</span>
+        <span class="n">x_lim</span> <span class="o">=</span> <span class="p">(</span><span class="n">plot_bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">plot_bounds</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">y_lim</span> <span class="o">=</span> <span class="p">(</span><span class="n">plot_bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">plot_bounds</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+        <span class="n">main_ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">x_lim</span><span class="p">)</span>
+        <span class="n">main_ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">y_lim</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">plot_edge_label</span><span class="p">:</span>
+            <span class="n">main_ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+            <span class="n">main_ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+
+        <span class="k">if</span> <span class="n">slider_axis</span><span class="p">:</span>
+            <span class="n">year_ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">year_ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">year_ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+        <span class="n">sub_mappable</span> <span class="o">=</span> <span class="n">ScalarMappable</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="n">subduction_cmap</span><span class="p">)</span>
+        <span class="n">sub_mappable</span><span class="o">.</span><span class="n">set_clim</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">sub_slip_max</span><span class="p">)</span>
+        <span class="n">crust_mappable</span> <span class="o">=</span> <span class="n">ScalarMappable</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="n">crust_cmap</span><span class="p">)</span>
+        <span class="n">crust_mappable</span><span class="o">.</span><span class="n">set_clim</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">crust_slip_max</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">plot_sub_cbar</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">plot_crust_cbar</span><span class="p">:</span>
+                <span class="n">sub_ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="s2">&quot;sub_cbar&quot;</span><span class="p">]</span>
+                <span class="n">crust_ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="s2">&quot;crust_cbar&quot;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sub_ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="s2">&quot;cbar&quot;</span><span class="p">]</span>
+            <span class="n">sub_cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span>
+                <span class="n">sub_mappable</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">sub_ax</span><span class="p">,</span> <span class="n">extend</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">)</span>
+            <span class="n">sub_cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s2">&quot;Subduction slip (m)&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">plot_crust_cbar</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">plot_sub_cbar</span><span class="p">:</span>
+                <span class="n">crust_ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="s2">&quot;crust_cbar&quot;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">crust_ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="s2">&quot;cbar&quot;</span><span class="p">]</span>
+            <span class="n">crust_cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span>
+                <span class="n">crust_mappable</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">crust_ax</span><span class="p">,</span> <span class="n">extend</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">)</span>
+            <span class="n">crust_cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s2">&quot;Crustal slip (m)&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">pickle_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pickle_name</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">pfile</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">((</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">),</span> <span class="n">pfile</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span></div>
+
+
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

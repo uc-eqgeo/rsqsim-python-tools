@@ -1,0 +1,22 @@
+rsqsim_api.visualisation
+========================
+
+.. py:module:: rsqsim_api.visualisation
+
+.. autoapi-nested-parse::
+
+   Visualisation utilities for NZ map backgrounds and earthquake animations.
+
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/rsqsim_api/visualisation/animation/index
+   /autoapi/rsqsim_api/visualisation/utilities/index
+   /autoapi/rsqsim_api/visualisation/visualisation_3d/index
+
+

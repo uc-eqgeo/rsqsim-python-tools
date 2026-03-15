@@ -1,0 +1,265 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.tsunami.tsunami_multiprocessing &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="rsqsim_api.visualisation" href="../../visualisation/index.html" />
+    <link rel="prev" title="rsqsim_api.tsunami.tsunami" href="../tsunami/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">rsqsim_api</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../../catalogue/index.html">rsqsim_api.catalogue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../fault/index.html">rsqsim_api.fault</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../io/index.html">rsqsim_api.io</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../index.html">rsqsim_api.tsunami</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../visualisation/index.html">rsqsim_api.visualisation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_fault/index.html">test_fault</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_catalogue/index.html">test_catalogue</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">rsqsim_api</a></li>
+          <li class="breadcrumb-item"><a href="../index.html">rsqsim_api.tsunami</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.tsunami.tsunami_multiprocessing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/tsunami/tsunami_multiprocessing/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.tsunami.tsunami_multiprocessing">
+<span id="rsqsim-api-tsunami-tsunami-multiprocessing"></span><h1>rsqsim_api.tsunami.tsunami_multiprocessing<a class="headerlink" href="#module-rsqsim_api.tsunami.tsunami_multiprocessing" title="Link to this heading"></a></h1>
+<p>Multiprocessing utilities for computing tsunami Green’s functions in parallel.</p>
+<p>Distributes the per-patch Green’s-function computation across multiple
+worker processes and writes the results incrementally to a set of
+netCDF output files via a producer/consumer pattern.</p>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.tsunami.tsunami_multiprocessing.sentinel" title="rsqsim_api.tsunami.tsunami_multiprocessing.sentinel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sentinel</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.tsunami.tsunami_multiprocessing.multiprocess_gf_to_hdf" title="rsqsim_api.tsunami.tsunami_multiprocessing.multiprocess_gf_to_hdf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">multiprocess_gf_to_hdf</span></code></a>(fault, x_range, y_range, ...[, ...])</p></td>
+<td><p>Compute tsunami Green's functions for all patches and write to netCDF files.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.tsunami.tsunami_multiprocessing.handle_output" title="rsqsim_api.tsunami.tsunami_multiprocessing.handle_output"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_output</span></code></a>(output_queue, output_file, dset_shape)</p></td>
+<td><p>Consumer process that writes sea-surface displacement data to an HDF5 file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.tsunami.tsunami_multiprocessing.handle_output_netcdf" title="rsqsim_api.tsunami.tsunami_multiprocessing.handle_output_netcdf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_output_netcdf</span></code></a>(output_queue, patch_indices, ...)</p></td>
+<td><p>Consumer process that writes sea-surface displacement data to a netCDF4 file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.tsunami.tsunami_multiprocessing.patch_greens_functions" title="rsqsim_api.tsunami.tsunami_multiprocessing.patch_greens_functions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">patch_greens_functions</span></code></a>(in_queue, x_sites, y_sites, ...)</p></td>
+<td><p>Worker process that computes Green's functions for patches received from the input queue.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami_multiprocessing.sentinel">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.tsunami.tsunami_multiprocessing.</span></span><span class="sig-name descname"><span class="pre">sentinel</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami_multiprocessing.html#sentinel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami_multiprocessing.sentinel" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami_multiprocessing.multiprocess_gf_to_hdf">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.tsunami.tsunami_multiprocessing.</span></span><span class="sig-name descname"><span class="pre">multiprocess_gf_to_hdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_file_prefix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slip_magnitude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_processors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_write</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami_multiprocessing.html#multiprocess_gf_to_hdf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami_multiprocessing.multiprocess_gf_to_hdf" title="Link to this definition"></a></dt>
+<dd><p>Compute tsunami Green’s functions for all patches and write to netCDF files.</p>
+<p>Distributes patch computations across <code class="docutils literal notranslate"><span class="pre">num_processors</span></code> worker
+processes and writes results to <code class="docutils literal notranslate"><span class="pre">num_write</span></code> netCDF output files
+via per-file output queues.  Patches are randomly shuffled before
+distribution to balance load.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault</strong> (<a class="reference internal" href="../../fault/segment/index.html#rsqsim_api.fault.segment.RsqSimSegment" title="rsqsim_api.fault.segment.RsqSimSegment"><em>RsqSimSegment</em></a><em> or </em><a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a>) – Fault model containing the patches to process.</p></li>
+<li><p><strong>x_range</strong> (<em>numpy.ndarray</em><em> of </em><em>shape</em><em> (</em><em>nx</em><em>,</em><em>)</em>) – 1-D easting coordinate array (NZTM metres).</p></li>
+<li><p><strong>y_range</strong> (<em>numpy.ndarray</em><em> of </em><em>shape</em><em> (</em><em>ny</em><em>,</em><em>)</em>) – 1-D northing coordinate array (NZTM metres).</p></li>
+<li><p><strong>out_file_prefix</strong> (<em>str</em>) – Prefix for output netCDF files; files are named
+<code class="docutils literal notranslate"><span class="pre">{out_file_prefix}{i}.nc</span></code> for <code class="docutils literal notranslate"><span class="pre">i</span></code> in
+<code class="docutils literal notranslate"><span class="pre">range(num_write)</span></code>.</p></li>
+<li><p><strong>x_grid</strong> (<em>numpy.ndarray</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – 2-D easting grid of shape <code class="docutils literal notranslate"><span class="pre">(ny,</span> <span class="pre">nx)</span></code>.  If <code class="docutils literal notranslate"><span class="pre">None</span></code>,
+constructed from <code class="docutils literal notranslate"><span class="pre">x_range</span></code> and <code class="docutils literal notranslate"><span class="pre">y_range</span></code> via meshgrid.</p></li>
+<li><p><strong>y_grid</strong> (<em>numpy.ndarray</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – 2-D northing grid; must match <code class="docutils literal notranslate"><span class="pre">x_grid</span></code> shape.</p></li>
+<li><p><strong>z_grid</strong> (<em>numpy.ndarray</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – 2-D elevation grid (m); defaults to all zeros.</p></li>
+<li><p><strong>slip_magnitude</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Unit slip magnitude used for the Green’s function calculation.
+Defaults to 1.</p></li>
+<li><p><strong>num_processors</strong> (<em>int</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Number of worker processes.  Defaults to half the available
+CPU count.</p></li>
+<li><p><strong>num_write</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of output netCDF files (and output processes).
+Defaults to 8.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami_multiprocessing.handle_output">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.tsunami.tsunami_multiprocessing.</span></span><span class="sig-name descname"><span class="pre">handle_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_queue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dset_shape</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami_multiprocessing.html#handle_output"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami_multiprocessing.handle_output" title="Link to this definition"></a></dt>
+<dd><p>Consumer process that writes sea-surface displacement data to an HDF5 file.</p>
+<p>Reads <code class="docutils literal notranslate"><span class="pre">(index,</span> <span class="pre">vert_disp)</span></code> tuples from the queue until the
+sentinel value is received.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_queue</strong> (<em>multiprocessing.Queue</em>) – Queue delivering <code class="docutils literal notranslate"><span class="pre">(index,</span> <span class="pre">disp_array)</span></code> tuples.</p></li>
+<li><p><strong>output_file</strong> (<em>str</em>) – Output HDF5 file path.</p></li>
+<li><p><strong>dset_shape</strong> (<em>tuple</em>) – Shape of the <code class="docutils literal notranslate"><span class="pre">&quot;ssd_1m&quot;</span></code> dataset.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami_multiprocessing.handle_output_netcdf">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.tsunami.tsunami_multiprocessing.</span></span><span class="sig-name descname"><span class="pre">handle_output_netcdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_queue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dset_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami_multiprocessing.html#handle_output_netcdf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami_multiprocessing.handle_output_netcdf" title="Link to this definition"></a></dt>
+<dd><p>Consumer process that writes sea-surface displacement data to a netCDF4 file.</p>
+<p>Creates a netCDF4 file with dimensions <code class="docutils literal notranslate"><span class="pre">(npatch,</span> <span class="pre">y,</span> <span class="pre">x)</span></code> and
+reads <code class="docutils literal notranslate"><span class="pre">(index,</span> <span class="pre">patch_index,</span> <span class="pre">disp_array)</span></code> tuples from the queue
+until the sentinel value is received.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_queue</strong> (<em>multiprocessing.Queue</em>) – Queue delivering <code class="docutils literal notranslate"><span class="pre">(local_index,</span> <span class="pre">patch_index,</span> <span class="pre">disp_array)</span></code>
+tuples.</p></li>
+<li><p><strong>patch_indices</strong> (<em>numpy.ndarray</em>) – Array of global patch indices stored in this file.</p></li>
+<li><p><strong>output_file</strong> (<em>str</em>) – Output netCDF4 file path.</p></li>
+<li><p><strong>dset_shape</strong> (<em>tuple</em><em> of </em><em>int</em>) – Shape <code class="docutils literal notranslate"><span class="pre">(n_patches,</span> <span class="pre">ny,</span> <span class="pre">nx)</span></code> of the SSD variable.</p></li>
+<li><p><strong>x_range</strong> (<em>numpy.ndarray</em>) – 1-D easting coordinate array.</p></li>
+<li><p><strong>y_range</strong> (<em>numpy.ndarray</em>) – 1-D northing coordinate array.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.tsunami.tsunami_multiprocessing.patch_greens_functions">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.tsunami.tsunami_multiprocessing.</span></span><span class="sig-name descname"><span class="pre">patch_greens_functions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_queue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_sites</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_sites</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_sites</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_queue_dic</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slip_magnitude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/tsunami/tsunami_multiprocessing.html#patch_greens_functions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.tsunami.tsunami_multiprocessing.patch_greens_functions" title="Link to this definition"></a></dt>
+<dd><p>Worker process that computes Green’s functions for patches received from the input queue.</p>
+<p>Reads <code class="docutils literal notranslate"><span class="pre">(file_no,</span> <span class="pre">file_index,</span> <span class="pre">patch_number,</span> <span class="pre">patch)</span></code> tuples from
+<code class="docutils literal notranslate"><span class="pre">in_queue</span></code>, calls
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">calculate_tsunami_greens_functions()</span></code>,
+and forwards the result to the appropriate output queue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>in_queue</strong> (<em>multiprocessing.Queue</em>) – Input queue of <code class="docutils literal notranslate"><span class="pre">(file_no,</span> <span class="pre">file_index,</span> <span class="pre">patch_number,</span> <span class="pre">patch)</span></code>
+tuples.  A <code class="docutils literal notranslate"><span class="pre">None</span></code> sentinel signals termination.</p></li>
+<li><p><strong>x_sites</strong> (<em>numpy.ndarray</em>) – Flattened easting coordinates of the output grid.</p></li>
+<li><p><strong>y_sites</strong> (<em>numpy.ndarray</em>) – Flattened northing coordinates.</p></li>
+<li><p><strong>z_sites</strong> (<em>numpy.ndarray</em>) – Flattened elevation coordinates.</p></li>
+<li><p><strong>out_queue_dic</strong> (<em>dict</em>) – Mapping of file index to output queue.</p></li>
+<li><p><strong>grid_shape</strong> (<em>tuple</em>) – Shape of the output displacement grid.</p></li>
+<li><p><strong>slip_magnitude</strong> (<em>int</em><em> or </em><em>float</em><em>, </em><em>optional</em>) – Unit slip magnitude.  Defaults to 1.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../tsunami/index.html" class="btn btn-neutral float-left" title="rsqsim_api.tsunami.tsunami" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../../visualisation/index.html" class="btn btn-neutral float-right" title="rsqsim_api.visualisation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

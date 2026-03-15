@@ -1,0 +1,1375 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.fault.multifault &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.fault.multifault</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for rsqsim_api.fault.multifault</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">RSQSim multi-fault model container and related utilities.</span>
+
+<span class="sd">Provides :func:`check_unique_vertices` for duplicate-vertex detection</span>
+<span class="sd">and :class:`RsqSimMultiFault` for managing a collection of</span>
+<span class="sd">:class:`~rsqsim_api.fault.segment.RsqSimSegment` objects, including</span>
+<span class="sd">I/O from RSQSim/Bruce fault files, CFM tsurf directories, and various</span>
+<span class="sd">GIS export methods.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">import</span> <span class="nn">fnmatch</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
+<span class="kn">import</span> <span class="nn">difflib</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="kn">from</span> <span class="nn">rsqsim_api.visualisation.utilities</span> <span class="kn">import</span> <span class="n">plot_coast</span>
+<span class="kn">from</span> <span class="nn">rsqsim_api.fault.segment</span> <span class="kn">import</span> <span class="n">RsqSimSegment</span>
+<span class="kn">from</span> <span class="nn">rsqsim_api.io.mesh_utils</span> <span class="kn">import</span> <span class="n">array_to_mesh</span>
+<span class="kn">import</span> <span class="nn">rsqsim_api.io.rsqsim_constants</span> <span class="k">as</span> <span class="nn">csts</span>
+<span class="kn">from</span> <span class="nn">rsqsim_api.fault.utilities</span> <span class="kn">import</span> <span class="n">merge_multiple_nearly_adjacent_segments</span>
+
+<span class="kn">from</span> <span class="nn">shapely.ops</span> <span class="kn">import</span> <span class="n">linemerge</span>
+<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">LineString</span><span class="p">,</span><span class="n">MultiLineString</span>
+
+<div class="viewcode-block" id="check_unique_vertices">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.check_unique_vertices">[docs]</a>
+<span class="k">def</span> <span class="nf">check_unique_vertices</span><span class="p">(</span><span class="n">vertex_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check whether any vertices in a 3-D array are potential duplicates.</span>
+
+<span class="sd">    Sorts the vertex array and computes distances between adjacent</span>
+<span class="sd">    rows in the sorted order; vertices closer than ``tolerance`` are</span>
+<span class="sd">    flagged as potential duplicates.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vertex_array : numpy.ndarray of shape (n, 3)</span>
+<span class="sd">        3-D vertex coordinates.</span>
+<span class="sd">    tolerance : int or float, optional</span>
+<span class="sd">        Distance threshold (m) below which vertices are reported as</span>
+<span class="sd">        potential duplicates.  Defaults to 1.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    num_closer : int</span>
+<span class="sd">        Number of adjacent-sorted-vertex pairs closer than</span>
+<span class="sd">        ``tolerance``.</span>
+<span class="sd">    tolerance : float</span>
+<span class="sd">        The tolerance value used.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vertex_array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="n">vertex_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span>
+    <span class="n">sorted_vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">vertex_array</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">differences</span> <span class="o">=</span> <span class="n">sorted_vertices</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">sorted_vertices</span>
+    <span class="n">distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">differences</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">num_closer</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">distances</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">distances</span> <span class="o">&lt;=</span> <span class="n">tolerance</span><span class="p">)])</span>
+
+    <span class="k">return</span> <span class="n">num_closer</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">tolerance</span><span class="p">)</span></div>
+
+
+
+
+<div class="viewcode-block" id="RsqSimMultiFault">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault">[docs]</a>
+<span class="k">class</span> <span class="nc">RsqSimMultiFault</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Container for a collection of fault segments forming a complete fault model.</span>
+
+<span class="sd">    Aggregates :class:`~rsqsim_api.fault.segment.RsqSimSegment`</span>
+<span class="sd">    objects, provides name-based lookup, boundary computation, and</span>
+<span class="sd">    I/O methods for RSQSim/Bruce fault files, CFM tsurf directories,</span>
+<span class="sd">    and various GIS export formats.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    faults : list</span>
+<span class="sd">        List of :class:`~rsqsim_api.fault.segment.RsqSimSegment`</span>
+<span class="sd">        (or nested :class:`RsqSimMultiFault`) objects.</span>
+<span class="sd">    patch_dic : dict</span>
+<span class="sd">        Mapping of global patch number to patch object.</span>
+<span class="sd">    faults_with_patches : dict</span>
+<span class="sd">        Mapping of global patch number to the owning segment.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">faults</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="nb">set</span><span class="p">,</span> <span class="n">crs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2193</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        faults : list, tuple, or set</span>
+<span class="sd">            Fault segment objects.</span>
+<span class="sd">        crs : int, optional</span>
+<span class="sd">            EPSG code for the coordinate reference system.</span>
+<span class="sd">            Defaults to 2193 (NZTM).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_faults</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">faults</span> <span class="o">=</span> <span class="n">faults</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_names</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name_dic</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_crs</span> <span class="o">=</span> <span class="n">crs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_traces</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_outlines</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_v2_name_dic</span> <span class="o">=</span> <span class="kc">None</span>
+<div class="viewcode-block" id="RsqSimMultiFault.patch_dic">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.patch_dic">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patch_dic</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+        <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_dic</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">patch_dic</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">fault</span><span class="o">.</span><span class="n">patch_dic</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RsqSimMultiFault.faults_with_patches">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.faults_with_patches">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">faults_with_patches</span> <span class="o">=</span> <span class="p">{</span><span class="n">patch_num</span><span class="p">:</span> <span class="n">patch</span><span class="o">.</span><span class="n">segment</span> <span class="k">for</span> <span class="n">patch_num</span><span class="p">,</span> <span class="n">patch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_dic</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.filter_faults_by_patch_numbers">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.filter_faults_by_patch_numbers">[docs]</a>
+    <span class="k">def</span> <span class="nf">filter_faults_by_patch_numbers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">patch_ls</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span><span class="n">fault_from_single_patch</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the fault(s) associated with a given patch number or list of patch numbers.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        patch_ls : int or array-like of int</span>
+<span class="sd">            Patch number(s) to look up.</span>
+<span class="sd">        fault_from_single_patch : bool, optional</span>
+<span class="sd">            If ``True`` and a single patch number is given, return the</span>
+<span class="sd">            owning :class:`~rsqsim_api.fault.segment.RsqSimSegment`</span>
+<span class="sd">            rather than the patch object.  Defaults to ``False``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        RsqSimTriangularPatch or RsqSimSegment or RsqSimMultiFault</span>
+<span class="sd">            The patch object, segment, or a new</span>
+<span class="sd">            :class:`RsqSimMultiFault` containing the relevant segments.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">patch_ls</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">fault_from_single_patch</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults_with_patches</span><span class="p">[</span><span class="n">patch_ls</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_dic</span><span class="p">[</span><span class="n">patch_ls</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">patch_ls</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">))</span>
+            <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">patch_ls</span><span class="p">])</span>
+            <span class="n">fault_ls</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">patch_dic</span><span class="p">[</span><span class="n">patch_number</span><span class="p">]</span><span class="o">.</span><span class="n">segment</span> <span class="k">for</span> <span class="n">patch_number</span> <span class="ow">in</span> <span class="n">patch_ls</span><span class="p">]))</span>
+            <span class="k">return</span> <span class="n">RsqSimMultiFault</span><span class="p">(</span><span class="n">fault_ls</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimMultiFault.faults">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.faults">[docs]</a>
+    <span class="k">def</span> <span class="nf">faults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_faults</span></div>
+
+
+    <span class="nd">@faults</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">faults</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">faults</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="nb">set</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">fault</span><span class="p">,</span> <span class="p">(</span><span class="n">RsqSimMultiFault</span><span class="p">,</span> <span class="n">RsqSimSegment</span><span class="p">))</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">faults</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_faults</span> <span class="o">=</span> <span class="n">faults</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimMultiFault.names">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.names">[docs]</a>
+    <span class="k">def</span> <span class="nf">names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_names</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_names</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimMultiFault.name_dic">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.name_dic">[docs]</a>
+    <span class="k">def</span> <span class="nf">name_dic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name_dic</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_names</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name_dic</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.get_names">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.get_names">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Populate :attr:`names` and :attr:`name_dic` from the loaded faults.&quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">fault</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name_dic</span> <span class="o">=</span> <span class="p">{</span><span class="n">fault</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">fault</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">}</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimMultiFault.bounds">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.bounds">[docs]</a>
+    <span class="k">def</span> <span class="nf">bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">x0</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">fault</span><span class="o">.</span><span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">])</span>
+        <span class="n">y0</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">fault</span><span class="o">.</span><span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">])</span>
+        <span class="n">x1</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">fault</span><span class="o">.</span><span class="n">bounds</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">])</span>
+        <span class="n">y1</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">fault</span><span class="o">.</span><span class="n">bounds</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">])</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimMultiFault.crs">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.crs">[docs]</a>
+    <span class="k">def</span> <span class="nf">crs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_crs</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimMultiFault.v2_name_dic">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.v2_name_dic">[docs]</a>
+    <span class="k">def</span> <span class="nf">v2_name_dic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_v2_name_dic</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.get_patch_areas">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.get_patch_areas">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_patch_areas</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a flat array of patch areas for all faults.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray of shape (n_total_patches,)</span>
+<span class="sd">            Patch areas in m².</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">fault</span><span class="o">.</span><span class="n">patch_areas</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.make_v2_name_dic">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.make_v2_name_dic">[docs]</a>
+    <span class="k">def</span> <span class="nf">make_v2_name_dic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">path2cfm</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build a dictionary mapping Bruce-V2 fault names to CFM fault names.</span>
+
+<span class="sd">        Uses fuzzy string matching to find the closest name in the CFM</span>
+<span class="sd">        fault model GIS file, with hardcoded overrides for ambiguous</span>
+<span class="sd">        cases (Wairau, Hikurangi, Puysegur).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path2cfm : str</span>
+<span class="sd">            Path to the CFM fault model GIS file (shapefile or</span>
+<span class="sd">            GeoJSON) containing a ``&quot;Name&quot;`` column.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None</span>
+<span class="sd">            Populates :attr:`v2_name_dic`.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AssertionError</span>
+<span class="sd">            If ``path2cfm`` does not exist.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path2cfm</span><span class="p">),</span> <span class="s2">&quot;Path to CFM fault model not found&quot;</span>
+        <span class="n">cfm</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">path2cfm</span><span class="p">)</span>
+        <span class="n">cfm_names</span><span class="o">=</span><span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">cfm</span><span class="p">[</span><span class="s1">&#39;Name&#39;</span><span class="p">]]</span>
+        <span class="n">nearest_cfm</span> <span class="o">=</span> <span class="p">[</span><span class="n">difflib</span><span class="o">.</span><span class="n">get_close_matches</span><span class="p">(</span><span class="n">name</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">cfm_names</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">]</span>
+        <span class="n">name_dict</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">,</span><span class="n">nearest_cfm</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">name_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">bool</span><span class="p">(</span><span class="n">name_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]):</span>
+                <span class="n">name_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">=</span><span class="n">key</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">name_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">=</span><span class="n">name_dict</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="c1">#add in awkward faults</span>
+        <span class="n">name_dict</span><span class="p">[</span><span class="s1">&#39;wairau20&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;wairau&#39;</span>
+        <span class="n">name_dict</span><span class="p">[</span><span class="s1">&#39;wairau30&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;wairau&#39;</span>
+        <span class="c1"># add hikurangi and puysegur</span>
+        <span class="n">puy_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="k">if</span> <span class="n">fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;*puysegar*&quot;</span><span class="p">)]</span>
+        <span class="n">hikurangi_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="k">if</span> <span class="n">fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;*hikurangi*&quot;</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">puy_names</span><span class="p">:</span>
+            <span class="n">name_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;puy&#39;</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">hikurangi_names</span><span class="p">:</span>
+            <span class="n">name_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;hik&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_v2_name_dic</span><span class="o">=</span><span class="n">name_dict</span>
+
+        <span class="k">return</span></div>
+
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="RsqSimMultiFault.read_fault_file">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.read_fault_file">[docs]</a>
+    <span class="k">def</span> <span class="nf">read_fault_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">fault_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read in opensha xml file?</span>
+<span class="sd">        TODO: decide whether this is necessary, and if so finish it</span>
+<span class="sd">        :param fault_file:</span>
+<span class="sd">        :param verbose:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fault_file</span><span class="p">)</span></div>
+
+        <span class="c1"># Read first 10 lines of file</span>
+
+
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="RsqSimMultiFault.read_fault_file_keith">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.read_fault_file_keith">[docs]</a>
+    <span class="k">def</span> <span class="nf">read_fault_file_keith</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">fault_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">crs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2193</span><span class="p">,</span>
+                              <span class="n">read_slip_rate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read an RSQSim fault file in Keith Richards-Dinger&#39;s convention.</span>
+
+<span class="sd">        The file has 13 whitespace-separated columns:</span>
+<span class="sd">        ``x1,y1,z1, x2,y2,z2, x3,y3,z3, rake, slip_rate, fault_num, fault_name``.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        fault_file : str</span>
+<span class="sd">            Path to the RSQSim fault input file.</span>
+<span class="sd">        verbose : bool, optional</span>
+<span class="sd">            If ``True``, print per-fault progress and duplicate-vertex</span>
+<span class="sd">            warnings.  Defaults to ``False``.</span>
+<span class="sd">        crs : int, optional</span>
+<span class="sd">            EPSG code for the coordinate reference system.</span>
+<span class="sd">            Defaults to 2193 (NZTM).</span>
+<span class="sd">        read_slip_rate : bool, optional</span>
+<span class="sd">            If ``True`` (default), populate patch slip rates.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        RsqSimMultiFault</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fault_file</span><span class="p">)</span>
+
+        <span class="c1"># Prepare info (types and headers) about columns</span>
+        <span class="n">column_dtypes</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">*</span> <span class="mi">11</span> <span class="o">+</span> <span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;U50&quot;</span><span class="p">]</span>
+        <span class="n">column_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;x1&quot;</span><span class="p">,</span> <span class="s2">&quot;y1&quot;</span><span class="p">,</span> <span class="s2">&quot;z1&quot;</span><span class="p">,</span> <span class="s2">&quot;x2&quot;</span><span class="p">,</span> <span class="s2">&quot;y2&quot;</span><span class="p">,</span> <span class="s2">&quot;z2&quot;</span><span class="p">,</span> <span class="s2">&quot;x3&quot;</span><span class="p">,</span> <span class="s2">&quot;y3&quot;</span><span class="p">,</span> <span class="s2">&quot;z3&quot;</span><span class="p">,</span> <span class="s2">&quot;rake&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;slip_rate&quot;</span><span class="p">,</span> <span class="s2">&quot;fault_num&quot;</span><span class="p">,</span> <span class="s2">&quot;fault_name&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Read in data</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">fault_file</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">column_dtypes</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">column_names</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">fault_file</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">column_dtypes</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">names</span><span class="o">=</span><span class="n">column_names</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="n">all_fault_nums</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;fault_num&quot;</span><span class="p">])</span>
+        <span class="n">num_faults</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_fault_nums</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">)</span> <span class="o">==</span> <span class="mi">13</span><span class="p">:</span>
+            <span class="n">all_fault_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;fault_name&quot;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">all_fault_names</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_fault_names</span><span class="p">)</span> <span class="o">==</span> <span class="n">num_faults</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: not every fault has a corresponding name&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Populate faults with triangular patches</span>
+        <span class="n">patch_start</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">segment_ls</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">number</span> <span class="ow">in</span> <span class="n">all_fault_nums</span><span class="p">:</span>
+            <span class="n">fault_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;fault_num&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">number</span><span class="p">]</span>
+            <span class="c1"># Check that fault number has only one name associated with it</span>
+            <span class="k">if</span> <span class="s2">&quot;fault_name&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+                <span class="n">associated_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">fault_data</span><span class="p">[</span><span class="s2">&quot;fault_name&quot;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">associated_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+            <span class="n">associated_rakes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">fault_data</span><span class="p">[</span><span class="s2">&quot;rake&quot;</span><span class="p">])</span>
+            <span class="n">associated_slip_rates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">fault_data</span><span class="p">[</span><span class="s2">&quot;slip_rate&quot;</span><span class="p">])</span>
+
+            <span class="n">fault_name</span> <span class="o">=</span> <span class="n">associated_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">associated_names</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">fault_rake</span> <span class="o">=</span> <span class="n">fault_data</span><span class="p">[</span><span class="s2">&quot;rake&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">associated_rakes</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">associated_names</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;More than one name provided for fault </span><span class="si">{:d}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">number</span><span class="p">))</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Proceeding with first in list: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fault_name</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reading fault: </span><span class="si">{:d}</span><span class="s2">/</span><span class="si">{:d}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">number</span><span class="p">,</span> <span class="n">num_faults</span><span class="p">,</span> <span class="n">fault_name</span><span class="p">))</span>
+
+            <span class="c1"># Extract data relevant for making triangles</span>
+            <span class="n">triangles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">fault_data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">column_names</span><span class="p">[:</span><span class="mi">9</span><span class="p">]])</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">num_triangles</span> <span class="o">=</span> <span class="n">triangles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="c1"># Reshape for creation of triangular patches</span>
+            <span class="n">all_vertices</span> <span class="o">=</span> <span class="n">triangles</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">triangles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">triangles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="mi">3</span><span class="p">))</span>
+
+            <span class="n">patch_numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">patch_start</span><span class="p">,</span> <span class="n">patch_start</span> <span class="o">+</span> <span class="n">num_triangles</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="n">unique_vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">all_vertices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">num_closer</span><span class="p">,</span> <span class="n">tolerance</span> <span class="o">=</span> <span class="n">check_unique_vertices</span><span class="p">(</span><span class="n">unique_vertices</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">num_closer</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{:d}</span><span class="s2"> points are closer than </span><span class="si">{:.2f}</span><span class="s2"> m together: duplicates?&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num_closer</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">))</span>
+
+            <span class="c1"># Create fault object</span>
+            <span class="k">if</span> <span class="n">read_slip_rate</span><span class="p">:</span>
+                <span class="n">fault_i</span> <span class="o">=</span> <span class="n">RsqSimSegment</span><span class="o">.</span><span class="n">from_triangles</span><span class="p">(</span><span class="n">triangles</span><span class="o">=</span><span class="n">triangles</span><span class="p">,</span> <span class="n">patch_numbers</span><span class="o">=</span><span class="n">patch_numbers</span><span class="p">,</span>
+                                                       <span class="n">segment_number</span><span class="o">=</span><span class="n">number</span><span class="p">,</span> <span class="n">fault_name</span><span class="o">=</span><span class="n">fault_name</span><span class="p">,</span> <span class="n">rake</span><span class="o">=</span><span class="n">fault_rake</span><span class="p">,</span>
+                                                       <span class="n">total_slip</span><span class="o">=</span><span class="n">associated_slip_rates</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fault_i</span> <span class="o">=</span> <span class="n">RsqSimSegment</span><span class="o">.</span><span class="n">from_triangles</span><span class="p">(</span><span class="n">triangles</span><span class="o">=</span><span class="n">triangles</span><span class="p">,</span> <span class="n">patch_numbers</span><span class="o">=</span><span class="n">patch_numbers</span><span class="p">,</span>
+                                                       <span class="n">segment_number</span><span class="o">=</span><span class="n">number</span><span class="p">,</span> <span class="n">fault_name</span><span class="o">=</span><span class="n">fault_name</span><span class="p">,</span> <span class="n">rake</span><span class="o">=</span><span class="n">fault_rake</span><span class="p">)</span>
+
+            <span class="n">segment_ls</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fault_i</span><span class="p">)</span>
+            <span class="n">patch_start</span> <span class="o">+=</span> <span class="n">num_triangles</span>
+
+        <span class="n">multi_fault</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">segment_ls</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">crs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">multi_fault</span></div>
+
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="RsqSimMultiFault.read_fault_file_bruce">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.read_fault_file_bruce">[docs]</a>
+    <span class="k">def</span> <span class="nf">read_fault_file_bruce</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">main_fault_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">transform_from_utm</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                              <span class="n">from_pickle</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">crs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2193</span><span class="p">,</span> <span class="n">read_slip_rate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read an RSQSim fault model in Bruce Shaw&#39;s format.</span>
+
+<span class="sd">        Reads a two-file layout: a main CSV fault file and a companion</span>
+<span class="sd">        names file.  Handles the case where multiple fault segments</span>
+<span class="sd">        share the same name by appending a numeric suffix.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        main_fault_file : str</span>
+<span class="sd">            Path to the main fault geometry file (space-separated,</span>
+<span class="sd">            13 columns: x1–z3, rake, slip_rate, fault_num, name).</span>
+<span class="sd">            Can also be a pickled DataFrame if ``from_pickle`` is</span>
+<span class="sd">            ``True``.</span>
+<span class="sd">        name_file : str</span>
+<span class="sd">            Path to the text file listing fault names (one per line,</span>
+<span class="sd">            in the same order as fault numbers).</span>
+<span class="sd">        transform_from_utm : bool, optional</span>
+<span class="sd">            If ``True``, transform vertex coordinates from UTM zone</span>
+<span class="sd">            59S to NZTM.  Defaults to ``False``.</span>
+<span class="sd">        from_pickle : bool, optional</span>
+<span class="sd">            If ``True``, read the main file as a pickled DataFrame.</span>
+<span class="sd">            Defaults to ``False``.</span>
+<span class="sd">        crs : int, optional</span>
+<span class="sd">            EPSG code.  Defaults to 2193 (NZTM).</span>
+<span class="sd">        read_slip_rate : bool, optional</span>
+<span class="sd">            If ``True`` (default), populate patch slip rates.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        RsqSimMultiFault</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span> <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="p">(</span><span class="n">main_fault_file</span><span class="p">,</span> <span class="n">name_file</span><span class="p">)])</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">name_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">fid</span><span class="p">:</span>
+            <span class="n">names_strings</span> <span class="o">=</span> <span class="n">fid</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">names_strings</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;[b&#39;&quot;</span><span class="p">:</span>
+                <span class="n">fault_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()[</span><span class="mi">3</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names_strings</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">names_strings</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;[&#39;&quot;</span><span class="p">:</span>
+                <span class="n">fault_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()[</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names_strings</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fault_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names_strings</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">from_pickle</span><span class="p">:</span>
+            <span class="n">all_fault_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="n">main_fault_file</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Prepare info (types and headers) about columns</span>
+            <span class="n">column_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;x1&quot;</span><span class="p">,</span> <span class="s2">&quot;y1&quot;</span><span class="p">,</span> <span class="s2">&quot;z1&quot;</span><span class="p">,</span> <span class="s2">&quot;x2&quot;</span><span class="p">,</span> <span class="s2">&quot;y2&quot;</span><span class="p">,</span> <span class="s2">&quot;z2&quot;</span><span class="p">,</span> <span class="s2">&quot;x3&quot;</span><span class="p">,</span> <span class="s2">&quot;y3&quot;</span><span class="p">,</span> <span class="s2">&quot;z3&quot;</span><span class="p">,</span> <span class="s2">&quot;rake&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;slip_rate&quot;</span><span class="p">,</span> <span class="s2">&quot;fault_num&quot;</span><span class="p">,</span> <span class="s2">&quot;bruce_name&quot;</span><span class="p">]</span>
+
+            <span class="c1"># Read in data</span>
+            <span class="n">all_fault_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">main_fault_file</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">comment</span><span class="o">=</span><span class="s1">&#39;#&#39;</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">column_names</span><span class="p">,</span>
+                                       <span class="n">usecols</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">column_names</span><span class="p">)))</span>
+
+        <span class="n">all_fault_df</span><span class="p">[</span><span class="s2">&quot;fault_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fault_names</span>
+
+        <span class="n">fault_numbers</span> <span class="o">=</span> <span class="n">all_fault_df</span><span class="o">.</span><span class="n">fault_num</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+        <span class="n">fault_names_unique</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">fault_names</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="n">fault_num_unique</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">fault_numbers</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fault_names_unique</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fault_num_unique</span><span class="p">):</span>
+            <span class="n">names_and_numbers</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="n">fault_names</span><span class="p">,</span> <span class="s2">&quot;Num&quot;</span><span class="p">:</span> <span class="n">fault_numbers</span><span class="p">})</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">fault_names_unique</span><span class="p">:</span>
+                <span class="n">name_num_i</span> <span class="o">=</span> <span class="n">names_and_numbers</span><span class="p">[</span><span class="n">names_and_numbers</span><span class="o">.</span><span class="n">Name</span> <span class="o">==</span> <span class="n">name</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">fault_num</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">name_num_i</span><span class="o">.</span><span class="n">Num</span><span class="o">.</span><span class="n">unique</span><span class="p">()):</span>
+                    <span class="n">fault_num_df</span> <span class="o">=</span> <span class="n">name_num_i</span><span class="p">[</span><span class="n">name_num_i</span><span class="o">.</span><span class="n">Num</span> <span class="o">==</span> <span class="n">fault_num</span><span class="p">]</span>
+                    <span class="n">new_names</span> <span class="o">=</span> <span class="n">fault_num_df</span><span class="o">.</span><span class="n">Name</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                    <span class="n">names_and_numbers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">new_names</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="s2">&quot;Name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_names</span><span class="o">.</span><span class="n">values</span>
+
+            <span class="n">acton</span> <span class="o">=</span> <span class="n">names_and_numbers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+                <span class="p">(</span><span class="n">names_and_numbers</span><span class="o">.</span><span class="n">Name</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;Acton&quot;</span><span class="p">))</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">names_and_numbers</span><span class="o">.</span><span class="n">Num</span> <span class="o">==</span> <span class="mi">120</span><span class="p">),</span> <span class="s2">&quot;Num&quot;</span><span class="p">]</span>
+            <span class="n">all_fault_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">acton</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="s2">&quot;fault_num&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">9999</span>
+            <span class="n">names_and_numbers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">acton</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="s2">&quot;Num&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">9999</span>
+
+            <span class="n">fault_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">names_and_numbers</span><span class="o">.</span><span class="n">Name</span><span class="p">)</span>
+            <span class="n">fault_names_unique</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">fault_names</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="n">fault_num_unique</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">names_and_numbers</span><span class="o">.</span><span class="n">Num</span><span class="p">))</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">fault_names_unique</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">fault_num_unique</span><span class="p">)</span>
+
+        <span class="c1"># Populate faults with triangular patches</span>
+        <span class="n">patch_start</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">segment_ls</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">fault_num</span><span class="p">,</span> <span class="n">fault_name</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">fault_num_unique</span><span class="p">,</span> <span class="n">fault_names_unique</span><span class="p">):</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">fault_numbers</span> <span class="o">==</span> <span class="n">fault_num</span>
+            <span class="n">fault_data</span> <span class="o">=</span> <span class="n">all_fault_df</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="n">fault_name_stripped</span> <span class="o">=</span> <span class="n">fault_name</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;&#39;[&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+            <span class="n">num_triangles</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fault_data</span><span class="p">)</span>
+            <span class="n">patch_numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">patch_start</span><span class="p">,</span> <span class="n">patch_start</span> <span class="o">+</span> <span class="n">num_triangles</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">from_pickle</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">read_slip_rate</span><span class="p">,</span> <span class="s2">&quot;from pickle may not read slip rates correctly&quot;</span>
+                <span class="n">fault_i</span> <span class="o">=</span> <span class="n">RsqSimSegment</span><span class="o">.</span><span class="n">from_pickle</span><span class="p">(</span><span class="n">fault_data</span><span class="p">,</span> <span class="n">fault_num</span><span class="p">,</span> <span class="n">patch_numbers</span><span class="p">,</span> <span class="n">fault_name_stripped</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fault_i</span> <span class="o">=</span> <span class="n">RsqSimSegment</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span><span class="n">fault_data</span><span class="p">,</span> <span class="n">fault_num</span><span class="p">,</span> <span class="n">patch_numbers</span><span class="p">,</span> <span class="n">fault_name_stripped</span><span class="p">,</span>
+                                                        <span class="n">transform_from_utm</span><span class="o">=</span><span class="n">transform_from_utm</span><span class="p">,</span>
+                                                        <span class="n">read_slip_rate</span><span class="o">=</span><span class="n">read_slip_rate</span><span class="p">)</span>
+
+            <span class="n">segment_ls</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fault_i</span><span class="p">)</span>
+            <span class="n">patch_start</span> <span class="o">+=</span> <span class="n">num_triangles</span>
+
+        <span class="n">multi_fault</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">segment_ls</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">crs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">multi_fault</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.pickle_model">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.pickle_model">[docs]</a>
+    <span class="k">def</span> <span class="nf">pickle_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Serialise all patch data to a pickled pandas DataFrame.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        file : str</span>
+<span class="sd">            Output pickle file path.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">column_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;vertices&quot;</span><span class="p">,</span> <span class="s2">&quot;normal_vector&quot;</span><span class="p">,</span> <span class="s2">&quot;down_dip_vector&quot;</span><span class="p">,</span> <span class="s2">&quot;dip&quot;</span><span class="p">,</span> <span class="s2">&quot;along_strike_vector&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;centre&quot;</span><span class="p">,</span> <span class="s2">&quot;area&quot;</span><span class="p">,</span> <span class="s2">&quot;dip_slip&quot;</span><span class="p">,</span> <span class="s2">&quot;strike_slip&quot;</span><span class="p">,</span> <span class="s2">&quot;fault_num&quot;</span><span class="p">]</span>
+
+        <span class="n">patches</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_dic</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+        <span class="n">patch_data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">patch</span> <span class="ow">in</span> <span class="n">patches</span><span class="p">:</span>
+            <span class="n">patch_data</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">patch</span><span class="o">.</span><span class="n">vertices</span><span class="p">,</span> <span class="n">patch</span><span class="o">.</span><span class="n">normal_vector</span><span class="p">,</span> <span class="n">patch</span><span class="o">.</span><span class="n">down_dip_vector</span><span class="p">,</span> <span class="n">patch</span><span class="o">.</span><span class="n">dip</span><span class="p">,</span>
+                               <span class="n">patch</span><span class="o">.</span><span class="n">along_strike_vector</span><span class="p">,</span> <span class="n">patch</span><span class="o">.</span><span class="n">centre</span><span class="p">,</span> <span class="n">patch</span><span class="o">.</span><span class="n">area</span><span class="p">,</span> <span class="n">patch</span><span class="o">.</span><span class="n">dip_slip</span><span class="p">,</span> <span class="n">patch</span><span class="o">.</span><span class="n">strike_slip</span><span class="p">,</span>
+                               <span class="n">patch</span><span class="o">.</span><span class="n">segment</span><span class="o">.</span><span class="n">segment_number</span><span class="p">])</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">patch_data</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">column_names</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">to_pickle</span><span class="p">(</span><span class="n">file</span><span class="p">)</span></div>
+
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="RsqSimMultiFault.read_cfm_directory">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.read_cfm_directory">[docs]</a>
+    <span class="k">def</span> <span class="nf">read_cfm_directory</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">shapefile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># TODO: finish writing</span>
+        <span class="n">directory_vs_file</span> <span class="o">=</span> <span class="p">[</span><span class="n">directory</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span> <span class="n">files</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">directory_vs_file</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">any</span><span class="p">(</span><span class="n">directory_vs_file</span><span class="p">)</span>
+
+        <span class="c1"># Turn input of whatever format into list of ts files to read.</span>
+        <span class="k">if</span> <span class="n">directory</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">directory</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;/&quot;</span><span class="p">:</span>
+                <span class="n">ts_dir</span> <span class="o">=</span> <span class="n">directory</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ts_dir</span> <span class="o">=</span> <span class="n">directory</span>
+
+            <span class="n">ts_list</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">ts_dir</span> <span class="o">+</span> <span class="s2">&quot;*.ts&quot;</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">ts_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">files</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">files</span><span class="p">])</span>
+                <span class="n">ts_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">ts_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;No .ts files found...&quot;</span>
+
+        <span class="k">for</span> <span class="n">ts_file</span> <span class="ow">in</span> <span class="n">ts_list</span><span class="p">:</span>
+            <span class="c1"># Get fault name for comparison with shapefile</span>
+            <span class="n">ts_no_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">ts_file</span><span class="p">)</span>
+            <span class="n">ts_name</span> <span class="o">=</span> <span class="n">ts_no_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.ts&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.plot_faults_2d">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.plot_faults_2d">[docs]</a>
+    <span class="k">def</span> <span class="nf">plot_faults_2d</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fault_list</span><span class="p">:</span> <span class="n">Iterable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">show</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">write</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plot selected fault segments in map view coloured by slip rate.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        fault_list : iterable of str or None, optional</span>
+<span class="sd">            Names of faults to plot.  Defaults to all faults.</span>
+<span class="sd">        show : bool, optional</span>
+<span class="sd">            If ``True``, call ``fig.show()``.  Defaults to ``False``.</span>
+<span class="sd">        write : str or None, optional</span>
+<span class="sd">            Output file path for saving the figure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">fault_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fault_list</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">any</span><span class="p">([</span><span class="n">fault</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">fault_list</span><span class="p">])</span>
+            <span class="n">valid_names</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">fault_name</span> <span class="ow">in</span> <span class="n">fault_list</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">fault_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Fault not found: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fault_name</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">valid_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fault_name</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">valid_names</span><span class="p">,</span> <span class="s2">&quot;No valid fault names supplied&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">valid_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span>
+
+        <span class="c1"># Find boundary</span>
+        <span class="n">valid_faults</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name_dic</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">valid_names</span><span class="p">]</span>
+        <span class="n">x1</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="n">fault</span><span class="o">.</span><span class="n">vertices</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">valid_faults</span><span class="p">])</span>
+        <span class="n">y1</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="n">fault</span><span class="o">.</span><span class="n">vertices</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">valid_faults</span><span class="p">])</span>
+        <span class="n">x2</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">fault</span><span class="o">.</span><span class="n">vertices</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">valid_faults</span><span class="p">])</span>
+        <span class="n">y2</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">fault</span><span class="o">.</span><span class="n">vertices</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">valid_faults</span><span class="p">])</span>
+        <span class="n">boundary</span> <span class="o">=</span> <span class="p">[</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">]</span>
+
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">valid_names</span><span class="p">:</span>
+            <span class="n">fault_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name_dic</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="n">fault_i</span><span class="o">.</span><span class="n">plot_2d</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+
+        <span class="n">plot_coast</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">clip_boundary</span><span class="o">=</span><span class="n">boundary</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">write</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">write</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.plot_fault_traces">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.plot_fault_traces">[docs]</a>
+    <span class="k">def</span> <span class="nf">plot_fault_traces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fault_list</span><span class="p">:</span> <span class="n">Iterable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">edgecolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">clip_bounds</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                            <span class="n">linestyle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">facecolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;0.8&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plot fault surface traces on a map axes.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        fault_list : iterable of str or None, optional</span>
+<span class="sd">            Names of faults to plot.  Defaults to all faults.</span>
+<span class="sd">        ax : matplotlib.axes.Axes or None, optional</span>
+<span class="sd">            Axes to draw onto.  A new figure is created if ``None``.</span>
+<span class="sd">        edgecolor : str, optional</span>
+<span class="sd">            Trace edge colour.  Defaults to ``&quot;r&quot;``.</span>
+<span class="sd">        linewidth : int or float, optional</span>
+<span class="sd">            Line width.  Defaults to 0.1.</span>
+<span class="sd">        clip_bounds : list or None, optional</span>
+<span class="sd">            ``[x1, y1, x2, y2]`` bounding box for the coastline.</span>
+<span class="sd">        linestyle : str, optional</span>
+<span class="sd">            Line style.  Defaults to ``&quot;-&quot;``.</span>
+<span class="sd">        facecolor : str, optional</span>
+<span class="sd">            Not currently used.  Defaults to ``&quot;0.8&quot;``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        matplotlib.axes.Axes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: fix projection issue which means fault traces aren&#39;t plotted on correct scale</span>
+        <span class="k">if</span> <span class="n">fault_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fault_list</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">any</span><span class="p">([</span><span class="n">fault</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">fault_list</span><span class="p">])</span>
+            <span class="n">valid_names</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">fault_name</span> <span class="ow">in</span> <span class="n">fault_list</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">fault_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Fault not found: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fault_name</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">valid_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fault_name</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">valid_names</span><span class="p">,</span> <span class="s2">&quot;No valid fault names supplied&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">valid_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span>
+
+        <span class="c1"># Find boundary</span>
+        <span class="n">valid_faults</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name_dic</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">valid_names</span><span class="p">]</span>
+        <span class="n">x1</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="n">fault</span><span class="o">.</span><span class="n">vertices</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">valid_faults</span><span class="p">])</span><span class="o">*</span><span class="mf">0.99</span>
+        <span class="n">y1</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="n">fault</span><span class="o">.</span><span class="n">vertices</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">valid_faults</span><span class="p">])</span><span class="o">*</span><span class="mf">0.99</span>
+        <span class="n">x2</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">fault</span><span class="o">.</span><span class="n">vertices</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">valid_faults</span><span class="p">])</span><span class="o">*</span><span class="mf">1.01</span>
+        <span class="n">y2</span> <span class="o">=</span><span class="nb">max</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="n">fault</span><span class="o">.</span><span class="n">vertices</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">valid_faults</span><span class="p">])</span><span class="o">*</span><span class="mf">1.01</span>
+
+        <span class="n">boundary</span> <span class="o">=</span> <span class="p">[</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">]</span>
+        <span class="c1">#print(boundary)</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span><span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">)</span>
+        <span class="c1"># plot traces</span>
+        <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">valid_faults</span><span class="p">:</span>
+            <span class="n">faultArr</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">fault</span><span class="o">.</span><span class="n">trace</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">faultArr</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span><span class="n">faultArr</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">fault</span><span class="o">.</span><span class="n">trace</span><span class="o">.</span><span class="n">coords</span><span class="p">))</span>
+        <span class="n">x1</span><span class="p">,</span><span class="n">y1</span><span class="p">,</span><span class="n">x2</span><span class="p">,</span><span class="n">y2</span><span class="o">=</span><span class="n">plot_coast</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">clip_boundary</span><span class="o">=</span><span class="n">boundary</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span><span class="n">x2</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">y1</span><span class="p">,</span><span class="n">y2</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.write_fault_traces_to_gis">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.write_fault_traces_to_gis">[docs]</a>
+    <span class="k">def</span> <span class="nf">write_fault_traces_to_gis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fault_list</span><span class="p">:</span> <span class="n">Iterable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;./bruce_faults&quot;</span><span class="p">,</span><span class="n">crs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span><span class="s2">&quot;EPSG:2193&quot;</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write fault surface traces to shapefiles.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        fault_list : iterable of str or None, optional</span>
+<span class="sd">            Names of faults to export.  Defaults to all faults.</span>
+<span class="sd">        prefix : str, optional</span>
+<span class="sd">            Output file prefix.  Two shapefiles are written:</span>
+<span class="sd">            ``{prefix}.shp`` and ``{prefix}_traces.shp``.</span>
+<span class="sd">            Defaults to ``&quot;./bruce_faults&quot;``.</span>
+<span class="sd">        crs : str, optional</span>
+<span class="sd">            CRS string for the output shapefile.</span>
+<span class="sd">            Defaults to ``&quot;EPSG:2193&quot;``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">fault_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fault_list</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">any</span><span class="p">([</span><span class="n">fault</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">fault_list</span><span class="p">])</span>
+            <span class="n">valid_names</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">fault_name</span> <span class="ow">in</span> <span class="n">fault_list</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">fault_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Fault not found: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fault_name</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">valid_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fault_name</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">valid_names</span><span class="p">,</span> <span class="s2">&quot;No valid fault names supplied&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">valid_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span>
+        <span class="n">valid_faults</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name_dic</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">valid_names</span><span class="p">]</span>
+        <span class="n">fault_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Names&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;geometry&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;Slip Rate&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+        <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">valid_faults</span><span class="p">:</span>
+            <span class="n">trace</span> <span class="o">=</span> <span class="n">fault</span><span class="o">.</span><span class="n">trace</span>
+            <span class="n">fName</span> <span class="o">=</span> <span class="n">fault</span><span class="o">.</span><span class="n">name</span>
+
+            <span class="n">mean_slip_rate</span> <span class="o">=</span> <span class="n">fault</span><span class="o">.</span><span class="n">mean_slip_rate</span> <span class="o">*</span> <span class="n">csts</span><span class="o">.</span><span class="n">seconds_per_year</span> <span class="o">*</span> <span class="mf">1000.</span>
+            <span class="n">fault_dict</span><span class="p">[</span><span class="s1">&#39;Names&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fName</span><span class="p">)</span>
+            <span class="n">fault_dict</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+            <span class="n">fault_dict</span><span class="p">[</span><span class="s1">&#39;Slip Rate&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mean_slip_rate</span><span class="p">)</span>
+
+        <span class="n">all_faults</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">fault_dict</span><span class="p">)</span>
+        <span class="n">all_faults</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">prefix</span><span class="o">+</span><span class="s2">&quot;.shp&quot;</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">crs</span><span class="p">)</span>
+        <span class="n">all_faults</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">prefix</span><span class="o">+</span><span class="s2">&quot;_traces.shp&quot;</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">crs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.write_fault_outlines_to_gis">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.write_fault_outlines_to_gis">[docs]</a>
+    <span class="k">def</span> <span class="nf">write_fault_outlines_to_gis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fault_list</span><span class="p">:</span> <span class="n">Iterable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;./bruce_faults&quot;</span><span class="p">,</span><span class="n">crs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span><span class="s2">&quot;EPSG:2193&quot;</span> <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write fault patch-outline polygons to a shapefile.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        fault_list : iterable of str or None, optional</span>
+<span class="sd">            Names of faults to export.  Defaults to all faults.</span>
+<span class="sd">        prefix : str, optional</span>
+<span class="sd">            Output file prefix; produces ``{prefix}_outlines.shp``.</span>
+<span class="sd">            Defaults to ``&quot;./bruce_faults&quot;``.</span>
+<span class="sd">        crs : str, optional</span>
+<span class="sd">            CRS string.  Defaults to ``&quot;EPSG:2193&quot;``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">fault_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fault_list</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">any</span><span class="p">([</span><span class="n">fault</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">fault_list</span><span class="p">])</span>
+            <span class="n">valid_names</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">fault_name</span> <span class="ow">in</span> <span class="n">fault_list</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">fault_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Fault not found: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fault_name</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">valid_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fault_name</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">valid_names</span><span class="p">,</span> <span class="s2">&quot;No valid fault names supplied&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">valid_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span>
+        <span class="n">valid_faults</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name_dic</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">valid_names</span><span class="p">]</span>
+        <span class="n">fault_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Names&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;geometry&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;Slip Rate&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+        <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">valid_faults</span><span class="p">:</span>
+            <span class="n">outline</span> <span class="o">=</span> <span class="n">fault</span><span class="o">.</span><span class="n">fault_outline</span>
+            <span class="n">fName</span> <span class="o">=</span> <span class="n">fault</span><span class="o">.</span><span class="n">name</span>
+
+            <span class="n">mean_slip_rate</span> <span class="o">=</span> <span class="n">fault</span><span class="o">.</span><span class="n">mean_slip_rate</span> <span class="o">*</span> <span class="n">csts</span><span class="o">.</span><span class="n">seconds_per_year</span> <span class="o">*</span> <span class="mf">1000.</span>
+            <span class="n">fault_dict</span><span class="p">[</span><span class="s1">&#39;Names&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fName</span><span class="p">)</span>
+            <span class="n">fault_dict</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">outline</span><span class="p">)</span>
+            <span class="n">fault_dict</span><span class="p">[</span><span class="s1">&#39;Slip Rate&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mean_slip_rate</span><span class="p">)</span>
+
+        <span class="n">all_faults</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">fault_dict</span><span class="p">)</span>
+        <span class="n">all_faults</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">prefix</span><span class="o">+</span><span class="s2">&quot;_outlines.shp&quot;</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">crs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.plot_slip_distribution_2d">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.plot_slip_distribution_2d">[docs]</a>
+    <span class="k">def</span> <span class="nf">plot_slip_distribution_2d</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.slip_rate_array">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.slip_rate_array">[docs]</a>
+    <span class="k">def</span> <span class="nf">slip_rate_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">include_zeros</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                        <span class="n">min_slip_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">nztm_to_lonlat</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                        <span class="n">mm_per_year</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build a flat array of triangle vertex coordinates plus slip rate and rake.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        include_zeros : bool, optional</span>
+<span class="sd">            If ``True`` (default) and ``min_slip_rate`` is set,</span>
+<span class="sd">            include below-threshold patches with slip and rake set to</span>
+<span class="sd">            zero.</span>
+<span class="sd">        min_slip_rate : float or None, optional</span>
+<span class="sd">            Minimum slip rate (mm/yr if ``mm_per_year`` is ``True``)</span>
+<span class="sd">            for inclusion.  Defaults to ``None`` (include all).</span>
+<span class="sd">        nztm_to_lonlat : bool, optional</span>
+<span class="sd">            If ``True``, output vertex coordinates in WGS84</span>
+<span class="sd">            (longitude, latitude).  Defaults to ``False``.</span>
+<span class="sd">        mm_per_year : bool, optional</span>
+<span class="sd">            If ``True`` (default), convert slip rates from m/s to</span>
+<span class="sd">            mm/yr.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray of shape (n_patches, 11)</span>
+<span class="sd">            Columns: ``[x1,y1,z1, x2,y2,z2, x3,y3,z3, slip_rate, rake]``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">all_patches</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">patch_id</span> <span class="ow">in</span> <span class="n">fault</span><span class="o">.</span><span class="n">patch_numbers</span><span class="p">:</span>
+                <span class="n">patch</span> <span class="o">=</span> <span class="n">fault</span><span class="o">.</span><span class="n">patch_dic</span><span class="p">[</span><span class="n">patch_id</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">nztm_to_lonlat</span><span class="p">:</span>
+                    <span class="n">triangle_corners</span> <span class="o">=</span> <span class="n">patch</span><span class="o">.</span><span class="n">vertices_lonlat</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">triangle_corners</span> <span class="o">=</span> <span class="n">patch</span><span class="o">.</span><span class="n">vertices</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+                <span class="n">slip_rate</span> <span class="o">=</span> <span class="n">patch</span><span class="o">.</span><span class="n">total_slip</span>
+                <span class="k">if</span> <span class="n">mm_per_year</span><span class="p">:</span>
+                    <span class="n">slip_rate</span> <span class="o">=</span> <span class="n">slip_rate</span> <span class="o">*</span> <span class="n">csts</span><span class="o">.</span><span class="n">seconds_per_year</span> <span class="o">*</span> <span class="mf">1000.</span>
+                <span class="k">if</span> <span class="n">min_slip_rate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">slip_rate</span> <span class="o">&gt;=</span> <span class="n">min_slip_rate</span><span class="p">:</span>
+                        <span class="n">patch_line</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">triangle_corners</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">slip_rate</span><span class="p">,</span> <span class="n">patch</span><span class="o">.</span><span class="n">rake</span><span class="p">])])</span>
+                        <span class="n">all_patches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">patch_line</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">include_zeros</span><span class="p">:</span>
+                        <span class="n">patch_line</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">triangle_corners</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">])])</span>
+                        <span class="n">all_patches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">patch_line</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">patch_line</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">triangle_corners</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">slip_rate</span><span class="p">,</span> <span class="n">patch</span><span class="o">.</span><span class="n">rake</span><span class="p">])])</span>
+                    <span class="n">all_patches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">patch_line</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">all_patches</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.slip_rate_to_mesh">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.slip_rate_to_mesh">[docs]</a>
+    <span class="k">def</span> <span class="nf">slip_rate_to_mesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">include_zeros</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                          <span class="n">min_slip_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">nztm_to_lonlat</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">mm_per_year</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build a :class:`meshio.Mesh` containing slip rate and rake as cell data.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        include_zeros : bool, optional</span>
+<span class="sd">            Include below-threshold patches as zeros.  Defaults to</span>
+<span class="sd">            ``True``.</span>
+<span class="sd">        min_slip_rate : float or None, optional</span>
+<span class="sd">            Minimum slip rate threshold.  Defaults to ``None``.</span>
+<span class="sd">        nztm_to_lonlat : bool, optional</span>
+<span class="sd">            Output in WGS84.  Defaults to ``False``.</span>
+<span class="sd">        mm_per_year : bool, optional</span>
+<span class="sd">            Convert to mm/yr.  Defaults to ``True``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        meshio.Mesh</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">slip_rate_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slip_rate_array</span><span class="p">(</span><span class="n">include_zeros</span><span class="o">=</span><span class="n">include_zeros</span><span class="p">,</span>
+                                               <span class="n">min_slip_rate</span><span class="o">=</span><span class="n">min_slip_rate</span><span class="p">,</span> <span class="n">nztm_to_lonlat</span><span class="o">=</span><span class="n">nztm_to_lonlat</span><span class="p">,</span>
+                                               <span class="n">mm_per_year</span><span class="o">=</span><span class="n">mm_per_year</span><span class="p">)</span>
+
+        <span class="n">mesh</span> <span class="o">=</span> <span class="n">array_to_mesh</span><span class="p">(</span><span class="n">slip_rate_array</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">9</span><span class="p">])</span>
+        <span class="n">data_dic</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="s2">&quot;slip&quot;</span><span class="p">,</span> <span class="s2">&quot;rake&quot;</span><span class="p">],</span> <span class="p">[</span><span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">]):</span>
+            <span class="n">data_dic</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">slip_rate_array</span><span class="p">[:,</span> <span class="n">index</span><span class="p">]</span>
+        <span class="n">mesh</span><span class="o">.</span><span class="n">cell_data</span> <span class="o">=</span> <span class="n">data_dic</span>
+
+        <span class="k">return</span> <span class="n">mesh</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.slip_rate_to_vtk">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.slip_rate_to_vtk">[docs]</a>
+    <span class="k">def</span> <span class="nf">slip_rate_to_vtk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vtk_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">include_zeros</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                         <span class="n">min_slip_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">nztm_to_lonlat</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                         <span class="n">mm_per_year</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write slip rate and rake data to a VTK file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        vtk_file : str</span>
+<span class="sd">            Output VTK file path.</span>
+<span class="sd">        include_zeros : bool, optional</span>
+<span class="sd">            Include below-threshold patches.  Defaults to ``True``.</span>
+<span class="sd">        min_slip_rate : float or None, optional</span>
+<span class="sd">            Minimum slip rate threshold.  Defaults to ``None``.</span>
+<span class="sd">        nztm_to_lonlat : bool, optional</span>
+<span class="sd">            Output in WGS84.  Defaults to ``False``.</span>
+<span class="sd">        mm_per_year : bool, optional</span>
+<span class="sd">            Convert to mm/yr.  Defaults to ``True``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mesh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slip_rate_to_mesh</span><span class="p">(</span><span class="n">include_zeros</span><span class="o">=</span><span class="n">include_zeros</span><span class="p">,</span>
+                                      <span class="n">min_slip_rate</span><span class="o">=</span><span class="n">min_slip_rate</span><span class="p">,</span> <span class="n">nztm_to_lonlat</span><span class="o">=</span><span class="n">nztm_to_lonlat</span><span class="p">,</span>
+                                      <span class="n">mm_per_year</span><span class="o">=</span><span class="n">mm_per_year</span><span class="p">)</span>
+        <span class="n">mesh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">vtk_file</span><span class="p">,</span> <span class="n">file_format</span><span class="o">=</span><span class="s2">&quot;vtk&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.write_rsqsim_input_file">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.write_rsqsim_input_file">[docs]</a>
+    <span class="k">def</span> <span class="nf">write_rsqsim_input_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mm_yr</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write all faults to a single RSQSim fault input file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        output_file : str</span>
+<span class="sd">            Output file path.</span>
+<span class="sd">        mm_yr : bool, optional</span>
+<span class="sd">            If ``True`` (default), treat stored slip rates as mm/yr</span>
+<span class="sd">            and convert to m/s for the output.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">combined_array</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">fault</span><span class="o">.</span><span class="n">to_rsqsim_fault_array</span><span class="p">(</span><span class="n">mm_yr</span><span class="o">=</span><span class="n">mm_yr</span><span class="p">)</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">])</span>
+        <span class="n">combined_array</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.write_b_value_file">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.write_b_value_file">[docs]</a>
+    <span class="k">def</span> <span class="nf">write_b_value_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">default_a_b</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">difference_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">output_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write per-patch b-values to a text file for use with RSQSim.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        a_value : float</span>
+<span class="sd">            Global a-value parameter (0–1).</span>
+<span class="sd">        default_a_b : float</span>
+<span class="sd">            Default a − b value (negative float).</span>
+<span class="sd">        difference_dict : dict</span>
+<span class="sd">            Mapping of fault name to (a − b) value override.</span>
+<span class="sd">        output_file : str</span>
+<span class="sd">            Output text file path.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">difference_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">difference_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
+        <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">difference_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a_value</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">a_value</span> <span class="o">&gt;</span> <span class="mf">0.</span>
+        <span class="k">assert</span> <span class="n">a_value</span> <span class="o">&lt;</span> <span class="mf">1.</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">default_a_b</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">default_a_b</span> <span class="o">&lt;</span> <span class="mf">0.</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="n">combined_array</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">fault</span><span class="o">.</span><span class="n">to_rsqsim_fault_array</span><span class="p">()</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">])</span>
+        <span class="n">default_b</span> <span class="o">=</span> <span class="n">a_value</span> <span class="o">-</span> <span class="n">default_a_b</span>
+        <span class="n">default_b_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">combined_array</span><span class="p">))</span> <span class="o">*</span> <span class="n">default_b</span>
+        <span class="k">for</span> <span class="n">fault_name</span><span class="p">,</span> <span class="n">difference</span> <span class="ow">in</span> <span class="n">difference_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">fault_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">combined_array</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">12</span><span class="p">]</span> <span class="o">==</span> <span class="n">fault_name</span><span class="p">)</span>
+            <span class="n">default_b_array</span><span class="p">[</span><span class="n">fault_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">a_value</span> <span class="o">-</span> <span class="n">difference</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="n">default_b_array</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%.5f</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.tile_quads">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.tile_quads">[docs]</a>
+    <span class="k">def</span> <span class="nf">tile_quads</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tile_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5000.</span><span class="p">,</span> <span class="n">interpolation_distance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1000.</span><span class="p">,</span>
+                         <span class="n">manual_tiles</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">output_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Discretize all faults into rectangular tiles.</span>
+
+<span class="sd">        Calls :meth:`~rsqsim_api.fault.segment.RsqSimSegment.discretize_rectangular_tiles`</span>
+<span class="sd">        on each fault.  Manual tile arrays can override individual</span>
+<span class="sd">        faults.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        tile_size : float, optional</span>
+<span class="sd">            Target tile dimension (m).  Defaults to 5000.</span>
+<span class="sd">        interpolation_distance : float, optional</span>
+<span class="sd">            Down-dip interpolation spacing (m).  Defaults to 1000.</span>
+<span class="sd">        manual_tiles : dict or None, optional</span>
+<span class="sd">            Mapping of fault name to pre-computed tile array (loaded</span>
+<span class="sd">            from a ``.npy`` file).  Defaults to ``None``.</span>
+<span class="sd">        output_file : str or None, optional</span>
+<span class="sd">            If given, pickle the resulting dict to this file.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">            Mapping of fault name to tile array (shape (n_tiles, 4, 3)).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">output_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tile_size</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">interpolation_distance</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">manual_tiles</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">or</span> <span class="n">manual_tiles</span> <span class="ow">is</span> <span class="kc">None</span>
+
+        <span class="n">quads_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">manual_tiles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">manual_tiles</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
+            <span class="k">for</span> <span class="n">fault_name</span><span class="p">,</span> <span class="n">file_name</span> <span class="ow">in</span> <span class="n">manual_tiles</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+                <span class="n">tiles_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+                <span class="n">quads_dict</span><span class="p">[</span><span class="n">fault_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">tiles_array</span>
+
+
+        <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">fault</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">manual_tiles</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">quads</span> <span class="o">=</span> <span class="n">fault</span><span class="o">.</span><span class="n">discretize_rectangular_tiles</span><span class="p">(</span><span class="n">tile_size</span><span class="o">=</span><span class="n">tile_size</span><span class="p">,</span>
+                                                               <span class="n">interpolation_distance</span><span class="o">=</span><span class="n">interpolation_distance</span><span class="p">)</span>
+                    <span class="n">quads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">quads</span><span class="p">)</span>
+
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Failed to merge&quot;</span><span class="p">,</span> <span class="n">fault</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                    <span class="n">quads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+
+                <span class="n">quads_dict</span><span class="p">[</span><span class="n">fault</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">quads</span>
+        <span class="k">if</span> <span class="n">output_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">quads_dict</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">quads_dict</span></div>
+
+
+
+
+
+
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.search_name">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.search_name">[docs]</a>
+    <span class="k">def</span> <span class="nf">search_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">search_string</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Search fault names using a wildcard pattern.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        search_string : str</span>
+<span class="sd">            Wildcard pattern (case-insensitive) to match against</span>
+<span class="sd">            fault names.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list of str</span>
+<span class="sd">            Fault names that match the pattern.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">search_string</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="k">if</span> <span class="n">fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">search_string</span><span class="o">.</span><span class="n">lower</span><span class="p">())]</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.find_closest_patches">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.find_closest_patches">[docs]</a>
+    <span class="k">def</span> <span class="nf">find_closest_patches</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find the patches closest to given 2-D coordinates.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : float</span>
+<span class="sd">            Easting (NZTM) in metres.</span>
+<span class="sd">        y : float</span>
+<span class="sd">            Northing (NZTM) in metres.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list of int</span>
+<span class="sd">            Patch numbers of the patches in the closest fault whose</span>
+<span class="sd">            vertices include the nearest vertex.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sq_dist</span> <span class="o">=</span> <span class="p">[(</span><span class="n">fault</span><span class="p">,</span> <span class="n">vertex</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">vertex</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">vertex</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span> <span class="k">for</span> <span class="n">vertex</span> <span class="ow">in</span>
+                   <span class="n">fault</span><span class="o">.</span><span class="n">vertices</span><span class="p">]</span>
+        <span class="n">closest_fault</span><span class="p">,</span> <span class="n">closest_point</span><span class="p">,</span> <span class="n">min_dist</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">sq_dist</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">patches</span> <span class="o">=</span> <span class="p">[</span><span class="n">patch</span><span class="o">.</span><span class="n">patch_number</span> <span class="k">for</span> <span class="n">patch</span> <span class="ow">in</span> <span class="n">closest_fault</span><span class="o">.</span><span class="n">patch_outlines</span> <span class="k">if</span>
+                   <span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">closest_point</span><span class="p">,</span> <span class="n">patch</span><span class="o">.</span><span class="n">vertices</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()]</span>
+        <span class="k">return</span> <span class="n">patches</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.find_closest_patches_3d">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.find_closest_patches_3d">[docs]</a>
+    <span class="k">def</span> <span class="nf">find_closest_patches_3d</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find the patches closest to given 3-D coordinates.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : float</span>
+<span class="sd">            Easting (NZTM) in metres.</span>
+<span class="sd">        y : float</span>
+<span class="sd">            Northing (NZTM) in metres.</span>
+<span class="sd">        z : float</span>
+<span class="sd">            Depth (negative metres below sea level).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list of int</span>
+<span class="sd">            Patch numbers of the patches in the closest fault whose</span>
+<span class="sd">            vertices include the nearest vertex.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sq_dist</span> <span class="o">=</span> <span class="p">[(</span><span class="n">fault</span><span class="p">,</span> <span class="n">vertex</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">vertex</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">vertex</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">z</span> <span class="o">-</span> <span class="n">vertex</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span> <span class="p">)</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span> <span class="k">for</span> <span class="n">vertex</span> <span class="ow">in</span>
+                   <span class="n">fault</span><span class="o">.</span><span class="n">vertices</span><span class="p">]</span>
+        <span class="n">closest_fault</span><span class="p">,</span> <span class="n">closest_point</span><span class="p">,</span> <span class="n">min_dist</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">sq_dist</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">patches</span> <span class="o">=</span> <span class="p">[</span><span class="n">patch</span><span class="o">.</span><span class="n">patch_number</span> <span class="k">for</span> <span class="n">patch</span> <span class="ow">in</span> <span class="n">closest_fault</span><span class="o">.</span><span class="n">patch_outlines</span> <span class="k">if</span>
+                   <span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">closest_point</span><span class="p">,</span> <span class="n">patch</span><span class="o">.</span><span class="n">vertices</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()]</span>
+        <span class="k">return</span> <span class="n">patches</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimMultiFault.traces">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.traces">[docs]</a>
+    <span class="k">def</span> <span class="nf">traces</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_traces</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_traces</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_traces</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.get_traces">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.get_traces">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_traces</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build and cache a GeoDataFrame of all fault surface traces.&quot;&quot;&quot;</span>
+        <span class="n">traces</span> <span class="o">=</span> <span class="p">[</span><span class="n">fault</span><span class="o">.</span><span class="n">trace</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">]</span>
+        <span class="n">trace_gpd</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">({</span><span class="s2">&quot;fault&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">},</span> <span class="n">geometry</span><span class="o">=</span><span class="n">traces</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">crs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_traces</span> <span class="o">=</span> <span class="n">trace_gpd</span></div>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="RsqSimMultiFault.outlines">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.outlines">[docs]</a>
+    <span class="k">def</span> <span class="nf">outlines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outlines</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_outlines</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outlines</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.get_outlines">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.get_outlines">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_outlines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build and cache a GeoDataFrame of all fault patch-outline polygons.&quot;&quot;&quot;</span>
+        <span class="n">outlines</span> <span class="o">=</span> <span class="p">[</span><span class="n">fault</span><span class="o">.</span><span class="n">fault_outline</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">]</span>
+        <span class="n">outline_gpd</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">({</span><span class="s2">&quot;fault&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">},</span> <span class="n">geometry</span><span class="o">=</span><span class="n">outlines</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">crs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_outlines</span> <span class="o">=</span> <span class="n">outline_gpd</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.merge_segments">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.merge_segments">[docs]</a>
+    <span class="k">def</span> <span class="nf">merge_segments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">matching_string</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name_dict</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fault_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Merge multiple fault segments matching a name pattern into one segment.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        matching_string : str</span>
+<span class="sd">            Wildcard pattern used to identify segments to merge.</span>
+<span class="sd">            Without ``name_dict``, matches names like</span>
+<span class="sd">            ``&quot;{matching_string}?&quot;`` or ``&quot;{matching_string}??&quot;``.</span>
+<span class="sd">        name_dict : dict or None, optional</span>
+<span class="sd">            Mapping of internal segment name to an alternative name</span>
+<span class="sd">            for pattern matching.</span>
+<span class="sd">        fault_name : str or None, optional</span>
+<span class="sd">            Name for the merged segment.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        RsqSimSegment</span>
+<span class="sd">            New segment containing all patches from the matched</span>
+<span class="sd">            segments, with merged surface trace.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">name_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">matching_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">name_dict</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">matching_string</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)])]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">matching_names</span><span class="o">=</span><span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">matching_string</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">?&quot;</span><span class="p">),</span>
+                                                              <span class="n">fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">matching_string</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">??&quot;</span><span class="p">)])]</span>
+        <span class="n">matching_faults</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name_dic</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">matching_names</span><span class="p">]</span>
+        <span class="n">vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">fault</span><span class="o">.</span><span class="n">patch_vertices_flat</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">matching_faults</span><span class="p">])</span>
+        <span class="n">patch_numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">fault</span><span class="o">.</span><span class="n">patch_numbers</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">matching_faults</span><span class="p">])</span>
+
+        <span class="n">new_segment</span> <span class="o">=</span> <span class="n">RsqSimSegment</span><span class="o">.</span><span class="n">from_triangles</span><span class="p">(</span><span class="n">vertices</span><span class="p">,</span> <span class="n">patch_numbers</span><span class="o">=</span><span class="n">patch_numbers</span><span class="p">,</span> <span class="n">fault_name</span><span class="o">=</span><span class="n">fault_name</span><span class="p">)</span>
+        <span class="n">traces</span> <span class="o">=</span> <span class="p">[</span><span class="n">fault</span><span class="o">.</span><span class="n">trace</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="n">matching_faults</span><span class="p">]</span>
+
+
+        <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span><span class="n">LineString</span><span class="p">)</span> <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">]):</span>
+            <span class="n">merged_traces</span><span class="o">=</span><span class="n">linemerge</span><span class="p">(</span><span class="n">traces</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">trace_list</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">geoms</span><span class="p">)</span> <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span><span class="n">MultiLineString</span><span class="p">)]</span>
+            <span class="n">merged_traces</span><span class="o">=</span><span class="n">merge_multiple_nearly_adjacent_segments</span><span class="p">(</span><span class="n">trace_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="c1">#print(trace_list)</span>
+        <span class="c1">#merged_traces = merge_multiple_nearly_adjacent_segments(traces)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">merged_traces</span><span class="p">,</span><span class="n">LineString</span><span class="p">):</span>
+            <span class="n">new_segment</span><span class="o">.</span><span class="n">trace</span> <span class="o">=</span> <span class="n">merged_traces</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">merged_coords</span><span class="o">=</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span> <span class="k">for</span> <span class="n">geom</span> <span class="ow">in</span> <span class="n">merged_traces</span><span class="o">.</span><span class="n">geoms</span><span class="p">]</span>
+                <span class="n">merged_trace</span><span class="o">=</span><span class="n">LineString</span><span class="p">([</span><span class="n">trace</span> <span class="k">for</span> <span class="n">sublist</span> <span class="ow">in</span> <span class="n">merged_coords</span> <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">sublist</span><span class="p">])</span>
+                <span class="n">new_segment</span><span class="o">.</span><span class="n">trace</span><span class="o">=</span><span class="n">merged_trace</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Check trace type for </span><span class="si">{</span><span class="n">fault_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">new_segment</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.get_subduction_patch_numbers">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.get_subduction_patch_numbers">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_subduction_patch_numbers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subduction_faults</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;hikkerm&quot;</span><span class="p">,</span> <span class="s2">&quot;puysegur&quot;</span><span class="p">)):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return patch numbers for all subduction-zone fault segments.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        subduction_faults : tuple of str, optional</span>
+<span class="sd">            Substrings used to identify subduction faults by name.</span>
+<span class="sd">            Defaults to ``(&quot;hikkerm&quot;, &quot;puysegur&quot;)``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray of int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">subduction_patches</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">subduction_fault</span> <span class="ow">in</span> <span class="n">fault</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">subduction_fault</span> <span class="ow">in</span> <span class="n">subduction_faults</span><span class="p">]):</span>
+                <span class="n">subduction_patches</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">fault</span><span class="o">.</span><span class="n">patch_numbers</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">subduction_patches</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RsqSimMultiFault.get_crustal_patch_numbers">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault.get_crustal_patch_numbers">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_crustal_patch_numbers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subduction_faults</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;hikkerm&quot;</span><span class="p">,</span> <span class="s2">&quot;puysegur&quot;</span><span class="p">)):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return patch numbers for all crustal (non-subduction) fault segments.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        subduction_faults : tuple of str, optional</span>
+<span class="sd">            Substrings identifying subduction faults to exclude.</span>
+<span class="sd">            Defaults to ``(&quot;hikkerm&quot;, &quot;puysegur&quot;)``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray of int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">subduction_patches</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_subduction_patch_numbers</span><span class="p">(</span><span class="n">subduction_faults</span><span class="o">=</span><span class="n">subduction_faults</span><span class="p">)</span>
+        <span class="n">all_patches</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">patch_dic</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+        <span class="n">crustal_patches</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">all_patches</span><span class="p">,</span> <span class="n">subduction_patches</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">crustal_patches</span></div>
+</div>
+
+
+
+
+
+<div class="viewcode-block" id="read_bruce">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/fault/multifault/index.html#rsqsim_api.fault.multifault.read_bruce">[docs]</a>
+<span class="k">def</span> <span class="nf">read_bruce</span><span class="p">(</span><span class="n">run_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627&quot;</span><span class="p">,</span>
+               <span class="n">fault_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;bruce_faults.in&quot;</span><span class="p">,</span> <span class="n">names_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;bruce_names.in&quot;</span><span class="p">):</span>
+    <span class="n">fault_full</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">run_dir</span><span class="p">,</span> <span class="n">fault_file</span><span class="p">)</span>
+    <span class="n">names_full</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">run_dir</span><span class="p">,</span> <span class="n">names_file</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">outlines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outlines</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_outlines</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outlines</span>
+
+    <span class="k">def</span> <span class="nf">get_outlines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">outlines</span> <span class="o">=</span> <span class="p">[</span><span class="n">fault</span><span class="o">.</span><span class="n">fault_outline</span> <span class="k">for</span> <span class="n">fault</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">faults</span><span class="p">]</span>
+        <span class="n">outline_gpd</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">({</span><span class="s2">&quot;fault&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">},</span> <span class="n">geometry</span><span class="o">=</span><span class="n">outlines</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">crs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_outlines</span> <span class="o">=</span> <span class="n">outline_gpd</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

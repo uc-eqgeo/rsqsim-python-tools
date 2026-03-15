@@ -1,0 +1,221 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.fault.splines &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="rsqsim_api.fault.utilities" href="../utilities/index.html" />
+    <link rel="prev" title="rsqsim_api.fault.slip" href="../slip/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">rsqsim_api</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../../catalogue/index.html">rsqsim_api.catalogue</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../index.html">rsqsim_api.fault</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../io/index.html">rsqsim_api.io</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../tsunami/index.html">rsqsim_api.tsunami</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../visualisation/index.html">rsqsim_api.visualisation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_fault/index.html">test_fault</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_catalogue/index.html">test_catalogue</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">rsqsim_api</a></li>
+          <li class="breadcrumb-item"><a href="../index.html">rsqsim_api.fault</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.fault.splines</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/fault/splines/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.fault.splines">
+<span id="rsqsim-api-fault-splines"></span><h1>rsqsim_api.fault.splines<a class="headerlink" href="#module-rsqsim_api.fault.splines" title="Link to this heading"></a></h1>
+<p>Spline utilities for constructing idealised slip distributions on fault patches.</p>
+<p>Provides functions that build <code class="xref py py-class docutils literal notranslate"><span class="pre">scipy.interpolate.UnivariateSpline</span></code>
+objects encoding along-fault and depth-dependent slip profiles, suitable
+for imposing prescribed slip distributions in RSQSim or other fault models.</p>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.fault.splines.fault_edge_spline" title="rsqsim_api.fault.splines.fault_edge_spline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fault_edge_spline</span></code></a>(max_slip, distance_width, total_width)</p></td>
+<td><p>Build a univariate spline encoding slip as a function of along-fault distance.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.fault.splines.fault_depth_spline" title="rsqsim_api.fault.splines.fault_depth_spline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fault_depth_spline</span></code></a>(gradient_change_x, after_change_fract)</p></td>
+<td><p>Build a univariate spline encoding normalised slip as a function of normalised depth.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.splines.fault_edge_spline">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.splines.</span></span><span class="sig-name descname"><span class="pre">fault_edge_spline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_slip</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line_stop_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradient_change</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spline_k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spline_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/splines.html#fault_edge_spline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.splines.fault_edge_spline" title="Link to this definition"></a></dt>
+<dd><p>Build a univariate spline encoding slip as a function of along-fault distance.</p>
+<p>Constructs an interpolated spline that ramps from a minimum slip
+fraction at the fault edge up to the maximum slip, with a
+piecewise-linear interpolant shaped by the supplied parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>max_slip</strong> (<em>float</em>) – Maximum slip value (m or m/yr) at the centre of the fault.</p></li>
+<li><p><strong>distance_width</strong> (<em>float</em>) – Along-fault distance (m) at which <code class="docutils literal notranslate"><span class="pre">max_slip</span></code> is reached.</p></li>
+<li><p><strong>total_width</strong> (<em>float</em>) – Total along-fault width (m) of the spline domain.</p></li>
+<li><p><strong>min_slip_fraction</strong> (<em>float</em><em>, </em><em>optional</em>) – Fraction of <code class="docutils literal notranslate"><span class="pre">max_slip</span></code> at the fault edge (distance = 0).
+Defaults to 0.</p></li>
+<li><p><strong>line_stop_fraction</strong> (<em>float</em><em>, </em><em>optional</em>) – Fraction of <code class="docutils literal notranslate"><span class="pre">distance_width</span></code> at which the initial ramp
+levels off before the gradient change.  Defaults to 0.5.</p></li>
+<li><p><strong>gradient_change</strong> (<em>float</em><em>, </em><em>optional</em>) – Multiplicative factor applied to the intermediate y value to
+create a smooth overshoot before the final ramp.  Defaults to
+1.2.</p></li>
+<li><p><strong>spline_k</strong> (<em>int</em><em>, </em><em>optional</em>) – Degree of the smoothing spline.  Defaults to 3 (cubic).</p></li>
+<li><p><strong>spline_s</strong> (<em>float</em><em>, </em><em>optional</em>) – Smoothing factor passed to
+<code class="xref py py-class docutils literal notranslate"><span class="pre">UnivariateSpline</span></code>.  Defaults to
+0.0 (interpolating spline).</p></li>
+<li><p><strong>resolution</strong> (<em>float</em><em>, </em><em>optional</em>) – Sample spacing (m) used when building the x-axis for
+interpolation.  Defaults to 10.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Spline object; call with an x array (metres from edge) to
+evaluate the slip profile.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>scipy.interpolate.UnivariateSpline</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.fault.splines.fault_depth_spline">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.fault.splines.</span></span><span class="sig-name descname"><span class="pre">fault_depth_spline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gradient_change_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after_change_fract</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after_change_gradient</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spline_k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spline_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/fault/splines.html#fault_depth_spline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.fault.splines.fault_depth_spline" title="Link to this definition"></a></dt>
+<dd><p>Build a univariate spline encoding normalised slip as a function of normalised depth.</p>
+<p>Produces a spline on [0, 1] (normalised depth fraction) that is
+approximately flat at 1 down to <code class="docutils literal notranslate"><span class="pre">gradient_change_x</span></code>, then ramps
+linearly to 0 at the base of the fault, with an optional gradient
+overshoot controlled by <code class="docutils literal notranslate"><span class="pre">after_change_gradient</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gradient_change_x</strong> (<em>float</em>) – Normalised depth (0–1) at which the gradient begins to change.</p></li>
+<li><p><strong>after_change_fract</strong> (<em>float</em>) – Fraction of the remaining depth below <code class="docutils literal notranslate"><span class="pre">gradient_change_x</span></code>
+over which the gradient change is applied.</p></li>
+<li><p><strong>resolution</strong> (<em>float</em><em>, </em><em>optional</em>) – Sample spacing in normalised depth used when building the
+spline.  Defaults to 0.01.</p></li>
+<li><p><strong>after_change_gradient</strong> (<em>float</em><em>, </em><em>optional</em>) – Multiplicative factor that controls the magnitude of the
+gradient overshoot.  Defaults to 1.2.</p></li>
+<li><p><strong>spline_k</strong> (<em>int</em><em>, </em><em>optional</em>) – Degree of the smoothing spline.  Defaults to 3 (cubic).</p></li>
+<li><p><strong>spline_s</strong> (<em>float</em><em>, </em><em>optional</em>) – Smoothing factor passed to
+<code class="xref py py-class docutils literal notranslate"><span class="pre">UnivariateSpline</span></code>.  Defaults to
+0.0 (interpolating spline).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Spline object; call with a normalised-depth array to evaluate
+the depth-dependent slip multiplier.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>scipy.interpolate.UnivariateSpline</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../slip/index.html" class="btn btn-neutral float-left" title="rsqsim_api.fault.slip" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../utilities/index.html" class="btn btn-neutral float-right" title="rsqsim_api.fault.utilities" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

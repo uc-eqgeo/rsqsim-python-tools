@@ -1,0 +1,456 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.catalogue.nshm_utilities &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="rsqsim_api.catalogue.utilities" href="../utilities/index.html" />
+    <link rel="prev" title="rsqsim_api.catalogue.event" href="../event/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">rsqsim_api</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="../index.html">rsqsim_api.catalogue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../fault/index.html">rsqsim_api.fault</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../io/index.html">rsqsim_api.io</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../tsunami/index.html">rsqsim_api.tsunami</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../visualisation/index.html">rsqsim_api.visualisation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_fault/index.html">test_fault</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_catalogue/index.html">test_catalogue</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">rsqsim_api</a></li>
+          <li class="breadcrumb-item"><a href="../index.html">rsqsim_api.catalogue</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.catalogue.nshm_utilities</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/catalogue/nshm_utilities/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.catalogue.nshm_utilities">
+<span id="rsqsim-api-catalogue-nshm-utilities"></span><h1>rsqsim_api.catalogue.nshm_utilities<a class="headerlink" href="#module-rsqsim_api.catalogue.nshm_utilities" title="Link to this heading"></a></h1>
+<p>Utilities for reading and processing New Zealand NSHM inversion results.</p>
+<p>Provides functions for computing overall rupture strike and resolved
+length from multi-segment traces, and the <a class="reference internal" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion" title="rsqsim_api.catalogue.nshm_utilities.NshmInversion"><code class="xref py py-class docutils literal notranslate"><span class="pre">NshmInversion</span></code></a> class
+for loading OpenSHA fault-system solution directories.</p>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion" title="rsqsim_api.catalogue.nshm_utilities.NshmInversion"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NshmInversion</span></code></a></p></td>
+<td><p>Reader for an OpenSHA fault-system inversion solution directory.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.nshm_utilities.overall_strike" title="rsqsim_api.catalogue.nshm_utilities.overall_strike"><code class="xref py py-obj docutils literal notranslate"><span class="pre">overall_strike</span></code></a>(rup)</p></td>
+<td><p>Compute the length-weighted mean strike of a multi-segment rupture.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.catalogue.nshm_utilities.overall_strike_resolved_length" title="rsqsim_api.catalogue.nshm_utilities.overall_strike_resolved_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">overall_strike_resolved_length</span></code></a>(rup)</p></td>
+<td><p>Compute the resolved length of a rupture along its mean strike direction.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.overall_strike">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.nshm_utilities.</span></span><span class="sig-name descname"><span class="pre">overall_strike</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rup</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#overall_strike"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.overall_strike" title="Link to this definition"></a></dt>
+<dd><p>Compute the length-weighted mean strike of a multi-segment rupture.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>rup</strong> (<em>shapely.geometry.MultiLineString</em>) – Rupture trace composed of one or more line segments.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Weighted circular mean strike in degrees (0–180 convention as
+returned by <a class="reference internal" href="../../fault/utilities/index.html#rsqsim_api.fault.utilities.calculate_strike" title="rsqsim_api.fault.utilities.calculate_strike"><code class="xref py py-func docutils literal notranslate"><span class="pre">calculate_strike()</span></code></a>).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.overall_strike_resolved_length">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.nshm_utilities.</span></span><span class="sig-name descname"><span class="pre">overall_strike_resolved_length</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rup</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#overall_strike_resolved_length"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.overall_strike_resolved_length" title="Link to this definition"></a></dt>
+<dd><p>Compute the resolved length of a rupture along its mean strike direction.</p>
+<p>Projects all rupture vertices onto the overall strike vector and
+returns the range (max minus min) of those projections.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>rup</strong> (<em>shapely.geometry.MultiLineString</em><em> or </em><em>LineString</em>) – Rupture trace.  A single <code class="docutils literal notranslate"><span class="pre">LineString</span></code> is automatically wrapped
+in a <code class="docutils literal notranslate"><span class="pre">MultiLineString</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Resolved rupture length in the same units as the input geometry
+(metres for NZTM).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.NshmInversion">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">rsqsim_api.catalogue.nshm_utilities.</span></span><span class="sig-name descname"><span class="pre">NshmInversion</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion" title="Link to this definition"></a></dt>
+<dd><p>Reader for an OpenSHA fault-system inversion solution directory.</p>
+<p>Loads fault sections, rupture rates, properties, connectivity
+indices, and average slips from an NSHM inversion output directory
+in the standard OpenSHA CSV/GeoJSON layout.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.NshmInversion.fault_sections">
+<span class="sig-name descname"><span class="pre">fault_sections</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.fault_sections"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion.fault_sections" title="Link to this definition"></a></dt>
+<dd><p>GeoDataFrame of fault-section geometries (EPSG:2193).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>geopandas.GeoDataFrame or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.NshmInversion.rates">
+<span class="sig-name descname"><span class="pre">rates</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.rates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion.rates" title="Link to this definition"></a></dt>
+<dd><p>Annual occurrence rates for ruptures with rate &gt; 0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.NshmInversion.properties">
+<span class="sig-name descname"><span class="pre">properties</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.properties"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion.properties" title="Link to this definition"></a></dt>
+<dd><p>Rupture properties (area, length, magnitude) for non-zero-rate
+ruptures.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.NshmInversion.indices">
+<span class="sig-name descname"><span class="pre">indices</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.indices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion.indices" title="Link to this definition"></a></dt>
+<dd><p>Mapping of rupture ID to array of participating fault-section
+indices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.NshmInversion.num_sections">
+<span class="sig-name descname"><span class="pre">num_sections</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.num_sections"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion.num_sections" title="Link to this definition"></a></dt>
+<dd><p>Number of sections per rupture.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.NshmInversion.rupture_ids">
+<span class="sig-name descname"><span class="pre">rupture_ids</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.rupture_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion.rupture_ids" title="Link to this definition"></a></dt>
+<dd><p>Indices of ruptures with non-zero annual rate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.NshmInversion.area">
+<span class="sig-name descname"><span class="pre">area</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.area"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion.area" title="Link to this definition"></a></dt>
+<dd><p>Rupture areas in m².</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.NshmInversion.length">
+<span class="sig-name descname"><span class="pre">length</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.length"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion.length" title="Link to this definition"></a></dt>
+<dd><p>Rupture lengths in m.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.NshmInversion.mw">
+<span class="sig-name descname"><span class="pre">mw</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.mw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion.mw" title="Link to this definition"></a></dt>
+<dd><p>Moment magnitudes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.NshmInversion.average_slips">
+<span class="sig-name descname"><span class="pre">average_slips</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.average_slips"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion.average_slips" title="Link to this definition"></a></dt>
+<dd><p>Average slip per rupture in m.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">fault_sections</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.fault_sections"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id0" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">rates</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.rates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id1" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">properties</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.properties"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id2" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id3">
+<span class="sig-name descname"><span class="pre">indices</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.indices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id3" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id4">
+<span class="sig-name descname"><span class="pre">num_sections</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.num_sections"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id4" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id5">
+<span class="sig-name descname"><span class="pre">rupture_ids</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.rupture_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id5" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id6">
+<span class="sig-name descname"><span class="pre">area</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.area"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id6" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id7">
+<span class="sig-name descname"><span class="pre">length</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.length"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id7" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id8">
+<span class="sig-name descname"><span class="pre">mw</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.mw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id8" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id9">
+<span class="sig-name descname"><span class="pre">average_slips</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.average_slips"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id9" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.NshmInversion.read_indices">
+<span class="sig-name descname"><span class="pre">read_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indices_csv</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.read_indices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion.read_indices" title="Link to this definition"></a></dt>
+<dd><p>Read the rupture–section connectivity index file.</p>
+<p>Parses a CSV where each row lists a rupture ID, the number of
+sections, and the section indices.  Populates <a class="reference internal" href="#id3" title="rsqsim_api.catalogue.nshm_utilities.NshmInversion.indices"><code class="xref py py-attr docutils literal notranslate"><span class="pre">indices</span></code></a>
+and <a class="reference internal" href="#id4" title="rsqsim_api.catalogue.nshm_utilities.NshmInversion.num_sections"><code class="xref py py-attr docutils literal notranslate"><span class="pre">num_sections</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>indices_csv</strong> (<em>str</em>) – Path to <code class="docutils literal notranslate"><span class="pre">ruptures/indices.csv</span></code> inside the solution
+directory.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If <a class="reference internal" href="#id5" title="rsqsim_api.catalogue.nshm_utilities.NshmInversion.rupture_ids"><code class="xref py py-attr docutils literal notranslate"><span class="pre">rupture_ids</span></code></a> has not been set, or if the file
+does not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.NshmInversion.read_nshm_inversion">
+<span class="sig-name descname"><span class="pre">read_nshm_inversion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.read_nshm_inversion"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion.read_nshm_inversion" title="Link to this definition"></a></dt>
+<dd><p>Load an NSHM inversion solution from a directory.</p>
+<p>Reads rates, fault sections, properties, connectivity indices,
+and average slips.  Only ruptures with a positive annual rate
+are retained.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>directory</strong> (<em>str</em>) – Path to the inversion solution directory, which must contain:
+<code class="docutils literal notranslate"><span class="pre">solution/rates.csv</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ruptures/fault_sections.geojson</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ruptures/properties.csv</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ruptures/indices.csv</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">ruptures/average_slips.csv</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.NshmInversion.get_rupture_geometry">
+<span class="sig-name descname"><span class="pre">get_rupture_geometry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rupture_index</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.get_rupture_geometry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion.get_rupture_geometry" title="Link to this definition"></a></dt>
+<dd><p>Return the unary union geometry of all sections for a rupture.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>rupture_index</strong> (<em>int</em>) – Rupture ID from <a class="reference internal" href="#id5" title="rsqsim_api.catalogue.nshm_utilities.NshmInversion.rupture_ids"><code class="xref py py-attr docutils literal notranslate"><span class="pre">rupture_ids</span></code></a>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Union of all fault-section geometries participating in the
+specified rupture.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>shapely.geometry.base.BaseGeometry</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.NshmInversion.ruptures_to_gdf">
+<span class="sig-name descname"><span class="pre">ruptures_to_gdf</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.ruptures_to_gdf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion.ruptures_to_gdf" title="Link to this definition"></a></dt>
+<dd><p>Build a GeoDataFrame of all non-zero-rate ruptures.</p>
+<p>For each rupture, computes the unary-union geometry of its
+sections, the resolved length along the mean strike, and
+assembles rate, area, length, magnitude, and average slip.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>GeoDataFrame (EPSG:2193) with one row per rupture and
+columns <code class="docutils literal notranslate"><span class="pre">[&quot;rate&quot;,</span> <span class="pre">&quot;area&quot;,</span> <span class="pre">&quot;length&quot;,</span> <span class="pre">&quot;mw&quot;,</span> <span class="pre">&quot;average_slip&quot;,</span>
+<span class="pre">&quot;geometry&quot;,</span> <span class="pre">&quot;resolved_length&quot;]</span></code>.  <code class="docutils literal notranslate"><span class="pre">resolved_length</span></code> is
+in km.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>geopandas.GeoDataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.nshm_utilities.NshmInversion.ruptures_to_geojson">
+<span class="sig-name descname"><span class="pre">ruptures_to_geojson</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/nshm_utilities.html#NshmInversion.ruptures_to_geojson"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.nshm_utilities.NshmInversion.ruptures_to_geojson" title="Link to this definition"></a></dt>
+<dd><p>Write all non-zero-rate ruptures to a GeoJSON file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – Output GeoJSON file path.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../event/index.html" class="btn btn-neutral float-left" title="rsqsim_api.catalogue.event" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../utilities/index.html" class="btn btn-neutral float-right" title="rsqsim_api.catalogue.utilities" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

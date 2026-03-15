@@ -1,0 +1,529 @@
+rsqsim_api.fault.multifault
+===========================
+
+.. py:module:: rsqsim_api.fault.multifault
+
+.. autoapi-nested-parse::
+
+   RSQSim multi-fault model container and related utilities.
+
+   Provides :func:`check_unique_vertices` for duplicate-vertex detection
+   and :class:`RsqSimMultiFault` for managing a collection of
+   :class:`~rsqsim_api.fault.segment.RsqSimSegment` objects, including
+   I/O from RSQSim/Bruce fault files, CFM tsurf directories, and various
+   GIS export methods.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   rsqsim_api.fault.multifault.RsqSimMultiFault
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   rsqsim_api.fault.multifault.check_unique_vertices
+   rsqsim_api.fault.multifault.read_bruce
+
+
+Module Contents
+---------------
+
+.. py:function:: check_unique_vertices(vertex_array, tolerance = 1)
+
+   Check whether any vertices in a 3-D array are potential duplicates.
+
+   Sorts the vertex array and computes distances between adjacent
+   rows in the sorted order; vertices closer than ``tolerance`` are
+   flagged as potential duplicates.
+
+   :param vertex_array: 3-D vertex coordinates.
+   :type vertex_array: numpy.ndarray of shape (n, 3)
+   :param tolerance: Distance threshold (m) below which vertices are reported as
+                     potential duplicates.  Defaults to 1.
+   :type tolerance: int or float, optional
+
+   :returns: * **num_closer** (*int*) -- Number of adjacent-sorted-vertex pairs closer than
+               ``tolerance``.
+             * **tolerance** (*float*) -- The tolerance value used.
+
+
+.. py:class:: RsqSimMultiFault(faults, crs = 2193)
+
+   Container for a collection of fault segments forming a complete fault model.
+
+   Aggregates :class:`~rsqsim_api.fault.segment.RsqSimSegment`
+   objects, provides name-based lookup, boundary computation, and
+   I/O methods for RSQSim/Bruce fault files, CFM tsurf directories,
+   and various GIS export formats.
+
+   .. attribute:: faults
+
+      List of :class:`~rsqsim_api.fault.segment.RsqSimSegment`
+      (or nested :class:`RsqSimMultiFault`) objects.
+
+      :type: list
+
+   .. attribute:: patch_dic
+
+      Mapping of global patch number to patch object.
+
+      :type: dict
+
+   .. attribute:: faults_with_patches
+
+      Mapping of global patch number to the owning segment.
+
+      :type: dict
+
+
+   .. py:property:: faults
+
+
+   .. py:attribute:: patch_dic
+
+
+   .. py:attribute:: faults_with_patches
+
+
+   .. py:method:: filter_faults_by_patch_numbers(patch_ls, fault_from_single_patch = False)
+
+      Return the fault(s) associated with a given patch number or list of patch numbers.
+
+      :param patch_ls: Patch number(s) to look up.
+      :type patch_ls: int or array-like of int
+      :param fault_from_single_patch: If ``True`` and a single patch number is given, return the
+                                      owning :class:`~rsqsim_api.fault.segment.RsqSimSegment`
+                                      rather than the patch object.  Defaults to ``False``.
+      :type fault_from_single_patch: bool, optional
+
+      :returns: The patch object, segment, or a new
+                :class:`RsqSimMultiFault` containing the relevant segments.
+      :rtype: RsqSimTriangularPatch or RsqSimSegment or RsqSimMultiFault
+
+
+
+   .. py:property:: names
+
+
+   .. py:property:: name_dic
+
+
+   .. py:method:: get_names()
+
+      Populate :attr:`names` and :attr:`name_dic` from the loaded faults.
+
+
+
+   .. py:property:: bounds
+
+
+   .. py:property:: crs
+
+
+   .. py:property:: v2_name_dic
+
+
+   .. py:method:: get_patch_areas()
+
+      Return a flat array of patch areas for all faults.
+
+      :returns: Patch areas in m².
+      :rtype: numpy.ndarray of shape (n_total_patches,)
+
+
+
+   .. py:method:: make_v2_name_dic(path2cfm)
+
+      Build a dictionary mapping Bruce-V2 fault names to CFM fault names.
+
+      Uses fuzzy string matching to find the closest name in the CFM
+      fault model GIS file, with hardcoded overrides for ambiguous
+      cases (Wairau, Hikurangi, Puysegur).
+
+      :param path2cfm: Path to the CFM fault model GIS file (shapefile or
+                       GeoJSON) containing a ``"Name"`` column.
+      :type path2cfm: str
+
+      :returns: Populates :attr:`v2_name_dic`.
+      :rtype: None
+
+      :raises AssertionError: If ``path2cfm`` does not exist.
+
+
+
+   .. py:method:: read_fault_file(fault_file, verbose = False)
+      :classmethod:
+
+
+      Read in opensha xml file?
+      TODO: decide whether this is necessary, and if so finish it
+      :param fault_file:
+      :param verbose:
+      :return:
+
+
+
+   .. py:method:: read_fault_file_keith(fault_file, verbose = False, crs = 2193, read_slip_rate = True)
+      :classmethod:
+
+
+      Read an RSQSim fault file in Keith Richards-Dinger's convention.
+
+      The file has 13 whitespace-separated columns:
+      ``x1,y1,z1, x2,y2,z2, x3,y3,z3, rake, slip_rate, fault_num, fault_name``.
+
+      :param fault_file: Path to the RSQSim fault input file.
+      :type fault_file: str
+      :param verbose: If ``True``, print per-fault progress and duplicate-vertex
+                      warnings.  Defaults to ``False``.
+      :type verbose: bool, optional
+      :param crs: EPSG code for the coordinate reference system.
+                  Defaults to 2193 (NZTM).
+      :type crs: int, optional
+      :param read_slip_rate: If ``True`` (default), populate patch slip rates.
+      :type read_slip_rate: bool, optional
+
+      :rtype: RsqSimMultiFault
+
+
+
+   .. py:method:: read_fault_file_bruce(main_fault_file, name_file, transform_from_utm = False, from_pickle = False, crs = 2193, read_slip_rate = True)
+      :classmethod:
+
+
+      Read an RSQSim fault model in Bruce Shaw's format.
+
+      Reads a two-file layout: a main CSV fault file and a companion
+      names file.  Handles the case where multiple fault segments
+      share the same name by appending a numeric suffix.
+
+      :param main_fault_file: Path to the main fault geometry file (space-separated,
+                              13 columns: x1–z3, rake, slip_rate, fault_num, name).
+                              Can also be a pickled DataFrame if ``from_pickle`` is
+                              ``True``.
+      :type main_fault_file: str
+      :param name_file: Path to the text file listing fault names (one per line,
+                        in the same order as fault numbers).
+      :type name_file: str
+      :param transform_from_utm: If ``True``, transform vertex coordinates from UTM zone
+                                 59S to NZTM.  Defaults to ``False``.
+      :type transform_from_utm: bool, optional
+      :param from_pickle: If ``True``, read the main file as a pickled DataFrame.
+                          Defaults to ``False``.
+      :type from_pickle: bool, optional
+      :param crs: EPSG code.  Defaults to 2193 (NZTM).
+      :type crs: int, optional
+      :param read_slip_rate: If ``True`` (default), populate patch slip rates.
+      :type read_slip_rate: bool, optional
+
+      :rtype: RsqSimMultiFault
+
+
+
+   .. py:method:: pickle_model(file)
+
+      Serialise all patch data to a pickled pandas DataFrame.
+
+      :param file: Output pickle file path.
+      :type file: str
+
+
+
+   .. py:method:: read_cfm_directory(directory = None, files = None, shapefile=None)
+      :classmethod:
+
+
+
+   .. py:method:: plot_faults_2d(fault_list = None, show = False, write = None)
+
+      Plot selected fault segments in map view coloured by slip rate.
+
+      :param fault_list: Names of faults to plot.  Defaults to all faults.
+      :type fault_list: iterable of str or None, optional
+      :param show: If ``True``, call ``fig.show()``.  Defaults to ``False``.
+      :type show: bool, optional
+      :param write: Output file path for saving the figure.
+      :type write: str or None, optional
+
+
+
+   .. py:method:: plot_fault_traces(fault_list = None, ax = None, edgecolor = 'r', linewidth = 0.1, clip_bounds = None, linestyle = '-', facecolor = '0.8')
+
+      Plot fault surface traces on a map axes.
+
+      :param fault_list: Names of faults to plot.  Defaults to all faults.
+      :type fault_list: iterable of str or None, optional
+      :param ax: Axes to draw onto.  A new figure is created if ``None``.
+      :type ax: matplotlib.axes.Axes or None, optional
+      :param edgecolor: Trace edge colour.  Defaults to ``"r"``.
+      :type edgecolor: str, optional
+      :param linewidth: Line width.  Defaults to 0.1.
+      :type linewidth: int or float, optional
+      :param clip_bounds: ``[x1, y1, x2, y2]`` bounding box for the coastline.
+      :type clip_bounds: list or None, optional
+      :param linestyle: Line style.  Defaults to ``"-"``.
+      :type linestyle: str, optional
+      :param facecolor: Not currently used.  Defaults to ``"0.8"``.
+      :type facecolor: str, optional
+
+      :rtype: matplotlib.axes.Axes
+
+
+
+   .. py:method:: write_fault_traces_to_gis(fault_list = None, prefix = './bruce_faults', crs = 'EPSG:2193')
+
+      Write fault surface traces to shapefiles.
+
+      :param fault_list: Names of faults to export.  Defaults to all faults.
+      :type fault_list: iterable of str or None, optional
+      :param prefix: Output file prefix.  Two shapefiles are written:
+                     ``{prefix}.shp`` and ``{prefix}_traces.shp``.
+                     Defaults to ``"./bruce_faults"``.
+      :type prefix: str, optional
+      :param crs: CRS string for the output shapefile.
+                  Defaults to ``"EPSG:2193"``.
+      :type crs: str, optional
+
+
+
+   .. py:method:: write_fault_outlines_to_gis(fault_list = None, prefix = './bruce_faults', crs = 'EPSG:2193')
+
+      Write fault patch-outline polygons to a shapefile.
+
+      :param fault_list: Names of faults to export.  Defaults to all faults.
+      :type fault_list: iterable of str or None, optional
+      :param prefix: Output file prefix; produces ``{prefix}_outlines.shp``.
+                     Defaults to ``"./bruce_faults"``.
+      :type prefix: str, optional
+      :param crs: CRS string.  Defaults to ``"EPSG:2193"``.
+      :type crs: str, optional
+
+
+
+   .. py:method:: plot_slip_distribution_2d()
+
+
+   .. py:method:: slip_rate_array(include_zeros = True, min_slip_rate = None, nztm_to_lonlat = False, mm_per_year = True)
+
+      Build a flat array of triangle vertex coordinates plus slip rate and rake.
+
+      :param include_zeros: If ``True`` (default) and ``min_slip_rate`` is set,
+                            include below-threshold patches with slip and rake set to
+                            zero.
+      :type include_zeros: bool, optional
+      :param min_slip_rate: Minimum slip rate (mm/yr if ``mm_per_year`` is ``True``)
+                            for inclusion.  Defaults to ``None`` (include all).
+      :type min_slip_rate: float or None, optional
+      :param nztm_to_lonlat: If ``True``, output vertex coordinates in WGS84
+                             (longitude, latitude).  Defaults to ``False``.
+      :type nztm_to_lonlat: bool, optional
+      :param mm_per_year: If ``True`` (default), convert slip rates from m/s to
+                          mm/yr.
+      :type mm_per_year: bool, optional
+
+      :returns: Columns: ``[x1,y1,z1, x2,y2,z2, x3,y3,z3, slip_rate, rake]``.
+      :rtype: numpy.ndarray of shape (n_patches, 11)
+
+
+
+   .. py:method:: slip_rate_to_mesh(include_zeros = True, min_slip_rate = None, nztm_to_lonlat = False, mm_per_year = True)
+
+      Build a :class:`meshio.Mesh` containing slip rate and rake as cell data.
+
+      :param include_zeros: Include below-threshold patches as zeros.  Defaults to
+                            ``True``.
+      :type include_zeros: bool, optional
+      :param min_slip_rate: Minimum slip rate threshold.  Defaults to ``None``.
+      :type min_slip_rate: float or None, optional
+      :param nztm_to_lonlat: Output in WGS84.  Defaults to ``False``.
+      :type nztm_to_lonlat: bool, optional
+      :param mm_per_year: Convert to mm/yr.  Defaults to ``True``.
+      :type mm_per_year: bool, optional
+
+      :rtype: meshio.Mesh
+
+
+
+   .. py:method:: slip_rate_to_vtk(vtk_file, include_zeros = True, min_slip_rate = None, nztm_to_lonlat = False, mm_per_year = True)
+
+      Write slip rate and rake data to a VTK file.
+
+      :param vtk_file: Output VTK file path.
+      :type vtk_file: str
+      :param include_zeros: Include below-threshold patches.  Defaults to ``True``.
+      :type include_zeros: bool, optional
+      :param min_slip_rate: Minimum slip rate threshold.  Defaults to ``None``.
+      :type min_slip_rate: float or None, optional
+      :param nztm_to_lonlat: Output in WGS84.  Defaults to ``False``.
+      :type nztm_to_lonlat: bool, optional
+      :param mm_per_year: Convert to mm/yr.  Defaults to ``True``.
+      :type mm_per_year: bool, optional
+
+
+
+   .. py:method:: write_rsqsim_input_file(output_file, mm_yr = True)
+
+      Write all faults to a single RSQSim fault input file.
+
+      :param output_file: Output file path.
+      :type output_file: str
+      :param mm_yr: If ``True`` (default), treat stored slip rates as mm/yr
+                    and convert to m/s for the output.
+      :type mm_yr: bool, optional
+
+
+
+   .. py:method:: write_b_value_file(a_value, default_a_b, difference_dict, output_file)
+
+      Write per-patch b-values to a text file for use with RSQSim.
+
+      :param a_value: Global a-value parameter (0–1).
+      :type a_value: float
+      :param default_a_b: Default a − b value (negative float).
+      :type default_a_b: float
+      :param difference_dict: Mapping of fault name to (a − b) value override.
+      :type difference_dict: dict
+      :param output_file: Output text file path.
+      :type output_file: str
+
+
+
+   .. py:method:: tile_quads(tile_size = 5000.0, interpolation_distance = 1000.0, manual_tiles = None, output_file = None)
+
+      Discretize all faults into rectangular tiles.
+
+      Calls :meth:`~rsqsim_api.fault.segment.RsqSimSegment.discretize_rectangular_tiles`
+      on each fault.  Manual tile arrays can override individual
+      faults.
+
+      :param tile_size: Target tile dimension (m).  Defaults to 5000.
+      :type tile_size: float, optional
+      :param interpolation_distance: Down-dip interpolation spacing (m).  Defaults to 1000.
+      :type interpolation_distance: float, optional
+      :param manual_tiles: Mapping of fault name to pre-computed tile array (loaded
+                           from a ``.npy`` file).  Defaults to ``None``.
+      :type manual_tiles: dict or None, optional
+      :param output_file: If given, pickle the resulting dict to this file.
+      :type output_file: str or None, optional
+
+      :returns: Mapping of fault name to tile array (shape (n_tiles, 4, 3)).
+      :rtype: dict
+
+
+
+   .. py:method:: search_name(search_string)
+
+      Search fault names using a wildcard pattern.
+
+      :param search_string: Wildcard pattern (case-insensitive) to match against
+                            fault names.
+      :type search_string: str
+
+      :returns: Fault names that match the pattern.
+      :rtype: list of str
+
+
+
+   .. py:method:: find_closest_patches(x, y)
+
+      Find the patches closest to given 2-D coordinates.
+
+      :param x: Easting (NZTM) in metres.
+      :type x: float
+      :param y: Northing (NZTM) in metres.
+      :type y: float
+
+      :returns: Patch numbers of the patches in the closest fault whose
+                vertices include the nearest vertex.
+      :rtype: list of int
+
+
+
+   .. py:method:: find_closest_patches_3d(x, y, z)
+
+      Find the patches closest to given 3-D coordinates.
+
+      :param x: Easting (NZTM) in metres.
+      :type x: float
+      :param y: Northing (NZTM) in metres.
+      :type y: float
+      :param z: Depth (negative metres below sea level).
+      :type z: float
+
+      :returns: Patch numbers of the patches in the closest fault whose
+                vertices include the nearest vertex.
+      :rtype: list of int
+
+
+
+   .. py:property:: traces
+
+
+   .. py:method:: get_traces()
+
+      Build and cache a GeoDataFrame of all fault surface traces.
+
+
+
+   .. py:property:: outlines
+
+
+   .. py:method:: get_outlines()
+
+      Build and cache a GeoDataFrame of all fault patch-outline polygons.
+
+
+
+   .. py:method:: merge_segments(matching_string, name_dict = None, fault_name = None)
+
+      Merge multiple fault segments matching a name pattern into one segment.
+
+      :param matching_string: Wildcard pattern used to identify segments to merge.
+                              Without ``name_dict``, matches names like
+                              ``"{matching_string}?"`` or ``"{matching_string}??"``.
+      :type matching_string: str
+      :param name_dict: Mapping of internal segment name to an alternative name
+                        for pattern matching.
+      :type name_dict: dict or None, optional
+      :param fault_name: Name for the merged segment.
+      :type fault_name: str or None, optional
+
+      :returns: New segment containing all patches from the matched
+                segments, with merged surface trace.
+      :rtype: RsqSimSegment
+
+
+
+   .. py:method:: get_subduction_patch_numbers(subduction_faults = ('hikkerm', 'puysegur'))
+
+      Return patch numbers for all subduction-zone fault segments.
+
+      :param subduction_faults: Substrings used to identify subduction faults by name.
+                                Defaults to ``("hikkerm", "puysegur")``.
+      :type subduction_faults: tuple of str, optional
+
+      :rtype: numpy.ndarray of int
+
+
+
+   .. py:method:: get_crustal_patch_numbers(subduction_faults = ('hikkerm', 'puysegur'))
+
+      Return patch numbers for all crustal (non-subduction) fault segments.
+
+      :param subduction_faults: Substrings identifying subduction faults to exclude.
+                                Defaults to ``("hikkerm", "puysegur")``.
+      :type subduction_faults: tuple of str, optional
+
+      :rtype: numpy.ndarray of int
+
+
+
+.. py:function:: read_bruce(run_dir = '/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627', fault_file = 'bruce_faults.in', names_file = 'bruce_names.in')
+

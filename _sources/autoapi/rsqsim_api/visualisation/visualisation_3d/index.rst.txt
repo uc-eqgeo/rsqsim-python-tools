@@ -1,0 +1,22 @@
+rsqsim_api.visualisation.visualisation_3d
+=========================================
+
+.. py:module:: rsqsim_api.visualisation.visualisation_3d
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   rsqsim_api.visualisation.visualisation_3d.fault_to_ipv
+
+
+Module Contents
+---------------
+
+.. py:function:: fault_to_ipv(fault)
+
+   Placeholder for future 3-D visualisation of a fault segment via ipyvolume.
+
+

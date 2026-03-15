@@ -1,0 +1,64 @@
+rsqsim_api.io.multiprocessing_utils
+===================================
+
+.. py:module:: rsqsim_api.io.multiprocessing_utils
+
+.. autoapi-nested-parse::
+
+   Worker functions for constructing fault patches in parallel multiprocessing pools.
+
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   rsqsim_api.io.multiprocessing_utils.array_to_patch
+   rsqsim_api.io.multiprocessing_utils.array_to_patch_rake
+
+
+Module Contents
+---------------
+
+.. py:function:: array_to_patch(arg_ls)
+
+   Construct an RsqSimTriangularPatch from a flat argument list.
+
+   Intended for use as a worker function in a multiprocessing pool,
+   where arguments must be passed as a single iterable.
+
+   :param arg_ls: List of five elements: ``[patch_num, triangle, fault,
+                  strike_slip, dip_slip]``.
+
+                  - *patch_num* : int — patch index.
+                  - *triangle* : array-like of length 9 — flattened (3×3) vertex array.
+                  - *fault* : fault segment owning this patch.
+                  - *strike_slip* : float — strike-slip component in metres.
+                  - *dip_slip* : float — dip-slip component in metres.
+
+   :returns: * **patch_num** (*int*) -- The patch index (passed through for result ordering).
+             * **patch** (*RsqSimTriangularPatch*) -- Constructed patch object.
+
+
+.. py:function:: array_to_patch_rake(arg_ls)
+
+   Construct an RsqSimTriangularPatch from a rake-based argument list.
+
+   Decomposes a total slip magnitude and rake angle into strike-slip
+   and dip-slip components before constructing the patch.  Intended for
+   use as a worker function in a multiprocessing pool.
+
+   :param arg_ls: List of five elements: ``[patch_num, triangle, fault, rake,
+                  normalize_slip]``.
+
+                  - *patch_num* : int — patch index.
+                  - *triangle* : array-like of length 9 — flattened (3×3) vertex array.
+                  - *fault* : fault segment owning this patch.
+                  - *rake* : float — rake angle in degrees.
+                  - *normalize_slip* : float — total slip magnitude in metres.
+
+   :returns: * **patch_num** (*int*) -- The patch index (passed through for result ordering).
+             * **patch** (*RsqSimTriangularPatch*) -- Constructed patch object with strike-slip and dip-slip set.
+
+

@@ -1,0 +1,867 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.visualisation.animation &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.visualisation.animation</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for rsqsim_api.visualisation.animation</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Animation utilities for visualising earthquake sequences over time.</span>
+
+<span class="sd">Provides :func:`AnimateSequence` for generating slip animations driven</span>
+<span class="sd">by a :class:`~rsqsim_api.catalogue.catalogue.RsqSimCatalogue`,</span>
+<span class="sd">:class:`AxesSequence` for managing per-event plot visibility and</span>
+<span class="sd">fading, :func:`plot_axis_sequence` for driving the slider/animation</span>
+<span class="sd">loop, and :func:`write_animation_frame` / :func:`write_animation_frames`</span>
+<span class="sd">for parallel frame-by-frame rendering.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">rsqsim_api.catalogue.catalogue</span> <span class="kn">import</span> <span class="n">RsqSimCatalogue</span>
+<span class="kn">from</span> <span class="nn">rsqsim_api.fault.multifault</span> <span class="kn">import</span> <span class="n">RsqSimMultiFault</span>
+<span class="kn">from</span> <span class="nn">rsqsim_api.visualisation.utilities</span> <span class="kn">import</span> <span class="n">plot_coast</span><span class="p">,</span> <span class="n">plot_hillshade</span>
+<span class="kn">from</span> <span class="nn">rsqsim_api.io.rsqsim_constants</span> <span class="kn">import</span> <span class="n">seconds_per_year</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">from</span> <span class="nn">matplotlib.widgets</span> <span class="kn">import</span> <span class="n">Slider</span>
+<span class="kn">from</span> <span class="nn">matplotlib.animation</span> <span class="kn">import</span> <span class="n">FuncAnimation</span><span class="p">,</span> <span class="n">PillowWriter</span><span class="p">,</span> <span class="n">FFMpegWriter</span>
+<span class="kn">from</span> <span class="nn">matplotlib.cm</span> <span class="kn">import</span> <span class="n">ScalarMappable</span>
+<span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="kn">import</span> <span class="n">LogNorm</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.axes_grid1</span> <span class="kn">import</span> <span class="n">make_axes_locatable</span>
+<span class="kn">from</span> <span class="nn">concurrent.futures</span> <span class="kn">import</span> <span class="n">ThreadPoolExecutor</span><span class="p">,</span> <span class="n">as_completed</span><span class="p">,</span> <span class="n">ProcessPoolExecutor</span><span class="p">,</span> <span class="n">wait</span><span class="p">,</span> <span class="n">FIRST_COMPLETED</span>
+<span class="kn">import</span> <span class="nn">os.path</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+
+
+<div class="viewcode-block" id="AnimateSequence">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.AnimateSequence">[docs]</a>
+<span class="k">def</span> <span class="nf">AnimateSequence</span><span class="p">(</span><span class="n">catalogue</span><span class="p">:</span> <span class="n">RsqSimCatalogue</span><span class="p">,</span> <span class="n">fault_model</span><span class="p">:</span> <span class="n">RsqSimMultiFault</span><span class="p">,</span> <span class="n">subduction_cmap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;plasma&quot;</span><span class="p">,</span>
+                    <span class="n">crustal_cmap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;viridis&quot;</span><span class="p">,</span> <span class="n">global_max_slip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">global_max_sub_slip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40</span><span class="p">,</span>
+                    <span class="n">step_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">write</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">file_format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;gif&quot;</span><span class="p">,</span>
+                    <span class="n">figsize</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">(</span><span class="mf">9.6</span><span class="p">,</span> <span class="mf">7.2</span><span class="p">),</span> <span class="n">hillshading_intensity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">bounds</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">pickled_background</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fading_increment</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">plot_log</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="n">log_min</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span> <span class="n">log_max</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">100.</span><span class="p">,</span> <span class="n">plot_subduction_cbar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="n">plot_crustal_cbar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">min_slip_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">plot_zeros</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="n">extra_sub_list</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">plot_cbars</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">write_frames</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="n">pickle_plots</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">load_pickle_plots</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">num_threads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Show an animation of a sequence of earthquake events over time.</span>
+
+<span class="sd">    Plots per-event slip distributions onto a NZ map background and</span>
+<span class="sd">    animates them with a time slider.  Supports pre-rendered pickled</span>
+<span class="sd">    backgrounds and frame-by-frame writing via</span>
+<span class="sd">    :func:`plot_axis_sequence`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    catalogue : RsqSimCatalogue</span>
+<span class="sd">        Catalogue of events to animate.</span>
+<span class="sd">    fault_model : RsqSimMultiFault</span>
+<span class="sd">        Fault model providing patch geometry for each event.</span>
+<span class="sd">    subduction_cmap : str, optional</span>
+<span class="sd">        Colourmap name for the subduction colourbar.</span>
+<span class="sd">        Defaults to ``&quot;plasma&quot;``.</span>
+<span class="sd">    crustal_cmap : str, optional</span>
+<span class="sd">        Colourmap name for the crustal colourbar.</span>
+<span class="sd">        Defaults to ``&quot;viridis&quot;``.</span>
+<span class="sd">    global_max_slip : int, optional</span>
+<span class="sd">        Maximum crustal slip (m) for the colour scale.  Defaults to 10.</span>
+<span class="sd">    global_max_sub_slip : int, optional</span>
+<span class="sd">        Maximum subduction slip (m) for the colour scale.</span>
+<span class="sd">        Defaults to 40.</span>
+<span class="sd">    step_size : int, optional</span>
+<span class="sd">        Year increment per animation frame.  Defaults to 1.</span>
+<span class="sd">    interval : int, optional</span>
+<span class="sd">        Delay between frames in milliseconds.  Defaults to 50.</span>
+<span class="sd">    write : str or None, optional</span>
+<span class="sd">        Output file path (without extension).  If ``None``, display</span>
+<span class="sd">        interactively.</span>
+<span class="sd">    fps : int, optional</span>
+<span class="sd">        Frames per second for the output file.  Defaults to 20.</span>
+<span class="sd">    file_format : str, optional</span>
+<span class="sd">        Output format: ``&quot;gif&quot;``, ``&quot;mp4&quot;``, ``&quot;mov&quot;``, or ``&quot;avi&quot;``.</span>
+<span class="sd">        Defaults to ``&quot;gif&quot;``.</span>
+<span class="sd">    figsize : tuple, optional</span>
+<span class="sd">        Figure size ``(width, height)`` in inches.</span>
+<span class="sd">        Defaults to ``(9.6, 7.2)``.</span>
+<span class="sd">    hillshading_intensity : float, optional</span>
+<span class="sd">        Hillshade overlay transparency (0–1).  Defaults to 0.</span>
+<span class="sd">    bounds : tuple or None, optional</span>
+<span class="sd">        ``(x_min, y_min, x_max, y_max)`` map extent.</span>
+<span class="sd">    pickled_background : str or None, optional</span>
+<span class="sd">        Path to a pickled ``(fig, ax)`` background.</span>
+<span class="sd">    fading_increment : float, optional</span>
+<span class="sd">        Fading divisor per time step.  Defaults to 2.0.</span>
+<span class="sd">    plot_log : bool, optional</span>
+<span class="sd">        If ``True``, use a log colour scale.  Defaults to ``False``.</span>
+<span class="sd">    log_min : float, optional</span>
+<span class="sd">        Lower bound for the log scale.  Defaults to 1.</span>
+<span class="sd">    log_max : float, optional</span>
+<span class="sd">        Upper bound for the log scale.  Defaults to 100.</span>
+<span class="sd">    plot_subduction_cbar : bool, optional</span>
+<span class="sd">        If ``True`` (default), show the subduction colourbar.</span>
+<span class="sd">    plot_crustal_cbar : bool, optional</span>
+<span class="sd">        If ``True`` (default), show the crustal colourbar.</span>
+<span class="sd">    min_slip_value : float or None, optional</span>
+<span class="sd">        Minimum slip to plot; patches below this are hidden.</span>
+<span class="sd">    plot_zeros : bool, optional</span>
+<span class="sd">        If ``True`` (default), plot patches with zero slip.</span>
+<span class="sd">    extra_sub_list : list or None, optional</span>
+<span class="sd">        Additional subduction patch numbers to highlight.</span>
+<span class="sd">    plot_cbars : bool, optional</span>
+<span class="sd">        If ``True``, plot per-event colourbars.  Defaults to ``False``.</span>
+<span class="sd">    write_frames : bool, optional</span>
+<span class="sd">        If ``True``, write individual PNG frames instead of animating.</span>
+<span class="sd">        Defaults to ``False``.</span>
+<span class="sd">    pickle_plots : str or None, optional</span>
+<span class="sd">        Path to save pre-rendered plot pickles.</span>
+<span class="sd">    load_pickle_plots : str or None, optional</span>
+<span class="sd">        Path to load pre-rendered plot pickles.</span>
+<span class="sd">    num_threads : int, optional</span>
+<span class="sd">        Worker count for parallel frame rendering.  Defaults to 4.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">file_format</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;gif&quot;</span><span class="p">,</span> <span class="s2">&quot;mov&quot;</span><span class="p">,</span> <span class="s2">&quot;avi&quot;</span><span class="p">,</span> <span class="s2">&quot;mp4&quot;</span><span class="p">)</span>
+
+    <span class="c1"># get all unique values</span>
+    <span class="n">event_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">catalogue</span><span class="o">.</span><span class="n">event_list</span><span class="p">)</span>
+    <span class="c1"># get RsqSimEvent objects</span>
+    <span class="n">events</span> <span class="o">=</span> <span class="n">catalogue</span><span class="o">.</span><span class="n">events_by_number</span><span class="p">(</span><span class="n">event_list</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">fault_model</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">pickled_background</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pickled_background</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">pfile</span><span class="p">:</span>
+            <span class="n">loaded_subplots</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">pfile</span><span class="p">)</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">background_ax</span> <span class="o">=</span> <span class="n">loaded_subplots</span>
+        <span class="n">coast_ax</span> <span class="o">=</span> <span class="n">background_ax</span><span class="p">[</span><span class="s2">&quot;main_figure&quot;</span><span class="p">]</span>
+        <span class="n">slider_ax</span> <span class="o">=</span> <span class="n">background_ax</span><span class="p">[</span><span class="s2">&quot;slider&quot;</span><span class="p">]</span>
+        <span class="n">year_ax</span> <span class="o">=</span> <span class="n">background_ax</span><span class="p">[</span><span class="s2">&quot;year&quot;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+
+        <span class="c1"># plot map</span>
+        <span class="n">coast_ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;coast&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">hillshading_intensity</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">plot_coast</span><span class="p">(</span><span class="n">coast_ax</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s2">&quot;0.0&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">plot_coast</span><span class="p">(</span><span class="n">coast_ax</span><span class="p">)</span>
+
+    <span class="n">coast_ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">)</span>
+    <span class="n">coast_ax</span><span class="o">.</span><span class="n">patch</span><span class="o">.</span><span class="n">set_alpha</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">coast_ax</span><span class="o">.</span><span class="n">get_xaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">coast_ax</span><span class="o">.</span><span class="n">get_yaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">pickled_background</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">hillshading_intensity</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">x_lim</span> <span class="o">=</span> <span class="n">coast_ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+            <span class="n">y_lim</span> <span class="o">=</span> <span class="n">coast_ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+            <span class="n">plot_hillshade</span><span class="p">(</span><span class="n">coast_ax</span><span class="p">,</span> <span class="n">hillshading_intensity</span><span class="p">)</span>
+            <span class="n">coast_ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">x_lim</span><span class="p">)</span>
+            <span class="n">coast_ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">y_lim</span><span class="p">)</span>
+
+    <span class="n">num_events</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>
+
+    <span class="n">conditions_for_load_pickle_plots</span> <span class="o">=</span> <span class="n">load_pickle_plots</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">load_pickle_plots</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">conditions_for_load_pickle_plots</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">load_pickle_plots</span><span class="p">):</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">load_pickle_plots</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">pfile</span><span class="p">:</span>
+                <span class="n">loaded_subplots</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">pfile</span><span class="p">)</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">background_ax</span><span class="p">,</span> <span class="n">coast_ax</span><span class="p">,</span> <span class="n">slider_ax</span><span class="p">,</span> <span class="n">year_ax</span><span class="p">,</span> <span class="n">all_plots</span><span class="p">,</span> <span class="n">timestamps</span> <span class="o">=</span> <span class="n">loaded_subplots</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Loaded plots from pickle file&quot;</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">all_plots</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">timestamps</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">events</span><span class="p">):</span>
+            <span class="n">plots</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">plot_slip_2d</span><span class="p">(</span>
+                <span class="n">subplots</span><span class="o">=</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">coast_ax</span><span class="p">),</span> <span class="n">global_max_slip</span><span class="o">=</span><span class="n">global_max_slip</span><span class="p">,</span> <span class="n">global_max_sub_slip</span><span class="o">=</span><span class="n">global_max_sub_slip</span><span class="p">,</span>
+                <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span> <span class="n">plot_log_scale</span><span class="o">=</span><span class="n">plot_log</span><span class="p">,</span> <span class="n">log_min</span><span class="o">=</span><span class="n">log_min</span><span class="p">,</span> <span class="n">log_max</span><span class="o">=</span><span class="n">log_max</span><span class="p">,</span> <span class="n">min_slip_value</span><span class="o">=</span><span class="n">min_slip_value</span><span class="p">,</span>
+                <span class="n">plot_zeros</span><span class="o">=</span><span class="n">plot_zeros</span><span class="p">,</span> <span class="n">extra_sub_list</span><span class="o">=</span><span class="n">extra_sub_list</span><span class="p">,</span> <span class="n">plot_cbars</span><span class="o">=</span><span class="n">plot_cbars</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">plots</span><span class="p">:</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">years</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">t0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">3.154e7</span><span class="p">))</span>
+            <span class="n">all_plots</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">plots</span><span class="p">)</span>
+            <span class="n">timestamps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">step_size</span> <span class="o">*</span> <span class="nb">round</span><span class="p">(</span><span class="n">years</span><span class="o">/</span><span class="n">step_size</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Plotting: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">num_events</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">pickle_plots</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pickle_plots</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">pfile</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">((</span><span class="n">fig</span><span class="p">,</span> <span class="n">background_ax</span><span class="p">,</span> <span class="n">coast_ax</span><span class="p">,</span> <span class="n">slider_ax</span><span class="p">,</span> <span class="n">year_ax</span><span class="p">,</span> <span class="n">all_plots</span><span class="p">,</span> <span class="n">timestamps</span><span class="p">),</span> <span class="n">pfile</span><span class="p">)</span>
+
+
+
+
+    <span class="n">time_slider_all</span> <span class="o">=</span> <span class="n">Slider</span><span class="p">(</span>
+        <span class="n">slider_ax</span><span class="p">,</span> <span class="s1">&#39;Year&#39;</span><span class="p">,</span> <span class="n">timestamps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">timestamps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">step_size</span><span class="p">,</span>
+        <span class="n">valinit</span><span class="o">=</span><span class="n">timestamps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">valstep</span><span class="o">=</span><span class="n">step_size</span><span class="p">)</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">time_slider_all</span><span class="o">.</span><span class="n">valmax</span> <span class="o">-</span> <span class="n">time_slider_all</span><span class="o">.</span><span class="n">valmin</span><span class="p">)</span> <span class="o">/</span> <span class="n">step_size</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="n">num_threads</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">split_frames</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array_split</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">frames</span><span class="p">),</span> <span class="n">num_threads</span><span class="p">)</span>
+        <span class="n">arg_holder</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">with</span> <span class="n">ProcessPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">num_threads</span><span class="p">)</span> <span class="k">as</span> <span class="n">plot_executor</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_threads</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting thread </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">load_pickle_plots</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">pfile</span><span class="p">:</span>
+                    <span class="n">loaded_subplots</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">pfile</span><span class="p">)</span>
+                <span class="n">arg_holder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loaded_subplots</span><span class="p">)</span>
+                <span class="n">fig</span><span class="p">,</span> <span class="n">background_ax</span><span class="p">,</span> <span class="n">coast_ax</span><span class="p">,</span> <span class="n">slider_ax</span><span class="p">,</span> <span class="n">year_ax</span><span class="p">,</span> <span class="n">all_plots_i</span><span class="p">,</span> <span class="n">timestamps_i</span> <span class="o">=</span> <span class="n">arg_holder</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">pickled_figure</span> <span class="o">=</span> <span class="n">fig</span><span class="p">,</span> <span class="n">background_ax</span><span class="p">,</span> <span class="n">coast_ax</span><span class="p">,</span> <span class="n">slider_ax</span><span class="p">,</span> <span class="n">year_ax</span>
+                <span class="n">pool_kwargs</span> <span class="o">=</span> <span class="p">{</span> <span class="s2">&quot;step_size&quot;</span><span class="p">:</span> <span class="n">step_size</span><span class="p">,</span> <span class="s2">&quot;interval&quot;</span><span class="p">:</span> <span class="n">interval</span><span class="p">,</span>
+                                <span class="s2">&quot;write&quot;</span><span class="p">:</span> <span class="n">write</span><span class="p">,</span> <span class="s2">&quot;write_frames&quot;</span><span class="p">:</span> <span class="n">write_frames</span><span class="p">,</span> <span class="s2">&quot;file_format&quot;</span><span class="p">:</span> <span class="n">file_format</span><span class="p">,</span> <span class="s2">&quot;fps&quot;</span><span class="p">:</span> <span class="n">fps</span><span class="p">,</span>
+                                <span class="s2">&quot;fading_increment&quot;</span><span class="p">:</span> <span class="n">fading_increment</span><span class="p">,</span> <span class="s2">&quot;figsize&quot;</span><span class="p">:</span> <span class="n">figsize</span><span class="p">,</span>
+                                <span class="s2">&quot;hillshading_intensity&quot;</span><span class="p">:</span> <span class="n">hillshading_intensity</span><span class="p">}</span>
+
+
+                <span class="n">plot_executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">plot_axis_sequence</span><span class="p">,</span> <span class="n">split_frames</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">timestamps_i</span><span class="p">,</span> <span class="n">all_plots_i</span><span class="p">,</span> <span class="n">pickled_figure</span><span class="p">,</span>
+                                     <span class="o">**</span><span class="n">pool_kwargs</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pickled_figure</span> <span class="o">=</span> <span class="n">fig</span><span class="p">,</span> <span class="n">background_ax</span><span class="p">,</span> <span class="n">coast_ax</span><span class="p">,</span> <span class="n">slider_ax</span><span class="p">,</span> <span class="n">year_ax</span>
+        <span class="n">plot_axis_sequence</span><span class="p">(</span><span class="n">frames</span><span class="p">,</span> <span class="n">pickled_background</span><span class="o">=</span><span class="n">pickled_figure</span><span class="p">,</span> <span class="n">timestamps</span><span class="o">=</span><span class="n">timestamps</span><span class="p">,</span> <span class="n">all_plots</span><span class="o">=</span><span class="n">all_plots</span><span class="p">,</span>
+                            <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="n">interval</span><span class="p">,</span> <span class="n">write</span><span class="o">=</span><span class="n">write</span><span class="p">,</span> <span class="n">write_frames</span><span class="o">=</span><span class="n">write_frames</span><span class="p">,</span>
+                            <span class="n">file_format</span><span class="o">=</span><span class="n">file_format</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">,</span> <span class="n">fading_increment</span><span class="o">=</span><span class="n">fading_increment</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">,</span>
+                            <span class="n">hillshading_intensity</span><span class="o">=</span><span class="n">hillshading_intensity</span><span class="p">)</span></div>
+
+
+
+
+<div class="viewcode-block" id="AxesSequence">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.AxesSequence">[docs]</a>
+<span class="k">class</span> <span class="nc">AxesSequence</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Manage the visibility and fading of a time-ordered sequence of plots.</span>
+
+<span class="sd">    Tracks which event plots are currently on screen and progressively</span>
+<span class="sd">    fades them out according to ``fading_increment`` as the animation</span>
+<span class="sd">    advances.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    fig : matplotlib.figure.Figure</span>
+<span class="sd">        The figure containing all plots.</span>
+<span class="sd">    timestamps : list of int</span>
+<span class="sd">        Sorted year timestamps corresponding to each entry in ``plots``.</span>
+<span class="sd">    plots : list of list</span>
+<span class="sd">        Per-event lists of matplotlib artist objects.</span>
+<span class="sd">    coast_ax : matplotlib.axes.Axes</span>
+<span class="sd">        The main map axis.</span>
+<span class="sd">    fading_increment : float</span>
+<span class="sd">        Alpha divisor applied each time step.  Defaults to 2.0.</span>
+<span class="sd">    on_screen : list</span>
+<span class="sd">        Currently visible plot groups.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fig</span><span class="p">,</span> <span class="n">timestamps</span><span class="p">,</span> <span class="n">plots</span><span class="p">,</span> <span class="n">coast_ax</span><span class="p">,</span> <span class="n">fading_increment</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">):</span>
+<div class="viewcode-block" id="AxesSequence.fig">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.AxesSequence.fig">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">fig</span></div>
+
+<div class="viewcode-block" id="AxesSequence.timestamps">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.AxesSequence.timestamps">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timestamps</span> <span class="o">=</span> <span class="n">timestamps</span></div>
+
+<div class="viewcode-block" id="AxesSequence.plots">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.AxesSequence.plots">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plots</span> <span class="o">=</span> <span class="n">plots</span></div>
+
+<div class="viewcode-block" id="AxesSequence.coast_ax">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.AxesSequence.coast_ax">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coast_ax</span> <span class="o">=</span> <span class="n">coast_ax</span></div>
+
+<div class="viewcode-block" id="AxesSequence.on_screen">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.AxesSequence.on_screen">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_screen</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># earthquakes currently displayed</span></div>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_i</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>  <span class="c1"># Currently displayed axes index</span>
+<div class="viewcode-block" id="AxesSequence.fading_increment">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.AxesSequence.fading_increment">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fading_increment</span> <span class="o">=</span> <span class="n">fading_increment</span></div>
+
+
+<div class="viewcode-block" id="AxesSequence.set_plot">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.AxesSequence.set_plot">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Advance the sequence to show all events at time ``val`` and fade older ones.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        val : int</span>
+<span class="sd">            Current slider year value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># plot corresponding event</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timestamps</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">val</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamps</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_i</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">curr_plots</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plots</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_i</span><span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">curr_plots</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">curr_plots</span><span class="p">:</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">on_screen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">curr_plots</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">on_screen</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">on_screen</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fade</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AxesSequence.fade">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.AxesSequence.fade">[docs]</a>
+    <span class="k">def</span> <span class="nf">fade</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plot</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reduce the alpha of a plot group and hide it once fully transparent.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        plot : list</span>
+<span class="sd">            List of matplotlib artists for one event.</span>
+<span class="sd">        index : int</span>
+<span class="sd">            Position of ``plot`` in :attr:`on_screen`; removed if invisible.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">visible</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">plot</span><span class="p">:</span>
+            <span class="n">opacity</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">get_alpha</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">opacity</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">&lt;=</span> <span class="mf">1e-2</span><span class="p">:</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">set_alpha</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">visible</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">set_alpha</span><span class="p">(</span><span class="n">opacity</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">fading_increment</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">visible</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">on_screen</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">index</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AxesSequence.stop">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.AxesSequence.stop">[docs]</a>
+    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hide all on-screen plots and reset the sequence to the start.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">plot</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_screen</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">plot</span><span class="p">:</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">set_alpha</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_i</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_screen</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="AxesSequence.show">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.AxesSequence.show">[docs]</a>
+    <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Display the animation figure interactively.&quot;&quot;&quot;</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="plot_axis_sequence">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.plot_axis_sequence">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_axis_sequence</span><span class="p">(</span><span class="n">frames</span><span class="p">,</span> <span class="n">timestamps</span><span class="p">,</span> <span class="n">all_plots</span><span class="p">,</span> <span class="n">pickled_background</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                       <span class="n">interval</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">write</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">write_frames</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">file_format</span><span class="o">=</span><span class="s2">&quot;gif&quot;</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">fading_increment</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
+                       <span class="n">figsize</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">(</span><span class="mf">9.6</span><span class="p">,</span> <span class="mf">7.2</span><span class="p">),</span> <span class="n">hillshading_intensity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Drive the slider animation loop for a pre-rendered set of event plots.</span>
+
+<span class="sd">    Attaches an :class:`AxesSequence` to a time slider and either</span>
+<span class="sd">    saves individual frames, saves an animation file, or shows the</span>
+<span class="sd">    animation interactively.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    frames : int or array-like</span>
+<span class="sd">        Number of frames, or array of frame indices.</span>
+<span class="sd">    timestamps : list of int</span>
+<span class="sd">        Year timestamps for each entry in ``all_plots``.</span>
+<span class="sd">    all_plots : list of list</span>
+<span class="sd">        Per-event lists of matplotlib artists.</span>
+<span class="sd">    pickled_background : tuple or None</span>
+<span class="sd">        ``(fig, background_ax, coast_ax, slider_ax, year_ax)`` tuple</span>
+<span class="sd">        loaded from a pickled background, or ``None`` to build one.</span>
+<span class="sd">    step_size : int, optional</span>
+<span class="sd">        Year increment per frame.  Defaults to 1.</span>
+<span class="sd">    interval : int, optional</span>
+<span class="sd">        Delay between frames in milliseconds.  Defaults to 50.</span>
+<span class="sd">    write : str or None, optional</span>
+<span class="sd">        Output file path (without extension).  If ``None``, show</span>
+<span class="sd">        interactively.</span>
+<span class="sd">    write_frames : bool, optional</span>
+<span class="sd">        If ``True``, write individual PNG frames to ``frames/``.</span>
+<span class="sd">        Defaults to ``False``.</span>
+<span class="sd">    file_format : str, optional</span>
+<span class="sd">        Output format: ``&quot;gif&quot;``, ``&quot;mp4&quot;``, ``&quot;mov&quot;``, or ``&quot;avi&quot;``.</span>
+<span class="sd">        Defaults to ``&quot;gif&quot;``.</span>
+<span class="sd">    fps : int, optional</span>
+<span class="sd">        Frames per second for the output file.  Defaults to 20.</span>
+<span class="sd">    fading_increment : float, optional</span>
+<span class="sd">        Alpha divisor per time step.  Defaults to 2.0.</span>
+<span class="sd">    figsize : tuple, optional</span>
+<span class="sd">        Figure size ``(width, height)`` in inches.</span>
+<span class="sd">        Defaults to ``(9.6, 7.2)``.</span>
+<span class="sd">    hillshading_intensity : float, optional</span>
+<span class="sd">        Hillshade transparency (0–1).  Defaults to 0.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">pickled_background</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">fig</span><span class="p">,</span> <span class="n">background_ax</span><span class="p">,</span> <span class="n">coast_ax</span><span class="p">,</span> <span class="n">slider_ax</span><span class="p">,</span> <span class="n">year_ax</span> <span class="o">=</span> <span class="n">pickled_background</span>
+        <span class="n">coast_ax</span> <span class="o">=</span> <span class="n">background_ax</span><span class="p">[</span><span class="s2">&quot;main_figure&quot;</span><span class="p">]</span>
+        <span class="n">slider_ax</span> <span class="o">=</span> <span class="n">background_ax</span><span class="p">[</span><span class="s2">&quot;slider&quot;</span><span class="p">]</span>
+        <span class="n">year_ax</span> <span class="o">=</span> <span class="n">background_ax</span><span class="p">[</span><span class="s2">&quot;year&quot;</span><span class="p">]</span>
+        <span class="n">year_text</span> <span class="o">=</span> <span class="n">year_ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mi">0</span><span class="p">)),</span> <span class="n">horizontalalignment</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">verticalalignment</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span>
+                                 <span class="n">fontsize</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+
+        <span class="c1"># plot map</span>
+        <span class="n">coast_ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;coast&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">hillshading_intensity</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">plot_coast</span><span class="p">(</span><span class="n">coast_ax</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s2">&quot;0.0&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">plot_coast</span><span class="p">(</span><span class="n">coast_ax</span><span class="p">)</span>
+
+    <span class="n">coast_ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">)</span>
+    <span class="n">coast_ax</span><span class="o">.</span><span class="n">patch</span><span class="o">.</span><span class="n">set_alpha</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">coast_ax</span><span class="o">.</span><span class="n">get_xaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">coast_ax</span><span class="o">.</span><span class="n">get_yaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">pickled_background</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">hillshading_intensity</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">x_lim</span> <span class="o">=</span> <span class="n">coast_ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+            <span class="n">y_lim</span> <span class="o">=</span> <span class="n">coast_ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+            <span class="n">plot_hillshade</span><span class="p">(</span><span class="n">coast_ax</span><span class="p">,</span> <span class="n">hillshading_intensity</span><span class="p">)</span>
+            <span class="n">coast_ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">x_lim</span><span class="p">)</span>
+            <span class="n">coast_ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">y_lim</span><span class="p">)</span>
+
+
+
+    <span class="n">time_slider</span> <span class="o">=</span> <span class="n">Slider</span><span class="p">(</span>
+        <span class="n">slider_ax</span><span class="p">,</span> <span class="s1">&#39;Year&#39;</span><span class="p">,</span> <span class="n">timestamps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">timestamps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">valinit</span><span class="o">=</span><span class="n">timestamps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">valstep</span><span class="o">=</span><span class="n">step_size</span><span class="p">)</span>
+    <span class="n">time_slider</span><span class="o">.</span><span class="n">valtext</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">axes</span> <span class="o">=</span> <span class="n">AxesSequence</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">timestamps</span><span class="p">,</span> <span class="n">all_plots</span><span class="p">,</span> <span class="n">coast_ax</span><span class="p">,</span> <span class="n">fading_increment</span><span class="o">=</span><span class="n">fading_increment</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">all_plots</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">time_slider</span><span class="o">.</span><span class="n">val</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">set_plot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="o">==</span> <span class="n">time_slider</span><span class="o">.</span><span class="n">valmax</span><span class="p">:</span>
+            <span class="n">axes</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="n">year_text</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="p">)))</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw_idle</span><span class="p">()</span>
+
+    <span class="n">time_slider</span><span class="o">.</span><span class="n">on_changed</span><span class="p">(</span><span class="n">update</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update_plot</span><span class="p">(</span><span class="n">num</span><span class="p">):</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">time_slider</span><span class="o">.</span><span class="n">valmin</span> <span class="o">+</span> <span class="n">num</span> <span class="o">*</span> <span class="n">step_size</span>
+        <span class="n">time_slider</span><span class="o">.</span><span class="n">set_val</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">write_frames</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">frames</span><span class="p">):</span>
+            <span class="n">update_plot</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;frames/frame</span><span class="si">{</span><span class="n">i</span><span class="si">:</span><span class="s2">04d</span><span class="si">}</span><span class="s2">.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">animation</span> <span class="o">=</span> <span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">update_plot</span><span class="p">,</span>
+                                  <span class="n">interval</span><span class="o">=</span><span class="n">interval</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="n">frames</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">write</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">writer</span> <span class="o">=</span> <span class="n">PillowWriter</span><span class="p">(</span><span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">)</span> <span class="k">if</span> <span class="n">file_format</span> <span class="o">==</span> <span class="s2">&quot;gif&quot;</span> <span class="k">else</span> <span class="n">FFMpegWriter</span><span class="p">(</span><span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">)</span>
+            <span class="n">animation</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">write</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">file_format</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">writer</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">axes</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="write_animation_frame">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.write_animation_frame">[docs]</a>
+<span class="k">def</span> <span class="nf">write_animation_frame</span><span class="p">(</span><span class="n">frame_num</span><span class="p">,</span> <span class="n">frame_time</span><span class="p">,</span> <span class="n">start_time</span><span class="p">,</span> <span class="n">end_time</span><span class="p">,</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">catalogue</span><span class="p">:</span> <span class="n">RsqSimCatalogue</span><span class="p">,</span> <span class="n">fault_model</span><span class="p">:</span> <span class="n">RsqSimMultiFault</span><span class="p">,</span>
+                          <span class="n">pickled_background</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                           <span class="n">subduction_cmap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;plasma&quot;</span><span class="p">,</span> <span class="n">crustal_cmap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;viridis&quot;</span><span class="p">,</span> <span class="n">global_max_slip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+                           <span class="n">global_max_sub_slip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40</span><span class="p">,</span>
+                           <span class="n">bounds</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fading_increment</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">time_to_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.</span><span class="p">,</span>
+                           <span class="n">plot_log</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">log_min</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span> <span class="n">log_max</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">100.</span><span class="p">,</span>
+                           <span class="n">min_slip_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">plot_zeros</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">extra_sub_list</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                           <span class="n">min_mw</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">decimals</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">subplot_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;main_figure&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Render a single animation frame and return the figure.</span>
+
+<span class="sd">    Filters the catalogue to events within ``time_to_threshold`` years</span>
+<span class="sd">    before ``frame_time``, plots their slip distributions with faded</span>
+<span class="sd">    alpha, and returns the figure for saving.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    frame_num : int</span>
+<span class="sd">        Frame index (used as the return key).</span>
+<span class="sd">    frame_time : float</span>
+<span class="sd">        Current animation time in years.</span>
+<span class="sd">    start_time : float</span>
+<span class="sd">        Animation start time in years.</span>
+<span class="sd">    end_time : float</span>
+<span class="sd">        Animation end time in years.</span>
+<span class="sd">    step_size : int</span>
+<span class="sd">        Year increment per frame.</span>
+<span class="sd">    catalogue : RsqSimCatalogue</span>
+<span class="sd">        Event catalogue to filter.</span>
+<span class="sd">    fault_model : RsqSimMultiFault</span>
+<span class="sd">        Fault model for plotting slip distributions.</span>
+<span class="sd">    pickled_background : str</span>
+<span class="sd">        Path to a pickled ``(fig, ax)`` background file.</span>
+<span class="sd">    subduction_cmap : str, optional</span>
+<span class="sd">        Colourmap for subduction slip.  Defaults to ``&quot;plasma&quot;``.</span>
+<span class="sd">    crustal_cmap : str, optional</span>
+<span class="sd">        Colourmap for crustal slip.  Defaults to ``&quot;viridis&quot;``.</span>
+<span class="sd">    global_max_slip : int, optional</span>
+<span class="sd">        Maximum crustal slip (m) for the colour scale.  Defaults to 10.</span>
+<span class="sd">    global_max_sub_slip : int, optional</span>
+<span class="sd">        Maximum subduction slip (m).  Defaults to 40.</span>
+<span class="sd">    bounds : tuple or None, optional</span>
+<span class="sd">        ``(x_min, y_min, x_max, y_max)`` map extent.</span>
+<span class="sd">    fading_increment : float, optional</span>
+<span class="sd">        Base of the exponential alpha decay.  Defaults to 2.0.</span>
+<span class="sd">    time_to_threshold : float, optional</span>
+<span class="sd">        Look-back window in years.  Defaults to 10.</span>
+<span class="sd">    plot_log : bool, optional</span>
+<span class="sd">        If ``True``, use a log colour scale.  Defaults to ``False``.</span>
+<span class="sd">    log_min : float, optional</span>
+<span class="sd">        Lower bound for the log scale.  Defaults to 1.</span>
+<span class="sd">    log_max : float, optional</span>
+<span class="sd">        Upper bound for the log scale.  Defaults to 100.</span>
+<span class="sd">    min_slip_value : float or None, optional</span>
+<span class="sd">        Minimum slip to plot.</span>
+<span class="sd">    plot_zeros : bool, optional</span>
+<span class="sd">        If ``True`` (default), plot zero-slip patches.</span>
+<span class="sd">    extra_sub_list : list or None, optional</span>
+<span class="sd">        Extra subduction patch numbers to highlight.</span>
+<span class="sd">    min_mw : float or None, optional</span>
+<span class="sd">        Minimum magnitude filter.</span>
+<span class="sd">    decimals : int, optional</span>
+<span class="sd">        Decimal places for the year label.  Defaults to 1.</span>
+<span class="sd">    subplot_name : str, optional</span>
+<span class="sd">        Key for the main axes in the ``axes`` dict.</span>
+<span class="sd">        Defaults to ``&quot;main_figure&quot;``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    frame_num : int</span>
+<span class="sd">        The input frame index.</span>
+<span class="sd">    fig : matplotlib.figure.Figure or None</span>
+<span class="sd">        Rendered figure, or ``None`` if no events fall in the window.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">frame_time_seconds</span> <span class="o">=</span> <span class="n">frame_time</span> <span class="o">*</span> <span class="n">seconds_per_year</span>
+
+    <span class="n">shortened_cat</span> <span class="o">=</span> <span class="n">catalogue</span><span class="o">.</span><span class="n">filter_df</span><span class="p">(</span><span class="n">min_t0</span><span class="o">=</span><span class="n">frame_time_seconds</span> <span class="o">-</span> <span class="n">time_to_threshold</span> <span class="o">*</span> <span class="n">seconds_per_year</span><span class="p">,</span>
+                                        <span class="n">max_t0</span><span class="o">=</span><span class="n">frame_time_seconds</span><span class="p">,</span>
+                                        <span class="n">min_mw</span><span class="o">=</span><span class="n">min_mw</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+    <span class="k">if</span> <span class="n">shortened_cat</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">frame_num</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">loaded_subplots</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">pickled_background</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">frame_num</span><span class="p">)</span>
+
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">loaded_subplots</span>
+        <span class="n">slider_ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="s2">&quot;slider&quot;</span><span class="p">]</span>
+        <span class="n">time_slider</span> <span class="o">=</span> <span class="n">Slider</span><span class="p">(</span>
+            <span class="n">slider_ax</span><span class="p">,</span> <span class="s1">&#39;Year&#39;</span><span class="p">,</span> <span class="n">start_time</span> <span class="o">-</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">end_time</span> <span class="o">+</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">valinit</span><span class="o">=</span><span class="n">start_time</span> <span class="o">-</span> <span class="n">step_size</span><span class="p">,</span>
+            <span class="n">valstep</span><span class="o">=</span><span class="n">step_size</span><span class="p">)</span>
+        <span class="n">time_slider</span><span class="o">.</span><span class="n">valtext</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">year_ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="s2">&quot;year&quot;</span><span class="p">]</span>
+        <span class="n">year_text</span> <span class="o">=</span> <span class="n">year_ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mi">0</span><span class="p">)),</span> <span class="n">horizontalalignment</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">verticalalignment</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span>
+                                <span class="n">fontsize</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">decimals</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">year_text</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">frame_time</span><span class="p">,</span> <span class="mi">0</span><span class="p">))))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">year_text</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">frame_time</span><span class="si">:</span><span class="s2">.</span><span class="si">{</span><span class="n">decimals</span><span class="si">}</span><span class="s2">f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">time_slider</span><span class="o">.</span><span class="n">set_val</span><span class="p">(</span><span class="n">frame_time</span><span class="p">)</span>
+
+        <span class="n">shortened_cat</span><span class="p">[</span><span class="s2">&quot;diff_t0&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">shortened_cat</span><span class="p">[</span><span class="s2">&quot;t0&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">frame_time_seconds</span><span class="p">)</span>
+        <span class="n">sorted_indices</span> <span class="o">=</span> <span class="n">shortened_cat</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">&quot;diff_t0&quot;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">index</span>
+        <span class="n">events_for_plot</span> <span class="o">=</span> <span class="n">catalogue</span><span class="o">.</span><span class="n">events_by_number</span><span class="p">(</span><span class="n">sorted_indices</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">fault_model</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events_for_plot</span><span class="p">:</span>
+
+            <span class="n">alpha</span> <span class="o">=</span> <span class="n">calculate_alpha</span><span class="p">((</span><span class="n">frame_time</span> <span class="o">-</span> <span class="n">event</span><span class="o">.</span><span class="n">t0</span>  <span class="o">/</span> <span class="n">seconds_per_year</span><span class="p">),</span> <span class="n">fading_increment</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">t0</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
+            <span class="n">event</span><span class="o">.</span><span class="n">plot_slip_2d</span><span class="p">(</span><span class="n">subplots</span><span class="o">=</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span><span class="p">[</span><span class="n">subplot_name</span><span class="p">]),</span> <span class="n">global_max_slip</span><span class="o">=</span><span class="n">global_max_slip</span><span class="p">,</span>
+                               <span class="n">global_max_sub_slip</span><span class="o">=</span><span class="n">global_max_sub_slip</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span> <span class="n">plot_log_scale</span><span class="o">=</span><span class="n">plot_log</span><span class="p">,</span>
+                               <span class="n">log_min</span><span class="o">=</span><span class="n">log_min</span><span class="p">,</span> <span class="n">log_max</span><span class="o">=</span><span class="n">log_max</span><span class="p">,</span> <span class="n">min_slip_value</span><span class="o">=</span><span class="n">min_slip_value</span><span class="p">,</span> <span class="n">plot_zeros</span><span class="o">=</span><span class="n">plot_zeros</span><span class="p">,</span>
+                               <span class="n">extra_sub_list</span><span class="o">=</span><span class="n">extra_sub_list</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
+            
+        <span class="k">return</span> <span class="n">frame_num</span><span class="p">,</span> <span class="n">fig</span></div>
+
+
+
+<div class="viewcode-block" id="write_animation_frames">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.write_animation_frames">[docs]</a>
+<span class="k">def</span> <span class="nf">write_animation_frames</span><span class="p">(</span><span class="n">start_time</span><span class="p">,</span> <span class="n">end_time</span><span class="p">,</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">catalogue</span><span class="p">:</span> <span class="n">RsqSimCatalogue</span><span class="p">,</span> <span class="n">fault_model</span><span class="p">:</span> <span class="n">RsqSimMultiFault</span><span class="p">,</span>
+                            <span class="n">pickled_background</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">subduction_cmap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;plasma&quot;</span><span class="p">,</span> <span class="n">crustal_cmap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;viridis&quot;</span><span class="p">,</span>
+                            <span class="n">global_max_slip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">global_max_sub_slip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40</span><span class="p">,</span>
+                            <span class="n">bounds</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fading_increment</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">time_to_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.</span><span class="p">,</span>
+                            <span class="n">plot_log</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">log_min</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span> <span class="n">log_max</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">100.</span><span class="p">,</span>
+                            <span class="n">min_slip_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">plot_zeros</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">extra_sub_list</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                            <span class="n">min_mw</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">decimals</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">subplot_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;main_figure&quot;</span><span class="p">,</span>
+                            <span class="n">num_threads_plot</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">frame_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;frames&quot;</span><span class="p">,</span>
+                           <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write all animation frames to PNG files in parallel.</span>
+
+<span class="sd">        Iterates over time steps from ``start_time`` to ``end_time`` in</span>
+<span class="sd">        ``step_size`` increments and submits each frame to a</span>
+<span class="sd">        ``ThreadPoolExecutor``.  Frames without events are written</span>
+<span class="sd">        separately after the parallel pass.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        start_time : float</span>
+<span class="sd">            Animation start time in years.</span>
+<span class="sd">        end_time : float</span>
+<span class="sd">            Animation end time in years.</span>
+<span class="sd">        step_size : int</span>
+<span class="sd">            Year increment per frame.</span>
+<span class="sd">        catalogue : RsqSimCatalogue</span>
+<span class="sd">            Event catalogue.</span>
+<span class="sd">        fault_model : RsqSimMultiFault</span>
+<span class="sd">            Fault model for slip distributions.</span>
+<span class="sd">        pickled_background : str</span>
+<span class="sd">            Path to a pickled ``(fig, ax)`` background file.</span>
+<span class="sd">        subduction_cmap : str, optional</span>
+<span class="sd">            Colourmap for subduction slip.  Defaults to ``&quot;plasma&quot;``.</span>
+<span class="sd">        crustal_cmap : str, optional</span>
+<span class="sd">            Colourmap for crustal slip.  Defaults to ``&quot;viridis&quot;``.</span>
+<span class="sd">        global_max_slip : int, optional</span>
+<span class="sd">            Maximum crustal slip (m).  Defaults to 10.</span>
+<span class="sd">        global_max_sub_slip : int, optional</span>
+<span class="sd">            Maximum subduction slip (m).  Defaults to 40.</span>
+<span class="sd">        bounds : tuple or None, optional</span>
+<span class="sd">            ``(x_min, y_min, x_max, y_max)`` map extent.</span>
+<span class="sd">        fading_increment : float, optional</span>
+<span class="sd">            Base of the exponential alpha decay.  Defaults to 2.0.</span>
+<span class="sd">        time_to_threshold : float, optional</span>
+<span class="sd">            Look-back window in years.  Defaults to 10.</span>
+<span class="sd">        plot_log : bool, optional</span>
+<span class="sd">            If ``True``, use a log colour scale.  Defaults to ``False``.</span>
+<span class="sd">        log_min : float, optional</span>
+<span class="sd">            Lower bound for the log scale.  Defaults to 1.</span>
+<span class="sd">        log_max : float, optional</span>
+<span class="sd">            Upper bound for the log scale.  Defaults to 100.</span>
+<span class="sd">        min_slip_value : float or None, optional</span>
+<span class="sd">            Minimum slip to plot.</span>
+<span class="sd">        plot_zeros : bool, optional</span>
+<span class="sd">            If ``False`` (default), skip zero-slip patches.</span>
+<span class="sd">        extra_sub_list : list or None, optional</span>
+<span class="sd">            Extra subduction patch numbers to highlight.</span>
+<span class="sd">        min_mw : float or None, optional</span>
+<span class="sd">            Minimum magnitude filter.</span>
+<span class="sd">        decimals : int, optional</span>
+<span class="sd">            Decimal places for the year label.  Defaults to 1.</span>
+<span class="sd">        subplot_name : str, optional</span>
+<span class="sd">            Key for the main axes dict.  Defaults to ``&quot;main_figure&quot;``.</span>
+<span class="sd">        num_threads_plot : int, optional</span>
+<span class="sd">            Thread count for parallel rendering.  Defaults to 4.</span>
+<span class="sd">        frame_dir : str, optional</span>
+<span class="sd">            Directory for output PNG frames.  Defaults to ``&quot;frames&quot;``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">start_time</span><span class="p">,</span> <span class="n">end_time</span> <span class="o">+</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">step_size</span><span class="p">)</span>
+        <span class="n">frames</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">steps</span><span class="p">))</span>
+        <span class="n">pool_kwargs</span> <span class="o">=</span> <span class="p">{</span> <span class="s2">&quot;catalogue&quot;</span><span class="p">:</span> <span class="n">catalogue</span><span class="p">,</span> <span class="s2">&quot;fault_model&quot;</span><span class="p">:</span> <span class="n">fault_model</span><span class="p">,</span>
+                       <span class="s2">&quot;pickled_background&quot;</span><span class="p">:</span> <span class="n">pickled_background</span><span class="p">,</span> <span class="s2">&quot;subduction_cmap&quot;</span><span class="p">:</span> <span class="n">subduction_cmap</span><span class="p">,</span>
+                       <span class="s2">&quot;crustal_cmap&quot;</span><span class="p">:</span> <span class="n">crustal_cmap</span><span class="p">,</span> <span class="s2">&quot;global_max_slip&quot;</span><span class="p">:</span> <span class="n">global_max_slip</span><span class="p">,</span>
+                       <span class="s2">&quot;global_max_sub_slip&quot;</span><span class="p">:</span> <span class="n">global_max_sub_slip</span><span class="p">,</span> <span class="s2">&quot;bounds&quot;</span><span class="p">:</span> <span class="n">bounds</span><span class="p">,</span>
+                       <span class="s2">&quot;fading_increment&quot;</span><span class="p">:</span> <span class="n">fading_increment</span><span class="p">,</span> <span class="s2">&quot;time_to_threshold&quot;</span><span class="p">:</span> <span class="n">time_to_threshold</span><span class="p">,</span>
+                       <span class="s2">&quot;plot_log&quot;</span><span class="p">:</span> <span class="n">plot_log</span><span class="p">,</span> <span class="s2">&quot;log_min&quot;</span><span class="p">:</span> <span class="n">log_min</span><span class="p">,</span> <span class="s2">&quot;log_max&quot;</span><span class="p">:</span> <span class="n">log_max</span><span class="p">,</span>
+                       <span class="s2">&quot;min_slip_value&quot;</span><span class="p">:</span> <span class="n">min_slip_value</span><span class="p">,</span> <span class="s2">&quot;plot_zeros&quot;</span><span class="p">:</span> <span class="n">plot_zeros</span><span class="p">,</span>
+                       <span class="s2">&quot;extra_sub_list&quot;</span><span class="p">:</span> <span class="n">extra_sub_list</span><span class="p">,</span> <span class="s2">&quot;min_mw&quot;</span><span class="p">:</span> <span class="n">min_mw</span><span class="p">,</span> <span class="s2">&quot;decimals&quot;</span><span class="p">:</span> <span class="n">decimals</span><span class="p">,</span>
+                       <span class="s2">&quot;subplot_name&quot;</span><span class="p">:</span> <span class="n">subplot_name</span><span class="p">}</span>
+        
+        <span class="n">no_earthquakes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">frame_time_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">frame_i</span><span class="p">:</span> <span class="n">frame_time</span> <span class="k">for</span> <span class="n">frame_i</span><span class="p">,</span> <span class="n">frame_time</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">steps</span><span class="p">)}</span>
+        <span class="n">frame_block_size</span> <span class="o">=</span> <span class="mi">500</span>
+        <span class="n">block_starts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">steps</span><span class="p">),</span> <span class="n">frame_block_size</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">handle_output</span><span class="p">(</span><span class="n">future</span><span class="p">):</span>
+            <span class="n">frame_i</span><span class="p">,</span> <span class="n">fig_i</span> <span class="o">=</span> <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+                    
+            <span class="k">if</span> <span class="n">fig_i</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">fig_i</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">frame_dir</span><span class="si">}</span><span class="s2">/frame</span><span class="si">{</span><span class="n">frame_i</span><span class="si">:</span><span class="s2">04d</span><span class="si">}</span><span class="s2">.png&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig_i</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Writing </span><span class="si">{</span><span class="n">frame_i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">no_earthquakes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">frame_i</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">block_starts</span><span class="p">,</span> <span class="n">block_starts</span> <span class="o">+</span> <span class="n">frame_block_size</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">num_threads_plot</span><span class="p">)</span> <span class="k">as</span> <span class="n">plot_executor</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">frame_i</span><span class="p">,</span> <span class="n">frame_time</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">frames</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">],</span> <span class="n">steps</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]):</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">frame_dir</span><span class="si">}</span><span class="s2">/frame</span><span class="si">{</span><span class="n">frame_i</span><span class="si">:</span><span class="s2">04d</span><span class="si">}</span><span class="s2">.png&quot;</span><span class="p">):</span>
+                         <span class="n">submitted</span> <span class="o">=</span> <span class="n">plot_executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">write_animation_frame</span><span class="p">,</span> <span class="n">frame_i</span><span class="p">,</span> <span class="n">frame_time</span><span class="p">,</span> <span class="n">start_time</span><span class="p">,</span> <span class="n">end_time</span><span class="p">,</span> <span class="n">step_size</span><span class="p">,</span> <span class="o">**</span><span class="n">pool_kwargs</span><span class="p">)</span>
+                         <span class="n">submitted</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span><span class="n">handle_output</span><span class="p">)</span>
+                
+
+
+        <span class="k">for</span> <span class="n">frame_num</span> <span class="ow">in</span> <span class="n">no_earthquakes</span><span class="p">:</span>
+            <span class="n">loaded_subplots</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">pickled_background</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">frame_num</span><span class="p">)</span>
+            <span class="n">frame_time</span> <span class="o">=</span> <span class="n">frame_time_dict</span><span class="p">[</span><span class="n">frame_num</span><span class="p">]</span>
+
+            <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">loaded_subplots</span>
+            <span class="n">slider_ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="s2">&quot;slider&quot;</span><span class="p">]</span>
+            <span class="n">time_slider</span> <span class="o">=</span> <span class="n">Slider</span><span class="p">(</span>
+                <span class="n">slider_ax</span><span class="p">,</span> <span class="s1">&#39;Year&#39;</span><span class="p">,</span> <span class="n">start_time</span> <span class="o">-</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">end_time</span> <span class="o">+</span> <span class="n">step_size</span><span class="p">,</span> <span class="n">valinit</span><span class="o">=</span><span class="n">start_time</span> <span class="o">-</span> <span class="n">step_size</span><span class="p">,</span>
+                <span class="n">valstep</span><span class="o">=</span><span class="n">step_size</span><span class="p">)</span>
+            <span class="n">time_slider</span><span class="o">.</span><span class="n">valtext</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">year_ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="s2">&quot;year&quot;</span><span class="p">]</span>
+            <span class="n">year_text</span> <span class="o">=</span> <span class="n">year_ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mi">0</span><span class="p">)),</span> <span class="n">horizontalalignment</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">verticalalignment</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span>
+                                    <span class="n">fontsize</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">decimals</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">year_text</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">frame_time</span><span class="p">,</span> <span class="mi">0</span><span class="p">))))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">year_text</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">frame_time</span><span class="si">:</span><span class="s2">.</span><span class="si">{</span><span class="n">decimals</span><span class="si">}</span><span class="s2">f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">time_slider</span><span class="o">.</span><span class="n">set_val</span><span class="p">(</span><span class="n">frame_time</span><span class="p">)</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">frame_dir</span><span class="si">}</span><span class="s2">/frame</span><span class="si">{</span><span class="n">frame_num</span><span class="si">:</span><span class="s2">04d</span><span class="si">}</span><span class="s2">.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span></div>
+
+        
+
+
+
+<div class="viewcode-block" id="calculate_alpha">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.calculate_alpha">[docs]</a>
+<span class="k">def</span> <span class="nf">calculate_alpha</span><span class="p">(</span><span class="n">time_since_new</span><span class="p">,</span> <span class="n">fading_increment</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the opacity for an event that occurred ``time_since_new`` steps ago.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    time_since_new : float</span>
+<span class="sd">        Number of time steps since the event occurred.</span>
+<span class="sd">    fading_increment : float</span>
+<span class="sd">        Base of the exponential decay; higher values fade faster.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Alpha value clamped to ``[0, 1]``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">fading_increment</span> <span class="o">**</span> <span class="n">time_since_new</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">alpha</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.</span>
+    <span class="k">return</span> <span class="n">alpha</span></div>
+
+
+
+<div class="viewcode-block" id="calculate_fading_increment">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/visualisation/animation/index.html#rsqsim_api.visualisation.animation.calculate_fading_increment">[docs]</a>
+<span class="k">def</span> <span class="nf">calculate_fading_increment</span><span class="p">(</span><span class="n">time_to_threshold</span><span class="p">,</span> <span class="n">threshold</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the fading increment so that alpha reaches ``threshold`` after ``time_to_threshold`` steps.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    time_to_threshold : float</span>
+<span class="sd">        Number of time steps until the event fades to ``threshold``.</span>
+<span class="sd">    threshold : float</span>
+<span class="sd">        Target alpha value after ``time_to_threshold`` steps</span>
+<span class="sd">        (e.g. 0.01 for near-invisible).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        The fading increment base to pass to :func:`calculate_alpha`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">threshold</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">time_to_threshold</span><span class="p">)</span></div>
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
