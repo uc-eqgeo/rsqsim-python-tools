@@ -8,15 +8,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>event &mdash; rsqsim-python-tools 0.0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
-      <script src="../../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -47,8 +47,18 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../help/intro.html">Introduction</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Reference</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">event</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">event</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#classes">Classes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-contents">Module Contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#event.RsqSimEvent"><code class="docutils literal notranslate"><span class="pre">RsqSimEvent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#event.OpenQuakeMultiSquareRupture"><code class="docutils literal notranslate"><span class="pre">OpenQuakeMultiSquareRupture</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../catalogue/index.html">catalogue</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utilities/index.html">utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nshm_utilities/index.html">nshm_utilities</a></li>
 </ul>
 </li>
 </ul>
@@ -80,7 +90,1301 @@
              
   <section id="module-event">
 <span id="event"></span><h1>event<a class="headerlink" href="#module-event" title="Link to this heading"></a></h1>
-<p>Event class for RSQSim Catalogue</p>
+<p>RSQSim earthquake event representation.</p>
+<p>Provides <a class="reference internal" href="#event.RsqSimEvent" title="event.RsqSimEvent"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimEvent</span></code></a>, which stores the catalogue parameters
+(time, magnitude, location) and the per-patch slip distribution for a
+single simulated rupture, together with methods for computing derived
+quantities and exporting slip distributions in a variety of formats.</p>
+<p>Also provides <a class="reference internal" href="#event.OpenQuakeMultiSquareRupture" title="event.OpenQuakeMultiSquareRupture"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpenQuakeMultiSquareRupture</span></code></a> for packaging events
+as multi-planar ruptures compatible with the OpenQuake engine.</p>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#event.RsqSimEvent" title="event.RsqSimEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RsqSimEvent</span></code></a></p></td>
+<td><p>A single earthquake event from an RSQSim catalogue.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#event.OpenQuakeMultiSquareRupture" title="event.OpenQuakeMultiSquareRupture"><code class="xref py py-obj docutils literal notranslate"><span class="pre">OpenQuakeMultiSquareRupture</span></code></a></p></td>
+<td><p>Multi-planar rupture representation for the OpenQuake engine.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="event.RsqSimEvent">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">event.</span></span><span class="sig-name descname"><span class="pre">RsqSimEvent</span></span><a class="headerlink" href="#event.RsqSimEvent" title="Link to this definition"></a></dt>
+<dd><p>A single earthquake event from an RSQSim catalogue.</p>
+<p>Stores basic seismic catalogue parameters and, when populated,
+the patch-level slip distribution including patch objects, slip
+magnitudes, and rupture timing.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.RsqSimEvent.event_id">
+<span class="sig-name descname"><span class="pre">event_id</span></span><a class="headerlink" href="#event.RsqSimEvent.event_id" title="Link to this definition"></a></dt>
+<dd><p>Unique integer identifier for the event in the catalogue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.RsqSimEvent.t0">
+<span class="sig-name descname"><span class="pre">t0</span></span><a class="headerlink" href="#event.RsqSimEvent.t0" title="Link to this definition"></a></dt>
+<dd><p>Origin time in seconds from the start of the simulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.RsqSimEvent.m0">
+<span class="sig-name descname"><span class="pre">m0</span></span><a class="headerlink" href="#event.RsqSimEvent.m0" title="Link to this definition"></a></dt>
+<dd><p>Scalar seismic moment in N·m.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.RsqSimEvent.mw">
+<span class="sig-name descname"><span class="pre">mw</span></span><a class="headerlink" href="#event.RsqSimEvent.mw" title="Link to this definition"></a></dt>
+<dd><p>Moment magnitude.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">x,</span> <span class="pre">y,</span> <span class="pre">z</span></span></dt>
+<dd><p>Hypocentre coordinates in NZTM (metres, EPSG:2193).  <code class="docutils literal notranslate"><span class="pre">z</span></code> is
+negative downward.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.RsqSimEvent.area">
+<span class="sig-name descname"><span class="pre">area</span></span><a class="headerlink" href="#event.RsqSimEvent.area" title="Link to this definition"></a></dt>
+<dd><p>Total rupture area in m².</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.RsqSimEvent.dt">
+<span class="sig-name descname"><span class="pre">dt</span></span><a class="headerlink" href="#event.RsqSimEvent.dt" title="Link to this definition"></a></dt>
+<dd><p>Rupture duration in seconds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.RsqSimEvent.patches">
+<span class="sig-name descname"><span class="pre">patches</span></span><a class="headerlink" href="#event.RsqSimEvent.patches" title="Link to this definition"></a></dt>
+<dd><p>List of <code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimTriangularPatch</span></code>
+objects that slipped in this event.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.RsqSimEvent.patch_slip">
+<span class="sig-name descname"><span class="pre">patch_slip</span></span><a class="headerlink" href="#event.RsqSimEvent.patch_slip" title="Link to this definition"></a></dt>
+<dd><p>Slip magnitude (m) for each entry in <code class="docutils literal notranslate"><span class="pre">patches</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.RsqSimEvent.faults">
+<span class="sig-name descname"><span class="pre">faults</span></span><a class="headerlink" href="#event.RsqSimEvent.faults" title="Link to this definition"></a></dt>
+<dd><p>Unique <code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimSegment</span></code> objects
+involved in this event.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.RsqSimEvent.patch_time">
+<span class="sig-name descname"><span class="pre">patch_time</span></span><a class="headerlink" href="#event.RsqSimEvent.patch_time" title="Link to this definition"></a></dt>
+<dd><p>Absolute rupture time (s) for each patch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.RsqSimEvent.patch_numbers">
+<span class="sig-name descname"><span class="pre">patch_numbers</span></span><a class="headerlink" href="#event.RsqSimEvent.patch_numbers" title="Link to this definition"></a></dt>
+<dd><p>Global patch IDs corresponding to <code class="docutils literal notranslate"><span class="pre">patches</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.RsqSimEvent.length">
+<span class="sig-name descname"><span class="pre">length</span></span><a class="headerlink" href="#event.RsqSimEvent.length" title="Link to this definition"></a></dt>
+<dd><p>Estimated rupture length (m) along fault traces.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="event.RsqSimEvent.num_faults">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">num_faults</span></span><a class="headerlink" href="#event.RsqSimEvent.num_faults" title="Link to this definition"></a></dt>
+<dd><p>Number of unique fault segments involved in this event.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="event.RsqSimEvent.bounds">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">bounds</span></span><a class="headerlink" href="#event.RsqSimEvent.bounds" title="Link to this definition"></a></dt>
+<dd><p>Axis-aligned bounding box of the rupture in NZTM coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">[x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max]</span></code> in metres (NZTM).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="event.RsqSimEvent.exterior">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">exterior</span></span><a class="headerlink" href="#event.RsqSimEvent.exterior" title="Link to this definition"></a></dt>
+<dd><p>Shapely geometry representing the union of all ruptured patch polygons.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Union of all patch outlines as a Shapely geometry object.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>shapely.geometry.base.BaseGeometry</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="event.RsqSimEvent.mean_slip">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mean_slip</span></span><a class="headerlink" href="#event.RsqSimEvent.mean_slip" title="Link to this definition"></a></dt>
+<dd><p>Mean slip (m) averaged over all ruptured patches.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="event.RsqSimEvent.mean_strike">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mean_strike</span></span><a class="headerlink" href="#event.RsqSimEvent.mean_strike" title="Link to this definition"></a></dt>
+<dd><p>Mean strike (degrees, 0–360) averaged over all ruptured patches.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="event.RsqSimEvent.mean_strike_180">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mean_strike_180</span></span><a class="headerlink" href="#event.RsqSimEvent.mean_strike_180" title="Link to this definition"></a></dt>
+<dd><p>Mean strike (degrees, 0–180) averaged over all ruptured patches.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="event.RsqSimEvent.mean_dip">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mean_dip</span></span><a class="headerlink" href="#event.RsqSimEvent.mean_dip" title="Link to this definition"></a></dt>
+<dd><p>Mean dip (degrees) averaged over all ruptured patches.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="event.RsqSimEvent.mean_rake">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mean_rake</span></span><a class="headerlink" href="#event.RsqSimEvent.mean_rake" title="Link to this definition"></a></dt>
+<dd><p>Mean rake (degrees) averaged over all ruptured patches.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.find_first_fault">
+<span class="sig-name descname"><span class="pre">find_first_fault</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.find_first_fault" title="Link to this definition"></a></dt>
+<dd><p>Return the fault that first ruptured in this event.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model used to look up patch-to-fault associations.</p></li>
+<li><p><strong>name</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), return the fault name string.
+If <code class="docutils literal notranslate"><span class="pre">False</span></code>, return the fault segment object.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The name (or object) of the fault that hosted the first
+ruptured patch.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str or RsqSimSegment</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.from_catalogue_array">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_catalogue_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.from_catalogue_array" title="Link to this definition"></a></dt>
+<dd><p>Construct an event from basic catalogue parameters.</p>
+<p>Creates an event with catalogue-level metadata only (no patch
+slip distribution).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t0</strong> (<em>float</em>) – Origin time in seconds from the simulation start.</p></li>
+<li><p><strong>m0</strong> (<em>float</em>) – Scalar seismic moment in N·m.</p></li>
+<li><p><strong>mw</strong> (<em>float</em>) – Moment magnitude.</p></li>
+<li><p><strong>x</strong> (<em>float</em>) – Hypocentre easting in NZTM (m).</p></li>
+<li><p><strong>y</strong> (<em>float</em>) – Hypocentre northing in NZTM (m).</p></li>
+<li><p><strong>z</strong> (<em>float</em>) – Hypocentre depth in NZTM (m, negative downward).</p></li>
+<li><p><strong>area</strong> (<em>float</em>) – Total rupture area in m².</p></li>
+<li><p><strong>dt</strong> (<em>float</em>) – Rupture duration in seconds.</p></li>
+<li><p><strong>event_id</strong> (<em>int</em><em>, </em><em>optional</em>) – Unique catalogue event ID.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Event populated with catalogue parameters; patch attributes
+remain <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#event.RsqSimEvent" title="event.RsqSimEvent">RsqSimEvent</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="event.RsqSimEvent.patch_outline_gs">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">patch_outline_gs</span></span><a class="headerlink" href="#event.RsqSimEvent.patch_outline_gs" title="Link to this definition"></a></dt>
+<dd><p>2193).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>One Shapely polygon per ruptured patch, with CRS set to
+EPSG:2193 (NZTM).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>geopandas.GeoSeries</p>
+</dd>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>GeoSeries of individual patch outlines in NZTM (EPSG</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.from_earthquake_list">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_earthquake_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_numbers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_slip</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_single_patches</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_patches</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.from_earthquake_list" title="Link to this definition"></a></dt>
+<dd><p>Construct an event from catalogue parameters and patch slip data.</p>
+<p>Filters out fault segments that contribute fewer than
+<code class="docutils literal notranslate"><span class="pre">min_patches</span></code> patches, then resolves patch IDs to patch objects
+and fault objects using <code class="docutils literal notranslate"><span class="pre">fault_model</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t0</strong> (<em>float</em>) – Origin time in seconds.</p></li>
+<li><p><strong>m0</strong> (<em>float</em>) – Scalar seismic moment in N·m.</p></li>
+<li><p><strong>mw</strong> (<em>float</em>) – Moment magnitude.</p></li>
+<li><p><strong>x</strong> (<em>float</em>) – Hypocentre easting in NZTM (m).</p></li>
+<li><p><strong>y</strong> (<em>float</em>) – Hypocentre northing in NZTM (m).</p></li>
+<li><p><strong>z</strong> (<em>float</em>) – Hypocentre depth in NZTM (m, negative downward).</p></li>
+<li><p><strong>area</strong> (<em>float</em>) – Total rupture area in m².</p></li>
+<li><p><strong>dt</strong> (<em>float</em>) – Rupture duration in seconds.</p></li>
+<li><p><strong>patch_numbers</strong> (<em>array-like</em>) – Global patch IDs that slipped in this event.</p></li>
+<li><p><strong>patch_slip</strong> (<em>array-like</em>) – Slip magnitude (m) for each entry in <code class="docutils literal notranslate"><span class="pre">patch_numbers</span></code>.</p></li>
+<li><p><strong>patch_time</strong> (<em>array-like</em>) – Absolute rupture time (s) for each entry in <code class="docutils literal notranslate"><span class="pre">patch_numbers</span></code>.</p></li>
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model providing the patch and fault dictionaries.</p></li>
+<li><p><strong>filter_single_patches</strong> (<em>bool</em><em>, </em><em>optional</em>) – Unused; retained for API compatibility.</p></li>
+<li><p><strong>min_patches</strong> (<em>int</em><em>, </em><em>optional</em>) – Minimum number of patches a fault must contribute to be
+retained.  Defaults to 10.</p></li>
+<li><p><strong>min_slip</strong> (<em>float</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Unused; retained for API compatibility.</p></li>
+<li><p><strong>event_id</strong> (<em>int</em><em>, </em><em>optional</em>) – Unique catalogue event ID.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Fully populated event including patch slip distribution and
+fault objects.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#event.RsqSimEvent" title="event.RsqSimEvent">RsqSimEvent</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.from_multiprocessing">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_multiprocessing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_numbers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_slip</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.from_multiprocessing" title="Link to this definition"></a></dt>
+<dd><p>Construct an event from pre-computed multiprocessing results.</p>
+<p>Similar to <a class="reference internal" href="#event.RsqSimEvent.from_earthquake_list" title="event.RsqSimEvent.from_earthquake_list"><code class="xref py py-meth docutils literal notranslate"><span class="pre">from_earthquake_list()</span></code></a>, but accepts a boolean
+<code class="docutils literal notranslate"><span class="pre">mask</span></code> that has already been applied to filter patches, rather
+than recomputing it here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t0</strong> (<em>float</em>) – Origin time in seconds.</p></li>
+<li><p><strong>m0</strong> (<em>float</em>) – Scalar seismic moment in N·m.</p></li>
+<li><p><strong>mw</strong> (<em>float</em>) – Moment magnitude.</p></li>
+<li><p><strong>x</strong> (<em>float</em>) – Hypocentre easting in NZTM (m).</p></li>
+<li><p><strong>y</strong> (<em>float</em>) – Hypocentre northing in NZTM (m).</p></li>
+<li><p><strong>z</strong> (<em>float</em>) – Hypocentre depth in NZTM (m, negative downward).</p></li>
+<li><p><strong>area</strong> (<em>float</em>) – Total rupture area in m².</p></li>
+<li><p><strong>dt</strong> (<em>float</em>) – Rupture duration in seconds.</p></li>
+<li><p><strong>patch_numbers</strong> (<em>array-like</em>) – Global patch IDs that slipped in this event.</p></li>
+<li><p><strong>patch_slip</strong> (<em>array-like</em>) – Slip magnitude (m) for each entry in <code class="docutils literal notranslate"><span class="pre">patch_numbers</span></code>.</p></li>
+<li><p><strong>patch_time</strong> (<em>array-like</em>) – Absolute rupture time (s) for each entry in <code class="docutils literal notranslate"><span class="pre">patch_numbers</span></code>.</p></li>
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model providing patch and fault dictionaries.</p></li>
+<li><p><strong>mask</strong> (<em>list</em><em> of </em><em>bool</em>) – Boolean mask selecting the patches to retain from
+<code class="docutils literal notranslate"><span class="pre">patch_numbers</span></code>.</p></li>
+<li><p><strong>event_id</strong> (<em>int</em><em>, </em><em>optional</em>) – Unique catalogue event ID.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Fully populated event.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#event.RsqSimEvent" title="event.RsqSimEvent">RsqSimEvent</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.sub_events_by_fault">
+<span class="sig-name descname"><span class="pre">sub_events_by_fault</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.sub_events_by_fault" title="Link to this definition"></a></dt>
+<dd><p>Split the event into per-fault sub-events.</p>
+<p>For each fault involved in the event, a new <a class="reference internal" href="#event.RsqSimEvent" title="event.RsqSimEvent"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimEvent</span></code></a>
+is created containing only the patches on that fault.  Faults
+where no patch has slip &gt;= <code class="docutils literal notranslate"><span class="pre">min_slip</span></code> are skipped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model providing patch and fault dictionaries.</p></li>
+<li><p><strong>min_slip</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum slip threshold (m) for a patch to be included in a
+sub-event.  Defaults to 0.1 m.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>One event per fault that contributed qualifying slip.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of <a class="reference internal" href="#event.RsqSimEvent" title="event.RsqSimEvent">RsqSimEvent</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.find_mean_slip">
+<span class="sig-name descname"><span class="pre">find_mean_slip</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.find_mean_slip" title="Link to this definition"></a></dt>
+<dd><p>Compute and cache the mean slip across all ruptured patches.</p>
+<p>Sets <code class="xref py py-attr docutils literal notranslate"><span class="pre">_mean_slip</span></code> (accessed via <a class="reference internal" href="#event.RsqSimEvent.mean_slip" title="event.RsqSimEvent.mean_slip"><code class="xref py py-attr docutils literal notranslate"><span class="pre">mean_slip</span></code></a>) to the
+arithmetic mean of <code class="docutils literal notranslate"><span class="pre">patch_slip</span></code>.  Does nothing if no patches
+are loaded.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.find_mean_strike">
+<span class="sig-name descname"><span class="pre">find_mean_strike</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.find_mean_strike" title="Link to this definition"></a></dt>
+<dd><p>Compute and cache the arithmetic mean strike (0–360°).</p>
+<p>Sets <code class="xref py py-attr docutils literal notranslate"><span class="pre">_mean_strike</span></code> (accessed via <a class="reference internal" href="#event.RsqSimEvent.mean_strike" title="event.RsqSimEvent.mean_strike"><code class="xref py py-attr docutils literal notranslate"><span class="pre">mean_strike</span></code></a>).
+Does nothing if no patches are loaded.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.find_mean_strike_180">
+<span class="sig-name descname"><span class="pre">find_mean_strike_180</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.find_mean_strike_180" title="Link to this definition"></a></dt>
+<dd><p>Compute and cache the mean strike folded into the range 0–180°.</p>
+<p>Strikes in 180–360° are reduced by 180° before averaging, so
+that conjugate orientations are treated as equivalent.  Sets
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">_mean_strike_180</span></code> (accessed via <a class="reference internal" href="#event.RsqSimEvent.mean_strike_180" title="event.RsqSimEvent.mean_strike_180"><code class="xref py py-attr docutils literal notranslate"><span class="pre">mean_strike_180</span></code></a>).
+Does nothing if no patches are loaded.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.find_mean_dip">
+<span class="sig-name descname"><span class="pre">find_mean_dip</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.find_mean_dip" title="Link to this definition"></a></dt>
+<dd><p>Compute and cache the arithmetic mean dip (degrees).</p>
+<p>Sets <code class="xref py py-attr docutils literal notranslate"><span class="pre">_mean_dip</span></code> (accessed via <a class="reference internal" href="#event.RsqSimEvent.mean_dip" title="event.RsqSimEvent.mean_dip"><code class="xref py py-attr docutils literal notranslate"><span class="pre">mean_dip</span></code></a>).
+Does nothing if no patches are loaded.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.find_mean_rake">
+<span class="sig-name descname"><span class="pre">find_mean_rake</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.find_mean_rake" title="Link to this definition"></a></dt>
+<dd><p>Compute and cache the arithmetic mean rake (degrees).</p>
+<p>Sets <code class="xref py py-attr docutils literal notranslate"><span class="pre">_mean_rake</span></code> (accessed via <a class="reference internal" href="#event.RsqSimEvent.mean_rake" title="event.RsqSimEvent.mean_rake"><code class="xref py py-attr docutils literal notranslate"><span class="pre">mean_rake</span></code></a>).
+Does nothing if no patches are loaded.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.find_length">
+<span class="sig-name descname"><span class="pre">find_length</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">min_slip_percentile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.find_length" title="Link to this definition"></a></dt>
+<dd><p>Estimate and cache the rupture length along fault surface traces.</p>
+<p>For each fault, the range of distances of patch centroids
+projected onto the fault trace is summed to give a cumulative
+rupture length.  Sets <a class="reference internal" href="#event.RsqSimEvent.length" title="event.RsqSimEvent.length"><code class="xref py py-attr docutils literal notranslate"><span class="pre">length</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>min_slip_percentile</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Unused; reserved for future filtering by slip percentile.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.make_fault_moment_dict">
+<span class="sig-name descname"><span class="pre">make_fault_moment_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30000000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">by_cfm_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_m0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.make_fault_moment_dict" title="Link to this definition"></a></dt>
+<dd><p>Build a dictionary of seismic moment released on each fault.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model providing patch and fault dictionaries.</p></li>
+<li><p><strong>mu</strong> (<em>float</em><em>, </em><em>optional</em>) – Shear modulus in Pa.  Defaults to 3×10¹⁰ Pa (30 GPa).</p></li>
+<li><p><strong>by_cfm_names</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), merge sub-segments by stripping
+trailing digits and hyphens to recover CFM fault names.
+If <code class="docutils literal notranslate"><span class="pre">False</span></code>, use the raw fault segment names.</p></li>
+<li><p><strong>min_m0</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum moment (N·m) for a fault to be included.  Defaults
+to 0 (include all faults).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Mapping of fault name (str) to scalar moment (float, N·m).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.make_moment_prop_dict">
+<span class="sig-name descname"><span class="pre">make_moment_prop_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30000000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">by_cfm_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.make_moment_prop_dict" title="Link to this definition"></a></dt>
+<dd><p>Build a dictionary of each fault’s fractional contribution to total moment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model providing patch and fault dictionaries.</p></li>
+<li><p><strong>mu</strong> (<em>float</em><em>, </em><em>optional</em>) – Shear modulus in Pa.  Defaults to 3×10¹⁰ Pa.</p></li>
+<li><p><strong>by_cfm_names</strong> (<em>bool</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.make_fault_moment_dict" title="event.RsqSimEvent.make_fault_moment_dict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">make_fault_moment_dict()</span></code></a>; if <code class="docutils literal notranslate"><span class="pre">True</span></code>
+(default), merge sub-segments to CFM fault names.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Mapping of fault name (str) to proportion of total event
+moment (float, 0–1), sorted in descending order.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.plot_slip_2d">
+<span class="sig-name descname"><span class="pre">plot_slip_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subduction_cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'plasma'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crustal_cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'viridis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_sub_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subplots</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_max_sub_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">global_max_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(6.4,</span> <span class="pre">4.8)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hillshading_intensity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_rivers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_lakes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_highways</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_boundaries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_background</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coast_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hillshade_cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">cm.terrain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_log_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'magma'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_traces</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trace_colour</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pink'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">land_color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'antiquewhite'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_percentile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wgs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_edge_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_cbars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coast_on_top</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.plot_slip_2d" title="Link to this definition"></a></dt>
+<dd><p>Plot a 2-D map of the slip distribution for this event.</p>
+<p>Subduction-interface faults and crustal faults are coloured with
+separate colourmaps.  Optionally overlays a coastal/background
+map and saves to file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>subduction_cmap</strong> (<em>str</em><em>, </em><em>optional</em>) – Matplotlib colourmap name for subduction-interface patches.
+Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;plasma&quot;</span></code>.</p></li>
+<li><p><strong>crustal_cmap</strong> (<em>str</em><em>, </em><em>optional</em>) – Matplotlib colourmap name for crustal patches.  Defaults to
+<code class="docutils literal notranslate"><span class="pre">&quot;viridis&quot;</span></code>.</p></li>
+<li><p><strong>show</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), call <code class="docutils literal notranslate"><span class="pre">plt.show()</span></code> after plotting.</p></li>
+<li><p><strong>extra_sub_list</strong> (<em>list</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Additional fault names to treat as subduction interface,
+supplementing the built-in <code class="docutils literal notranslate"><span class="pre">bruce_subduction</span></code> list.</p></li>
+<li><p><strong>write</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – File path to save the figure (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;event_001.png&quot;</span></code>).
+If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the figure is not saved.</p></li>
+<li><p><strong>subplots</strong> (<em>tuple</em><em> or </em><em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Existing <code class="docutils literal notranslate"><span class="pre">(fig,</span> <span class="pre">ax)</span></code> tuple or path to a pickled figure to
+plot on top of.  If <code class="docutils literal notranslate"><span class="pre">None</span></code>, a new figure is created.</p></li>
+<li><p><strong>global_max_sub_slip</strong> (<em>float</em><em>, </em><em>optional</em>) – Fixed colourbar maximum for subduction slip.  If 0, the
+per-event maximum is used.</p></li>
+<li><p><strong>global_max_slip</strong> (<em>float</em><em>, </em><em>optional</em>) – Fixed colourbar maximum for crustal slip.  If 0, the
+per-event maximum is used.</p></li>
+<li><p><strong>figsize</strong> (<em>tuple</em><em> of </em><em>float</em><em>, </em><em>optional</em>) – Figure size in inches <code class="docutils literal notranslate"><span class="pre">(width,</span> <span class="pre">height)</span></code>.</p></li>
+<li><p><strong>hillshading_intensity</strong> (<em>float</em><em>, </em><em>optional</em>) – Hillshading intensity passed to <code class="docutils literal notranslate"><span class="pre">plot_background</span></code>.</p></li>
+<li><p><strong>bounds</strong> (<em>tuple</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Map extent <code class="docutils literal notranslate"><span class="pre">(x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max)</span></code> in NZTM.
+Defaults to the event bounding box.</p></li>
+<li><p><strong>plot_rivers</strong> (<em>bool</em><em>, </em><em>optional</em>) – Toggle background map layers.</p></li>
+<li><p><strong>plot_lakes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Toggle background map layers.</p></li>
+<li><p><strong>plot_highways</strong> (<em>bool</em><em>, </em><em>optional</em>) – Toggle background map layers.</p></li>
+<li><p><strong>plot_boundaries</strong> (<em>bool</em><em>, </em><em>optional</em>) – Toggle background map layers.</p></li>
+<li><p><strong>create_background</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, render a full background map.</p></li>
+<li><p><strong>coast_only</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), only render the coastline as background.</p></li>
+<li><p><strong>hillshade_cmap</strong> (<em>LinearSegmentedColormap</em><em>, </em><em>optional</em>) – Colourmap for hillshading.</p></li>
+<li><p><strong>plot_log_scale</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, use logarithmic colour scaling.</p></li>
+<li><p><strong>log_cmap</strong> (<em>str</em><em>, </em><em>optional</em>) – Colourmap for log-scale plots.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;magma&quot;</span></code>.</p></li>
+<li><p><strong>log_min</strong> (<em>float</em><em>, </em><em>optional</em>) – Colour scale limits for log-scale plots.</p></li>
+<li><p><strong>log_max</strong> (<em>float</em><em>, </em><em>optional</em>) – Colour scale limits for log-scale plots.</p></li>
+<li><p><strong>plot_traces</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, plot fault surface traces.</p></li>
+<li><p><strong>trace_colour</strong> (<em>str</em><em>, </em><em>optional</em>) – Colour for fault traces.</p></li>
+<li><p><strong>land_color</strong> (<em>str</em><em>, </em><em>optional</em>) – Background land colour.</p></li>
+<li><p><strong>min_slip_percentile</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – If set, only show patches above this slip percentile.</p></li>
+<li><p><strong>min_slip_value</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – If set, only show patches with slip &gt;= this value (m).</p></li>
+<li><p><strong>plot_zeros</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), plot zero-slip patches.</p></li>
+<li><p><strong>wgs</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, use WGS84 coordinates rather than NZTM.</p></li>
+<li><p><strong>title</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Figure super-title.</p></li>
+<li><p><strong>plot_edge_label</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, show axis edge labels on the background map.</p></li>
+<li><p><strong>plot_cbars</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), add colourbars to the figure.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em><em>, </em><em>optional</em>) – Patch transparency (0–1).  Defaults to 1.</p></li>
+<li><p><strong>coast_on_top</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, redraw the coastline on top of the slip patches.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Matplotlib <code class="docutils literal notranslate"><span class="pre">PolyCollection</span></code> objects for each fault plotted.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.plot_slip_evolution">
+<span class="sig-name descname"><span class="pre">plot_slip_evolution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subduction_cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'plasma'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crustal_cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'viridis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(6.4,</span> <span class="pre">4.8)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_sub_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.plot_slip_evolution" title="Link to this definition"></a></dt>
+<dd><p>Animate the temporal evolution of slip propagation for this event.</p>
+<p>Produces a <code class="docutils literal notranslate"><span class="pre">FuncAnimation</span></code> that steps through rupture time,
+progressively revealing each patch as it slips.  Can be saved
+as a GIF or video file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>subduction_cmap</strong> (<em>str</em><em>, </em><em>optional</em>) – Matplotlib colourmap for subduction-interface patches.
+Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;plasma&quot;</span></code>.</p></li>
+<li><p><strong>crustal_cmap</strong> (<em>str</em><em>, </em><em>optional</em>) – Matplotlib colourmap for crustal patches.  Defaults to
+<code class="docutils literal notranslate"><span class="pre">&quot;viridis&quot;</span></code>.</p></li>
+<li><p><strong>show</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), display the animation interactively.</p></li>
+<li><p><strong>step_size</strong> (<em>int</em><em>, </em><em>optional</em>) – Time step (s) between animation frames.  Defaults to 1.</p></li>
+<li><p><strong>write</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Output file path prefix (without extension).  If <code class="docutils literal notranslate"><span class="pre">None</span></code>
+the animation is not saved.</p></li>
+<li><p><strong>fps</strong> (<em>int</em><em>, </em><em>optional</em>) – Frames per second for the saved animation.  Defaults to 20.</p></li>
+<li><p><strong>file_format</strong> (<em>str</em><em>, </em><em>optional</em>) – Output format: <code class="docutils literal notranslate"><span class="pre">&quot;gif&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;mov&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;avi&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;mp4&quot;</span></code>.
+Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;gif&quot;</span></code>.</p></li>
+<li><p><strong>figsize</strong> (<em>tuple</em><em> of </em><em>float</em><em>, </em><em>optional</em>) – Figure size in inches <code class="docutils literal notranslate"><span class="pre">(width,</span> <span class="pre">height)</span></code>.</p></li>
+<li><p><strong>extra_sub_list</strong> (<em>list</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Additional fault names to treat as subduction interface.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.find_surface_faults">
+<span class="sig-name descname"><span class="pre">find_surface_faults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'vertex'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_patches</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_depth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">faults2ignore</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hikurangi'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.find_surface_faults" title="Link to this definition"></a></dt>
+<dd><p>Identify fault segments with surface-rupturing patches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model providing the patch dictionary.</p></li>
+<li><p><strong>min_slip</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum slip (m) for a patch to count as ruptured.
+Defaults to 0.1 m.</p></li>
+<li><p><strong>method</strong> (<em>str</em><em>, </em><em>optional</em>) – Depth criterion: <code class="docutils literal notranslate"><span class="pre">&quot;vertex&quot;</span></code> uses the shallowest vertex
+of a patch; <code class="docutils literal notranslate"><span class="pre">&quot;centroid&quot;</span></code> uses the patch centroid depth.
+Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;vertex&quot;</span></code>.</p></li>
+<li><p><strong>n_patches</strong> (<em>int</em><em>, </em><em>optional</em>) – Minimum number of qualifying surface patches required for
+a fault to be included in the output.  Defaults to 1.</p></li>
+<li><p><strong>max_depth</strong> (<em>float</em><em>, </em><em>optional</em>) – Depth threshold (m, negative downward).  Patches shallower
+than this are considered surface-rupturing.  Defaults to
+-1000 m.</p></li>
+<li><p><strong>faults2ignore</strong> (<em>list</em><em> of </em><em>str</em><em> or </em><em>str</em><em>, </em><em>optional</em>) – Fault name(s) to exclude from the search (e.g. subduction
+interface).  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;hikurangi&quot;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Names of fault segments that have surface rupture.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.split_by_fault">
+<span class="sig-name descname"><span class="pre">split_by_fault</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_patches</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.split_by_fault" title="Link to this definition"></a></dt>
+<dd><p>Create per-fault sub-event objects for this event.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model used to resolve patch IDs and fault names.</p></li>
+<li><p><strong>min_slip</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum moment (N·m) for a fault to be included (passed as
+<code class="docutils literal notranslate"><span class="pre">min_m0</span></code> to <a class="reference internal" href="#event.RsqSimEvent.make_fault_moment_dict" title="event.RsqSimEvent.make_fault_moment_dict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">make_fault_moment_dict()</span></code></a>).  Defaults to
+0.1.</p></li>
+<li><p><strong>min_patches</strong> (<em>int</em><em>, </em><em>optional</em>) – Unused; retained for API compatibility.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Mapping of fault name (str) to its corresponding
+<a class="reference internal" href="#event.RsqSimEvent" title="event.RsqSimEvent"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimEvent</span></code></a> sub-event.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.slip_dist_array">
+<span class="sig-name descname"><span class="pre">slip_dist_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">include_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_percentile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nztm_to_lonlat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.slip_dist_array" title="Link to this definition"></a></dt>
+<dd><p>Build a dense array of the slip distribution across all patches.</p>
+<p>Each row corresponds to one triangular patch and contains the
+three vertex coordinates followed by slip, rake, and rupture time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>include_zeros</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), include zero-slip patches (patches
+on involved faults that did not slip in this event).</p></li>
+<li><p><strong>min_slip_percentile</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – If provided (and <code class="docutils literal notranslate"><span class="pre">min_slip_value</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>), patches
+with slip below this percentile are excluded or zeroed.</p></li>
+<li><p><strong>min_slip_value</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – If provided, patches with slip below this value (m) are
+excluded or zeroed.</p></li>
+<li><p><strong>nztm_to_lonlat</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, transform vertex coordinates from NZTM to
+WGS84 longitude/latitude before including them.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Columns: <code class="docutils literal notranslate"><span class="pre">[x1,y1,z1,</span> <span class="pre">x2,y2,z2,</span> <span class="pre">x3,y3,z3,</span> <span class="pre">slip_m,</span> <span class="pre">rake_deg,</span> <span class="pre">time_s]</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray of shape (n_patches, 12)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.slip_dist_bounds">
+<span class="sig-name descname"><span class="pre">slip_dist_bounds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">include_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_percentile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nztm_to_lonlat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.slip_dist_bounds" title="Link to this definition"></a></dt>
+<dd><p>Compute the bounding box of the slip distribution array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>include_zeros</strong> (<em>bool</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_array" title="event.RsqSimEvent.slip_dist_array"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_array()</span></code></a>.</p></li>
+<li><p><strong>min_slip_percentile</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_array" title="event.RsqSimEvent.slip_dist_array"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_array()</span></code></a>.</p></li>
+<li><p><strong>min_slip_value</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_array" title="event.RsqSimEvent.slip_dist_array"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_array()</span></code></a>.</p></li>
+<li><p><strong>nztm_to_lonlat</strong> (<em>bool</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_array" title="event.RsqSimEvent.slip_dist_array"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_array()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">(x_min,</span> <span class="pre">y_min,</span> <span class="pre">x_max,</span> <span class="pre">y_max)</span></code> extents of the slip
+distribution patch vertices.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple of float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.slip_dist_to_mesh">
+<span class="sig-name descname"><span class="pre">slip_dist_to_mesh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">include_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_percentile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nztm_to_lonlat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.slip_dist_to_mesh" title="Link to this definition"></a></dt>
+<dd><p>Convert the slip distribution to a meshio Mesh with cell data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>include_zeros</strong> (<em>bool</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_array" title="event.RsqSimEvent.slip_dist_array"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_array()</span></code></a>.</p></li>
+<li><p><strong>min_slip_percentile</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_array" title="event.RsqSimEvent.slip_dist_array"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_array()</span></code></a>.</p></li>
+<li><p><strong>min_slip_value</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_array" title="event.RsqSimEvent.slip_dist_array"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_array()</span></code></a>.</p></li>
+<li><p><strong>nztm_to_lonlat</strong> (<em>bool</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_array" title="event.RsqSimEvent.slip_dist_array"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_array()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Triangulated mesh with <code class="docutils literal notranslate"><span class="pre">cell_data</span></code> containing <code class="docutils literal notranslate"><span class="pre">&quot;slip&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;rake&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">&quot;time&quot;</span></code> arrays.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>meshio.Mesh</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.slip_dist_to_vtk">
+<span class="sig-name descname"><span class="pre">slip_dist_to_vtk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vtk_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_percentile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.slip_dist_to_vtk" title="Link to this definition"></a></dt>
+<dd><p>Write the slip distribution to a VTK file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vtk_file</strong> (<em>str</em>) – Output VTK file path.</p></li>
+<li><p><strong>include_zeros</strong> (<em>bool</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_to_mesh" title="event.RsqSimEvent.slip_dist_to_mesh"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_to_mesh()</span></code></a>.</p></li>
+<li><p><strong>min_slip_percentile</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_to_mesh" title="event.RsqSimEvent.slip_dist_to_mesh"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_to_mesh()</span></code></a>.</p></li>
+<li><p><strong>min_slip_value</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_to_mesh" title="event.RsqSimEvent.slip_dist_to_mesh"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_to_mesh()</span></code></a>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.slip_dist_to_obj">
+<span class="sig-name descname"><span class="pre">slip_dist_to_obj</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_percentile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.slip_dist_to_obj" title="Link to this definition"></a></dt>
+<dd><p>Write the slip distribution to a Wavefront OBJ file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj_file</strong> (<em>str</em>) – Output OBJ file path.</p></li>
+<li><p><strong>include_zeros</strong> (<em>bool</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_to_mesh" title="event.RsqSimEvent.slip_dist_to_mesh"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_to_mesh()</span></code></a>.</p></li>
+<li><p><strong>min_slip_percentile</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_to_mesh" title="event.RsqSimEvent.slip_dist_to_mesh"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_to_mesh()</span></code></a>.</p></li>
+<li><p><strong>min_slip_value</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_to_mesh" title="event.RsqSimEvent.slip_dist_to_mesh"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_to_mesh()</span></code></a>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.slip_dist_to_txt">
+<span class="sig-name descname"><span class="pre">slip_dist_to_txt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">txt_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_percentile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nztm_to_lonlat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.slip_dist_to_txt" title="Link to this definition"></a></dt>
+<dd><p>Write the slip distribution to a space-delimited text file.</p>
+<p>Each row contains the three vertex coordinates of a patch
+followed by slip, rake, and rupture time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>txt_file</strong> (<em>str</em><em> or </em><em>path-like</em>) – Output text file path.</p></li>
+<li><p><strong>include_zeros</strong> (<em>bool</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_array" title="event.RsqSimEvent.slip_dist_array"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_array()</span></code></a>.</p></li>
+<li><p><strong>min_slip_percentile</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_array" title="event.RsqSimEvent.slip_dist_array"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_array()</span></code></a>.</p></li>
+<li><p><strong>min_slip_value</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_array" title="event.RsqSimEvent.slip_dist_array"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_array()</span></code></a>.</p></li>
+<li><p><strong>nztm_to_lonlat</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, vertex coordinates are in WGS84 lon/lat and
+the header is adjusted accordingly.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.slip_dist_to_gdf">
+<span class="sig-name descname"><span class="pre">slip_dist_to_gdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gdf_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_percentile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nztm_to_lonlat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'2193'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.slip_dist_to_gdf" title="Link to this definition"></a></dt>
+<dd><p>Build a GeoDataFrame of the slip distribution.</p>
+<p>Creates a GeoDataFrame where each row is a triangular patch
+polygon with slip, rake, and time attributes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gdf_file</strong> (<em>str</em><em> or </em><em>None</em>) – Unused; retained for API compatibility.</p></li>
+<li><p><strong>include_zeros</strong> (<em>bool</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_array" title="event.RsqSimEvent.slip_dist_array"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_array()</span></code></a>.</p></li>
+<li><p><strong>min_slip_percentile</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_array" title="event.RsqSimEvent.slip_dist_array"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_array()</span></code></a>.</p></li>
+<li><p><strong>min_slip_value</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_array" title="event.RsqSimEvent.slip_dist_array"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_array()</span></code></a>.</p></li>
+<li><p><strong>nztm_to_lonlat</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, reproject the result from NZTM to WGS84.</p></li>
+<li><p><strong>crs</strong> (<em>str</em><em>, </em><em>optional</em>) – CRS for the output GeoDataFrame.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;2193&quot;</span></code>
+(NZTM / EPSG:2193).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>GeoDataFrame with columns <code class="docutils literal notranslate"><span class="pre">[&quot;slip&quot;,</span> <span class="pre">&quot;rake&quot;,</span> <span class="pre">&quot;time&quot;]</span></code> and
+a <code class="docutils literal notranslate"><span class="pre">geometry</span></code> column of triangular patch polygons.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>geopandas.GeoDataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.slip_dist_to_geojson">
+<span class="sig-name descname"><span class="pre">slip_dist_to_geojson</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">geojson_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_percentile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nztm_to_lonlat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.slip_dist_to_geojson" title="Link to this definition"></a></dt>
+<dd><p>Write the slip distribution to a GeoJSON file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>geojson_file</strong> (<em>str</em>) – Output GeoJSON file path.</p></li>
+<li><p><strong>include_zeros</strong> (<em>bool</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_to_gdf" title="event.RsqSimEvent.slip_dist_to_gdf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_to_gdf()</span></code></a>.</p></li>
+<li><p><strong>min_slip_percentile</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_to_gdf" title="event.RsqSimEvent.slip_dist_to_gdf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_to_gdf()</span></code></a>.</p></li>
+<li><p><strong>min_slip_value</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_to_gdf" title="event.RsqSimEvent.slip_dist_to_gdf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_to_gdf()</span></code></a>.</p></li>
+<li><p><strong>nztm_to_lonlat</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, reproject patches to WGS84 before writing.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.slip_dist_to_shapefile">
+<span class="sig-name descname"><span class="pre">slip_dist_to_shapefile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shapefile_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_percentile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nztm_to_lonlat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.slip_dist_to_shapefile" title="Link to this definition"></a></dt>
+<dd><p>Write the slip distribution to an ESRI Shapefile.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shapefile_file</strong> (<em>str</em>) – Output shapefile path (without extension).</p></li>
+<li><p><strong>include_zeros</strong> (<em>bool</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_to_gdf" title="event.RsqSimEvent.slip_dist_to_gdf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_to_gdf()</span></code></a>.</p></li>
+<li><p><strong>min_slip_percentile</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_to_gdf" title="event.RsqSimEvent.slip_dist_to_gdf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_to_gdf()</span></code></a>.</p></li>
+<li><p><strong>min_slip_value</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_to_gdf" title="event.RsqSimEvent.slip_dist_to_gdf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_to_gdf()</span></code></a>.</p></li>
+<li><p><strong>nztm_to_lonlat</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, reproject patches to WGS84 before writing.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.slip_dist_to_gmt">
+<span class="sig-name descname"><span class="pre">slip_dist_to_gmt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gmt_prefix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nztm_to_lonlat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subduction_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('hikkerm',</span> <span class="pre">'puysegur')</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.slip_dist_to_gmt" title="Link to this definition"></a></dt>
+<dd><p>Write the slip distribution to GMT multi-segment text files.</p>
+<p>Writes two files: <code class="docutils literal notranslate"><span class="pre">&lt;gmt_prefix&gt;_crustal.gmt</span></code> for crustal faults
+and <code class="docutils literal notranslate"><span class="pre">&lt;gmt_prefix&gt;_subduction.gmt</span></code> for subduction-interface faults.
+Each patch is written as a <code class="docutils literal notranslate"><span class="pre">&gt;-Z&lt;slip&gt;</span></code> segment header followed
+by vertex coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model providing the patch dictionary.</p></li>
+<li><p><strong>gmt_prefix</strong> (<em>str</em>) – Prefix for the output GMT file names.</p></li>
+<li><p><strong>min_slip_value</strong> (<em>float</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – If set, only patches with slip &gt;= this value (m) are written.</p></li>
+<li><p><strong>nztm_to_lonlat</strong> (<em>bool</em><em>, </em><em>optional</em>) – Unused; reserved for future coordinate transformation.</p></li>
+<li><p><strong>subduction_names</strong> (<em>iterable</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Fault names to classify as subduction interface.  Defaults
+to <code class="docutils literal notranslate"><span class="pre">(&quot;hikkerm&quot;,</span> <span class="pre">&quot;puysegur&quot;)</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.discretize_tiles">
+<span class="sig-name descname"><span class="pre">discretize_tiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tile_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">probability</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rake</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.discretize_tiles" title="Link to this definition"></a></dt>
+<dd><p>Select tiles that overlap the rupture exterior by at least 50 %.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tile_list</strong> (<em>list</em><em> of </em><em>Polygon</em>) – Candidate rectangular tiles in NZTM coordinates.</p></li>
+<li><p><strong>probability</strong> (<em>float</em>) – Unused; retained for API compatibility with
+<a class="reference internal" href="#event.RsqSimEvent.discretize_openquake" title="event.RsqSimEvent.discretize_openquake"><code class="xref py py-meth docutils literal notranslate"><span class="pre">discretize_openquake()</span></code></a>.</p></li>
+<li><p><strong>rake</strong> (<em>float</em>) – Unused; retained for API compatibility.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>GeoSeries (EPSG:2193) of tiles where the intersection with
+the rupture exterior covers at least half the tile area.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>geopandas.GeoSeries</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.discretize_openquake">
+<span class="sig-name descname"><span class="pre">discretize_openquake</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tile_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">probability</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rake</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.discretize_openquake" title="Link to this definition"></a></dt>
+<dd><p>Build an OpenQuake multi-planar rupture from overlapping tiles.</p>
+<p>Selects tiles from <code class="docutils literal notranslate"><span class="pre">tile_list</span></code> that overlap the rupture exterior
+by at least 50 %, then packages them as an
+<a class="reference internal" href="#event.OpenQuakeMultiSquareRupture" title="event.OpenQuakeMultiSquareRupture"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpenQuakeMultiSquareRupture</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tile_list</strong> (<em>list</em><em> of </em><em>Polygon</em>) – Candidate rectangular tiles in NZTM coordinates.</p></li>
+<li><p><strong>probability</strong> (<em>float</em>) – Probability of occurrence passed to
+<a class="reference internal" href="#event.OpenQuakeMultiSquareRupture" title="event.OpenQuakeMultiSquareRupture"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpenQuakeMultiSquareRupture</span></code></a>.</p></li>
+<li><p><strong>rake</strong> (<em>float</em>) – Mean rake (degrees) passed to
+<a class="reference internal" href="#event.OpenQuakeMultiSquareRupture" title="event.OpenQuakeMultiSquareRupture"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpenQuakeMultiSquareRupture</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Rupture object if any tiles overlap; <code class="docutils literal notranslate"><span class="pre">None</span></code> otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#event.OpenQuakeMultiSquareRupture" title="event.OpenQuakeMultiSquareRupture">OpenQuakeMultiSquareRupture</a> or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.discretize_openquake_ktree">
+<span class="sig-name descname"><span class="pre">discretize_openquake_ktree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quads_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">probability</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subduction_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('hikkerm',</span> <span class="pre">'puysegur')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_moment</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e+18</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tile_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_mesh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_geojson</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xml_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.discretize_openquake_ktree" title="Link to this definition"></a></dt>
+<dd><p>Build OpenQuake XML ruptures using a KD-tree tile assignment.</p>
+<p>Uses <a class="reference internal" href="#event.RsqSimEvent.slip_dist_quads_ktree" title="event.RsqSimEvent.slip_dist_quads_ktree"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_quads_ktree()</span></code></a> to find ruptured quadrilateral
+tiles per fault, then writes separate XML files for crustal and
+subduction components.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model providing patch and fault dictionaries.</p></li>
+<li><p><strong>quads_dict</strong> (<em>dict</em>) – Mapping of fault segment name to a <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">4,</span> <span class="pre">3)</span></code> array of
+pre-computed quadrilateral tile corner coordinates.</p></li>
+<li><p><strong>probability</strong> (<em>float</em>) – Probability of occurrence for the OpenQuake rupture.</p></li>
+<li><p><strong>subduction_names</strong> (<em>iterable</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Fault names classified as subduction interface.</p></li>
+<li><p><strong>min_moment</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum moment (N·m) for a fault to be included.</p></li>
+<li><p><strong>min_slip</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum slip (m) for a patch to count as ruptured.</p></li>
+<li><p><strong>tile_size</strong> (<em>float</em><em>, </em><em>optional</em>) – Tile size hint (m); unused here but passed through for
+context.</p></li>
+<li><p><strong>write_mesh</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, also write VTK mesh files for each component.</p></li>
+<li><p><strong>write_geojson</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, also write GeoJSON files for each component.</p></li>
+<li><p><strong>xml_dir</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Directory in which to write output files.  Defaults to the
+current working directory.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em><em>, </em><em>optional</em>) – Fraction of patches in a tile that must be ruptured for the
+tile to be included.  Passed to <a class="reference internal" href="#event.RsqSimEvent.slip_dist_quads_ktree" title="event.RsqSimEvent.slip_dist_quads_ktree"><code class="xref py py-meth docutils literal notranslate"><span class="pre">slip_dist_quads_ktree()</span></code></a>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.event_to_json">
+<span class="sig-name descname"><span class="pre">event_to_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path2cfm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">catalogue_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'v1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xml_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'OQ-events'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wgs84</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subd_tile_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tile_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tectonic_region</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'NZ'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.event_to_json" title="Link to this definition"></a></dt>
+<dd><p>Export event slip distribution to a ShakeMap-compatible GeoJSON file.</p>
+<p>Discretises the rupturing faults into rectangular tiles, selects
+those near slipping patches, converts coordinates to WGS84, and
+writes a GeoJSON file with metadata to
+<code class="docutils literal notranslate"><span class="pre">&lt;xml_dir&gt;/event_&lt;id&gt;/&lt;id&gt;.json</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model used to merge and discretise fault segments.</p></li>
+<li><p><strong>path2cfm</strong> (<em>str</em>) – Path to the Community Fault Model directory (required for
+<code class="docutils literal notranslate"><span class="pre">catalogue_version=&quot;v2&quot;</span></code> name lookups).</p></li>
+<li><p><strong>catalogue_version</strong> (<em>str</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;v1&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;v2&quot;</span></code>.  Affects which fault name dictionary
+is used.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;v1&quot;</span></code>.</p></li>
+<li><p><strong>xml_dir</strong> (<em>str</em><em>, </em><em>optional</em>) – Output directory.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;OQ-events&quot;</span></code>.</p></li>
+<li><p><strong>wgs84</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, hypocentre coordinates are already in WGS84
+(lon/lat).  If <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), NZTM coordinates are
+transformed to WGS84.</p></li>
+<li><p><strong>subd_tile_size</strong> (<em>float</em><em>, </em><em>optional</em>) – Tile size (m) used when discretising subduction faults.
+Defaults to 15000 m.</p></li>
+<li><p><strong>tile_size</strong> (<em>float</em><em>, </em><em>optional</em>) – Tile size (m) used when discretising crustal faults.
+Defaults to 5000 m.</p></li>
+<li><p><strong>tectonic_region</strong> (<em>str</em><em>, </em><em>optional</em>) – Tectonic region tag written into the metadata.  Defaults to
+<code class="docutils literal notranslate"><span class="pre">&quot;NZ&quot;</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.event_to_OQ_xml">
+<span class="sig-name descname"><span class="pre">event_to_OQ_xml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path2cfm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">catalogue_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'v2'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xml_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'OQ_events'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subd_tile_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tile_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">probability</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tectonic_region</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'NZ'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_mag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hypocentre</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nztm2wgs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.event_to_OQ_xml" title="Link to this definition"></a></dt>
+<dd><p>Export the event as an OpenQuake multi-planar rupture XML file.</p>
+<p>Discretises faults exceeding <code class="docutils literal notranslate"><span class="pre">min_mag</span></code> into rectangular tiles,
+selects tiles near ruptured patches, and writes an OpenQuake NRML
+XML file to <code class="docutils literal notranslate"><span class="pre">&lt;xml_dir&gt;/&lt;event_id&gt;/event_&lt;event_id&gt;.xml</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model for segment merging and discretisation.</p></li>
+<li><p><strong>path2cfm</strong> (<em>str</em>) – Path to the Community Fault Model directory.</p></li>
+<li><p><strong>catalogue_version</strong> (<em>str</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;v1&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;v2&quot;</span></code>.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;v2&quot;</span></code>.</p></li>
+<li><p><strong>xml_dir</strong> (<em>str</em><em>, </em><em>optional</em>) – Output directory.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;OQ_events&quot;</span></code>.</p></li>
+<li><p><strong>subd_tile_size</strong> (<em>float</em><em>, </em><em>optional</em>) – Tile size (m) for subduction faults.  Defaults to 15000 m.</p></li>
+<li><p><strong>tile_size</strong> (<em>float</em><em>, </em><em>optional</em>) – Tile size (m) for crustal faults.  Defaults to 5000 m.</p></li>
+<li><p><strong>probability</strong> (<em>float</em><em>, </em><em>optional</em>) – Probability of occurrence for the rupture.  Defaults to 0.9.</p></li>
+<li><p><strong>tectonic_region</strong> (<em>str</em><em>, </em><em>optional</em>) – Tectonic region tag.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;NZ&quot;</span></code>.</p></li>
+<li><p><strong>min_mag</strong> (<em>float</em><em>, </em><em>optional</em>) – Only include faults whose moment corresponds to at least
+this magnitude.  Defaults to 6.0.</p></li>
+<li><p><strong>hypocentre</strong> (<em>list</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[x,</span> <span class="pre">y,</span> <span class="pre">z]</span></code> hypocentre override.  If <code class="docutils literal notranslate"><span class="pre">None</span></code>, uses the
+event hypocentre.</p></li>
+<li><p><strong>nztm2wgs</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), convert NZTM coordinates to WGS84
+before writing.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.slip_dist_quads_ktree">
+<span class="sig-name descname"><span class="pre">slip_dist_quads_ktree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quads_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_moment</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e+18</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_for_inclusion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slip_per_quad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.slip_dist_quads_ktree" title="Link to this definition"></a></dt>
+<dd><p>Find ruptured quadrilateral tiles for each fault using a KD-tree.</p>
+<p>For each fault segment that exceeds <code class="docutils literal notranslate"><span class="pre">min_moment</span></code>, uses a KD-tree
+on pre-computed quad centroids to assign triangular patches to
+quads, then returns quads where the fraction of ruptured patches
+exceeds <code class="docutils literal notranslate"><span class="pre">threshold_for_inclusion</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model providing patch dictionaries and patch centres.</p></li>
+<li><p><strong>quads_dict</strong> (<em>dict</em>) – Mapping of fault segment name to a <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">4,</span> <span class="pre">3)</span></code> array of
+quad corner coordinates (NZTM, m).</p></li>
+<li><p><strong>min_moment</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum moment (N·m) for a fault to be considered.  Defaults
+to 1×10¹⁸ N·m.</p></li>
+<li><p><strong>min_slip</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum patch slip (m) for a patch to count as ruptured.
+Defaults to 0.</p></li>
+<li><p><strong>threshold_for_inclusion</strong> (<em>float</em><em>, </em><em>optional</em>) – Fraction of a quad’s assigned patches that must be ruptured
+for the quad to be included.  Defaults to 0.5.</p></li>
+<li><p><strong>slip_per_quad</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, compute and store average slip per quad (not
+yet returned in output).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Mapping of fault segment name to a <code class="docutils literal notranslate"><span class="pre">(n_ruptured,</span> <span class="pre">4,</span> <span class="pre">3)</span></code>
+array of ruptured quad corner coordinates.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.to_oq_points">
+<span class="sig-name descname"><span class="pre">to_oq_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.to_oq_points" title="Link to this definition"></a></dt>
+<dd><p>Convert event to OpenQuake point-source representation.</p>
+<p>Not yet implemented.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model (reserved for future use).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.get_crustal_component">
+<span class="sig-name descname"><span class="pre">get_crustal_component</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crustal_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_moment</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e+18</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.get_crustal_component" title="Link to this definition"></a></dt>
+<dd><p>Compute moment, mean rake, and hypocentre for crustal fault components.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model providing patch dictionaries and patch moments.</p></li>
+<li><p><strong>crustal_names</strong> (<em>list</em><em> of </em><em>str</em>) – Names of fault segments to treat as crustal.</p></li>
+<li><p><strong>min_moment</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum moment (N·m) for a fault to be considered.
+Defaults to 1×10¹⁸ N·m.</p></li>
+<li><p><strong>min_slip</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum patch slip (m) to count as ruptured.  Defaults to 0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">(mw,</span> <span class="pre">mean_rake,</span> <span class="pre">hypocentre_xyz)</span></code> for the crustal
+component, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if no crustal faults qualify.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple of (float, float, numpy.ndarray) or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.get_subduction_component">
+<span class="sig-name descname"><span class="pre">get_subduction_component</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subduction_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_moment</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e+18</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_slip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.get_subduction_component" title="Link to this definition"></a></dt>
+<dd><p>Compute moment, mean rake, and hypocentre for subduction fault components.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model providing patch dictionaries and patch moments.</p></li>
+<li><p><strong>subduction_names</strong> (<em>list</em><em> of </em><em>str</em>) – Names of fault segments to treat as subduction interface.</p></li>
+<li><p><strong>min_moment</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum moment (N·m) for a fault to be considered.
+Defaults to 1×10¹⁸ N·m.</p></li>
+<li><p><strong>min_slip</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum patch slip (m) to count as ruptured.  Defaults to 0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">(mw,</span> <span class="pre">mean_rake,</span> <span class="pre">hypocentre_xyz)</span></code> for the subduction
+component, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if no subduction faults qualify.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple of (float, float, numpy.ndarray) or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.RsqSimEvent.slip_dist_to_quads">
+<span class="sig-name descname"><span class="pre">slip_dist_to_quads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fault_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path2cfm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">catalogue_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'v2'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vtk_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fault_vtks'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subd_tile_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tile_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.RsqSimEvent.slip_dist_to_quads" title="Link to this definition"></a></dt>
+<dd><p>Write per-fault slip distributions as quadrilateral VTK meshes.</p>
+<p>Discretises each involved fault into rectangular tiles, assigns
+the average slip of the nearest triangular patches to each tile,
+and writes a VTK file per fault to
+<code class="docutils literal notranslate"><span class="pre">&lt;vtk_dir&gt;/event_&lt;id&gt;_quad/&lt;fault_name&gt;_&lt;event_id&gt;.vtk</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fault_model</strong> (<em>RsqSimMultiFault</em>) – Fault model for segment merging and discretisation.</p></li>
+<li><p><strong>path2cfm</strong> (<em>str</em>) – Path to the Community Fault Model directory.</p></li>
+<li><p><strong>catalogue_version</strong> (<em>str</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;v1&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;v2&quot;</span></code>.  Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;v2&quot;</span></code>.</p></li>
+<li><p><strong>vtk_dir</strong> (<em>str</em><em>, </em><em>optional</em>) – Output directory for VTK files.  Defaults to
+<code class="docutils literal notranslate"><span class="pre">&quot;fault_vtks&quot;</span></code>.</p></li>
+<li><p><strong>subd_tile_size</strong> (<em>float</em><em>, </em><em>optional</em>) – Tile size (m) for subduction faults.  Defaults to 15000 m.</p></li>
+<li><p><strong>tile_size</strong> (<em>float</em><em>, </em><em>optional</em>) – Tile size (m) for crustal faults.  Defaults to 5000 m.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="event.OpenQuakeMultiSquareRupture">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">event.</span></span><span class="sig-name descname"><span class="pre">OpenQuakeMultiSquareRupture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tile_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">probability</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">magnitude</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rake</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hypocentre</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Subduction</span> <span class="pre">earthquake'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tectonic_region</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'subduction'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nztm2wgs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.OpenQuakeMultiSquareRupture" title="Link to this definition"></a></dt>
+<dd><p>Multi-planar rupture representation for the OpenQuake engine.</p>
+<p>Packages a list of rectangular tile polygons (each representing a
+fault-surface patch) together with event metadata into the structure
+needed to write OpenQuake NRML <code class="docutils literal notranslate"><span class="pre">multiPlanesRupture</span></code> XML.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tile_list</strong> (<em>List</em><em>[</em><em>shapely.geometry.Polygon</em><em>]</em>)</p></li>
+<li><p><strong>probability</strong> (<em>float</em>)</p></li>
+<li><p><strong>magnitude</strong> (<em>float</em>)</p></li>
+<li><p><strong>rake</strong> (<em>float</em>)</p></li>
+<li><p><strong>hypocentre</strong> (<em>numpy.ndarray</em>)</p></li>
+<li><p><strong>event_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>name</strong> (<em>str</em>)</p></li>
+<li><p><strong>tectonic_region</strong> (<em>str</em>)</p></li>
+<li><p><strong>nztm2wgs</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.OpenQuakeMultiSquareRupture.patches">
+<span class="sig-name descname"><span class="pre">patches</span></span><a class="headerlink" href="#event.OpenQuakeMultiSquareRupture.patches" title="Link to this definition"></a></dt>
+<dd><p>Individual rectangular patches converted from input polygons.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of OpenQuakeRectangularPatch</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.OpenQuakeMultiSquareRupture.prob">
+<span class="sig-name descname"><span class="pre">prob</span></span><a class="headerlink" href="#event.OpenQuakeMultiSquareRupture.prob" title="Link to this definition"></a></dt>
+<dd><p>Probability of occurrence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.OpenQuakeMultiSquareRupture.magnitude">
+<span class="sig-name descname"><span class="pre">magnitude</span></span><a class="headerlink" href="#event.OpenQuakeMultiSquareRupture.magnitude" title="Link to this definition"></a></dt>
+<dd><p>Moment magnitude.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.OpenQuakeMultiSquareRupture.rake">
+<span class="sig-name descname"><span class="pre">rake</span></span><a class="headerlink" href="#event.OpenQuakeMultiSquareRupture.rake" title="Link to this definition"></a></dt>
+<dd><p>Mean rake (degrees).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.OpenQuakeMultiSquareRupture.hypocentre">
+<span class="sig-name descname"><span class="pre">hypocentre</span></span><a class="headerlink" href="#event.OpenQuakeMultiSquareRupture.hypocentre" title="Link to this definition"></a></dt>
+<dd><p>Hypocentre coordinates <code class="docutils literal notranslate"><span class="pre">[x,</span> <span class="pre">y,</span> <span class="pre">z]</span></code> in the input CRS.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.OpenQuakeMultiSquareRupture.inv_prob">
+<span class="sig-name descname"><span class="pre">inv_prob</span></span><a class="headerlink" href="#event.OpenQuakeMultiSquareRupture.inv_prob" title="Link to this definition"></a></dt>
+<dd><p>Complementary probability (<code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">-</span> <span class="pre">prob</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.OpenQuakeMultiSquareRupture.hyp_depth">
+<span class="sig-name descname"><span class="pre">hyp_depth</span></span><a class="headerlink" href="#event.OpenQuakeMultiSquareRupture.hyp_depth" title="Link to this definition"></a></dt>
+<dd><p>Hypocentre depth in km (positive downward).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">hyp_lon,</span> <span class="pre">hyp_lat</span></span></dt>
+<dd><p>Hypocentre longitude and latitude in WGS84 degrees.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.OpenQuakeMultiSquareRupture.event_id">
+<span class="sig-name descname"><span class="pre">event_id</span></span><a class="headerlink" href="#event.OpenQuakeMultiSquareRupture.event_id" title="Link to this definition"></a></dt>
+<dd><p>Catalogue event identifier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.OpenQuakeMultiSquareRupture.name">
+<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#event.OpenQuakeMultiSquareRupture.name" title="Link to this definition"></a></dt>
+<dd><p>Descriptive rupture name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="event.OpenQuakeMultiSquareRupture.tectonic_region">
+<span class="sig-name descname"><span class="pre">tectonic_region</span></span><a class="headerlink" href="#event.OpenQuakeMultiSquareRupture.tectonic_region" title="Link to this definition"></a></dt>
+<dd><p>Tectonic region tag for OpenQuake.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="event.OpenQuakeMultiSquareRupture.to_oq_xml">
+<span class="sig-name descname"><span class="pre">to_oq_xml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">write</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#event.OpenQuakeMultiSquareRupture.to_oq_xml" title="Link to this definition"></a></dt>
+<dd><p>Build (and optionally write) an OpenQuake NRML rupture XML element.</p>
+<p>Constructs a <code class="docutils literal notranslate"><span class="pre">&lt;multiPlanesRupture&gt;</span></code> element containing magnitude,
+rake, hypocenter, and one <code class="docutils literal notranslate"><span class="pre">&lt;planarSurface&gt;</span></code> per patch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>write</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Output file path.  If the path does not end with <code class="docutils literal notranslate"><span class="pre">&quot;.xml&quot;</span></code>
+the extension is appended automatically.  If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the
+XML is not written to disk.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The root <code class="docutils literal notranslate"><span class="pre">&lt;nrml&gt;</span></code> element (regardless of whether the file
+was written).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>xml.etree.ElementTree.Element</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
 </section>
 
 
