@@ -1,5 +1,13 @@
 """
-Event class for RSQSim Catalogue
+RSQSim earthquake event representation.
+
+Provides :class:`RsqSimEvent`, which stores the catalogue parameters
+(time, magnitude, location) and the per-patch slip distribution for a
+single simulated rupture, together with methods for computing derived
+quantities and exporting slip distributions in a variety of formats.
+
+Also provides :class:`OpenQuakeMultiSquareRupture` for packaging events
+as multi-planar ruptures compatible with the OpenQuake engine.
 """
 import fnmatch
 import json
@@ -39,7 +47,54 @@ transformer_nztm2wgs = Transformer.from_crs(2193, 4326, always_xy=True)
 
 
 class RsqSimEvent:
+    """
+    A single earthquake event from an RSQSim catalogue.
+
+    Stores basic seismic catalogue parameters and, when populated,
+    the patch-level slip distribution including patch objects, slip
+    magnitudes, and rupture timing.
+
+    Attributes
+    ----------
+    event_id : int or None
+        Unique integer identifier for the event in the catalogue.
+    t0 : float or None
+        Origin time in seconds from the start of the simulation.
+    m0 : float or None
+        Scalar seismic moment in N·m.
+    mw : float or None
+        Moment magnitude.
+    x, y, z : float or None
+        Hypocentre coordinates in NZTM (metres, EPSG:2193).  ``z`` is
+        negative downward.
+    area : float or None
+        Total rupture area in m².
+    dt : float or None
+        Rupture duration in seconds.
+    patches : list or None
+        List of :class:`~rsqsim_api.fault.patch.RsqSimTriangularPatch`
+        objects that slipped in this event.
+    patch_slip : numpy.ndarray or None
+        Slip magnitude (m) for each entry in ``patches``.
+    faults : list or None
+        Unique :class:`~rsqsim_api.fault.segment.RsqSimSegment` objects
+        involved in this event.
+    patch_time : numpy.ndarray or None
+        Absolute rupture time (s) for each patch.
+    patch_numbers : numpy.ndarray or None
+        Global patch IDs corresponding to ``patches``.
+    length : float or None
+        Estimated rupture length (m) along fault traces.
+    """
+
     def __init__(self):
+        """
+        Initialise an empty RsqSimEvent.
+
+        All attributes are set to ``None``.  Use the class methods
+        :meth:`from_catalogue_array` or :meth:`from_earthquake_list` to
+        construct a populated event.
+        """
         # Event ID
         self.event_id = None
         # Origin time
@@ -70,10 +125,19 @@ class RsqSimEvent:
 
     @property
     def num_faults(self):
+        """Number of unique fault segments involved in this event."""
         return len(self.faults)
 
     @property
     def bounds(self):
+        """
+        Axis-aligned bounding box of the rupture in NZTM coordinates.
+
+        Returns
+        -------
+        list of float
+            ``[x_min, y_min, x_max, y_max]`` in metres (NZTM).
+        """
         x1 = min([min(fault.vertices[:, 0]) for fault in self.faults])
         y1 = min([min(fault.vertices[:, 1]) for fault in self.faults])
         x2 = max([max(fault.vertices[:, 0]) for fault in self.faults])
@@ -82,29 +146,59 @@ class RsqSimEvent:
 
     @property
     def exterior(self):
+        """
+        Shapely geometry representing the union of all ruptured patch polygons.
+
+        Returns
+        -------
+        shapely.geometry.base.BaseGeometry
+            Union of all patch outlines as a Shapely geometry object.
+        """
         return unary_union([patch.as_polygon() for patch in self.patches])
 
     @property
     def mean_slip(self):
+        """Mean slip (m) averaged over all ruptured patches."""
         return self._mean_slip
 
     @property
     def mean_strike(self):
+        """Mean strike (degrees, 0–360) averaged over all ruptured patches."""
         return self._mean_strike
 
     @property
     def mean_strike_180(self):
+        """Mean strike (degrees, 0–180) averaged over all ruptured patches."""
         return self._mean_strike_180
 
     @property
     def mean_dip(self):
-      return self._mean_dip
+        """Mean dip (degrees) averaged over all ruptured patches."""
+        return self._mean_dip
 
     @property
     def mean_rake(self):
+        """Mean rake (degrees) averaged over all ruptured patches."""
         return self._mean_rake
 
     def find_first_fault(self, fault_model: RsqSimMultiFault, name: bool = True):
+        """
+        Return the fault that first ruptured in this event.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model used to look up patch-to-fault associations.
+        name : bool, optional
+            If ``True`` (default), return the fault name string.
+            If ``False``, return the fault segment object.
+
+        Returns
+        -------
+        str or RsqSimSegment
+            The name (or object) of the fault that hosted the first
+            ruptured patch.
+        """
         first_patch = self.patches[np.where(self.patch_time == np.min(self.patch_time))[0][0]]
         first_fault = fault_model.faults_with_patches[first_patch.patch_number]
         if name:
@@ -116,17 +210,37 @@ class RsqSimEvent:
     def from_catalogue_array(cls, t0: float, m0: float, mw: float, x: float,
                              y: float, z: float, area: float, dt: float, event_id: int = None):
         """
+        Construct an event from basic catalogue parameters.
 
-        :param t0:
-        :param m0:
-        :param mw:
-        :param x:
-        :param y:
-        :param z:
-        :param area:
-        :param dt:
-        :param event_id:
-        :return:
+        Creates an event with catalogue-level metadata only (no patch
+        slip distribution).
+
+        Parameters
+        ----------
+        t0 : float
+            Origin time in seconds from the simulation start.
+        m0 : float
+            Scalar seismic moment in N·m.
+        mw : float
+            Moment magnitude.
+        x : float
+            Hypocentre easting in NZTM (m).
+        y : float
+            Hypocentre northing in NZTM (m).
+        z : float
+            Hypocentre depth in NZTM (m, negative downward).
+        area : float
+            Total rupture area in m².
+        dt : float
+            Rupture duration in seconds.
+        event_id : int, optional
+            Unique catalogue event ID.
+
+        Returns
+        -------
+        RsqSimEvent
+            Event populated with catalogue parameters; patch attributes
+            remain ``None``.
         """
 
         event = cls()
@@ -138,6 +252,15 @@ class RsqSimEvent:
 
     @property
     def patch_outline_gs(self):
+        """
+        GeoSeries of individual patch outlines in NZTM (EPSG:2193).
+
+        Returns
+        -------
+        geopandas.GeoSeries
+            One Shapely polygon per ruptured patch, with CRS set to
+            EPSG:2193 (NZTM).
+        """
         return gpd.GeoSeries([patch.as_polygon() for patch in self.patches], crs=2193)
 
     @classmethod
@@ -148,6 +271,55 @@ class RsqSimEvent:
                              patch_time: Union[list, np.ndarray, tuple],
                              fault_model: RsqSimMultiFault, filter_single_patches: bool = True,
                              min_patches: int = 10, min_slip: Union[float, int] = 1, event_id: int = None):
+        """
+        Construct an event from catalogue parameters and patch slip data.
+
+        Filters out fault segments that contribute fewer than
+        ``min_patches`` patches, then resolves patch IDs to patch objects
+        and fault objects using ``fault_model``.
+
+        Parameters
+        ----------
+        t0 : float
+            Origin time in seconds.
+        m0 : float
+            Scalar seismic moment in N·m.
+        mw : float
+            Moment magnitude.
+        x : float
+            Hypocentre easting in NZTM (m).
+        y : float
+            Hypocentre northing in NZTM (m).
+        z : float
+            Hypocentre depth in NZTM (m, negative downward).
+        area : float
+            Total rupture area in m².
+        dt : float
+            Rupture duration in seconds.
+        patch_numbers : array-like
+            Global patch IDs that slipped in this event.
+        patch_slip : array-like
+            Slip magnitude (m) for each entry in ``patch_numbers``.
+        patch_time : array-like
+            Absolute rupture time (s) for each entry in ``patch_numbers``.
+        fault_model : RsqSimMultiFault
+            Fault model providing the patch and fault dictionaries.
+        filter_single_patches : bool, optional
+            Unused; retained for API compatibility.
+        min_patches : int, optional
+            Minimum number of patches a fault must contribute to be
+            retained.  Defaults to 10.
+        min_slip : float or int, optional
+            Unused; retained for API compatibility.
+        event_id : int, optional
+            Unique catalogue event ID.
+
+        Returns
+        -------
+        RsqSimEvent
+            Fully populated event including patch slip distribution and
+            fault objects.
+        """
         event = cls.from_catalogue_array(
             t0, m0, mw, x, y, z, area, dt, event_id=event_id)
 
@@ -191,6 +363,50 @@ class RsqSimEvent:
                              patch_slip: Union[list, np.ndarray, tuple],
                              patch_time: Union[list, np.ndarray, tuple],
                              fault_model: RsqSimMultiFault, mask: list, event_id: int = None):
+        """
+        Construct an event from pre-computed multiprocessing results.
+
+        Similar to :meth:`from_earthquake_list`, but accepts a boolean
+        ``mask`` that has already been applied to filter patches, rather
+        than recomputing it here.
+
+        Parameters
+        ----------
+        t0 : float
+            Origin time in seconds.
+        m0 : float
+            Scalar seismic moment in N·m.
+        mw : float
+            Moment magnitude.
+        x : float
+            Hypocentre easting in NZTM (m).
+        y : float
+            Hypocentre northing in NZTM (m).
+        z : float
+            Hypocentre depth in NZTM (m, negative downward).
+        area : float
+            Total rupture area in m².
+        dt : float
+            Rupture duration in seconds.
+        patch_numbers : array-like
+            Global patch IDs that slipped in this event.
+        patch_slip : array-like
+            Slip magnitude (m) for each entry in ``patch_numbers``.
+        patch_time : array-like
+            Absolute rupture time (s) for each entry in ``patch_numbers``.
+        fault_model : RsqSimMultiFault
+            Fault model providing patch and fault dictionaries.
+        mask : list of bool
+            Boolean mask selecting the patches to retain from
+            ``patch_numbers``.
+        event_id : int, optional
+            Unique catalogue event ID.
+
+        Returns
+        -------
+        RsqSimEvent
+            Fully populated event.
+        """
         event = cls.from_catalogue_array(
             t0, m0, mw, x, y, z, area, dt, event_id=event_id)
         event.patch_numbers = patch_numbers[mask]
@@ -210,10 +426,24 @@ class RsqSimEvent:
     
     def sub_events_by_fault(self, fault_model: RsqSimMultiFault, min_slip: float = 0.1) -> List["RsqSimEvent"]:
         """
-        Split the event into subevents by fault. This is useful for plotting and analysis.
-        :param fault_model: Fault model to use for splitting the event.
-        :param min_slip: Minimum slip to consider a patch as part of a subevent.
-        :return: List of subevents.
+        Split the event into per-fault sub-events.
+
+        For each fault involved in the event, a new :class:`RsqSimEvent`
+        is created containing only the patches on that fault.  Faults
+        where no patch has slip >= ``min_slip`` are skipped.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model providing patch and fault dictionaries.
+        min_slip : float, optional
+            Minimum slip threshold (m) for a patch to be included in a
+            sub-event.  Defaults to 0.1 m.
+
+        Returns
+        -------
+        list of RsqSimEvent
+            One event per fault that contributed qualifying slip.
         """
         m0s = self.make_fault_moment_dict(fault_model=fault_model, mu=3.0e10, by_cfm_names=False)
         subevents = []
@@ -246,6 +476,13 @@ class RsqSimEvent:
 
 
     def find_mean_slip(self):
+        """
+        Compute and cache the mean slip across all ruptured patches.
+
+        Sets :attr:`_mean_slip` (accessed via :attr:`mean_slip`) to the
+        arithmetic mean of ``patch_slip``.  Does nothing if no patches
+        are loaded.
+        """
         if self.patches:
             total_slip = np.sum(self.patch_slip)
             npatches = len(self.patches)
@@ -253,6 +490,12 @@ class RsqSimEvent:
                 self._mean_slip = total_slip / npatches
 
     def find_mean_strike(self):
+        """
+        Compute and cache the arithmetic mean strike (0–360°).
+
+        Sets :attr:`_mean_strike` (accessed via :attr:`mean_strike`).
+        Does nothing if no patches are loaded.
+        """
         if self.patches:
             cumstrike = 0.
             for patch in self.patches:
@@ -262,6 +505,14 @@ class RsqSimEvent:
                 self._mean_strike = cumstrike / npatches
 
     def find_mean_strike_180(self):
+        """
+        Compute and cache the mean strike folded into the range 0–180°.
+
+        Strikes in 180–360° are reduced by 180° before averaging, so
+        that conjugate orientations are treated as equivalent.  Sets
+        :attr:`_mean_strike_180` (accessed via :attr:`mean_strike_180`).
+        Does nothing if no patches are loaded.
+        """
         if self.patches:
             cumstrike = 0.
             for patch in self.patches:
@@ -276,6 +527,12 @@ class RsqSimEvent:
                 self._mean_strike_180 = cumstrike / npatches
 
     def find_mean_dip(self):
+        """
+        Compute and cache the arithmetic mean dip (degrees).
+
+        Sets :attr:`_mean_dip` (accessed via :attr:`mean_dip`).
+        Does nothing if no patches are loaded.
+        """
         if self.patches:
             cumdip = 0.
             npatches = len(self.patches)
@@ -286,6 +543,12 @@ class RsqSimEvent:
                 self._mean_dip = cumdip / npatches
 
     def find_mean_rake(self):
+        """
+        Compute and cache the arithmetic mean rake (degrees).
+
+        Sets :attr:`_mean_rake` (accessed via :attr:`mean_rake`).
+        Does nothing if no patches are loaded.
+        """
         if self.patches:
             cumrake = 0.
             for patch in self.patches:
@@ -295,6 +558,18 @@ class RsqSimEvent:
                 self._mean_rake = cumrake / npatches
 
     def find_length(self, min_slip_percentile: float | None = None):
+        """
+        Estimate and cache the rupture length along fault surface traces.
+
+        For each fault, the range of distances of patch centroids
+        projected onto the fault trace is summed to give a cumulative
+        rupture length.  Sets :attr:`length`.
+
+        Parameters
+        ----------
+        min_slip_percentile : float or None, optional
+            Unused; reserved for future filtering by slip percentile.
+        """
         if self.patches:
             rupture_length = 0.
             for fault in self.faults:
@@ -312,13 +587,26 @@ class RsqSimEvent:
     def make_fault_moment_dict(self, fault_model: RsqSimMultiFault, mu: float = 3.0e10, by_cfm_names: bool = True,
                                min_m0: float = 0.):
         """
-        make a dictionary of faults involved in event and the moment released on them
+        Build a dictionary of seismic moment released on each fault.
+
         Parameters
         ----------
-        fault_model: RsqSimMultiFault
-        by_cfm_names: boolean, default= True Divide faults by the CFM segment names rather than the further segmentation in the V2 catalogue
-        mu: lame parameter, default value is 30GPa
-        min_m0: float, default=0. Minimum moment to include a fault in the dictionary
+        fault_model : RsqSimMultiFault
+            Fault model providing patch and fault dictionaries.
+        mu : float, optional
+            Shear modulus in Pa.  Defaults to 3×10¹⁰ Pa (30 GPa).
+        by_cfm_names : bool, optional
+            If ``True`` (default), merge sub-segments by stripping
+            trailing digits and hyphens to recover CFM fault names.
+            If ``False``, use the raw fault segment names.
+        min_m0 : float, optional
+            Minimum moment (N·m) for a fault to be included.  Defaults
+            to 0 (include all faults).
+
+        Returns
+        -------
+        dict
+            Mapping of fault name (str) to scalar moment (float, N·m).
         """
         assert self.faults is not None, "Event has no faults, can't calculate moment"
         m0_dict = {}
@@ -355,12 +643,23 @@ class RsqSimEvent:
 
     def make_moment_prop_dict(self, fault_model: RsqSimMultiFault, mu: float = 3.0e10, by_cfm_names: bool = True):
         """
-        Make dictionary of fault names and the proportion of the seismic moment in the event they release.
+        Build a dictionary of each fault's fractional contribution to total moment.
+
         Parameters
         ----------
-        fault_model
-        mu
-        by_cfm_names
+        fault_model : RsqSimMultiFault
+            Fault model providing patch and fault dictionaries.
+        mu : float, optional
+            Shear modulus in Pa.  Defaults to 3×10¹⁰ Pa.
+        by_cfm_names : bool, optional
+            Passed to :meth:`make_fault_moment_dict`; if ``True``
+            (default), merge sub-segments to CFM fault names.
+
+        Returns
+        -------
+        dict
+            Mapping of fault name (str) to proportion of total event
+            moment (float, 0–1), sorted in descending order.
         """
         m0_dict = self.make_fault_moment_dict(fault_model=fault_model, mu=mu, by_cfm_names=by_cfm_names)
 
@@ -388,6 +687,89 @@ class RsqSimEvent:
                      wgs: bool = False, title: str = None,
                      plot_edge_label: bool = True, plot_cbars: bool = True, alpha: float = 1.0,
                      coast_on_top: bool = False):
+        """
+        Plot a 2-D map of the slip distribution for this event.
+
+        Subduction-interface faults and crustal faults are coloured with
+        separate colourmaps.  Optionally overlays a coastal/background
+        map and saves to file.
+
+        Parameters
+        ----------
+        subduction_cmap : str, optional
+            Matplotlib colourmap name for subduction-interface patches.
+            Defaults to ``"plasma"``.
+        crustal_cmap : str, optional
+            Matplotlib colourmap name for crustal patches.  Defaults to
+            ``"viridis"``.
+        show : bool, optional
+            If ``True`` (default), call ``plt.show()`` after plotting.
+        extra_sub_list : list of str, optional
+            Additional fault names to treat as subduction interface,
+            supplementing the built-in ``bruce_subduction`` list.
+        write : str or None, optional
+            File path to save the figure (e.g. ``"event_001.png"``).
+            If ``None``, the figure is not saved.
+        subplots : tuple or str or None, optional
+            Existing ``(fig, ax)`` tuple or path to a pickled figure to
+            plot on top of.  If ``None``, a new figure is created.
+        global_max_sub_slip : float, optional
+            Fixed colourbar maximum for subduction slip.  If 0, the
+            per-event maximum is used.
+        global_max_slip : float, optional
+            Fixed colourbar maximum for crustal slip.  If 0, the
+            per-event maximum is used.
+        figsize : tuple of float, optional
+            Figure size in inches ``(width, height)``.
+        hillshading_intensity : float, optional
+            Hillshading intensity passed to ``plot_background``.
+        bounds : tuple or None, optional
+            Map extent ``(x_min, y_min, x_max, y_max)`` in NZTM.
+            Defaults to the event bounding box.
+        plot_rivers, plot_lakes, plot_highways, plot_boundaries : bool, optional
+            Toggle background map layers.
+        create_background : bool, optional
+            If ``True``, render a full background map.
+        coast_only : bool, optional
+            If ``True`` (default), only render the coastline as background.
+        hillshade_cmap : LinearSegmentedColormap, optional
+            Colourmap for hillshading.
+        plot_log_scale : bool, optional
+            If ``True``, use logarithmic colour scaling.
+        log_cmap : str, optional
+            Colourmap for log-scale plots.  Defaults to ``"magma"``.
+        log_min, log_max : float, optional
+            Colour scale limits for log-scale plots.
+        plot_traces : bool, optional
+            If ``True``, plot fault surface traces.
+        trace_colour : str, optional
+            Colour for fault traces.
+        land_color : str, optional
+            Background land colour.
+        min_slip_percentile : float or None, optional
+            If set, only show patches above this slip percentile.
+        min_slip_value : float or None, optional
+            If set, only show patches with slip >= this value (m).
+        plot_zeros : bool, optional
+            If ``True`` (default), plot zero-slip patches.
+        wgs : bool, optional
+            If ``True``, use WGS84 coordinates rather than NZTM.
+        title : str or None, optional
+            Figure super-title.
+        plot_edge_label : bool, optional
+            If ``True``, show axis edge labels on the background map.
+        plot_cbars : bool, optional
+            If ``True`` (default), add colourbars to the figure.
+        alpha : float, optional
+            Patch transparency (0–1).  Defaults to 1.
+        coast_on_top : bool, optional
+            If ``True``, redraw the coastline on top of the slip patches.
+
+        Returns
+        -------
+        list
+            Matplotlib ``PolyCollection`` objects for each fault plotted.
+        """
         assert self.patches is not None, "Need to populate object with patches!"
 
         if all([bounds is None, self.bounds is not None]):
@@ -614,7 +996,38 @@ class RsqSimEvent:
     def plot_slip_evolution(self, subduction_cmap: str = "plasma", crustal_cmap: str = "viridis", show: bool = True,
                             step_size: int = 1, write: str = None, fps: int = 20, file_format: str = "gif",
                             figsize: tuple = (6.4, 4.8), extra_sub_list: list = None):
+        """
+        Animate the temporal evolution of slip propagation for this event.
 
+        Produces a ``FuncAnimation`` that steps through rupture time,
+        progressively revealing each patch as it slips.  Can be saved
+        as a GIF or video file.
+
+        Parameters
+        ----------
+        subduction_cmap : str, optional
+            Matplotlib colourmap for subduction-interface patches.
+            Defaults to ``"plasma"``.
+        crustal_cmap : str, optional
+            Matplotlib colourmap for crustal patches.  Defaults to
+            ``"viridis"``.
+        show : bool, optional
+            If ``True`` (default), display the animation interactively.
+        step_size : int, optional
+            Time step (s) between animation frames.  Defaults to 1.
+        write : str or None, optional
+            Output file path prefix (without extension).  If ``None``
+            the animation is not saved.
+        fps : int, optional
+            Frames per second for the saved animation.  Defaults to 20.
+        file_format : str, optional
+            Output format: ``"gif"``, ``"mov"``, ``"avi"``, or ``"mp4"``.
+            Defaults to ``"gif"``.
+        figsize : tuple of float, optional
+            Figure size in inches ``(width, height)``.
+        extra_sub_list : list of str, optional
+            Additional fault names to treat as subduction interface.
+        """
         assert file_format in ("gif", "mov", "avi", "mp4")
         assert len(self.faults) > 0, "Can't plot an event with no faults."
         fig, ax = plt.subplots()
@@ -738,11 +1151,35 @@ class RsqSimEvent:
     def find_surface_faults(self,fault_model: RsqSimMultiFault,min_slip: float =0.1, method: str = 'vertex',
                                       n_patches: int = 1, max_depth: float = -1000., faults2ignore: [list,str] ='hikurangi'):
         """
-               min_slip = 0.1  # min slip on a surface patch in m
-               method = 'centroid'  # specify vertex or centroid
-               n_patches = 1  # number of surface rupturing patches needed
-               max_depth = -2000.  # max depth for a 'surface' patch vertex or centroid - about 1000 for vertex or 2000 for centroid
-               """
+        Identify fault segments with surface-rupturing patches.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model providing the patch dictionary.
+        min_slip : float, optional
+            Minimum slip (m) for a patch to count as ruptured.
+            Defaults to 0.1 m.
+        method : str, optional
+            Depth criterion: ``"vertex"`` uses the shallowest vertex
+            of a patch; ``"centroid"`` uses the patch centroid depth.
+            Defaults to ``"vertex"``.
+        n_patches : int, optional
+            Minimum number of qualifying surface patches required for
+            a fault to be included in the output.  Defaults to 1.
+        max_depth : float, optional
+            Depth threshold (m, negative downward).  Patches shallower
+            than this are considered surface-rupturing.  Defaults to
+            -1000 m.
+        faults2ignore : list of str or str, optional
+            Fault name(s) to exclude from the search (e.g. subduction
+            interface).  Defaults to ``"hikurangi"``.
+
+        Returns
+        -------
+        list of str
+            Names of fault segments that have surface rupture.
+        """
 
         assert method in ['centroid', 'vertex'], "Method must be centroid or vertex"
         assert max_depth < 0., "depths should be negative"
@@ -779,7 +1216,24 @@ class RsqSimEvent:
 
     def split_by_fault(self, fault_model: RsqSimMultiFault, min_slip: float = 0.1, min_patches: int = 1):
         """
-        Create subevent Event objects for each fault in the event
+        Create per-fault sub-event objects for this event.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model used to resolve patch IDs and fault names.
+        min_slip : float, optional
+            Minimum moment (N·m) for a fault to be included (passed as
+            ``min_m0`` to :meth:`make_fault_moment_dict`).  Defaults to
+            0.1.
+        min_patches : int, optional
+            Unused; retained for API compatibility.
+
+        Returns
+        -------
+        dict
+            Mapping of fault name (str) to its corresponding
+            :class:`RsqSimEvent` sub-event.
         """
         assert self.faults is not None, "Event has no faults, can't split by fault"
         subevents = {}
@@ -803,6 +1257,32 @@ class RsqSimEvent:
 
     def slip_dist_array(self, include_zeros: bool = True, min_slip_percentile: float = None,
                         min_slip_value: float = None, nztm_to_lonlat: bool = False):
+        """
+        Build a dense array of the slip distribution across all patches.
+
+        Each row corresponds to one triangular patch and contains the
+        three vertex coordinates followed by slip, rake, and rupture time.
+
+        Parameters
+        ----------
+        include_zeros : bool, optional
+            If ``True`` (default), include zero-slip patches (patches
+            on involved faults that did not slip in this event).
+        min_slip_percentile : float or None, optional
+            If provided (and ``min_slip_value`` is ``None``), patches
+            with slip below this percentile are excluded or zeroed.
+        min_slip_value : float or None, optional
+            If provided, patches with slip below this value (m) are
+            excluded or zeroed.
+        nztm_to_lonlat : bool, optional
+            If ``True``, transform vertex coordinates from NZTM to
+            WGS84 longitude/latitude before including them.
+
+        Returns
+        -------
+        numpy.ndarray of shape (n_patches, 12)
+            Columns: ``[x1,y1,z1, x2,y2,z2, x3,y3,z3, slip_m, rake_deg, time_s]``.
+        """
         all_patches = []
         if all([min_slip_percentile is not None, min_slip_value is None]):
             min_slip = np.percentile(self.patch_slip, min_slip_percentile)
@@ -843,6 +1323,26 @@ class RsqSimEvent:
 
     def slip_dist_bounds(self, include_zeros: bool = True, min_slip_percentile: float = None,
                             min_slip_value: float = None, nztm_to_lonlat: bool = False):
+        """
+        Compute the bounding box of the slip distribution array.
+
+        Parameters
+        ----------
+        include_zeros : bool, optional
+            Passed to :meth:`slip_dist_array`.
+        min_slip_percentile : float or None, optional
+            Passed to :meth:`slip_dist_array`.
+        min_slip_value : float or None, optional
+            Passed to :meth:`slip_dist_array`.
+        nztm_to_lonlat : bool, optional
+            Passed to :meth:`slip_dist_array`.
+
+        Returns
+        -------
+        tuple of float
+            ``(x_min, y_min, x_max, y_max)`` extents of the slip
+            distribution patch vertices.
+        """
         slip_dist_array = self.slip_dist_array(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
                                                min_slip_value=min_slip_value, nztm_to_lonlat=nztm_to_lonlat)
         min_x = np.min(slip_dist_array[:, [0, 3, 6]])
@@ -853,7 +1353,26 @@ class RsqSimEvent:
 
     def slip_dist_to_mesh(self, include_zeros: bool = True, min_slip_percentile: float = None,
                           min_slip_value: float = None, nztm_to_lonlat: bool = False):
+        """
+        Convert the slip distribution to a meshio Mesh with cell data.
 
+        Parameters
+        ----------
+        include_zeros : bool, optional
+            Passed to :meth:`slip_dist_array`.
+        min_slip_percentile : float or None, optional
+            Passed to :meth:`slip_dist_array`.
+        min_slip_value : float or None, optional
+            Passed to :meth:`slip_dist_array`.
+        nztm_to_lonlat : bool, optional
+            Passed to :meth:`slip_dist_array`.
+
+        Returns
+        -------
+        meshio.Mesh
+            Triangulated mesh with ``cell_data`` containing ``"slip"``,
+            ``"rake"``, and ``"time"`` arrays.
+        """
         slip_dist_array = self.slip_dist_array(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
                                                min_slip_value=min_slip_value)
         mesh = array_to_mesh(slip_dist_array[:, :9])
@@ -867,18 +1386,66 @@ class RsqSimEvent:
 
     def slip_dist_to_vtk(self, vtk_file: str, include_zeros: bool = True, min_slip_percentile: float = None,
                          min_slip_value: float = None):
+        """
+        Write the slip distribution to a VTK file.
+
+        Parameters
+        ----------
+        vtk_file : str
+            Output VTK file path.
+        include_zeros : bool, optional
+            Passed to :meth:`slip_dist_to_mesh`.
+        min_slip_percentile : float or None, optional
+            Passed to :meth:`slip_dist_to_mesh`.
+        min_slip_value : float or None, optional
+            Passed to :meth:`slip_dist_to_mesh`.
+        """
         mesh = self.slip_dist_to_mesh(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
                                       min_slip_value=min_slip_value)
         mesh.write(vtk_file, file_format="vtk")
 
     def slip_dist_to_obj(self, obj_file: str, include_zeros: bool = True, min_slip_percentile: float = None,
                          min_slip_value: float = None):
+        """
+        Write the slip distribution to a Wavefront OBJ file.
+
+        Parameters
+        ----------
+        obj_file : str
+            Output OBJ file path.
+        include_zeros : bool, optional
+            Passed to :meth:`slip_dist_to_mesh`.
+        min_slip_percentile : float or None, optional
+            Passed to :meth:`slip_dist_to_mesh`.
+        min_slip_value : float or None, optional
+            Passed to :meth:`slip_dist_to_mesh`.
+        """
         mesh = self.slip_dist_to_mesh(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
                                       min_slip_value=min_slip_value)
         mesh.write(obj_file, file_format="obj")
 
     def slip_dist_to_txt(self, txt_file, include_zeros: bool = True, min_slip_percentile: float = None,
                          min_slip_value: float = None, nztm_to_lonlat: bool = False):
+        """
+        Write the slip distribution to a space-delimited text file.
+
+        Each row contains the three vertex coordinates of a patch
+        followed by slip, rake, and rupture time.
+
+        Parameters
+        ----------
+        txt_file : str or path-like
+            Output text file path.
+        include_zeros : bool, optional
+            Passed to :meth:`slip_dist_array`.
+        min_slip_percentile : float or None, optional
+            Passed to :meth:`slip_dist_array`.
+        min_slip_value : float or None, optional
+            Passed to :meth:`slip_dist_array`.
+        nztm_to_lonlat : bool, optional
+            If ``True``, vertex coordinates are in WGS84 lon/lat and
+            the header is adjusted accordingly.
+        """
         if nztm_to_lonlat:
             header = "lon1 lat1 z1 lon2 lat2 z2 lon3 lat3 z3 slip_m rake_deg time_s"
         else:
@@ -889,6 +1456,34 @@ class RsqSimEvent:
 
     def slip_dist_to_gdf(self, gdf_file: str, include_zeros: bool = True, min_slip_percentile: float = None,
                          min_slip_value: float = None, nztm_to_lonlat: bool = False, crs="2193"):
+        """
+        Build a GeoDataFrame of the slip distribution.
+
+        Creates a GeoDataFrame where each row is a triangular patch
+        polygon with slip, rake, and time attributes.
+
+        Parameters
+        ----------
+        gdf_file : str or None
+            Unused; retained for API compatibility.
+        include_zeros : bool, optional
+            Passed to :meth:`slip_dist_array`.
+        min_slip_percentile : float or None, optional
+            Passed to :meth:`slip_dist_array`.
+        min_slip_value : float or None, optional
+            Passed to :meth:`slip_dist_array`.
+        nztm_to_lonlat : bool, optional
+            If ``True``, reproject the result from NZTM to WGS84.
+        crs : str, optional
+            CRS for the output GeoDataFrame.  Defaults to ``"2193"``
+            (NZTM / EPSG:2193).
+
+        Returns
+        -------
+        geopandas.GeoDataFrame
+            GeoDataFrame with columns ``["slip", "rake", "time"]`` and
+            a ``geometry`` column of triangular patch polygons.
+        """
         slip_dist_array = self.slip_dist_array(include_zeros=include_zeros, min_slip_percentile=min_slip_percentile,
                                                min_slip_value=min_slip_value, nztm_to_lonlat=nztm_to_lonlat)
         geometry = [Polygon([(slip_dist_array[i, 0], slip_dist_array[i, 1]),
@@ -903,6 +1498,22 @@ class RsqSimEvent:
 
     def slip_dist_to_geojson(self, geojson_file: str, include_zeros: bool = True, min_slip_percentile: float = None,
                              min_slip_value: float = None, nztm_to_lonlat: bool = False):
+        """
+        Write the slip distribution to a GeoJSON file.
+
+        Parameters
+        ----------
+        geojson_file : str
+            Output GeoJSON file path.
+        include_zeros : bool, optional
+            Passed to :meth:`slip_dist_to_gdf`.
+        min_slip_percentile : float or None, optional
+            Passed to :meth:`slip_dist_to_gdf`.
+        min_slip_value : float or None, optional
+            Passed to :meth:`slip_dist_to_gdf`.
+        nztm_to_lonlat : bool, optional
+            If ``True``, reproject patches to WGS84 before writing.
+        """
         gdf = self.slip_dist_to_gdf(gdf_file=None, include_zeros=include_zeros,
                                     min_slip_percentile=min_slip_percentile, min_slip_value=min_slip_value,
                                     nztm_to_lonlat=nztm_to_lonlat)
@@ -910,12 +1521,129 @@ class RsqSimEvent:
 
     def slip_dist_to_shapefile(self, shapefile_file: str, include_zeros: bool = True, min_slip_percentile: float = None,
                                min_slip_value: float = None, nztm_to_lonlat: bool = False):
+        """
+        Write the slip distribution to an ESRI Shapefile.
+
+        Parameters
+        ----------
+        shapefile_file : str
+            Output shapefile path (without extension).
+        include_zeros : bool, optional
+            Passed to :meth:`slip_dist_to_gdf`.
+        min_slip_percentile : float or None, optional
+            Passed to :meth:`slip_dist_to_gdf`.
+        min_slip_value : float or None, optional
+            Passed to :meth:`slip_dist_to_gdf`.
+        nztm_to_lonlat : bool, optional
+            If ``True``, reproject patches to WGS84 before writing.
+        """
         gdf = self.slip_dist_to_gdf(gdf_file=None, include_zeros=include_zeros,
                                     min_slip_percentile=min_slip_percentile, min_slip_value=min_slip_value,
                                     nztm_to_lonlat=nztm_to_lonlat)
         gdf.to_file(shapefile_file)
 
+    def slip_dist_to_gmt(self, fault_model: RsqSimMultiFault, gmt_prefix: str,
+                         min_slip_value: float = None, nztm_to_lonlat: bool = False, subduction_names: Iterable = ("hikkerm", "puysegur")):
+        """
+        Write the slip distribution to GMT multi-segment text files.
+
+        Writes two files: ``<gmt_prefix>_crustal.gmt`` for crustal faults
+        and ``<gmt_prefix>_subduction.gmt`` for subduction-interface faults.
+        Each patch is written as a ``>-Z<slip>`` segment header followed
+        by vertex coordinates.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model providing the patch dictionary.
+        gmt_prefix : str
+            Prefix for the output GMT file names.
+        min_slip_value : float or None, optional
+            If set, only patches with slip >= this value (m) are written.
+        nztm_to_lonlat : bool, optional
+            Unused; reserved for future coordinate transformation.
+        subduction_names : iterable of str, optional
+            Fault names to classify as subduction interface.  Defaults
+            to ``("hikkerm", "puysegur")``.
+        """
+        crustal_faults = [fault for fault in self.faults if fault.name not in subduction_names]
+        subduction_faults = [fault for fault in self.faults if fault.name in subduction_names]
+
+        if crustal_faults:
+            crustal_patch_ids = []
+            crustal_patch_slip = []
+            crustal_patch_depth = []
+            
+            for fault in crustal_faults:
+                fault_patches = fault.patch_numbers
+                event_fault_indices = np.isin(self.patch_numbers, fault_patches)
+                event_fault_slip = self.patch_slip[event_fault_indices]
+                if min_slip_value is not None:
+                    event_gt_min_slip_indices = event_fault_slip > min_slip_value
+                    filtered_patch_indices = np.where(event_gt_min_slip_indices & event_fault_indices)[0]
+                else:
+                    filtered_patch_indices = np.where(event_fault_indices)[0]
+                crustal_patch_ids.extend(self.patch_numbers[filtered_patch_indices])
+                crustal_patch_slip.extend(self.patch_slip[filtered_patch_indices])
+                for slip_index in filtered_patch_indices:
+                    patch_id = self.patch_numbers[slip_index]
+                    patch = fault.patch_dic[patch_id]
+                    depth = np.mean(patch.vertices[:, 2])
+                    crustal_patch_depth.append(depth)
+                
+            if len(crustal_patch_ids) > 0:
+                sorted_depths = np.argsort(crustal_patch_depth)
+                crustal_patch_ids = np.array(crustal_patch_ids)[sorted_depths]
+                crustal_patch_slip = np.array(crustal_patch_slip)[sorted_depths]
+                crustal_patch_depth = np.array(crustal_patch_depth)[sorted_depths]
+
+                with open(f"{gmt_prefix}_crustal.gmt", "w") as f:
+                    for patch_id, slip, depth in zip(crustal_patch_ids, crustal_patch_slip, crustal_patch_depth):
+                        patch = fault_model.patch_dic[patch_id]
+                        f.write(f">-Z{slip:.6f}\n")
+                        for vertex in patch.vertices:
+                            f.write(f"{vertex[0]} {vertex[1]} {vertex[2]}\n")
+
+        if subduction_faults:
+            with open(f"{gmt_prefix}_subduction.gmt", "w") as f:
+                for fault in subduction_faults:
+                    fault_patches = fault.patch_numbers
+                    event_fault_indices = np.isin(self.patch_numbers, fault_patches)
+                    event_fault_slip = self.patch_slip[event_fault_indices]
+                    if min_slip_value is not None:
+                        event_gt_min_slip_indices = event_fault_slip > min_slip_value
+                        filtered_patch_indices = np.where(event_gt_min_slip_indices & event_fault_indices)[0]
+                    else:
+                        filtered_patch_indices = np.where(event_fault_indices)[0]
+                    for slip_index in filtered_patch_indices:
+                        patch_id = self.patch_numbers[slip_index]
+                        patch = fault.patch_dic[patch_id]
+                        slip = self.patch_slip[slip_index]
+
+                        f.write(f">-Z{slip:.6f}\n")
+                        for vertex in patch.vertices:
+                            f.write(f"{vertex[0]} {vertex[1]} {vertex[2]}\n")
+
     def discretize_tiles(self, tile_list: List[Polygon], probability: float, rake: float):
+        """
+        Select tiles that overlap the rupture exterior by at least 50 %.
+
+        Parameters
+        ----------
+        tile_list : list of Polygon
+            Candidate rectangular tiles in NZTM coordinates.
+        probability : float
+            Unused; retained for API compatibility with
+            :meth:`discretize_openquake`.
+        rake : float
+            Unused; retained for API compatibility.
+
+        Returns
+        -------
+        geopandas.GeoSeries
+            GeoSeries (EPSG:2193) of tiles where the intersection with
+            the rupture exterior covers at least half the tile area.
+        """
         included_tiles = []
 
         for tile in tile_list:
@@ -929,6 +1657,29 @@ class RsqSimEvent:
         return out_gs
 
     def discretize_openquake(self, tile_list: List[Polygon], probability: float, rake: float):
+        """
+        Build an OpenQuake multi-planar rupture from overlapping tiles.
+
+        Selects tiles from ``tile_list`` that overlap the rupture exterior
+        by at least 50 %, then packages them as an
+        :class:`OpenQuakeMultiSquareRupture`.
+
+        Parameters
+        ----------
+        tile_list : list of Polygon
+            Candidate rectangular tiles in NZTM coordinates.
+        probability : float
+            Probability of occurrence passed to
+            :class:`OpenQuakeMultiSquareRupture`.
+        rake : float
+            Mean rake (degrees) passed to
+            :class:`OpenQuakeMultiSquareRupture`.
+
+        Returns
+        -------
+        OpenQuakeMultiSquareRupture or None
+            Rupture object if any tiles overlap; ``None`` otherwise.
+        """
         included_tiles = []
 
         for tile in tile_list:
@@ -953,6 +1704,42 @@ class RsqSimEvent:
                                    subduction_names: Iterable = ("hikkerm", "puysegur"), min_moment = 1.e18,
                                    min_slip = 0.1, tile_size: float = 5000., write_mesh: bool = False,
                                    write_geojson: bool = False, xml_dir: str = None, threshold: float = 0.5):
+        """
+        Build OpenQuake XML ruptures using a KD-tree tile assignment.
+
+        Uses :meth:`slip_dist_quads_ktree` to find ruptured quadrilateral
+        tiles per fault, then writes separate XML files for crustal and
+        subduction components.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model providing patch and fault dictionaries.
+        quads_dict : dict
+            Mapping of fault segment name to a ``(n, 4, 3)`` array of
+            pre-computed quadrilateral tile corner coordinates.
+        probability : float
+            Probability of occurrence for the OpenQuake rupture.
+        subduction_names : iterable of str, optional
+            Fault names classified as subduction interface.
+        min_moment : float, optional
+            Minimum moment (N·m) for a fault to be included.
+        min_slip : float, optional
+            Minimum slip (m) for a patch to count as ruptured.
+        tile_size : float, optional
+            Tile size hint (m); unused here but passed through for
+            context.
+        write_mesh : bool, optional
+            If ``True``, also write VTK mesh files for each component.
+        write_geojson : bool, optional
+            If ``True``, also write GeoJSON files for each component.
+        xml_dir : str or None, optional
+            Directory in which to write output files.  Defaults to the
+            current working directory.
+        threshold : float, optional
+            Fraction of patches in a tile that must be ruptured for the
+            tile to be included.  Passed to :meth:`slip_dist_quads_ktree`.
+        """
         tiles_dict = self.slip_dist_quads_ktree(quads_dict=quads_dict, fault_model=fault_model,min_moment=min_moment,
                                                 min_slip=min_slip, threshold_for_inclusion=threshold)
         crustal_faults = [key for key in tiles_dict.keys() if key not in subduction_names]
@@ -1036,17 +1823,38 @@ class RsqSimEvent:
                       xml_dir: str = 'OQ-events', wgs84: bool = False, subd_tile_size: float = 15000.,
                       tile_size: float = 5000., tectonic_region: str = "NZ"):
         """
+        Export event slip distribution to a ShakeMap-compatible GeoJSON file.
+
+        Discretises the rupturing faults into rectangular tiles, selects
+        those near slipping patches, converts coordinates to WGS84, and
+        writes a GeoJSON file with metadata to
+        ``<xml_dir>/event_<id>/<id>.json``.
 
         Parameters
         ----------
-        fault_model
-        path2cfm
-        catalogue_version
-        xml_dir
-        wgs84: is event in lon/lat WGS84 already? default: False
-        subd_tile_size
-        tile_size
-        tectonic_region
+        fault_model : RsqSimMultiFault
+            Fault model used to merge and discretise fault segments.
+        path2cfm : str
+            Path to the Community Fault Model directory (required for
+            ``catalogue_version="v2"`` name lookups).
+        catalogue_version : str, optional
+            ``"v1"`` or ``"v2"``.  Affects which fault name dictionary
+            is used.  Defaults to ``"v1"``.
+        xml_dir : str, optional
+            Output directory.  Defaults to ``"OQ-events"``.
+        wgs84 : bool, optional
+            If ``True``, hypocentre coordinates are already in WGS84
+            (lon/lat).  If ``False`` (default), NZTM coordinates are
+            transformed to WGS84.
+        subd_tile_size : float, optional
+            Tile size (m) used when discretising subduction faults.
+            Defaults to 15000 m.
+        tile_size : float, optional
+            Tile size (m) used when discretising crustal faults.
+            Defaults to 5000 m.
+        tectonic_region : str, optional
+            Tectonic region tag written into the metadata.  Defaults to
+            ``"NZ"``.
         """
         # setup
         assert os.path.exists(path2cfm), "Path to CFM does not exist"
@@ -1184,6 +1992,41 @@ class RsqSimEvent:
                         xml_dir: str = 'OQ_events',
                         subd_tile_size: float = 15000., tile_size: float = 5000., probability: float = 0.9,
                         tectonic_region: str = 'NZ',min_mag: float=6.0,hypocentre: list = None,nztm2wgs: bool = True):
+        """
+        Export the event as an OpenQuake multi-planar rupture XML file.
+
+        Discretises faults exceeding ``min_mag`` into rectangular tiles,
+        selects tiles near ruptured patches, and writes an OpenQuake NRML
+        XML file to ``<xml_dir>/<event_id>/event_<event_id>.xml``.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model for segment merging and discretisation.
+        path2cfm : str
+            Path to the Community Fault Model directory.
+        catalogue_version : str, optional
+            ``"v1"`` or ``"v2"``.  Defaults to ``"v2"``.
+        xml_dir : str, optional
+            Output directory.  Defaults to ``"OQ_events"``.
+        subd_tile_size : float, optional
+            Tile size (m) for subduction faults.  Defaults to 15000 m.
+        tile_size : float, optional
+            Tile size (m) for crustal faults.  Defaults to 5000 m.
+        probability : float, optional
+            Probability of occurrence for the rupture.  Defaults to 0.9.
+        tectonic_region : str, optional
+            Tectonic region tag.  Defaults to ``"NZ"``.
+        min_mag : float, optional
+            Only include faults whose moment corresponds to at least
+            this magnitude.  Defaults to 6.0.
+        hypocentre : list or None, optional
+            ``[x, y, z]`` hypocentre override.  If ``None``, uses the
+            event hypocentre.
+        nztm2wgs : bool, optional
+            If ``True`` (default), convert NZTM coordinates to WGS84
+            before writing.
+        """
         assert os.path.exists(path2cfm), "Path to CFM does not exist"
         if catalogue_version == 'v2':
             fault_model.make_v2_name_dic(path2cfm=path2cfm)
@@ -1269,6 +2112,40 @@ class RsqSimEvent:
 
     def slip_dist_quads_ktree(self, fault_model: RsqSimMultiFault, quads_dict: dict, min_moment: float = 1.e+18,
                               min_slip: float = 0.,threshold_for_inclusion: float = 0.5, slip_per_quad: bool = False):
+        """
+        Find ruptured quadrilateral tiles for each fault using a KD-tree.
+
+        For each fault segment that exceeds ``min_moment``, uses a KD-tree
+        on pre-computed quad centroids to assign triangular patches to
+        quads, then returns quads where the fraction of ruptured patches
+        exceeds ``threshold_for_inclusion``.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model providing patch dictionaries and patch centres.
+        quads_dict : dict
+            Mapping of fault segment name to a ``(n, 4, 3)`` array of
+            quad corner coordinates (NZTM, m).
+        min_moment : float, optional
+            Minimum moment (N·m) for a fault to be considered.  Defaults
+            to 1×10¹⁸ N·m.
+        min_slip : float, optional
+            Minimum patch slip (m) for a patch to count as ruptured.
+            Defaults to 0.
+        threshold_for_inclusion : float, optional
+            Fraction of a quad's assigned patches that must be ruptured
+            for the quad to be included.  Defaults to 0.5.
+        slip_per_quad : bool, optional
+            If ``True``, compute and store average slip per quad (not
+            yet returned in output).
+
+        Returns
+        -------
+        dict
+            Mapping of fault segment name to a ``(n_ruptured, 4, 3)``
+            array of ruptured quad corner coordinates.
+        """
         moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_moment, by_cfm_names=False)
         moment_quads = [key for key in moment_dict.keys() if key in quads_dict.keys()]
         missing_quads = [key for key in moment_dict.keys() if key not in moment_quads]
@@ -1307,10 +2184,41 @@ class RsqSimEvent:
         return ruptured_quads_dict
 
     def to_oq_points(self, fault_model: RsqSimMultiFault):
+        """
+        Convert event to OpenQuake point-source representation.
+
+        Not yet implemented.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model (reserved for future use).
+        """
         pass
 
     def get_crustal_component(self, fault_model: RsqSimMultiFault, crustal_names: list, min_moment: float = 1.e+18,
                               min_slip: float = 0.):
+        """
+        Compute moment, mean rake, and hypocentre for crustal fault components.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model providing patch dictionaries and patch moments.
+        crustal_names : list of str
+            Names of fault segments to treat as crustal.
+        min_moment : float, optional
+            Minimum moment (N·m) for a fault to be considered.
+            Defaults to 1×10¹⁸ N·m.
+        min_slip : float, optional
+            Minimum patch slip (m) to count as ruptured.  Defaults to 0.
+
+        Returns
+        -------
+        tuple of (float, float, numpy.ndarray) or None
+            ``(mw, mean_rake, hypocentre_xyz)`` for the crustal
+            component, or ``None`` if no crustal faults qualify.
+        """
         moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_moment, by_cfm_names=False)
         if any([name in crustal_names for name in moment_dict.keys()]):
             crustal_moment = 0.
@@ -1352,6 +2260,27 @@ class RsqSimEvent:
 
     def get_subduction_component(self, fault_model: RsqSimMultiFault, subduction_names: list, min_moment: float = 1.e+18,
                                     min_slip: float = 0.):
+        """
+        Compute moment, mean rake, and hypocentre for subduction fault components.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model providing patch dictionaries and patch moments.
+        subduction_names : list of str
+            Names of fault segments to treat as subduction interface.
+        min_moment : float, optional
+            Minimum moment (N·m) for a fault to be considered.
+            Defaults to 1×10¹⁸ N·m.
+        min_slip : float, optional
+            Minimum patch slip (m) to count as ruptured.  Defaults to 0.
+
+        Returns
+        -------
+        tuple of (float, float, numpy.ndarray) or None
+            ``(mw, mean_rake, hypocentre_xyz)`` for the subduction
+            component, or ``None`` if no subduction faults qualify.
+        """
         moment_dict = self.make_fault_moment_dict(fault_model=fault_model, min_m0=min_moment, by_cfm_names=False)
         if any([name in subduction_names for name in moment_dict.keys()]):
             subduction_moment = 0.
@@ -1403,7 +2332,30 @@ class RsqSimEvent:
     def slip_dist_to_quads(self, fault_model: RsqSimMultiFault, path2cfm: str, catalogue_version: str = 'v2',
                            vtk_dir: str = 'fault_vtks',
                            subd_tile_size: float = 15000., tile_size: float = 5000., ):
+        """
+        Write per-fault slip distributions as quadrilateral VTK meshes.
 
+        Discretises each involved fault into rectangular tiles, assigns
+        the average slip of the nearest triangular patches to each tile,
+        and writes a VTK file per fault to
+        ``<vtk_dir>/event_<id>_quad/<fault_name>_<event_id>.vtk``.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model for segment merging and discretisation.
+        path2cfm : str
+            Path to the Community Fault Model directory.
+        catalogue_version : str, optional
+            ``"v1"`` or ``"v2"``.  Defaults to ``"v2"``.
+        vtk_dir : str, optional
+            Output directory for VTK files.  Defaults to
+            ``"fault_vtks"``.
+        subd_tile_size : float, optional
+            Tile size (m) for subduction faults.  Defaults to 15000 m.
+        tile_size : float, optional
+            Tile size (m) for crustal faults.  Defaults to 5000 m.
+        """
         assert os.path.exists(path2cfm), "Path to CFM does not exist"
         if catalogue_version == 'v2':
             fault_model.make_v2_name_dic(path2cfm=path2cfm)
@@ -1476,9 +2428,71 @@ class RsqSimEvent:
 
 
 class OpenQuakeMultiSquareRupture:
+    """
+    Multi-planar rupture representation for the OpenQuake engine.
+
+    Packages a list of rectangular tile polygons (each representing a
+    fault-surface patch) together with event metadata into the structure
+    needed to write OpenQuake NRML ``multiPlanesRupture`` XML.
+
+    Attributes
+    ----------
+    patches : list of OpenQuakeRectangularPatch
+        Individual rectangular patches converted from input polygons.
+    prob : float
+        Probability of occurrence.
+    magnitude : float
+        Moment magnitude.
+    rake : float
+        Mean rake (degrees).
+    hypocentre : numpy.ndarray
+        Hypocentre coordinates ``[x, y, z]`` in the input CRS.
+    inv_prob : float
+        Complementary probability (``1 - prob``).
+    hyp_depth : float
+        Hypocentre depth in km (positive downward).
+    hyp_lon, hyp_lat : float
+        Hypocentre longitude and latitude in WGS84 degrees.
+    event_id : int
+        Catalogue event identifier.
+    name : str
+        Descriptive rupture name.
+    tectonic_region : str
+        Tectonic region tag for OpenQuake.
+    """
+
     def __init__(self, tile_list: List[Polygon], probability: float, magnitude: float, rake: float,
                  hypocentre: np.ndarray, event_id: int, name: str = "Subduction earthquake",
                  tectonic_region: str = "subduction", nztm2wgs: bool = True):
+        """
+        Initialise an OpenQuake multi-planar rupture.
+
+        Parameters
+        ----------
+        tile_list : list of Polygon
+            Shapely polygons representing rectangular fault-surface tiles
+            (in NZTM coordinates if ``nztm2wgs=True``).
+        probability : float
+            Probability of occurrence.
+        magnitude : float
+            Moment magnitude.
+        rake : float
+            Mean rake in degrees.
+        hypocentre : numpy.ndarray
+            ``[x, y, z]`` coordinates of the hypocentre.  If
+            ``nztm2wgs=True``, ``x`` and ``y`` are NZTM eastings and
+            northings (m); ``z`` is depth in m (negative downward).
+        event_id : int
+            Catalogue event identifier.
+        name : str, optional
+            Rupture name written to the XML.  Defaults to
+            ``"Subduction earthquake"``.
+        tectonic_region : str, optional
+            Tectonic region tag.  Defaults to ``"subduction"``.
+        nztm2wgs : bool, optional
+            If ``True`` (default), transform hypocentre from NZTM to
+            WGS84 longitude/latitude.
+        """
         self.patches = [OpenQuakeRectangularPatch.from_polygon(tile) for tile in tile_list]
         self.prob = probability
         self.magnitude = magnitude
@@ -1496,6 +2510,25 @@ class OpenQuakeMultiSquareRupture:
         self.tectonic_region = tectonic_region
 
     def to_oq_xml(self, write: str = None):
+        """
+        Build (and optionally write) an OpenQuake NRML rupture XML element.
+
+        Constructs a ``<multiPlanesRupture>`` element containing magnitude,
+        rake, hypocenter, and one ``<planarSurface>`` per patch.
+
+        Parameters
+        ----------
+        write : str or None, optional
+            Output file path.  If the path does not end with ``".xml"``
+            the extension is appended automatically.  If ``None``, the
+            XML is not written to disk.
+
+        Returns
+        -------
+        xml.etree.ElementTree.Element
+            The root ``<nrml>`` element (regardless of whether the file
+            was written).
+        """
         source_element = ElemTree.Element("nrml",
                                           attrib={"xmlns": "http://openquake.org/xmlns/nrml/0.4",
                                                   "xmlns:gml": "http://www.opengis.net/gml"

@@ -1,3 +1,13 @@
+"""
+Visualisation utilities for plotting New Zealand map backgrounds,
+coastlines, hillshading, and GIS vector layers.
+
+Provides functions to clip and overlay the NZ coastline shapefile,
+render hillshade rasters, plot GIS line and polygon features (roads,
+rivers, lakes, regional boundaries, Hikurangi boundary), format
+WGS84 axis tick labels, and compose composite map backgrounds via
+``plot_background``.
+"""
 from matplotlib import pyplot as plt
 import geopandas as gpd
 import pathlib
@@ -47,12 +57,35 @@ max_y2_wgs = -33.
 def clip_coast_with_trim(x1: Union[int, float], y1: Union[int, float], x2: Union[int, float], y2: Union[int, float],
                          wgs: bool = False, coarse: bool = False, fine: bool = False):
     """
-    To clip coastline into area of interest
-    :param x1: Bottom-left easting (NZTM, metres)
-    :param y1: Bottom-left northing
-    :param x2: Top-right easting
-    :param y2: Top-right northing
-    :return:
+    Clip the NZ coastline to a bounding box and trim polygon boundaries.
+
+    Uses ``geopandas.clip`` to trim coastline polygons to the bounding
+    box, then returns the individual polygon geometries.
+
+    Parameters
+    ----------
+    x1 : int or float
+        Bottom-left easting (NZTM metres, or longitude if ``wgs=True``).
+    y1 : int or float
+        Bottom-left northing (NZTM metres, or latitude if ``wgs=True``).
+    x2 : int or float
+        Top-right easting.
+    y2 : int or float
+        Top-right northing.
+    wgs : bool, optional
+        If ``True``, interpret coordinates as WGS84 longitude/latitude.
+        Defaults to ``False``.
+    coarse : bool, optional
+        If ``True``, use the coarse Natural Earth coastline.
+        Defaults to ``False``.
+    fine : bool, optional
+        If ``True``, use the fine 150 k topo coastline.
+        Defaults to ``False``.
+
+    Returns
+    -------
+    geopandas.GeoSeries
+        Clipped coastline polygons in NZTM (EPSG:2193).
     """
     assert not all([coarse, fine])
     if not wgs:
@@ -88,12 +121,35 @@ def clip_coast_with_trim(x1: Union[int, float], y1: Union[int, float], x2: Union
 def clip_coast(x1: Union[int, float], y1: Union[int, float], x2: Union[int, float], y2: Union[int, float],
                wgs: bool = False, coarse: bool = False, fine: bool = False):
     """
-    To clip coastline into area of interest
-    :param x1: Bottom-left easting (NZTM, metres)
-    :param y1: Bottom-left northing
-    :param x2: Top-right easting
-    :param y2: Top-right northing
-    :return:
+    Clip the NZ coastline to a bounding box using coordinate indexing.
+
+    Uses the ``cx`` indexer rather than ``geopandas.clip``, so polygons
+    that overlap the boundary are kept whole rather than trimmed.
+
+    Parameters
+    ----------
+    x1 : int or float
+        Bottom-left easting (NZTM metres, or longitude if ``wgs=True``).
+    y1 : int or float
+        Bottom-left northing (NZTM metres, or latitude if ``wgs=True``).
+    x2 : int or float
+        Top-right easting.
+    y2 : int or float
+        Top-right northing.
+    wgs : bool, optional
+        If ``True``, interpret coordinates as WGS84 longitude/latitude.
+        Defaults to ``False``.
+    coarse : bool, optional
+        If ``True``, use the coarse Natural Earth coastline.
+        Defaults to ``False``.
+    fine : bool, optional
+        If ``True``, use the fine 150 k topo coastline.
+        Defaults to ``False``.
+
+    Returns
+    -------
+    geopandas.GeoSeries
+        Coastline polygons intersecting the bounding box, in NZTM.
     """
     assert not all([coarse, fine])
     if not wgs:
@@ -123,6 +179,25 @@ def clip_coast(x1: Union[int, float], y1: Union[int, float], x2: Union[int, floa
 
 def plot_gis_lines(gis_file: Union[str, pathlib.Path], ax: plt.Axes, color: str, linewidth: int = 0.3, clip_bounds: list = None,
                    linestyle: str = "-"):
+    """
+    Plot line features from a GIS vector file onto a matplotlib axis.
+
+    Parameters
+    ----------
+    gis_file : str or pathlib.Path
+        Path to the GIS file (shapefile, GeoPackage, etc.).
+    ax : matplotlib.axes.Axes
+        Axis to draw onto.
+    color : str
+        Line colour.
+    linewidth : int, optional
+        Line width in points.  Defaults to 0.3.
+    clip_bounds : list or None, optional
+        ``[x_min, y_min, x_max, y_max]`` bounding box for clipping.
+        If ``None``, all features are plotted.
+    linestyle : str, optional
+        Matplotlib line-style string.  Defaults to ``"-"``.
+    """
     data = gpd.read_file(gis_file)
     if clip_bounds is not None:
         clipping_poly = box(*clip_bounds)
@@ -134,6 +209,27 @@ def plot_gis_lines(gis_file: Union[str, pathlib.Path], ax: plt.Axes, color: str,
 
 def plot_gis_polygons(gis_file: Union[str, pathlib.Path], ax: plt.Axes, edgecolor: str, linewidth: int = 0.3, clip_bounds: list = None,
                       linestyle: str = "-", facecolor="none"):
+    """
+    Plot polygon features from a GIS vector file onto a matplotlib axis.
+
+    Parameters
+    ----------
+    gis_file : str or pathlib.Path
+        Path to the GIS file (shapefile, GeoPackage, etc.).
+    ax : matplotlib.axes.Axes
+        Axis to draw onto.
+    edgecolor : str
+        Polygon edge colour.
+    linewidth : int, optional
+        Edge line width in points.  Defaults to 0.3.
+    clip_bounds : list or None, optional
+        ``[x_min, y_min, x_max, y_max]`` bounding box for clipping.
+        If ``None``, all features are plotted.
+    linestyle : str, optional
+        Matplotlib line-style string.  Defaults to ``"-"``.
+    facecolor : str, optional
+        Polygon fill colour.  Defaults to ``"none"`` (transparent).
+    """
     data = gpd.read_file(gis_file)
     if clip_bounds is not None:
         clipping_poly = box(*clip_bounds)
@@ -146,28 +242,114 @@ def plot_gis_polygons(gis_file: Union[str, pathlib.Path], ax: plt.Axes, edgecolo
 
 def plot_highway_lines(ax: plt.Axes, color: str = "r", linewidth: int = 1., clip_bounds: list = None,
                   linestyle: str = "-"):
+    """
+    Overlay NZ state highway lines on a matplotlib axis.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Axis to draw onto.
+    color : str, optional
+        Line colour.  Defaults to ``"r"``.
+    linewidth : int, optional
+        Line width in points.  Defaults to 1.
+    clip_bounds : list or None, optional
+        ``[x_min, y_min, x_max, y_max]`` clipping bounds.
+    linestyle : str, optional
+        Matplotlib line-style string.  Defaults to ``"-"``.
+    """
     plot_gis_lines(roads, ax=ax, color=color, linewidth=linewidth, clip_bounds=clip_bounds, linestyle=linestyle)
 
 
 def plot_river_lines(ax: plt.Axes, color: str = "b", linewidth: int = 0.3, clip_bounds: list = None,
                 linestyle: str = "-"):
+    """
+    Overlay NZ major river lines on a matplotlib axis.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Axis to draw onto.
+    color : str, optional
+        Line colour.  Defaults to ``"b"``.
+    linewidth : int, optional
+        Line width in points.  Defaults to 0.3.
+    clip_bounds : list or None, optional
+        ``[x_min, y_min, x_max, y_max]`` clipping bounds.
+    linestyle : str, optional
+        Matplotlib line-style string.  Defaults to ``"-"``.
+    """
     plot_gis_lines(rivers, ax=ax, color=color, linewidth=linewidth, clip_bounds=clip_bounds, linestyle=linestyle)
 
 
 def plot_boundary_polygons(ax: plt.Axes, edgecolor: str = "k", linewidth: int = 0.3, clip_bounds: list = None,
                  linestyle: str = "--", facecolor: str = "none"):
+    """
+    Overlay NZ regional boundary polygons on a matplotlib axis.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Axis to draw onto.
+    edgecolor : str, optional
+        Edge colour.  Defaults to ``"k"``.
+    linewidth : int, optional
+        Edge line width in points.  Defaults to 0.3.
+    clip_bounds : list or None, optional
+        ``[x_min, y_min, x_max, y_max]`` clipping bounds.
+    linestyle : str, optional
+        Matplotlib line-style string.  Defaults to ``"--"``.
+    facecolor : str, optional
+        Fill colour.  Defaults to ``"none"`` (transparent).
+    """
     plot_gis_polygons(regions, ax=ax, edgecolor=edgecolor, linewidth=linewidth, clip_bounds=clip_bounds,
                       linestyle=linestyle, facecolor=facecolor)
 
 
 def plot_lake_polygons(ax: plt.Axes, edgecolor: str = "b", linewidth: int = 0.3, clip_bounds: list = None,
                  linestyle: str = "-", facecolor: str = "b"):
+    """
+    Overlay NZ lake polygons on a matplotlib axis.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Axis to draw onto.
+    edgecolor : str, optional
+        Edge colour.  Defaults to ``"b"``.
+    linewidth : int, optional
+        Edge line width in points.  Defaults to 0.3.
+    clip_bounds : list or None, optional
+        ``[x_min, y_min, x_max, y_max]`` clipping bounds.
+    linestyle : str, optional
+        Matplotlib line-style string.  Defaults to ``"-"``.
+    facecolor : str, optional
+        Fill colour.  Defaults to ``"b"`` (blue).
+    """
     plot_gis_polygons(lakes, ax=ax, edgecolor=edgecolor, linewidth=linewidth, clip_bounds=clip_bounds,
                       linestyle=linestyle, facecolor=facecolor)
 
 
 def plot_hk_boundary(ax: plt.Axes, edgecolor: str = "r", linewidth: int = 0.1, clip_bounds: list = None,
                      linestyle: str = "-", facecolor: str = "0.8"):
+    """
+    Overlay the Hikurangi subduction zone clipping-area polygon.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Axis to draw onto.
+    edgecolor : str, optional
+        Edge colour.  Defaults to ``"r"``.
+    linewidth : int, optional
+        Edge line width in points.  Defaults to 0.1.
+    clip_bounds : list or None, optional
+        ``[x_min, y_min, x_max, y_max]`` clipping bounds.
+    linestyle : str, optional
+        Matplotlib line-style string.  Defaults to ``"-"``.
+    facecolor : str, optional
+        Fill colour.  Defaults to ``"0.8"`` (light grey).
+    """
     plot_gis_polygons(hk_boundary, ax=ax, edgecolor=edgecolor, linewidth=linewidth, clip_bounds=clip_bounds,
                       linestyle=linestyle, facecolor=facecolor)
 
@@ -178,6 +360,40 @@ def plot_hk_boundary(ax: plt.Axes, edgecolor: str = "r", linewidth: int = 0.1, c
 
 def plot_coast(ax: plt.Axes, clip_boundary: list = None, edgecolor: str = "0.5", facecolor: str = 'none', linewidth: int = 0.3,
                trim_polygons=True, wgs: bool = False, coarse: bool = False, fine: bool = False):
+    """
+    Overlay the NZ coastline on a matplotlib axis.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Axis to draw onto.
+    clip_boundary : list or None, optional
+        ``[x_min, y_min, x_max, y_max]`` clipping bounds.  Defaults to
+        the full NZ extent.
+    edgecolor : str, optional
+        Coastline edge colour.  Defaults to ``"0.5"`` (mid-grey).
+    facecolor : str, optional
+        Land fill colour.  Defaults to ``"none"`` (transparent).
+    linewidth : int, optional
+        Edge line width.  Defaults to 0.3.
+    trim_polygons : bool, optional
+        If ``True`` (default), use :func:`clip_coast_with_trim` to trim
+        polygons to the bounding box; otherwise use :func:`clip_coast`.
+    wgs : bool, optional
+        If ``True``, use WGS84 (lon/lat) coordinates.
+        Defaults to ``False``.
+    coarse : bool, optional
+        If ``True``, use the coarse Natural Earth coastline.
+        Defaults to ``False``.
+    fine : bool, optional
+        If ``True``, use the fine 150 k topo coastline.
+        Defaults to ``False``.
+
+    Returns
+    -------
+    x1, y1, x2, y2 : float
+        The clipping bounds actually used.
+    """
     assert not all([coarse, fine])
     if clip_boundary is None:
         if wgs:
@@ -201,6 +417,29 @@ def plot_coast(ax: plt.Axes, clip_boundary: list = None, edgecolor: str = "0.5",
 
 def plot_hillshade(ax, alpha: float = 0.3, vertical_exaggeration: float = 0.01, cmap: LinearSegmentedColormap = None,
                    vmin: float = -10000., vmax: float = 10000, clip_bounds: list = None):
+    """
+    Overlay a hillshaded bathymetry/topography raster on a matplotlib axis.
+
+    Uses a combined 10 000-m resolution NIWA raster.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Axis to draw onto.
+    alpha : float, optional
+        Transparency of the hillshade overlay (0–1).  Defaults to 0.3.
+    vertical_exaggeration : float, optional
+        Vertical exaggeration for the light-source shading.
+        Defaults to 0.01.
+    cmap : LinearSegmentedColormap or None, optional
+        Colourmap for the hillshade.  Defaults to ``plt.cm.gist_earth``.
+    vmin : float, optional
+        Minimum value for the colour scale.  Defaults to -10 000.
+    vmax : float, optional
+        Maximum value for the colour scale.  Defaults to 10 000.
+    clip_bounds : list or None, optional
+        ``[x_min, y_min, x_max, y_max]`` bounds for clipping the raster.
+    """
     hillshade_name = "data/bathymetry/niwa_combined_10000.tif"
     hillshade = pathlib.Path(__file__).parent / hillshade_name
     xds = rioxarray.open_rasterio(hillshade)
@@ -222,6 +461,29 @@ def plot_hillshade(ax, alpha: float = 0.3, vertical_exaggeration: float = 0.01, 
 
 def plot_hillshade_niwa(ax, alpha: float = 0.3, vertical_exaggeration: float = 0.01, clip_bounds: list = None,
                         cmap: LinearSegmentedColormap = None, vmin: float = -10000., vmax: float = 10000):
+    """
+    Overlay a hillshaded NIWA NZTM raster on a matplotlib axis.
+
+    Uses the high-resolution ``niwa_nztm.tif`` raster.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Axis to draw onto.
+    alpha : float, optional
+        Transparency of the hillshade overlay (0–1).  Defaults to 0.3.
+    vertical_exaggeration : float, optional
+        Vertical exaggeration for the light-source shading.
+        Defaults to 0.01.
+    clip_bounds : list or None, optional
+        ``[x_min, y_min, x_max, y_max]`` bounds for clipping the raster.
+    cmap : LinearSegmentedColormap or None, optional
+        Colourmap for the hillshade.  Defaults to ``plt.cm.terrain``.
+    vmin : float, optional
+        Minimum value for the colour scale.  Defaults to -10 000.
+    vmax : float, optional
+        Maximum value for the colour scale.  Defaults to 10 000.
+    """
     hillshade_name = "data/bathymetry/niwa_nztm.tif"
     hillshade = pathlib.Path(__file__).parent / hillshade_name
     xds = rioxarray.open_rasterio(hillshade)
@@ -243,7 +505,22 @@ def plot_hillshade_niwa(ax, alpha: float = 0.3, vertical_exaggeration: float = 0
 
 def format_label_text_wgs(ax: plt.Axes, xspacing: int = 5, yspacing: int = 5, y_only: bool = False):
     """
-    Plots latlon labels for plots in wgs, like in Shaw et al., 2021
+    Format axis tick labels as degree notation for WGS84 plots.
+
+    Converts raw longitude/latitude tick values to degree strings,
+    handling longitudes > 180° by converting to negative (west) values.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Axis whose tick labels to format.
+    xspacing : int, optional
+        Longitude tick spacing in degrees.  Defaults to 5.
+    yspacing : int, optional
+        Latitude tick spacing in degrees.  Defaults to 5.
+    y_only : bool, optional
+        If ``True``, only format the y (latitude) axis.
+        Defaults to ``False``.
     """
 
 
@@ -287,7 +564,83 @@ def plot_background(figsize: tuple = (6.4, 4.8), hillshading_intensity: float = 
                     plot_sub_cbar: bool = False, sub_slip_max: float = 20., plot_crust_cbar: bool = False, crust_slip_max: float = 10.,
                     subduction_cmap: colors.LinearSegmentedColormap = cm.plasma, crust_cmap: colors.LinearSegmentedColormap = cm.viridis,
                     slider_axis: bool = False, aotearoa: bool = True):
+        """
+        Compose a NZ map background figure with optional GIS overlays.
 
+        Creates a ``subplot_mosaic`` figure with a main map panel and
+        optional colourbar and slider axes.  Overlays the coastline,
+        optional hillshade, lakes, rivers, highways, regional boundaries,
+        and/or the Hikurangi clipping area.
+
+        Parameters
+        ----------
+        figsize : tuple, optional
+            Figure size ``(width, height)`` in inches.  Defaults to
+            ``(6.4, 4.8)``.
+        hillshading_intensity : float, optional
+            Hillshade alpha (0–1).  If 0 (default), no hillshade is drawn.
+        bounds : tuple, optional
+            ``(x_min, y_min, x_max, y_max)`` map bounds.
+        plot_rivers : bool, optional
+            If ``True`` (default), overlay river lines.
+        plot_lakes : bool, optional
+            If ``True`` (default), overlay lake polygons.
+        hillshade_fine : bool, optional
+            If ``True``, use the high-resolution NIWA hillshade raster.
+            Defaults to ``False``.
+        plot_highways : bool, optional
+            If ``True`` (default), overlay state highway lines.
+        plot_boundaries : bool, optional
+            If ``True``, overlay regional boundary polygons.
+            Defaults to ``False``.
+        subplots : tuple or None, optional
+            ``(fig, ax)`` to draw onto.  A new figure is created if
+            ``None``.
+        pickle_name : str or None, optional
+            If provided, pickle the ``(fig, ax)`` tuple to this path.
+        hillshade_cmap : LinearSegmentedColormap, optional
+            Colourmap for the hillshade.  Defaults to ``cm.terrain``.
+        plot_edge_label : bool, optional
+            If ``True`` (default), show axis tick labels.
+        plot_hk : bool, optional
+            If ``True``, overlay the Hikurangi clipping-area polygon.
+            Defaults to ``False``.
+        plot_fault_outlines : bool, optional
+            Reserved for future use.  Defaults to ``True``.
+        wgs : bool, optional
+            If ``True``, use WGS84 coordinates.  Defaults to ``False``.
+        land_color : str, optional
+            Land fill colour.  Defaults to ``"antiquewhite"``.
+        plot_sub_cbar : bool, optional
+            If ``True``, add a subduction slip colourbar panel.
+            Defaults to ``False``.
+        sub_slip_max : float, optional
+            Maximum subduction slip (m) for the colourbar.
+            Defaults to 20.
+        plot_crust_cbar : bool, optional
+            If ``True``, add a crustal slip colourbar panel.
+            Defaults to ``False``.
+        crust_slip_max : float, optional
+            Maximum crustal slip (m) for the colourbar.  Defaults to 10.
+        subduction_cmap : LinearSegmentedColormap, optional
+            Colourmap for the subduction colourbar.  Defaults to
+            ``cm.plasma``.
+        crust_cmap : LinearSegmentedColormap, optional
+            Colourmap for the crustal colourbar.  Defaults to
+            ``cm.viridis``.
+        slider_axis : bool, optional
+            If ``True``, add a slider and year-label axes row.
+            Defaults to ``False``.
+        aotearoa : bool, optional
+            If ``True`` (default), draw the NZ coastline and GIS overlays.
+
+        Returns
+        -------
+        fig : matplotlib.figure.Figure
+            The composed figure.
+        ax : dict or matplotlib.axes.Axes
+            Axis dict (from ``subplot_mosaic``) or the provided ``ax``.
+        """
         if subplots is not None:
             fig, ax = subplots
             main_ax = ax

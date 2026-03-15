@@ -1,3 +1,12 @@
+"""
+RSQSim multi-fault model container and related utilities.
+
+Provides :func:`check_unique_vertices` for duplicate-vertex detection
+and :class:`RsqSimMultiFault` for managing a collection of
+:class:`~rsqsim_api.fault.segment.RsqSimSegment` objects, including
+I/O from RSQSim/Bruce fault files, CFM tsurf directories, and various
+GIS export methods.
+"""
 import glob
 import os
 from collections.abc import Iterable
@@ -22,11 +31,27 @@ from shapely.geometry import LineString,MultiLineString
 
 def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float] = 1):
     """
-    Efficiently checks whether vertices (3D point coordinates) may be duplicates by (1) sorting them,
-    ans (2) finding distances between adjacent points in the sorted array
-    :param vertex_array: Numpy array with 3 columns representing 3D vertex coordinates
-    :param tolerance: distance (in metres) below which points are reported as possible duplicates
-    :return:
+    Check whether any vertices in a 3-D array are potential duplicates.
+
+    Sorts the vertex array and computes distances between adjacent
+    rows in the sorted order; vertices closer than ``tolerance`` are
+    flagged as potential duplicates.
+
+    Parameters
+    ----------
+    vertex_array : numpy.ndarray of shape (n, 3)
+        3-D vertex coordinates.
+    tolerance : int or float, optional
+        Distance threshold (m) below which vertices are reported as
+        potential duplicates.  Defaults to 1.
+
+    Returns
+    -------
+    num_closer : int
+        Number of adjacent-sorted-vertex pairs closer than
+        ``tolerance``.
+    tolerance : float
+        The tolerance value used.
     """
     assert isinstance(vertex_array, np.ndarray)
 
@@ -42,7 +67,35 @@ def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float]
 
 
 class RsqSimMultiFault:
+    """
+    Container for a collection of fault segments forming a complete fault model.
+
+    Aggregates :class:`~rsqsim_api.fault.segment.RsqSimSegment`
+    objects, provides name-based lookup, boundary computation, and
+    I/O methods for RSQSim/Bruce fault files, CFM tsurf directories,
+    and various GIS export formats.
+
+    Attributes
+    ----------
+    faults : list
+        List of :class:`~rsqsim_api.fault.segment.RsqSimSegment`
+        (or nested :class:`RsqSimMultiFault`) objects.
+    patch_dic : dict
+        Mapping of global patch number to patch object.
+    faults_with_patches : dict
+        Mapping of global patch number to the owning segment.
+    """
+
     def __init__(self, faults: Union[list, tuple, set], crs: int = 2193):
+        """
+        Parameters
+        ----------
+        faults : list, tuple, or set
+            Fault segment objects.
+        crs : int, optional
+            EPSG code for the coordinate reference system.
+            Defaults to 2193 (NZTM).
+        """
         self._faults = None
         self.faults = faults
         self._names = None
@@ -60,7 +113,22 @@ class RsqSimMultiFault:
 
     def filter_faults_by_patch_numbers(self, patch_ls: Union[int, list, tuple, np.ndarray],fault_from_single_patch : bool =False):
         """
+        Return the fault(s) associated with a given patch number or list of patch numbers.
 
+        Parameters
+        ----------
+        patch_ls : int or array-like of int
+            Patch number(s) to look up.
+        fault_from_single_patch : bool, optional
+            If ``True`` and a single patch number is given, return the
+            owning :class:`~rsqsim_api.fault.segment.RsqSimSegment`
+            rather than the patch object.  Defaults to ``False``.
+
+        Returns
+        -------
+        RsqSimTriangularPatch or RsqSimSegment or RsqSimMultiFault
+            The patch object, segment, or a new
+            :class:`RsqSimMultiFault` containing the relevant segments.
         """
         if isinstance(patch_ls, np.integer):
             if fault_from_single_patch:
@@ -95,6 +163,7 @@ class RsqSimMultiFault:
         return self._name_dic
 
     def get_names(self):
+        """Populate :attr:`names` and :attr:`name_dic` from the loaded faults."""
         assert self.faults is not None
         self._names = [fault.name for fault in self.faults]
         self._name_dic = {fault.name: fault for fault in self.faults}
@@ -117,10 +186,40 @@ class RsqSimMultiFault:
         return self._v2_name_dic
 
     def get_patch_areas(self):
+        """
+        Return a flat array of patch areas for all faults.
+
+        Returns
+        -------
+        numpy.ndarray of shape (n_total_patches,)
+            Patch areas in m².
+        """
         return np.hstack([fault.patch_areas for fault in self.faults])
 
     def make_v2_name_dic(self,path2cfm: str):
-        """Make dictionary to convert Bruce V2 fault segment names to the equivalent CFM names"""
+        """
+        Build a dictionary mapping Bruce-V2 fault names to CFM fault names.
+
+        Uses fuzzy string matching to find the closest name in the CFM
+        fault model GIS file, with hardcoded overrides for ambiguous
+        cases (Wairau, Hikurangi, Puysegur).
+
+        Parameters
+        ----------
+        path2cfm : str
+            Path to the CFM fault model GIS file (shapefile or
+            GeoJSON) containing a ``"Name"`` column.
+
+        Returns
+        -------
+        None
+            Populates :attr:`v2_name_dic`.
+
+        Raises
+        ------
+        AssertionError
+            If ``path2cfm`` does not exist.
+        """
         assert os.path.exists(path2cfm), "Path to CFM fault model not found"
         cfm = gpd.read_file(path2cfm)
         cfm_names=[name.lower() for name in cfm['Name']]
@@ -164,10 +263,27 @@ class RsqSimMultiFault:
     def read_fault_file_keith(cls, fault_file: str, verbose: bool = False, crs: int = 2193,
                               read_slip_rate: bool = True):
         """
-        Read in an RSQSim fault file written according to Keith Richards-Dinger's convention.
-        :param fault_file: Path to fault file
-        :param verbose: Spit out more info if desired
-        :return:
+        Read an RSQSim fault file in Keith Richards-Dinger's convention.
+
+        The file has 13 whitespace-separated columns:
+        ``x1,y1,z1, x2,y2,z2, x3,y3,z3, rake, slip_rate, fault_num, fault_name``.
+
+        Parameters
+        ----------
+        fault_file : str
+            Path to the RSQSim fault input file.
+        verbose : bool, optional
+            If ``True``, print per-fault progress and duplicate-vertex
+            warnings.  Defaults to ``False``.
+        crs : int, optional
+            EPSG code for the coordinate reference system.
+            Defaults to 2193 (NZTM).
+        read_slip_rate : bool, optional
+            If ``True`` (default), populate patch slip rates.
+
+        Returns
+        -------
+        RsqSimMultiFault
         """
         assert os.path.exists(fault_file)
 
@@ -248,6 +364,38 @@ class RsqSimMultiFault:
     @classmethod
     def read_fault_file_bruce(cls, main_fault_file: str, name_file: str, transform_from_utm: bool = False,
                               from_pickle: bool = False, crs: int = 2193, read_slip_rate: bool = True):
+        """
+        Read an RSQSim fault model in Bruce Shaw's format.
+
+        Reads a two-file layout: a main CSV fault file and a companion
+        names file.  Handles the case where multiple fault segments
+        share the same name by appending a numeric suffix.
+
+        Parameters
+        ----------
+        main_fault_file : str
+            Path to the main fault geometry file (space-separated,
+            13 columns: x1–z3, rake, slip_rate, fault_num, name).
+            Can also be a pickled DataFrame if ``from_pickle`` is
+            ``True``.
+        name_file : str
+            Path to the text file listing fault names (one per line,
+            in the same order as fault numbers).
+        transform_from_utm : bool, optional
+            If ``True``, transform vertex coordinates from UTM zone
+            59S to NZTM.  Defaults to ``False``.
+        from_pickle : bool, optional
+            If ``True``, read the main file as a pickled DataFrame.
+            Defaults to ``False``.
+        crs : int, optional
+            EPSG code.  Defaults to 2193 (NZTM).
+        read_slip_rate : bool, optional
+            If ``True`` (default), populate patch slip rates.
+
+        Returns
+        -------
+        RsqSimMultiFault
+        """
         assert all([os.path.exists(fname) for fname in (main_fault_file, name_file)])
         with open(name_file) as fid:
             names_strings = fid.readlines()
@@ -322,7 +470,14 @@ class RsqSimMultiFault:
         return multi_fault
 
     def pickle_model(self, file: str):
+        """
+        Serialise all patch data to a pickled pandas DataFrame.
 
+        Parameters
+        ----------
+        file : str
+            Output pickle file path.
+        """
         column_names = ["vertices", "normal_vector", "down_dip_vector", "dip", "along_strike_vector",
                         "centre", "area", "dip_slip", "strike_slip", "fault_num"]
 
@@ -368,6 +523,18 @@ class RsqSimMultiFault:
             ts_name = ts_no_path.split(".ts")[0]
 
     def plot_faults_2d(self, fault_list: Iterable = None, show: bool = False, write: str = None):
+        """
+        Plot selected fault segments in map view coloured by slip rate.
+
+        Parameters
+        ----------
+        fault_list : iterable of str or None, optional
+            Names of faults to plot.  Defaults to all faults.
+        show : bool, optional
+            If ``True``, call ``fig.show()``.  Defaults to ``False``.
+        write : str or None, optional
+            Output file path for saving the figure.
+        """
         if fault_list is not None:
             assert isinstance(fault_list, Iterable)
             assert any([fault.lower() in self.names for fault in fault_list])
@@ -403,6 +570,30 @@ class RsqSimMultiFault:
 
     def plot_fault_traces(self, fault_list: Iterable = None, ax: plt.Axes = None, edgecolor: str = "r", linewidth: int = 0.1, clip_bounds: list = None,
                             linestyle: str = "-", facecolor: str = "0.8"):
+        """
+        Plot fault surface traces on a map axes.
+
+        Parameters
+        ----------
+        fault_list : iterable of str or None, optional
+            Names of faults to plot.  Defaults to all faults.
+        ax : matplotlib.axes.Axes or None, optional
+            Axes to draw onto.  A new figure is created if ``None``.
+        edgecolor : str, optional
+            Trace edge colour.  Defaults to ``"r"``.
+        linewidth : int or float, optional
+            Line width.  Defaults to 0.1.
+        clip_bounds : list or None, optional
+            ``[x1, y1, x2, y2]`` bounding box for the coastline.
+        linestyle : str, optional
+            Line style.  Defaults to ``"-"``.
+        facecolor : str, optional
+            Not currently used.  Defaults to ``"0.8"``.
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+        """
         # TODO: fix projection issue which means fault traces aren't plotted on correct scale
         if fault_list is not None:
             assert isinstance(fault_list, Iterable)
@@ -444,6 +635,21 @@ class RsqSimMultiFault:
         return ax
 
     def write_fault_traces_to_gis(self, fault_list: Iterable = None, prefix: str = "./bruce_faults",crs: str ="EPSG:2193" ):
+        """
+        Write fault surface traces to shapefiles.
+
+        Parameters
+        ----------
+        fault_list : iterable of str or None, optional
+            Names of faults to export.  Defaults to all faults.
+        prefix : str, optional
+            Output file prefix.  Two shapefiles are written:
+            ``{prefix}.shp`` and ``{prefix}_traces.shp``.
+            Defaults to ``"./bruce_faults"``.
+        crs : str, optional
+            CRS string for the output shapefile.
+            Defaults to ``"EPSG:2193"``.
+        """
         if fault_list is not None:
             assert isinstance(fault_list, Iterable)
             assert any([fault.lower() in self.names for fault in fault_list])
@@ -472,6 +678,19 @@ class RsqSimMultiFault:
         all_faults.to_file(prefix+"_traces.shp", crs=crs)
 
     def write_fault_outlines_to_gis(self, fault_list: Iterable = None, prefix: str = "./bruce_faults",crs: str ="EPSG:2193" ):
+        """
+        Write fault patch-outline polygons to a shapefile.
+
+        Parameters
+        ----------
+        fault_list : iterable of str or None, optional
+            Names of faults to export.  Defaults to all faults.
+        prefix : str, optional
+            Output file prefix; produces ``{prefix}_outlines.shp``.
+            Defaults to ``"./bruce_faults"``.
+        crs : str, optional
+            CRS string.  Defaults to ``"EPSG:2193"``.
+        """
         if fault_list is not None:
             assert isinstance(fault_list, Iterable)
             assert any([fault.lower() in self.names for fault in fault_list])
@@ -506,6 +725,30 @@ class RsqSimMultiFault:
     def slip_rate_array(self, include_zeros: bool = True,
                         min_slip_rate: float = None, nztm_to_lonlat: bool = False,
                         mm_per_year: bool = True):
+        """
+        Build a flat array of triangle vertex coordinates plus slip rate and rake.
+
+        Parameters
+        ----------
+        include_zeros : bool, optional
+            If ``True`` (default) and ``min_slip_rate`` is set,
+            include below-threshold patches with slip and rake set to
+            zero.
+        min_slip_rate : float or None, optional
+            Minimum slip rate (mm/yr if ``mm_per_year`` is ``True``)
+            for inclusion.  Defaults to ``None`` (include all).
+        nztm_to_lonlat : bool, optional
+            If ``True``, output vertex coordinates in WGS84
+            (longitude, latitude).  Defaults to ``False``.
+        mm_per_year : bool, optional
+            If ``True`` (default), convert slip rates from m/s to
+            mm/yr.
+
+        Returns
+        -------
+        numpy.ndarray of shape (n_patches, 11)
+            Columns: ``[x1,y1,z1, x2,y2,z2, x3,y3,z3, slip_rate, rake]``.
+        """
         all_patches = []
 
         for fault in self.faults:
@@ -533,7 +776,25 @@ class RsqSimMultiFault:
 
     def slip_rate_to_mesh(self, include_zeros: bool = True,
                           min_slip_rate: float = None, nztm_to_lonlat: bool = False, mm_per_year: bool = True):
+        """
+        Build a :class:`meshio.Mesh` containing slip rate and rake as cell data.
 
+        Parameters
+        ----------
+        include_zeros : bool, optional
+            Include below-threshold patches as zeros.  Defaults to
+            ``True``.
+        min_slip_rate : float or None, optional
+            Minimum slip rate threshold.  Defaults to ``None``.
+        nztm_to_lonlat : bool, optional
+            Output in WGS84.  Defaults to ``False``.
+        mm_per_year : bool, optional
+            Convert to mm/yr.  Defaults to ``True``.
+
+        Returns
+        -------
+        meshio.Mesh
+        """
         slip_rate_array = self.slip_rate_array(include_zeros=include_zeros,
                                                min_slip_rate=min_slip_rate, nztm_to_lonlat=nztm_to_lonlat,
                                                mm_per_year=mm_per_year)
@@ -549,16 +810,57 @@ class RsqSimMultiFault:
     def slip_rate_to_vtk(self, vtk_file: str, include_zeros: bool = True,
                          min_slip_rate: float = None, nztm_to_lonlat: bool = False,
                          mm_per_year: bool = True):
+        """
+        Write slip rate and rake data to a VTK file.
+
+        Parameters
+        ----------
+        vtk_file : str
+            Output VTK file path.
+        include_zeros : bool, optional
+            Include below-threshold patches.  Defaults to ``True``.
+        min_slip_rate : float or None, optional
+            Minimum slip rate threshold.  Defaults to ``None``.
+        nztm_to_lonlat : bool, optional
+            Output in WGS84.  Defaults to ``False``.
+        mm_per_year : bool, optional
+            Convert to mm/yr.  Defaults to ``True``.
+        """
         mesh = self.slip_rate_to_mesh(include_zeros=include_zeros,
                                       min_slip_rate=min_slip_rate, nztm_to_lonlat=nztm_to_lonlat,
                                       mm_per_year=mm_per_year)
         mesh.write(vtk_file, file_format="vtk")
 
     def write_rsqsim_input_file(self, output_file: str, mm_yr: bool = True):
+        """
+        Write all faults to a single RSQSim fault input file.
+
+        Parameters
+        ----------
+        output_file : str
+            Output file path.
+        mm_yr : bool, optional
+            If ``True`` (default), treat stored slip rates as mm/yr
+            and convert to m/s for the output.
+        """
         combined_array = pd.concat([fault.to_rsqsim_fault_array(mm_yr=mm_yr) for fault in self.faults])
         combined_array.to_csv(output_file, sep=" ", header=False, index=False)
 
     def write_b_value_file(self, a_value: float, default_a_b: float, difference_dict: dict, output_file: str):
+        """
+        Write per-patch b-values to a text file for use with RSQSim.
+
+        Parameters
+        ----------
+        a_value : float
+            Global a-value parameter (0–1).
+        default_a_b : float
+            Default a − b value (negative float).
+        difference_dict : dict
+            Mapping of fault name to (a − b) value override.
+        output_file : str
+            Output text file path.
+        """
         assert isinstance(difference_dict, dict)
         assert all([name in self.names for name in difference_dict.keys()])
         assert all([isinstance(value, float) for value in difference_dict.values()])
@@ -578,6 +880,30 @@ class RsqSimMultiFault:
 
     def tile_quads(self, tile_size: float = 5000., interpolation_distance: float = 1000.,
                          manual_tiles: dict = None, output_file: str = None):
+        """
+        Discretize all faults into rectangular tiles.
+
+        Calls :meth:`~rsqsim_api.fault.segment.RsqSimSegment.discretize_rectangular_tiles`
+        on each fault.  Manual tile arrays can override individual
+        faults.
+
+        Parameters
+        ----------
+        tile_size : float, optional
+            Target tile dimension (m).  Defaults to 5000.
+        interpolation_distance : float, optional
+            Down-dip interpolation spacing (m).  Defaults to 1000.
+        manual_tiles : dict or None, optional
+            Mapping of fault name to pre-computed tile array (loaded
+            from a ``.npy`` file).  Defaults to ``None``.
+        output_file : str or None, optional
+            If given, pickle the resulting dict to this file.
+
+        Returns
+        -------
+        dict
+            Mapping of fault name to tile array (shape (n_tiles, 4, 3)).
+        """
         if output_file is not None:
             assert isinstance(output_file, str)
         assert isinstance(tile_size, float)
@@ -620,14 +946,38 @@ class RsqSimMultiFault:
 
     def search_name(self, search_string: str):
         """
-        Search fault names using wildcard string
+        Search fault names using a wildcard pattern.
+
+        Parameters
+        ----------
+        search_string : str
+            Wildcard pattern (case-insensitive) to match against
+            fault names.
+
+        Returns
+        -------
+        list of str
+            Fault names that match the pattern.
         """
         assert isinstance(search_string, str)
         return [name for name in self.names if fnmatch.fnmatch(name, search_string.lower())]
 
     def find_closest_patches(self, x, y):
         """
-        Finds the closest patches to specified coordinates.
+        Find the patches closest to given 2-D coordinates.
+
+        Parameters
+        ----------
+        x : float
+            Easting (NZTM) in metres.
+        y : float
+            Northing (NZTM) in metres.
+
+        Returns
+        -------
+        list of int
+            Patch numbers of the patches in the closest fault whose
+            vertices include the nearest vertex.
         """
         sq_dist = [(fault, vertex, (x - vertex[0]) ** 2 + (y - vertex[1]) ** 2) for fault in self.faults for vertex in
                    fault.vertices]
@@ -638,7 +988,22 @@ class RsqSimMultiFault:
 
     def find_closest_patches_3d(self, x, y, z):
         """
-        Finds the closest patches to specified coordinates.
+        Find the patches closest to given 3-D coordinates.
+
+        Parameters
+        ----------
+        x : float
+            Easting (NZTM) in metres.
+        y : float
+            Northing (NZTM) in metres.
+        z : float
+            Depth (negative metres below sea level).
+
+        Returns
+        -------
+        list of int
+            Patch numbers of the patches in the closest fault whose
+            vertices include the nearest vertex.
         """
         sq_dist = [(fault, vertex, (x - vertex[0]) ** 2 + (y - vertex[1]) ** 2 + (z - vertex[2]) ** 2 ) for fault in self.faults for vertex in
                    fault.vertices]
@@ -654,6 +1019,7 @@ class RsqSimMultiFault:
         return self._traces
 
     def get_traces(self):
+        """Build and cache a GeoDataFrame of all fault surface traces."""
         traces = [fault.trace for fault in self.faults]
         trace_gpd = gpd.GeoDataFrame({"fault": self.names}, geometry=traces, crs=self.crs)
         self._traces = trace_gpd
@@ -665,13 +1031,32 @@ class RsqSimMultiFault:
         return self._outlines
 
     def get_outlines(self):
+        """Build and cache a GeoDataFrame of all fault patch-outline polygons."""
         outlines = [fault.fault_outline for fault in self.faults]
         outline_gpd = gpd.GeoDataFrame({"fault": self.names}, geometry=outlines, crs=self.crs)
         self._outlines = outline_gpd
 
     def merge_segments(self, matching_string: str, name_dict: dict = None, fault_name: str = None):
         """
-        Merge segments of a fault.
+        Merge multiple fault segments matching a name pattern into one segment.
+
+        Parameters
+        ----------
+        matching_string : str
+            Wildcard pattern used to identify segments to merge.
+            Without ``name_dict``, matches names like
+            ``"{matching_string}?"`` or ``"{matching_string}??"``.
+        name_dict : dict or None, optional
+            Mapping of internal segment name to an alternative name
+            for pattern matching.
+        fault_name : str or None, optional
+            Name for the merged segment.
+
+        Returns
+        -------
+        RsqSimSegment
+            New segment containing all patches from the matched
+            segments, with merged surface trace.
         """
         if name_dict is not None:
             matching_names = [name for name in self.names if any([fnmatch.fnmatch(name_dict[name], f"{matching_string}")])]
@@ -707,6 +1092,19 @@ class RsqSimMultiFault:
         return new_segment
 
     def get_subduction_patch_numbers(self, subduction_faults: tuple[str] = ("hikkerm", "puysegur")):
+        """
+        Return patch numbers for all subduction-zone fault segments.
+
+        Parameters
+        ----------
+        subduction_faults : tuple of str, optional
+            Substrings used to identify subduction faults by name.
+            Defaults to ``("hikkerm", "puysegur")``.
+
+        Returns
+        -------
+        numpy.ndarray of int
+        """
         subduction_patches = []
         for fault in self.faults:
             if any([subduction_fault in fault.name for subduction_fault in subduction_faults]):
@@ -714,6 +1112,19 @@ class RsqSimMultiFault:
         return np.array(subduction_patches)
 
     def get_crustal_patch_numbers(self, subduction_faults: tuple[str] = ("hikkerm", "puysegur")):
+        """
+        Return patch numbers for all crustal (non-subduction) fault segments.
+
+        Parameters
+        ----------
+        subduction_faults : tuple of str, optional
+            Substrings identifying subduction faults to exclude.
+            Defaults to ``("hikkerm", "puysegur")``.
+
+        Returns
+        -------
+        numpy.ndarray of int
+        """
         subduction_patches = self.get_subduction_patch_numbers(subduction_faults=subduction_faults)
         all_patches = np.array(list(self.patch_dic.keys()))
         crustal_patches = np.setdiff1d(all_patches, subduction_patches)

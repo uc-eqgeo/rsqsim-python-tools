@@ -1,8 +1,65 @@
+"""Reader and writer for GOCAD TSurf triangulated surface files."""
 import six
 import numpy
 import meshio
 
 class tsurf(object):
+    """
+    Read, create, and write GOCAD TSurf triangulated surface files.
+
+    Supports construction from a ``.ts`` file path or from raw coordinate
+    and connectivity arrays.  Provides access to the triangulated mesh via
+    the ``triangles`` property and can export back to the GOCAD TSurf format.
+
+    Parameters
+    ----------
+    *args :
+        Either a single ``filename`` string (reads from file), or four
+        positional arguments ``x, y, z, cells`` (constructs from arrays).
+    solid_color : tuple of float, optional
+        RGBA colour tuple for visualisation.  Defaults to cyan ``(0,1,1,1)``.
+    visible : str, optional
+        GOCAD visibility flag string.  Defaults to ``"false"``.
+    name : str, optional
+        Surface name stored in the TSurf header.  Defaults to
+        ``"Undefined"``.
+    NAME : str, optional
+        GOCAD coordinate system ``NAME`` field.  Defaults to
+        ``"Default"``.
+    AXIS_NAME : str, optional
+        GOCAD coordinate system ``AXIS_NAME`` field.  Defaults to
+        ``'"X" "Y" "Z"'``.
+    AXIS_UNIT : str, optional
+        GOCAD coordinate system ``AXIS_UNIT`` field.  Defaults to
+        ``'"m" "m" "m"'``.
+    ZPOSITIVE : str, optional
+        GOCAD coordinate system ``ZPOSITIVE`` field.  Defaults to
+        ``"Elevation"``.
+
+    Attributes
+    ----------
+    mesh : meshio.Mesh
+        Internal mesh representation holding ``points`` and ``cells``.
+    x, y, z :
+        Sequences of point coordinates.
+    header : dict
+        GOCAD header key-value pairs.
+    csInfo : dict
+        GOCAD coordinate system key-value pairs.
+    name : str
+        Surface name.
+    solid_color : tuple
+        RGBA visualisation colour.
+    visible : str
+        Visibility flag.
+
+    Raises
+    ------
+    ValueError
+        If the number of positional arguments is not 1 or 4.
+    IOError
+        If a filename is supplied that does not start with ``GOCAD TSurf``.
+    """
     default_name = 'Undefined'
     default_solid_color = (0, 1, 1, 1.0)
     default_visible = 'false'
@@ -12,28 +69,30 @@ class tsurf(object):
     default_ZPOSITIVE = 'Elevation'
     def __init__(self, *args, **kwargs):
         """
+        Initialise a tsurf object from a file or from coordinate arrays.
+
         Accepts either a single filename or 4 arguments: x, y, z, cells.
-        keyword argumets are: "solid_color", "visible" and "name"
+        keyword arguments are: ``solid_color``, ``visible``, ``name``,
+        ``NAME``, ``AXIS_NAME``, ``AXIS_UNIT``, ``ZPOSITIVE``.
 
         If a filename is given, the tsurf is read from the file.
 
-        Otherwise:
-        x, y, z are sequences of the x, y, and z coordinates of the points.
-        cells is a sequence of the indicies of the coord arrays making up
-        each triangle in the mesh. E.g. [[0, 1, 2], [2, 1, 3], ...]
+        Otherwise, ``x``, ``y``, ``z`` are sequences of the x, y, and z
+        coordinates of the points, and ``cells`` is a sequence of the
+        indices of the coord arrays making up each triangle in the mesh,
+        e.g. ``[[0, 1, 2], [2, 1, 3], ...]``.
 
-        I am updating the script to include GOCAD coordinate system info,
-        which was not included in the original script.
+        Parameters
+        ----------
+        *args :
+            One string (filename) or four sequences (x, y, z, cells).
+        **kwargs :
+            Optional overrides for header and coordinate system fields.
 
-        At present, points and cells are stored as lists, which
-        generally doesn't seem very useful. I think they should be numpy
-        arrays.
-
-        Recent changes:
-        Change name of vertices to points, and triangles to cells.
-        Use meshio package to create the mesh, using numpy arrays
-        for points and cells. This makes the function more compatible
-        with the meshio package.
+        Raises
+        ------
+        ValueError
+            If the number of positional arguments is not 1 or 4.
         """
         if len(args) == 1:
             self._read_tsurf(args[0])
@@ -75,6 +134,22 @@ class tsurf(object):
 
 
     def _read_tsurf(self, filename):
+        """
+        Parse a GOCAD TSurf file and populate the instance attributes.
+
+        Reads the HEADER block, GOCAD_ORIGINAL_COORDINATE_SYSTEM block,
+        and the VRTX/PVRTX/TRGL data lines.
+
+        Parameters
+        ----------
+        filename :
+            Path to the GOCAD TSurf ``.ts`` file.
+
+        Raises
+        ------
+        IOError
+            If the file does not start with ``GOCAD TSurf``.
+        """
         with open(filename, 'r') as infile:
             firstline = next(infile).strip()
             if not firstline.startswith('GOCAD TSurf'):
@@ -148,6 +223,19 @@ class tsurf(object):
 
     @property
     def triangles(self):
+        """
+        Triangle vertex coordinates as a deduplicated array.
+
+        Builds a lookup dictionary from vertex index to coordinate, then
+        assembles each triangle's three corners into a row of 9 values
+        ``[x1,y1,z1, x2,y2,z2, x3,y3,z3]``.
+
+        Returns
+        -------
+        numpy.ndarray of shape (n_unique_triangles, 9)
+            Unique triangles, sorted lexicographically by
+            ``numpy.unique``.
+        """
         triangle_numbers = self.mesh.cells[0].data
         vertex_dic = {i:vertex for i, vertex in enumerate(self.mesh.points)}
         triangle_array = numpy.array([numpy.hstack([vertex_dic[i] for i in triangle]) for triangle in triangle_numbers])
@@ -157,6 +245,25 @@ class tsurf(object):
 
 
     def _init_from_xyz(self, x, y, z, cells):
+        """
+        Initialise the tsurf from raw coordinate and cell arrays.
+
+        Sets default header and coordinate system values and constructs
+        the internal ``meshio.Mesh`` from the supplied data.
+
+        Parameters
+        ----------
+        x :
+            Sequence of x-coordinates of the mesh points.
+        y :
+            Sequence of y-coordinates of the mesh points.
+        z :
+            Sequence of z-coordinates of the mesh points.
+        cells :
+            Sequence of triangle connectivity lists, each containing
+            three zero-based vertex indices, e.g.
+            ``[[0, 1, 2], [2, 1, 3], ...]``.
+        """
         points = numpy.array(list(zip(x, y, z)), dtype=numpy.float64)
         self.x, self.y, self.z = x, y, z
         cells = {"triangle": cells}
@@ -178,6 +285,24 @@ class tsurf(object):
         self.AXIS_UNIT = self.default_AXIS_UNIT
 
     def write(self, outname):
+        """
+        Write the tsurf to a GOCAD TSurf ``.ts`` file.
+
+        Writes the HEADER block, GOCAD_ORIGINAL_COORDINATE_SYSTEM block,
+        TFACE data (VRTX lines followed by TRGL lines), and the END
+        marker.
+
+        Parameters
+        ----------
+        outname :
+            Output file path for the TSurf file.
+
+        Notes
+        -----
+        Triangle connectivity is written with 1-based vertex indices as
+        required by the GOCAD TSurf format specification.  Only the first
+        cell block is written; multi-block meshes are not supported.
+        """
         with open(outname, 'w') as outfile:
             # Write Header...
             outfile.write('GOCAD TSurf 1\n')
@@ -223,4 +348,3 @@ class tsurf(object):
             for a, b, c in self.mesh.cells[0].data:
                 outfile.write('TRGL {} {} {}\n'.format(a+1, b+1, c+1))
             outfile.write('END\n')
-

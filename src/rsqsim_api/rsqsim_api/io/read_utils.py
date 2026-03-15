@@ -1,3 +1,4 @@
+"""Utilities for reading RSQSim output files in text, binary, CSV, DXF, STL, and VTK formats."""
 import os
 
 import meshio
@@ -11,12 +12,28 @@ catalogue_columns = ["t0", "m0", "mw", "x", "y", "z", "area", "dt"]
 
 def read_text(file: str, format: str):
     """
-    Reads scalar values from text files that are output of RSQSim.
-    Note that these files are produced if the code is compiled with
-    serial output.
-    :param file: file to read
-    :param format: either "d" (double) or "i" (integer)
-    :return:
+    Read scalar values from a text file output by RSQSim.
+
+    Produced when RSQSim is compiled with serial (text) output mode.
+
+    Parameters
+    ----------
+    file :
+        Path to the text file to read.
+    format :
+        Data type specifier: ``"d"`` for double (float64) or ``"i"``
+        for integer (int32).
+
+    Returns
+    -------
+    numpy.ndarray
+        Flattened 1-D array of values read from the file.
+
+    Raises
+    ------
+    AssertionError
+        If ``format`` is not ``"d"`` or ``"i"``, or if ``file`` does not
+        exist.
     """
     # Check file existence and that parameter supplied for format makes sense.
     assert format in ("d", "i")
@@ -30,12 +47,29 @@ def read_text(file: str, format: str):
 
 def read_binary(file: str, format: str, endian: str = "little"):
     """
-    Reads integer values from binary files that are output of RSQSim
+    Read scalar values from a binary file output by RSQSim.
 
-    :param file: file to read
-    :param format: either "d" (double) or "i" (integer)
-    :param endian: usually "little" unless we end up running on a non-standard system
-    :return:
+    Parameters
+    ----------
+    file :
+        Path to the binary file to read.
+    format :
+        Data type specifier: ``"d"`` for double (float64) or ``"i"``
+        for integer (int32).
+    endian :
+        Byte order of the file.  ``"little"`` (default) is standard for
+        most modern x86 systems; use ``"big"`` for non-standard platforms.
+
+    Returns
+    -------
+    numpy.ndarray
+        Flattened 1-D array of values read from the file.
+
+    Raises
+    ------
+    AssertionError
+        If ``endian`` is not ``"little"`` or ``"big"``, if ``format`` is
+        not ``"d"`` or ``"i"``, or if ``file`` does not exist.
     """
     # Check that parameter supplied for endianness makes sense
     assert endian in ("little", "big"), "Must specify either 'big' or 'little' endian"
@@ -51,6 +85,35 @@ def read_binary(file: str, format: str, endian: str = "little"):
 
 
 def read_csv_and_array(prefix: str, read_index: bool = True):
+    """
+    Read a catalogue CSV and its associated NumPy array files from a common prefix.
+
+    Expects files named ``<prefix>_catalogue.csv``, ``<prefix>_events.npy``,
+    ``<prefix>_patches.npy``, ``<prefix>_slip.npy``, and
+    ``<prefix>_slip_time.npy`` to exist on disk.
+
+    Parameters
+    ----------
+    prefix :
+        File path prefix (with or without trailing underscore).
+    read_index : bool, optional
+        If ``True`` (default), read the first column of the CSV as the
+        DataFrame index.
+
+    Returns
+    -------
+    list
+        ``[df, events, patches, slip, slip_time]`` where ``df`` is a
+        ``pandas.DataFrame`` and the remaining elements are NumPy arrays
+        loaded from the corresponding ``.npy`` files.
+
+    Raises
+    ------
+    AssertionError
+        If ``prefix`` is an empty string.
+    FileNotFoundError
+        If any of the five expected files is missing.
+    """
     assert prefix, "Empty prefix string supplied"
     if prefix[-1] != "_":
         prefix += "_"
@@ -72,15 +135,34 @@ def read_csv_and_array(prefix: str, read_index: bool = True):
 def read_earthquakes(earthquake_file: str, get_patch: bool = False, eq_start_index: int = None,
                      eq_end_index: int = None, endian: str = "little"):
     """
-    Reads earthquakes, inferring list file names from prefix of earthquake file.
-    Based on R scripts by Keith Richards-Dinger.
+    Read earthquake event data, inferring companion file names from the event file prefix.
 
-    :param earthquake_file: usually has a ".out" suffix
-    :param get_patch:
-    :param eq_start_index:
-    :param eq_end_index:
-    :param endian:
-    :return:
+    Based on R scripts by Keith Richards-Dinger.  The earthquake file is
+    expected to follow the naming convention ``eqs.<prefix>.out``.
+
+    Parameters
+    ----------
+    earthquake_file :
+        Path to the RSQSim earthquake output file, usually with a
+        ``.out`` suffix and named ``eqs.<prefix>.out``.
+    get_patch :
+        If ``True``, also read per-patch rupture data.  Currently unused
+        placeholder.
+    eq_start_index :
+        Zero-based index of the first earthquake to read.  Both
+        ``eq_start_index`` and ``eq_end_index`` must be provided together.
+    eq_end_index :
+        Zero-based index of the last earthquake to read (exclusive).
+    endian :
+        Byte order for binary companion files.  Defaults to ``"little"``.
+
+    Raises
+    ------
+    AssertionError
+        If ``endian`` is not ``"little"`` or ``"big"``, or if
+        ``earthquake_file`` does not exist.
+    ValueError
+        If ``eq_start_index >= eq_end_index`` when both are provided.
     """
     assert endian in ("little", "big"), "Must specify either 'big' or 'little' endian"
     assert os.path.exists(earthquake_file)
@@ -116,7 +198,30 @@ def read_earthquakes(earthquake_file: str, get_patch: bool = False, eq_start_ind
 
 
 def read_earthquake_catalogue(catalogue_file: str):
+    """
+    Read an RSQSim earthquake catalogue text file into a DataFrame.
 
+    Parses the catalogue file produced by RSQSim, skipping the header
+    block that ends with the line ``%%% end input files``, and loads the
+    subsequent rows into a DataFrame with the standard catalogue columns
+    ``t0, m0, mw, x, y, z, area, dt``.
+
+    Parameters
+    ----------
+    catalogue_file :
+        Path to the RSQSim catalogue text file.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with columns ``["t0", "m0", "mw", "x", "y", "z",
+        "area", "dt"]``, one row per earthquake event.
+
+    Raises
+    ------
+    AssertionError
+        If ``catalogue_file`` does not exist.
+    """
     assert os.path.exists(catalogue_file)
 
     with open(catalogue_file, "r") as fid:
@@ -134,11 +239,33 @@ def read_earthquake_catalogue(catalogue_file: str):
 
 def read_ts_coords(filename):
     """
-    This script reads in the tsurf (*.ts) files for the SCEC Community Fault Model (cfm)
-    as a numpy array.
-    The script is based on the matlab script ReadAndSaveCfm.m by Brendan Meade available
-    from http://structure.rc.fas.harvard.edu/cfm/download/meade/ReadAndSaveCfm.m
-    Copyright Paul Kaeufl, July 2014
+    Read vertex and triangle data from a tsurf (``.ts``) file.
+
+    Parses the SCEC Community Fault Model tsurf format, extracting
+    vertex coordinates and triangle connectivity.  Based on the MATLAB
+    script ``ReadAndSaveCfm.m`` by Brendan Meade.
+
+    Parameters
+    ----------
+    filename :
+        Path to the tsurf ``.ts`` file.
+
+    Returns
+    -------
+    vrtx : numpy.ndarray of shape (n_vertices, 4)
+        Vertex data array.  Each row is ``[vertex_id, x, y, z]``.
+    trgl : numpy.ndarray of shape (n_triangles, 3), dtype int
+        Triangle connectivity array.  Each row gives the three vertex IDs
+        forming a triangle.
+    tri : numpy.ndarray of shape (n_triangles, 9)
+        Triangle data array.  Each row contains the (x, y, z) coordinates
+        of all three corners concatenated: ``[x1,y1,z1, x2,y2,z2, x3,y3,z3]``.
+
+    Notes
+    -----
+    Copyright Paul Kaeufl, July 2014.
+    Original MATLAB script:
+    http://structure.rc.fas.harvard.edu/cfm/download/meade/ReadAndSaveCfm.m
     """
 
     f = open(filename, 'r')
@@ -171,7 +298,31 @@ def read_ts_coords(filename):
 
 def read_dxf(dxf_file: str):
     """
-    Reads mesh and boundary from dxf file exported from move. Returns boundary (as array) and triangles
+    Read a triangulated mesh and boundary polyline from a DXF file.
+
+    Expects a DXF file exported from Move containing exactly one
+    ``POLYLINE`` boundary and one or more ``3DFACE`` triangles.
+
+    Parameters
+    ----------
+    dxf_file :
+        Path to the DXF file.
+
+    Returns
+    -------
+    triangle_array : numpy.ndarray of shape (n_triangles, 9)
+        Each row contains the (x, y, z) coordinates of the three triangle
+        corners concatenated: ``[x1,y1,z1, x2,y2,z2, x3,y3,z3]``.
+    boundary_array : numpy.ndarray of shape (n_points, 3)
+        (x, y, z) coordinates of the boundary polyline vertices.
+
+    Raises
+    ------
+    AssertionError
+        If ``dxf_file`` does not exist, or if the file does not contain
+        both ``3DFACE`` and ``POLYLINE`` entities.
+    ValueError
+        If the file contains more than one ``POLYLINE`` boundary.
     """
     assert os.path.exists(dxf_file)
     dxf = ezdxf.readfile(dxf_file)
@@ -202,6 +353,33 @@ def read_dxf(dxf_file: str):
 
 
 def read_stl(stl_file: str, min_point_sep=100.):
+    """
+    Read a triangulated surface mesh from an STL file.
+
+    Merges near-duplicate vertices (within ``min_point_sep``) by averaging
+    their positions and removing degenerate triangles that result from the
+    merge.
+
+    Parameters
+    ----------
+    stl_file :
+        Path to the STL mesh file.
+    min_point_sep :
+        Minimum separation in metres below which two vertices are
+        considered duplicates and merged.  Defaults to 100.0 m.
+
+    Returns
+    -------
+    numpy.ndarray of shape (n_triangles, 9)
+        Each row contains the (x, y, z) coordinates of the three triangle
+        corners: ``[x1,y1,z1, x2,y2,z2, x3,y3,z3]``.
+
+    Raises
+    ------
+    AssertionError
+        If ``stl_file`` does not exist or if the mesh contains no
+        triangular cells.
+    """
     assert os.path.exists(stl_file)
 
     mesh = meshio.read(stl_file)
@@ -237,6 +415,36 @@ def read_stl(stl_file: str, min_point_sep=100.):
     return mesh_as_array
 
 def read_vtk(vtk_file: str, min_point_sep=1.):
+    """
+    Read a triangulated surface mesh with slip and rake data from a VTK file.
+
+    Merges near-duplicate vertices (within ``min_point_sep``) and removes
+    degenerate triangles, preserving the associated slip and rake cell data.
+
+    Parameters
+    ----------
+    vtk_file :
+        Path to the VTK mesh file.
+    min_point_sep :
+        Minimum separation in metres below which two vertices are
+        considered duplicates and merged.  Defaults to 1.0 m.
+
+    Returns
+    -------
+    mesh_as_array : numpy.ndarray of shape (n_triangles, 9)
+        Each row contains the (x, y, z) coordinates of the three triangle
+        corners: ``[x1,y1,z1, x2,y2,z2, x3,y3,z3]``.
+    slip : numpy.ndarray of shape (n_triangles,)
+        Slip magnitude (metres) for each triangle after duplicate removal.
+    rake : numpy.ndarray of shape (n_triangles,)
+        Rake angle (degrees) for each triangle after duplicate removal.
+
+    Raises
+    ------
+    AssertionError
+        If ``vtk_file`` does not exist, if the mesh contains no triangular
+        cells, or if the ``slip`` and ``rake`` cell data arrays are absent.
+    """
     assert os.path.exists(vtk_file)
 
     mesh = meshio.read(vtk_file)
@@ -277,4 +485,3 @@ def read_vtk(vtk_file: str, min_point_sep=1.):
 
 
     return mesh_as_array, slip, rake
-

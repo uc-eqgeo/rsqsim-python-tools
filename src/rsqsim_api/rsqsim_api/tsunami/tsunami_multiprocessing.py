@@ -1,3 +1,10 @@
+"""
+Multiprocessing utilities for computing tsunami Green's functions in parallel.
+
+Distributes the per-patch Green's-function computation across multiple
+worker processes and writes the results incrementally to a set of
+netCDF output files via a producer/consumer pattern.
+"""
 from rsqsim_api.fault.multifault import RsqSimMultiFault, RsqSimSegment
 import multiprocessing as mp
 from typing import Union
@@ -11,6 +18,43 @@ sentinel = None
 def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_range: np.ndarray, y_range: np.ndarray,
                            out_file_prefix: str, x_grid: np.ndarray = None, y_grid: np.ndarray = None, z_grid: np.ndarray = None, slip_magnitude: Union[float, int] = 1.,
                            num_processors: int = None, num_write: int = 8):
+    """
+    Compute tsunami Green's functions for all patches and write to netCDF files.
+
+    Distributes patch computations across ``num_processors`` worker
+    processes and writes results to ``num_write`` netCDF output files
+    via per-file output queues.  Patches are randomly shuffled before
+    distribution to balance load.
+
+    Parameters
+    ----------
+    fault : RsqSimSegment or RsqSimMultiFault
+        Fault model containing the patches to process.
+    x_range : numpy.ndarray of shape (nx,)
+        1-D easting coordinate array (NZTM metres).
+    y_range : numpy.ndarray of shape (ny,)
+        1-D northing coordinate array (NZTM metres).
+    out_file_prefix : str
+        Prefix for output netCDF files; files are named
+        ``{out_file_prefix}{i}.nc`` for ``i`` in
+        ``range(num_write)``.
+    x_grid : numpy.ndarray or None, optional
+        2-D easting grid of shape ``(ny, nx)``.  If ``None``,
+        constructed from ``x_range`` and ``y_range`` via meshgrid.
+    y_grid : numpy.ndarray or None, optional
+        2-D northing grid; must match ``x_grid`` shape.
+    z_grid : numpy.ndarray or None, optional
+        2-D elevation grid (m); defaults to all zeros.
+    slip_magnitude : float or int, optional
+        Unit slip magnitude used for the Green's function calculation.
+        Defaults to 1.
+    num_processors : int or None, optional
+        Number of worker processes.  Defaults to half the available
+        CPU count.
+    num_write : int, optional
+        Number of output netCDF files (and output processes).
+        Defaults to 8.
+    """
     assert all([isinstance(a, np.ndarray) for a in [x_range, y_range]])
     assert all([x_range.ndim == 1, y_range.ndim == 1])
 
@@ -86,10 +130,6 @@ def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_rang
         out_proc_ls.append(output_proc)
         output_proc.start()
 
-
-
-
-
     jobs = []
     in_queue = mp.Queue()
     for i in range(num_processes):
@@ -118,6 +158,21 @@ def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_rang
 
 
 def handle_output(output_queue: mp.Queue, output_file: str, dset_shape: tuple):
+    """
+    Consumer process that writes sea-surface displacement data to an HDF5 file.
+
+    Reads ``(index, vert_disp)`` tuples from the queue until the
+    sentinel value is received.
+
+    Parameters
+    ----------
+    output_queue : multiprocessing.Queue
+        Queue delivering ``(index, disp_array)`` tuples.
+    output_file : str
+        Output HDF5 file path.
+    dset_shape : tuple
+        Shape of the ``"ssd_1m"`` dataset.
+    """
     f = h5py.File(output_file, "w")
     disp_dset = f.create_dataset("ssd_1m", shape=dset_shape, dtype="f")
 
@@ -133,6 +188,29 @@ def handle_output(output_queue: mp.Queue, output_file: str, dset_shape: tuple):
 
 def handle_output_netcdf(output_queue: mp.Queue, patch_indices: np.ndarray, output_file: str, dset_shape: tuple,
                          x_range: np.ndarray, y_range: np.ndarray):
+    """
+    Consumer process that writes sea-surface displacement data to a netCDF4 file.
+
+    Creates a netCDF4 file with dimensions ``(npatch, y, x)`` and
+    reads ``(index, patch_index, disp_array)`` tuples from the queue
+    until the sentinel value is received.
+
+    Parameters
+    ----------
+    output_queue : multiprocessing.Queue
+        Queue delivering ``(local_index, patch_index, disp_array)``
+        tuples.
+    patch_indices : numpy.ndarray
+        Array of global patch indices stored in this file.
+    output_file : str
+        Output netCDF4 file path.
+    dset_shape : tuple of int
+        Shape ``(n_patches, ny, nx)`` of the SSD variable.
+    x_range : numpy.ndarray
+        1-D easting coordinate array.
+    y_range : numpy.ndarray
+        1-D northing coordinate array.
+    """
     assert len(dset_shape) == 3
     assert len(patch_indices) == dset_shape[0]
 
@@ -166,6 +244,32 @@ def handle_output_netcdf(output_queue: mp.Queue, patch_indices: np.ndarray, outp
 def patch_greens_functions(in_queue: mp.Queue, x_sites: np.ndarray, y_sites: np.ndarray,
                            z_sites: np.ndarray,
                            out_queue_dic: dict, grid_shape: tuple, slip_magnitude: Union[int, float] = 1):
+    """
+    Worker process that computes Green's functions for patches received from the input queue.
+
+    Reads ``(file_no, file_index, patch_number, patch)`` tuples from
+    ``in_queue``, calls
+    :meth:`~rsqsim_api.fault.patch.RsqSimTriangularPatch.calculate_tsunami_greens_functions`,
+    and forwards the result to the appropriate output queue.
+
+    Parameters
+    ----------
+    in_queue : multiprocessing.Queue
+        Input queue of ``(file_no, file_index, patch_number, patch)``
+        tuples.  A ``None`` sentinel signals termination.
+    x_sites : numpy.ndarray
+        Flattened easting coordinates of the output grid.
+    y_sites : numpy.ndarray
+        Flattened northing coordinates.
+    z_sites : numpy.ndarray
+        Flattened elevation coordinates.
+    out_queue_dic : dict
+        Mapping of file index to output queue.
+    grid_shape : tuple
+        Shape of the output displacement grid.
+    slip_magnitude : int or float, optional
+        Unit slip magnitude.  Defaults to 1.
+    """
     while True:
         queue_contents = in_queue.get()
         if queue_contents:

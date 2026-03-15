@@ -1,3 +1,13 @@
+"""
+RSQSim fault segment and related classes.
+
+Provides :class:`DisplacementArray` for storing surface-displacement
+observations, :class:`RsqSimSegment` for a single triangulated fault
+segment with geometry, slip-rate properties, and discretisation
+utilities, :class:`RsqSimFault` as a container for one or more
+segments, and :class:`OpenQuakeSegment` for OpenQuake polygon
+representations.
+"""
 import os
 from collections.abc import Iterable
 from typing import Union, List
@@ -24,6 +34,25 @@ transformer_utm2nztm = Transformer.from_crs(32759, 2193, always_xy=True)
 
 
 class DisplacementArray:
+    """
+    Container for 3-component surface-displacement observations at a set of stations.
+
+    Parameters
+    ----------
+    x_array : numpy.ndarray
+        Easting (NZTM x) coordinates of the stations.
+    y_array : numpy.ndarray
+        Northing (NZTM y) coordinates.
+    z_array : numpy.ndarray or None, optional
+        Elevation coordinates.  If ``None``, assumed to be zero.
+    e_array : numpy.ndarray or None, optional
+        East-component displacement.
+    n_array : numpy.ndarray or None, optional
+        North-component displacement.
+    v_array : numpy.ndarray or None, optional
+        Vertical-component displacement.
+    """
+
     def __init__(self, x_array: np.ndarray, y_array: np.ndarray, z_array: np.ndarray = None,
                  e_array: np.ndarray = None, n_array: np.ndarray = None, v_array: np.ndarray = None):
         assert x_array.shape == y_array.shape, "X and Y arrays should be the same size"
@@ -55,12 +84,47 @@ class DisplacementArray:
 
 
 class RsqSimSegment:
+    """
+    A single triangulated fault segment for use with RSQSim.
+
+    Stores triangular patch geometry, slip-rate components, adjacency
+    and Laplacian matrices, and surface-trace information.  Provides
+    classmethods for constructing a segment from various file formats
+    (triangle arrays, tsurf, DXF, STL, VTK, pandas DataFrames) and
+    methods for exporting to mesh formats and RSQSim input files.
+
+    Attributes
+    ----------
+    name : str or None
+        Lower-case fault name without spaces.
+    segment_number : int
+        Integer identifier for this segment.
+    patch_type : str
+        ``"triangle"`` or ``"rectangle"``.
+    patch_outlines : list or None
+        List of :class:`~rsqsim_api.fault.patch.RsqSimTriangularPatch`
+        objects.
+    patch_numbers : numpy.ndarray or None
+        Global patch-number array.
+    vertices : numpy.ndarray or None
+        Array of unique vertex coordinates, shape (n_verts, 3).
+    triangles : numpy.ndarray or None
+        Triangle connectivity, shape (n_tri, 3), referencing
+        :attr:`vertices` by index.
+    """
+
     def __init__(self, segment_number: int, patch_type: str = "triangle", fault_name: str = None):
         """
+        Initialise an empty segment.
 
-        :param segment_number:
-        :param patch_type:
-        :param fault_name:
+        Parameters
+        ----------
+        segment_number : int
+            Identifier for this segment within the fault model.
+        patch_type : str, optional
+            ``"triangle"`` (default) or ``"rectangle"``.
+        fault_name : str or None, optional
+            Name for the fault segment; spaces are not permitted.
         """
         self._name = None
         self._patch_numbers = None
@@ -181,7 +245,12 @@ class RsqSimSegment:
     @property
     def bounds(self):
         """
-        Square box in XY plane containing all vertices
+        Axis-aligned bounding box of all vertices in the XY plane.
+
+        Returns
+        -------
+        numpy.ndarray of shape (4,)
+            ``[x_min, y_min, x_max, y_max]`` in NZTM metres.
         """
         x0 = min(self.vertices[:, 0])
         y0 = min(self.vertices[:, 1])
@@ -202,7 +271,7 @@ class RsqSimSegment:
 
 
     def get_max_depth(self):
-
+        """Compute and cache the maximum depth (most negative z) of all vertices."""
         self._max_depth=np.min(self.vertices[:,-1])
 
     @boundary.setter
@@ -226,6 +295,7 @@ class RsqSimSegment:
         return self._mean_dip
 
     def get_mean_dip(self):
+        """Compute and cache the arithmetic mean dip of all patches."""
         cum_dip = []
         for patch in self.patch_outlines:
             cum_dip.append(patch.dip)
@@ -239,6 +309,7 @@ class RsqSimSegment:
         return self._mean_slip_rate
 
     def get_mean_slip_rate(self):
+        """Compute and cache the mean total slip rate across all patches (m/s)."""
         all_patches = []
         for patch in self.patch_outlines:
             slip_rate = patch.total_slip
@@ -248,6 +319,7 @@ class RsqSimSegment:
         self._mean_slip_rate = fault_slip_rate
 
     def get_unique_vertices(self):
+        """Populate :attr:`vertices` with the unique vertex coordinates of all patches."""
         if self.patch_vertices is None:
             raise ValueError("Read in triangles first!")
         all_vertices = np.reshape(self.patch_vertices, (3 * len(self.patch_vertices), 3))
@@ -267,6 +339,12 @@ class RsqSimSegment:
         return self._edge_lines
 
     def generate_triangles(self):
+        """
+        Build :attr:`vertices`, :attr:`triangles`, and :attr:`edge_lines` from the patch outlines.
+
+        Deduplicates vertices across all patches, then constructs the
+        indexed triangle and edge-line arrays.
+        """
         assert self.patch_outlines is not None, "Load patches first!"
         all_vertices = [patch.vertices for patch in self.patch_outlines]
         unique_vertices = np.unique(np.vstack(all_vertices), axis=0)
@@ -287,6 +365,20 @@ class RsqSimSegment:
         self._edge_lines = np.array(line_ls)
 
     def find_triangles_from_vertex_index(self, vertex_index: int):
+        """
+        Return the indices of triangles that contain a given vertex index.
+
+        Parameters
+        ----------
+        vertex_index : int
+            Index into :attr:`vertices`.
+
+        Returns
+        -------
+        list of int
+            Indices of triangles (rows of :attr:`triangles`) that
+            include ``vertex_index``.
+        """
         assert isinstance(vertex_index, int)
         assert 0 <= vertex_index < len(self.vertices)
         triangle_index_list = []
@@ -303,17 +395,44 @@ class RsqSimSegment:
                        strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None,
                        rake: Union[int, float, np.ndarray] = None, total_slip: np.ndarray = None, min_patch_area: float = 1.):
         """
-        Create a segment from triangle vertices and (if appropriate) populate it with strike-slip/dip-slip values
-        either specified separately or (if total_slip and rake are given) calculated from total slip + rake.
-        :param segment_number:
-        :param triangles:
-        :param patch_numbers:
-        :param fault_name:
-        :param strike_slip:
-        :param dip_slip:
-        :param total_slip:
-        :param rake:
-        :return:
+        Create a segment from a flat triangle-vertex array.
+
+        Populates the segment with
+        :class:`~rsqsim_api.fault.patch.RsqSimTriangularPatch` objects.
+        Strike-slip and dip-slip components can be supplied directly or
+        computed from ``total_slip`` and ``rake``.  Degenerate patches
+        with area less than ``min_patch_area`` are removed.
+
+        Parameters
+        ----------
+        triangles : array-like of shape (n, 9)
+            Flat array of triangle vertex coordinates; each row is
+            ``[x1,y1,z1, x2,y2,z2, x3,y3,z3]``.
+        segment_number : int, optional
+            Segment identifier.  Defaults to 0.
+        patch_numbers : array-like or None, optional
+            Global patch numbers.  If ``None``, assigned sequentially
+            from 0.
+        fault_name : str or None, optional
+            Name for the segment.
+        strike_slip : float or None, optional
+            Strike-slip rate (m/s).
+        dip_slip : float or None, optional
+            Dip-slip rate (m/s).
+        rake : float, numpy.ndarray, or None, optional
+            Rake angle(s) in degrees.  Required when ``total_slip`` is
+            given.
+        total_slip : numpy.ndarray or None, optional
+            Total slip rate (m/s) per patch; used with ``rake`` to
+            compute the ss/ds components.
+        min_patch_area : float, optional
+            Patches smaller than this area (m²) are discarded.
+            Defaults to 1.0.
+
+        Returns
+        -------
+        RsqSimSegment
+            Populated segment object.
         """
         # Test shape of input array is appropriate
         triangle_array = np.array(triangles)
@@ -384,6 +503,28 @@ class RsqSimSegment:
     def from_tsurface(cls, tsurface_file: str, segment_number: int = 0,
                       patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None,
                       strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None):
+        """
+        Create a segment from a tsurf (.ts) mesh file.
+
+        Parameters
+        ----------
+        tsurface_file : str
+            Path to the tsurf file.
+        segment_number : int, optional
+            Segment identifier.  Defaults to 0.
+        patch_numbers : array-like or None, optional
+            Global patch numbers.
+        fault_name : str or None, optional
+            Name for the segment.
+        strike_slip : float or None, optional
+            Strike-slip rate (m/s).
+        dip_slip : float or None, optional
+            Dip-slip rate (m/s).
+
+        Returns
+        -------
+        RsqSimSegment
+        """
         assert os.path.exists(tsurface_file)
         tsurface_mesh = tsurf(tsurface_file)
 
@@ -395,6 +536,28 @@ class RsqSimSegment:
     def from_dxf(cls, dxf_file: str, segment_number: int = 0,
                  patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None,
                  strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None):
+        """
+        Create a segment from a DXF mesh file.
+
+        Parameters
+        ----------
+        dxf_file : str
+            Path to the DXF file.
+        segment_number : int, optional
+            Segment identifier.  Defaults to 0.
+        patch_numbers : array-like or None, optional
+            Global patch numbers.
+        fault_name : str or None, optional
+            Name for the segment.
+        strike_slip : float or None, optional
+            Strike-slip rate (m/s).
+        dip_slip : float or None, optional
+            Dip-slip rate (m/s).
+
+        Returns
+        -------
+        RsqSimSegment
+        """
         triangles, boundary = read_dxf(dxf_file)
         segment = cls.from_triangles(triangles, segment_number=segment_number, patch_numbers=patch_numbers,
                                      fault_name=fault_name, strike_slip=strike_slip, dip_slip=dip_slip)
@@ -407,6 +570,41 @@ class RsqSimSegment:
                     patch_numbers: Union[list, tuple, set, np.ndarray], fault_name: str = None,
                     strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None, read_rake: bool = True,
                     read_slip_rate: bool = True, transform_from_utm: bool = False):
+        """
+        Create a segment from a pandas DataFrame with triangle and slip-rate columns.
+
+        Parameters
+        ----------
+        dataframe : pandas.DataFrame
+            DataFrame with the first 9 columns being vertex coordinates
+            (x1,y1,z1,…,x3,y3,z3), plus optional ``"rake"`` and
+            ``"slip_rate"`` columns.
+        segment_number : int
+            Segment identifier.
+        patch_numbers : array-like
+            Global patch numbers, one per row.
+        fault_name : str or None, optional
+            Name for the segment.
+        strike_slip : float or None, optional
+            Strike-slip rate (m/s); overridden when ``read_rake`` is
+            ``True``.
+        dip_slip : float or None, optional
+            Dip-slip rate (m/s); overridden when ``read_rake`` is
+            ``True``.
+        read_rake : bool, optional
+            If ``True`` (default), read rake from the ``"rake"``
+            column and compute ss/ds from total slip × rake.
+        read_slip_rate : bool, optional
+            If ``True`` (default), read slip rate from the
+            ``"slip_rate"`` column.
+        transform_from_utm : bool, optional
+            If ``True``, transform vertex coordinates from UTM zone 59S
+            (EPSG:32759) to NZTM (EPSG:2193).  Defaults to ``False``.
+
+        Returns
+        -------
+        RsqSimSegment
+        """
 
         triangles = dataframe.iloc[:, :9].to_numpy()
         if transform_from_utm:
@@ -465,6 +663,27 @@ class RsqSimSegment:
     @classmethod
     def from_pickle(cls, dataframe: pd.DataFrame, segment_number: int,
                     patch_numbers: Union[list, tuple, set, np.ndarray], fault_name: str = None):
+        """
+        Create a segment from a pickled patch DataFrame.
+
+        Parameters
+        ----------
+        dataframe : pandas.DataFrame
+            DataFrame produced by :meth:`RsqSimMultiFault.pickle_model`,
+            with columns ``[vertices, normal_vector, down_dip_vector,
+            dip, along_strike_vector, centre, area, dip_slip,
+            strike_slip, fault_num]``.
+        segment_number : int
+            Segment identifier.
+        patch_numbers : array-like
+            Global patch numbers.
+        fault_name : str or None, optional
+            Name for the segment.
+
+        Returns
+        -------
+        RsqSimSegment
+        """
         patches = dataframe.to_numpy()
 
         # Create empty segment object
@@ -491,7 +710,30 @@ class RsqSimSegment:
                  patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None,
                  strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None,
                  rake: Union[int, float] = None, total_slip: np.ndarray = None):
+        """
+        Create a segment from an STL mesh file.
 
+        Parameters
+        ----------
+        stl_file : str
+            Path to the STL file.
+        segment_number : int, optional
+            Segment identifier.  Defaults to 0.
+        patch_numbers : array-like or None, optional
+            Global patch numbers.
+        fault_name : str or None, optional
+            Name for the segment.
+        strike_slip, dip_slip : float or None, optional
+            Slip-rate components (m/s).
+        rake : float or None, optional
+            Rake angle in degrees.
+        total_slip : numpy.ndarray or None, optional
+            Total slip rates (m/s) per patch.
+
+        Returns
+        -------
+        RsqSimSegment
+        """
         triangles = read_stl(stl_file)
         return cls.from_triangles(triangles, segment_number=segment_number, patch_numbers=patch_numbers,
                                   fault_name=fault_name, strike_slip=strike_slip, dip_slip=dip_slip, rake=rake)
@@ -499,7 +741,24 @@ class RsqSimSegment:
     @classmethod
     def from_vtk(cls, vtk_file: str, segment_number: int = 0,
                  patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None):
+        """
+        Create a segment from a VTK mesh file containing slip and rake data.
 
+        Parameters
+        ----------
+        vtk_file : str
+            Path to the VTK file.
+        segment_number : int, optional
+            Segment identifier.  Defaults to 0.
+        patch_numbers : array-like or None, optional
+            Global patch numbers.
+        fault_name : str or None, optional
+            Name for the segment.
+
+        Returns
+        -------
+        RsqSimSegment
+        """
         triangles, slip, rake = read_vtk(vtk_file)
         return cls.from_triangles(triangles, segment_number=segment_number, patch_numbers=patch_numbers,
                                   fault_name=fault_name, total_slip=slip, rake=rake)
@@ -510,14 +769,17 @@ class RsqSimSegment:
 
     def build_adjacency_map(self,verbose: bool =False,):
         """
-        For each triangle vertex, find the indices of the adjacent triangles.
-        This function overwrites that from the parent class TriangularPatches.
+        Build a triangle adjacency map (triangles sharing an edge).
 
-        :Kwargs:
-            * verbose       : Speak to me
+        For each triangle, finds all other triangles that share exactly
+        two vertices (i.e. a full edge).  Populates
+        :attr:`adjacency_map` as a list of lists.
 
-        :Returns:
-            * None
+        Parameters
+        ----------
+        verbose : bool, optional
+            If ``True``, print triangle indices as they are appended.
+            Defaults to ``False``.
         """
 
         self._adjacency_map = []
@@ -539,6 +801,15 @@ class RsqSimSegment:
             self._adjacency_map.append(adjacent_triangles)
 
     def write_neighbour_file(self, filename: str):
+        """
+        Write a text file listing the neighbouring triangle indices for each triangle.
+
+        Parameters
+        ----------
+        filename : str
+            Output file path.  Each line lists the space-separated
+            neighbour indices for one triangle.
+        """
         neighbours = [np.unique(np.vstack([np.argwhere((tri[i]==self.triangles).any(axis=1))
                                            for i in range(3)])) for tri in self.triangles]
         with open(filename, "w") as f:
@@ -548,20 +819,22 @@ class RsqSimSegment:
                 f.write("\n")
 
     def build_laplacian_matrix(self,double=True, verbose:bool=True):
-
         """
-        Build a discrete Laplacian smoothing matrix.
-        :Args:
-            * verbose       : if True, displays stuff.
-            * method        : Method to estimate the Laplacian operator
-                - 'count'   : The diagonal is 2-times the number of surrounding nodes. Off diagonals are -2/(number of
-                surrounding nodes) for the surrounding nodes, 0 otherwise.
-                - 'distance': Computes the scale-dependent operator based on Desbrun et al 1999. (Mathieu Desbrun, Mark
-                Meyer, Peter Schr\"oder, and Alan Barr, 1999. Implicit Fairing of Irregular Meshes using Diffusion and Curvature Flow, Proceedings of SIGGRAPH).
-            * irregular     : Not used, here for consistency purposes
-            * double : True if want a repeated Laplacian (for slip inversions) False for NxN
-        :Returns:
-            * Laplacian     : 2D array
+        Build a distance-weighted discrete Laplacian smoothing matrix.
+
+        Uses inter-patch centre distances to form the scale-dependent
+        Laplacian operator (Desbrun et al., 1999).  Normalises by the
+        maximum absolute diagonal entry.
+
+        Parameters
+        ----------
+        double : bool, optional
+            If ``True`` (default), horizontally stack two copies of the
+            matrix (for use in slip inversions with separate ss/ds
+            columns).  If ``False``, store an N×N matrix in
+            :attr:`laplacian_sing`.
+        verbose : bool, optional
+            If ``True`` (default), print progress messages.
         """
 
         # Build the tent adjacency map
@@ -616,6 +889,23 @@ class RsqSimSegment:
         return self._laplacian_sing
 
     def find_top_vertex_indices(self, depth_tolerance: Union[float, int] = 100., complicated_faults: bool =False ):
+        """
+        Return indices of the shallowest vertices within a depth tolerance.
+
+        Parameters
+        ----------
+        depth_tolerance : float or int, optional
+            Vertical tolerance in metres below the shallowest vertex.
+            Defaults to 100.
+        complicated_faults : bool, optional
+            If ``True``, use edge-vertex logic to handle non-planar or
+            folded fault geometries.  Defaults to ``False``.
+
+        Returns
+        -------
+        numpy.ndarray of int
+            Vertex indices (into :attr:`vertices`) of the top edge.
+        """
         if complicated_faults:
             all_vertices = np.reshape(self.patch_vertices, (3 * len(self.patch_vertices), 3))
             verts, n_occ = np.unique(all_vertices, axis=0, return_counts=True)
@@ -640,21 +930,81 @@ class RsqSimSegment:
         pass
 
     def find_top_vertices(self, depth_tolerance: Union[float, int] = 100, complicated_faults: bool =False ):
+        """
+        Return 3-D coordinates of the shallowest vertices.
+
+        Parameters
+        ----------
+        depth_tolerance : float or int, optional
+            Vertical tolerance (m) below the shallowest vertex.
+            Defaults to 100.
+        complicated_faults : bool, optional
+            Passed to :meth:`find_top_vertex_indices`.
+
+        Returns
+        -------
+        numpy.ndarray of shape (n, 3)
+        """
         shallow_indices = self.find_top_vertex_indices(depth_tolerance, complicated_faults=complicated_faults)
         return self.vertices[shallow_indices]
 
     def find_top_edges(self, depth_tolerance: Union[float, int] = 100, complicated_faults: bool =False):
+        """
+        Return the edge-line pairs (vertex index pairs) forming the top edge of the fault.
+
+        Parameters
+        ----------
+        depth_tolerance : float or int, optional
+            Vertical tolerance (m) below the shallowest vertex.
+            Defaults to 100.
+        complicated_faults : bool, optional
+            Passed to :meth:`find_top_vertex_indices`.
+
+        Returns
+        -------
+        numpy.ndarray of shape (n_edges, 2)
+        """
         shallow_indices = self.find_top_vertex_indices(depth_tolerance, complicated_faults=complicated_faults)
         top_edges = self.edge_lines[np.all(np.isin(self.edge_lines, shallow_indices), axis=1)]
         return top_edges
 
     def find_top_patch_numbers(self, depth_tolerance: Union[float, int] = 100):
+        """
+        Return the patch numbers whose triangles include at least one top-edge vertex.
+
+        Parameters
+        ----------
+        depth_tolerance : float or int, optional
+            Vertical tolerance (m) below the shallowest vertex.
+            Defaults to 100.
+
+        Returns
+        -------
+        list of int
+        """
         shallow_indices = self.find_top_vertex_indices(depth_tolerance)
         top_patch_numbers = [patch_i for patch_i, triangle in zip(self.patch_numbers, self.triangles)
                              if any([shallow_index in triangle for shallow_index in shallow_indices])]
         return top_patch_numbers
 
     def find_edge_patch_numbers(self, top: bool = True, depth_tolerance: Union[float, int] = 100):
+        """
+        Return patch numbers for patches that lie on the outer edge of the fault.
+
+        Parameters
+        ----------
+        top : bool, optional
+            If ``True`` (default), include top-edge patches.  If
+            ``False``, exclude top-edge patches (returning only lateral
+            and bottom edge patches).
+        depth_tolerance : float or int, optional
+            Vertical tolerance (m) for identifying top patches.
+            Defaults to 100.
+
+        Returns
+        -------
+        numpy.ndarray of int
+        """
         all_vertices = np.vstack(self.patch_vertices)
         unique_vertices, n_occ = np.unique(all_vertices, axis=0, return_counts=True)
         edge_vertices = unique_vertices[n_occ <=3]
@@ -666,6 +1016,14 @@ class RsqSimSegment:
         return edge_patch_numbers
 
     def find_all_outside_edges(self):
+        """
+        Return all boundary edges of the triangulated surface (edges belonging to only one triangle).
+
+        Returns
+        -------
+        numpy.ndarray of shape (n_boundary_edges, 2)
+            Each row is a sorted pair of vertex indices.
+        """
         triangle_edges = np.array([np.sort(np.array(list(combinations(tri, 2))), axis=1) for tri in self.triangles])
         unique_edges, edge_counts = np.unique(triangle_edges.reshape(-1, 2), axis=0, return_counts=True)
         outside_edges = unique_edges[edge_counts == 1]
@@ -744,9 +1102,26 @@ class RsqSimSegment:
 
     def grid_surface_rbf(self, resolution):
         """
-        Won't work for vertical faults
-        @param resolution:
-        @return:
+        Interpolate the fault surface depth onto a regular 2-D grid using RBF interpolation.
+
+        Projects the fault vertices into a regular (x, y) grid within
+        the bounding box of the fault outline and interpolates the z
+        (depth) coordinate using a radial basis function.  Not suitable
+        for near-vertical faults.
+
+        Parameters
+        ----------
+        resolution : float
+            Grid spacing in NZTM metres.
+
+        Returns
+        -------
+        xx : numpy.ndarray of shape (ny, nx)
+            Easting grid.
+        yy : numpy.ndarray of shape (ny, nx)
+            Northing grid.
+        z : numpy.ndarray of shape (ny, nx)
+            Interpolated depth values.
         """
         bounds = np.array(self.fault_outline.bounds)
         x = np.arange(bounds[0], bounds[2] + resolution, resolution)
@@ -807,12 +1182,41 @@ class RsqSimSegment:
         return unary_union(list(multip.geoms))
 
     def get_slip_vec_3d(self):
+        """
+        Return the 3-D slip vector for each patch.
+
+        Returns
+        -------
+        numpy.ndarray of shape (n_patches, 3)
+        """
         slip_vecs = []
         for patch in self.patch_outlines:
             slip_vecs.append(patch.slip_vec_3d())
         return np.array(slip_vecs)
 
     def plot_2d(self, ax: plt.Axes, cmap: str = "viridis", max_slip: float = 10., alpha: float = 0.5, mm_yr: bool = True):
+        """
+        Plot the fault segment in map view coloured by slip rate.
+
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes
+            Axes to draw onto.
+        cmap : str, optional
+            Colormap name.  Defaults to ``"viridis"``.
+        max_slip : float, optional
+            Maximum slip rate for the colour scale.  Defaults to 10.
+        alpha : float, optional
+            Transparency (0–1).  Defaults to 0.5.
+        mm_yr : bool, optional
+            If ``True`` (default), convert slip rate from m/s to mm/yr
+            before plotting.
+
+        Returns
+        -------
+        matplotlib.collections.PolyCollection
+            The tripcolor artist.
+        """
         if mm_yr:
             slip = self.total_slip * csts.seconds_per_year * 1.e3
         else:
@@ -821,6 +1225,22 @@ class RsqSimSegment:
                             cmap=cmap, vmin=0, vmax=max_slip, alpha=alpha)
 
     def to_mesh(self, write_slip: bool = False, convert_to_mm_yr: bool = False):
+        """
+        Convert the segment to a :class:`meshio.Mesh` object.
+
+        Parameters
+        ----------
+        write_slip : bool, optional
+            If ``True``, attach slip and rake as cell data.
+            Defaults to ``False``.
+        convert_to_mm_yr : bool, optional
+            If ``True``, convert slip from m/s to mm/yr.
+            Defaults to ``False``.
+
+        Returns
+        -------
+        meshio.Mesh
+        """
         mesh = meshio.Mesh(points=self.vertices, cells=[("triangle", self.triangles)])
         if write_slip:
             if convert_to_mm_yr:
@@ -832,14 +1252,49 @@ class RsqSimSegment:
         return mesh
 
     def to_stl(self, stl_name: str):
+        """
+        Write the segment mesh to an STL file.
+
+        Parameters
+        ----------
+        stl_name : str
+            Output STL file path.
+        """
         mesh = self.to_mesh()
         mesh.write(stl_name, file_format="stl")
 
     def to_vtk(self, vtk_name: str, write_slip: bool = False, convert_to_mm_yr: bool = False):
+        """
+        Write the segment mesh to a VTK file.
+
+        Parameters
+        ----------
+        vtk_name : str
+            Output VTK file path.
+        write_slip : bool, optional
+            Attach slip/rake as cell data.  Defaults to ``False``.
+        convert_to_mm_yr : bool, optional
+            Convert slip to mm/yr.  Defaults to ``False``.
+        """
         mesh = self.to_mesh(write_slip=write_slip, convert_to_mm_yr=convert_to_mm_yr)
         mesh.write(vtk_name, file_format="vtk")
 
     def to_gpd(self, write_slip: bool = False, crs: int = 2193):
+        """
+        Convert the segment to a GeoDataFrame of patch polygons.
+
+        Parameters
+        ----------
+        write_slip : bool, optional
+            If ``True``, include ``"slip"`` and ``"rake"`` columns.
+            Defaults to ``False``.
+        crs : int, optional
+            EPSG code for the output CRS.  Defaults to 2193 (NZTM).
+
+        Returns
+        -------
+        geopandas.GeoDataFrame
+        """
         if write_slip:
             gdf = gpd.GeoDataFrame({"slip": self.total_slip, "rake": self.rake}, geometry=[Polygon(patch) for patch in self.patch_vertices], crs=crs)
         else:
@@ -892,11 +1347,38 @@ class RsqSimSegment:
 
 
     def to_rsqsim_fault_file(self, flt_name, mm_yr: bool = True):
+        """
+        Write the segment to an RSQSim fault input file.
+
+        Parameters
+        ----------
+        flt_name : str
+            Output file path.
+        mm_yr : bool, optional
+            If ``True`` (default), interpret slip rates as mm/yr
+            (converts to m/s for the output file).
+        """
         tris = self.to_rsqsim_fault_array(mm_yr=mm_yr)
 
         tris.to_csv(flt_name, index=False, header=False, sep="\t", encoding='ascii')
 
     def to_rsqsim_fault_array(self, mm_yr: bool = True):
+        """
+        Build a DataFrame in RSQSim fault-file format for this segment.
+
+        Columns are the 9 vertex coordinates, rake, slip rate, fault
+        number, and fault name.
+
+        Parameters
+        ----------
+        mm_yr : bool, optional
+            If ``True`` (default), treat stored slip rates as mm/yr
+            and convert to m/s.
+
+        Returns
+        -------
+        pandas.DataFrame
+        """
         tris = pd.DataFrame(self.patch_triangle_rows)
         if self.rake is not None:
             rakes = pd.Series(self.rake)
@@ -951,10 +1433,34 @@ class RsqSimSegment:
         return strike_dir_vec
 
     def get_patch_centres(self):
+        """
+        Return the centre coordinates of all patches.
+
+        Returns
+        -------
+        numpy.ndarray of shape (n_patches, 3)
+        """
         centres = np.array([patch.centre for patch in self.patch_outlines])
         return centres
 
     def get_average_dip(self, approx_spacing: float = 5000.0):
+        """
+        Estimate the average dip of the fault by fitting lines to along-dip cross-sections.
+
+        Samples cross-sections at approximately ``approx_spacing``
+        intervals along the trace and returns the median dip.
+
+        Parameters
+        ----------
+        approx_spacing : float, optional
+            Approximate along-strike spacing (m) for cross-sections.
+            Defaults to 5000.
+
+        Returns
+        -------
+        float
+            Median dip angle in degrees.
+        """
         centre_points, width = optimize_point_spacing(self.trace, approx_spacing)
         centre_array = np.vstack([centre_point.coords for centre_point in centre_points])
         centre_array_3d = np.vstack([centre_array.T, np.zeros(centre_array.shape[0])]).T
@@ -972,9 +1478,27 @@ class RsqSimSegment:
 
     def discretize_rectangular_tiles(self, tile_size: float = 5000., interpolation_distance: float = 1000.):
         """
-        Discretize the fault into rectangular tiles of the given size.
-        :param tile_size: Size of the tiles in metres.
-        :return: A list of rectangular tiles.
+        Discretize the fault into rectangular tiles of approximately uniform size.
+
+        Samples cross-sections along the trace, interpolates the
+        down-dip profile, fits local best-fit planes, and constructs
+        four-corner rectangular tile arrays centred on each interpolated
+        point.
+
+        Parameters
+        ----------
+        tile_size : float, optional
+            Target tile dimension along strike and down-dip (m).
+            Defaults to 5000.
+        interpolation_distance : float, optional
+            Spacing (m) used when interpolating the down-dip profile.
+            Defaults to 1000.
+
+        Returns
+        -------
+        numpy.ndarray of shape (n_tiles, 4, 3)
+            Corner coordinates of each rectangular tile in NZTM (m).
+            NaN-containing tiles are removed if any are produced.
         """
         centre_points, width = optimize_point_spacing(self.trace, tile_size)
         centre_array = np.vstack([centre_point.coords for centre_point in centre_points])
@@ -1093,10 +1617,21 @@ class RsqSimSegment:
 
 class RsqSimFault:
     """
-    The idea is to allow a fault to have one or more segments
+    Container for one or more :class:`RsqSimSegment` objects representing a single fault.
+
+    Parameters
+    ----------
+    segments : RsqSimSegment or list of RsqSimSegment
+        One or more segments composing this fault.
     """
 
     def __init__(self, segments: Union[RsqSimSegment, List[RsqSimSegment]]):
+        """
+        Parameters
+        ----------
+        segments : RsqSimSegment or list of RsqSimSegment
+            One or more segments composing this fault.
+        """
         self._segments = None
         self._vertices = None
 
@@ -1119,5 +1654,20 @@ class RsqSimFault:
 
 
 class OpenQuakeSegment:
+    """
+    Lightweight wrapper around a list of polygons for OpenQuake fault representation.
+
+    Parameters
+    ----------
+    polygons : list
+        Polygon geometries representing the fault segment.
+    """
+
     def __init__(self, polygons: list):
+        """
+        Parameters
+        ----------
+        polygons : list
+            Polygon geometries representing the fault segment.
+        """
         self._polygons = polygons

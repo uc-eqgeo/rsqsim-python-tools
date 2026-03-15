@@ -1,3 +1,10 @@
+"""
+Geometric utility functions for fault-trace analysis and manipulation.
+
+Provides bearing arithmetic, line operations (strike, dip direction,
+reversal, smoothing), and helpers for merging nearly-adjacent
+:class:`~shapely.geometry.LineString` segments into single traces.
+"""
 import os.path
 
 import numpy as np
@@ -9,10 +16,22 @@ import difflib
 
 def smallest_difference(value1, value2):
     """
-    Finds smallest angle between two bearings
-    :param value1:
-    :param value2:
-    :return:
+    Return the smallest angular difference between two bearings.
+
+    Accounts for the circular nature of bearings so that, for example,
+    the difference between 350° and 10° is 20° rather than 340°.
+
+    Parameters
+    ----------
+    value1 : float or int
+        First bearing in degrees.
+    value2 : float or int
+        Second bearing in degrees.
+
+    Returns
+    -------
+    float
+        Smallest non-negative angular difference in degrees (0–180).
     """
     abs_diff = abs(value1 - value2)
     if abs_diff > 180:
@@ -25,9 +44,17 @@ def smallest_difference(value1, value2):
 
 def normalize_bearing(bearing: Union[float, int]):
     """
-    change a bearing (in degrees) so that it is an azimuth between 0 and 360.
-    :param bearing:
-    :return:
+    Normalise a bearing to the range [0, 360).
+
+    Parameters
+    ----------
+    bearing : float or int
+        Input bearing in degrees (any value).
+
+    Returns
+    -------
+    float
+        Equivalent bearing in the range [0, 360).
     """
     while bearing < 0:
         bearing += 360.
@@ -40,11 +67,23 @@ def normalize_bearing(bearing: Union[float, int]):
 
 def bearing_leq(value: Union[int, float], benchmark: Union[int, float], tolerance: Union[int, float] = 0.1):
     """
-    Check whether a bearing (value) is anticlockwise of another bearing (benchmark)
-    :param value:
-    :param benchmark:
-    :param tolerance: to account for rounding errors etc
-    :return:
+    Check whether a bearing is anticlockwise of (less than) another bearing.
+
+    Parameters
+    ----------
+    value : int or float
+        The bearing to test, in degrees.
+    benchmark : int or float
+        The reference bearing, in degrees.
+    tolerance : int or float, optional
+        Angular tolerance in degrees to account for rounding.
+        Defaults to 0.1.
+
+    Returns
+    -------
+    bool
+        ``True`` if ``value`` is strictly anticlockwise of
+        ``benchmark`` (i.e. less than, within ``tolerance``).
     """
     smallest_diff = smallest_difference(value, benchmark)
     if smallest_diff > tolerance:
@@ -56,11 +95,23 @@ def bearing_leq(value: Union[int, float], benchmark: Union[int, float], toleranc
 
 def bearing_geq(value: Union[int, float], benchmark: Union[int, float], tolerance: Union[int, float] = 0.1):
     """
-    Check whether a bearing (value) is clockwise of another bearing (benchmark)
-    :param value:
-    :param benchmark:
-    :param tolerance: to account for rounding errors etc
-    :return:
+    Check whether a bearing is clockwise of (greater than) another bearing.
+
+    Parameters
+    ----------
+    value : int or float
+        The bearing to test, in degrees.
+    benchmark : int or float
+        The reference bearing, in degrees.
+    tolerance : int or float, optional
+        Angular tolerance in degrees to account for rounding.
+        Defaults to 0.1.
+
+    Returns
+    -------
+    bool
+        ``True`` if ``value`` is strictly clockwise of ``benchmark``
+        (i.e. greater than, within ``tolerance``).
     """
     smallest_diff = smallest_difference(value, benchmark)
     if smallest_diff > tolerance:
@@ -72,9 +123,22 @@ def bearing_geq(value: Union[int, float], benchmark: Union[int, float], toleranc
 
 def reverse_bearing(bearing: Union[int, float]):
     """
-    180 degrees from supplied bearing
-    :param bearing:
-    :return:
+    Return the bearing 180° opposite to the supplied bearing.
+
+    Parameters
+    ----------
+    bearing : int or float
+        Input bearing in degrees; must be in [0, 360].
+
+    Returns
+    -------
+    float
+        Reversed bearing in the range [0, 360).
+
+    Raises
+    ------
+    AssertionError
+        If ``bearing`` is not a float or int, or is outside [0, 360].
     """
     assert isinstance(bearing, (float, int))
     assert 0. <= bearing <= 360.
@@ -86,11 +150,24 @@ def reverse_bearing(bearing: Union[int, float]):
 
 def reverse_line(line: LineString):
     """
-    Change the order that points in a LineString object are presented.
-    Updated to work with 3d lines (has_z), September 2021
-    Important for OpenSHA, I think
-    :param line:
-    :return:
+    Reverse the vertex order of a :class:`~shapely.geometry.LineString`.
+
+    Works with both 2-D and 3-D (has_z) lines.
+
+    Parameters
+    ----------
+    line : shapely.geometry.LineString
+        Input line to reverse.
+
+    Returns
+    -------
+    shapely.geometry.LineString
+        New line with vertices in the opposite order.
+
+    Raises
+    ------
+    AssertionError
+        If ``line`` is not a :class:`~shapely.geometry.LineString`.
     """
     assert isinstance(line, LineString)
     if line.has_z:
@@ -109,10 +186,27 @@ def reverse_line(line: LineString):
 
 def fit_2d_line(x: np.ndarray, y: np.ndarray):
     """
-    Fit a 2D line to a set of points
-    :param x:
-    :param y:
-    :return:
+    Fit a straight line to a 2-D point cloud and return the dip angle.
+
+    Fits both ``y = f(x)`` and ``x = g(y)`` and selects whichever has
+    the smaller residual, then converts the gradient to a dip angle.
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        x-coordinates of the points.
+    y : numpy.ndarray
+        y-coordinates of the points.
+
+    Returns
+    -------
+    float
+        Dip angle in degrees measured from the horizontal.
+
+    Raises
+    ------
+    AssertionError
+        If either ``x`` or ``y`` is not a :class:`numpy.ndarray`.
     """
     assert isinstance(x, np.ndarray)
     assert isinstance(y, np.ndarray)
@@ -142,10 +236,29 @@ def fit_2d_line(x: np.ndarray, y: np.ndarray):
 
 def calculate_dip_direction(line: LineString):
     """
-    Calculate the strike of a shapely linestring object with coordinates in NZTM,
-    then adds 90 to get dip direction. Dip direction is always 90 clockwise from strike of line.
-    :param line: Linestring object
-    :return:
+    Calculate the dip direction of a fault-trace LineString in NZTM.
+
+    Computes the strike of the line (best-fit gradient) and adds 90° to
+    obtain the dip direction.  The sign is chosen so that the dip
+    direction is consistent with the majority of vertices being to the
+    right of the strike vector.
+
+    Parameters
+    ----------
+    line : shapely.geometry.LineString or MultiLineString
+        Fault-surface trace in NZTM (EPSG:2193) coordinates.
+        A :class:`~shapely.geometry.MultiLineString` is first merged
+        into a single line.
+
+    Returns
+    -------
+    float
+        Dip direction in degrees, range [0, 360).
+
+    Raises
+    ------
+    AssertionError
+        If ``line`` is not a LineString or MultiLineString.
     """
     assert isinstance(line, (LineString, MultiLineString))
     if isinstance(line, MultiLineString):
@@ -201,9 +314,31 @@ def calculate_dip_direction(line: LineString):
 
 def calculate_strike(line: LineString, lt180: bool = False):
     """
-    Calculate the strike of a shapely linestring object with coordinates in NZTM
-    :param line: Linestring object
-    :return:
+    Calculate the strike of a fault-trace LineString in NZTM.
+
+    Fits a best-fit gradient to the trace coordinates and converts it
+    to an azimuthal strike.  When ``lt180`` is ``True`` the result is
+    reduced to the half-circle convention [0, 180).
+
+    Parameters
+    ----------
+    line : shapely.geometry.LineString or MultiLineString
+        Fault-surface trace in NZTM (EPSG:2193) coordinates.
+        A :class:`~shapely.geometry.MultiLineString` is first merged
+        into a single line.
+    lt180 : bool, optional
+        If ``True``, return a strike in [0, 180) instead of [0, 360).
+        Defaults to ``False``.
+
+    Returns
+    -------
+    float
+        Strike in degrees.
+
+    Raises
+    ------
+    AssertionError
+        If ``line`` is not a LineString or MultiLineString.
     """
     assert isinstance(line, (LineString, MultiLineString))
     if isinstance(line, MultiLineString):
@@ -261,10 +396,33 @@ def calculate_strike(line: LineString, lt180: bool = False):
 
 def optimize_point_spacing(line: LineString, spacing: float):
     """
-    Optimize point spacing of a linestring object. Might be less good than geopandas segmentize.
-    :param line:
-    :param spacing:
-    :return:
+    Re-sample a LineString to approximately uniform point spacing.
+
+    Interpolates ``num_points`` centre-points along the line, where
+    ``num_points`` is chosen to match ``spacing`` as closely as
+    possible.
+
+    Parameters
+    ----------
+    line : shapely.geometry.LineString or MultiLineString
+        Input line.  A :class:`~shapely.geometry.MultiLineString` is
+        first merged into a single line.
+    spacing : float
+        Target point spacing in the same units as the line coordinates
+        (metres for NZTM).
+
+    Returns
+    -------
+    centre_points : list of shapely.geometry.Point
+        Resampled centre points along the line.
+    new_width : float
+        Actual spacing used (line length / number of points).
+
+    Raises
+    ------
+    AssertionError
+        If ``line`` is not a LineString or MultiLineString, or if
+        ``spacing`` is not a positive float.
     """
     assert isinstance(line, (LineString, MultiLineString))
     if isinstance(line, MultiLineString):
@@ -289,6 +447,25 @@ from shapely.ops import linemerge
 
 
 def chaikins_corner_cutting(coords, refinements=5):
+    """
+    Smooth a polyline using Chaikin's corner-cutting algorithm.
+
+    Each refinement pass replaces every edge with two new points at
+    the 1/4 and 3/4 positions, progressively rounding corners.
+
+    Parameters
+    ----------
+    coords : array-like of shape (n, 2) or (n, 3)
+        Coordinate array of the polyline vertices.
+    refinements : int, optional
+        Number of corner-cutting passes to apply.  Defaults to 5.
+
+    Returns
+    -------
+    numpy.ndarray
+        Smoothed coordinate array with approximately
+        ``n * 2 ** refinements`` vertices.
+    """
     coords = np.array(coords)
 
     for _ in range(refinements):
@@ -303,12 +480,57 @@ def chaikins_corner_cutting(coords, refinements=5):
     return coords
 
 def smooth_trace(trace: LineString, n_refinements: int = 5):
+    """
+    Smooth a fault-trace LineString using Chaikin's corner-cutting algorithm.
+
+    Parameters
+    ----------
+    trace : shapely.geometry.LineString
+        Input trace to smooth.
+    n_refinements : int, optional
+        Number of corner-cutting passes.  Defaults to 5.
+
+    Returns
+    -------
+    shapely.geometry.LineString
+        Smoothed line with approximately
+        ``len(trace.coords) * 2 ** n_refinements`` vertices.
+
+    Raises
+    ------
+    AssertionError
+        If ``trace`` is not a :class:`~shapely.geometry.LineString`.
+    """
     assert isinstance(trace, LineString)
     coords = np.array(trace.coords)
     return LineString(chaikins_corner_cutting(coords, refinements=n_refinements))
 
 
 def straighten(line: LineString, strike: float, damping: float):
+    """
+    Straighten a 3-D line by damping its across-strike deviations.
+
+    Projects each vertex onto the along-strike and across-strike
+    directions, then reconstructs new positions with the across-strike
+    component multiplied by ``damping``.
+
+    Parameters
+    ----------
+    line : shapely.geometry.LineString
+        Input 3-D line (z coordinate included in
+        :attr:`~shapely.geometry.LineString.coords`).
+    strike : float
+        Strike azimuth in degrees used to define the along/across
+        direction.
+    damping : float
+        Fractional weight applied to the across-strike displacement
+        (0 = fully straight, 1 = unchanged).
+
+    Returns
+    -------
+    shapely.geometry.LineString
+        New line with reduced across-strike curvature.
+    """
     strike_vector = np.array([np.sin(np.radians(strike)), np.cos(np.radians(strike)), 0.])
     across_strike = np.array([np.sin(np.radians(strike + 90.)), np.cos(np.radians(strike + 90.)), 0.])
     line_array = np.array(line.coords)
@@ -323,6 +545,32 @@ def straighten(line: LineString, strike: float, damping: float):
 
 
 def align_two_nearly_adjacent_segments(segment_list: List[LineString], tolerance: float = 200.):
+    """
+    Snap the closest endpoints of two nearly-adjacent LineStrings to their midpoint.
+
+    Identifies which endpoints of the two segments are closest to each
+    other and replaces both with the midpoint, making the segments
+    exactly adjacent.
+
+    Parameters
+    ----------
+    segment_list : list of shapely.geometry.LineString
+        Exactly two line segments.
+    tolerance : float, optional
+        Maximum allowable distance (m) between the nearest endpoints
+        for the operation to be valid.  Defaults to 200.
+
+    Returns
+    -------
+    tuple of shapely.geometry.LineString
+        Two new segments with snapped endpoints.
+
+    Raises
+    ------
+    AssertionError
+        If ``segment_list`` does not contain exactly 2 segments, or
+        if the distance between them exceeds ``tolerance``.
+    """
     assert len(segment_list) == 2
     line1, line2 = segment_list
     assert line1.distance(line2) <= tolerance
@@ -351,11 +599,56 @@ def align_two_nearly_adjacent_segments(segment_list: List[LineString], tolerance
     return LineString(new_line1), LineString(new_line2)
 
 def merge_two_nearly_adjacent_segments(segment_list: List[LineString], tolerance: float = 200.):
+    """
+    Merge two nearly-adjacent LineStrings into one by snapping their endpoints.
+
+    Calls :func:`align_two_nearly_adjacent_segments` to snap the
+    closest endpoints to their midpoint, then merges the result into a
+    single :class:`~shapely.geometry.LineString` with
+    :func:`~shapely.ops.linemerge`.
+
+    Parameters
+    ----------
+    segment_list : list of shapely.geometry.LineString
+        Exactly two line segments.
+    tolerance : float, optional
+        Maximum allowable gap (m) between segments.  Defaults to 200.
+
+    Returns
+    -------
+    shapely.geometry.LineString
+        Merged single line.
+    """
     new_line1, new_line2 = align_two_nearly_adjacent_segments(segment_list, tolerance)
     return linemerge([new_line1, new_line2])
 
 
 def merge_multiple_nearly_adjacent_segments(segment_list: List[LineString], tolerance: float = 200.):
+    """
+    Iteratively merge a list of nearly-adjacent LineStrings into one.
+
+    Repeatedly merges the first two segments using
+    :func:`merge_two_nearly_adjacent_segments` until a single line
+    remains.
+
+    Parameters
+    ----------
+    segment_list : list of shapely.geometry.LineString
+        Two or more line segments to merge, ordered along the trace.
+    tolerance : float, optional
+        Maximum allowable gap (m) between consecutive segments.
+        Defaults to 200.
+
+    Returns
+    -------
+    shapely.geometry.LineString
+        Single merged line.
+
+    Raises
+    ------
+    AssertionError
+        If ``segment_list`` contains fewer than 2 segments.
+    """
     assert len(segment_list) >= 2
     if len(segment_list) == 2:
         return merge_two_nearly_adjacent_segments(segment_list, tolerance)
@@ -363,13 +656,3 @@ def merge_multiple_nearly_adjacent_segments(segment_list: List[LineString], tole
         while len(segment_list) > 2:
             segment_list = [merge_two_nearly_adjacent_segments(segment_list[:2], tolerance)] + segment_list[2:]
         return merge_two_nearly_adjacent_segments(segment_list, tolerance)
-
-
-
-
-
-
-
-
-
-

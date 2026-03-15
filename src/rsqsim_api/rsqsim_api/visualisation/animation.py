@@ -1,3 +1,13 @@
+"""
+Animation utilities for visualising earthquake sequences over time.
+
+Provides :func:`AnimateSequence` for generating slip animations driven
+by a :class:`~rsqsim_api.catalogue.catalogue.RsqSimCatalogue`,
+:class:`AxesSequence` for managing per-event plot visibility and
+fading, :func:`plot_axis_sequence` for driving the slider/animation
+loop, and :func:`write_animation_frame` / :func:`write_animation_frames`
+for parallel frame-by-frame rendering.
+"""
 from rsqsim_api.catalogue.catalogue import RsqSimCatalogue
 from rsqsim_api.fault.multifault import RsqSimMultiFault
 from rsqsim_api.visualisation.utilities import plot_coast, plot_hillshade
@@ -28,22 +38,81 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
                     plot_crustal_cbar: bool = True, min_slip_value: float = None, plot_zeros: bool = True,
                     extra_sub_list: list = None, plot_cbars: bool = False, write_frames: bool = False,
                     pickle_plots: str = None, load_pickle_plots: str = None, num_threads: int = 4, **kwargs):
-    """Shows an animation of a sequence of earthquake events over time
+    """
+    Show an animation of a sequence of earthquake events over time.
 
-    Args:
-        catalogue (RsqSimCatalogue): Catalogue of events to animate
-        fault_model (RsqSimMultiFault): Fault model for events
-        subduction_cmap (str): Colourmap for subduction colorbar
-        crustal_cmap (str): Colourmap for crustal_cmap colorbar
-        global_max_slip (int): Max slip to use for the colorscale
-        global_max_sub_slip (int): Max subduction slip to use for the colorscale
-        step_size (int): Step size to advance every interval
-        interval (int): Time (ms) between each frame
-        write (str): Write animation to file with given filename.
-        fps (int): Frames per second.
-        file_format (str): File extension for animation. Accepted values: gif, mp4, mov, avi.
-        figsize (float, float): Width, height in inches.
-        hillshading_intensity (float): Intensity of hillshading, value between 0-1.
+    Plots per-event slip distributions onto a NZ map background and
+    animates them with a time slider.  Supports pre-rendered pickled
+    backgrounds and frame-by-frame writing via
+    :func:`plot_axis_sequence`.
+
+    Parameters
+    ----------
+    catalogue : RsqSimCatalogue
+        Catalogue of events to animate.
+    fault_model : RsqSimMultiFault
+        Fault model providing patch geometry for each event.
+    subduction_cmap : str, optional
+        Colourmap name for the subduction colourbar.
+        Defaults to ``"plasma"``.
+    crustal_cmap : str, optional
+        Colourmap name for the crustal colourbar.
+        Defaults to ``"viridis"``.
+    global_max_slip : int, optional
+        Maximum crustal slip (m) for the colour scale.  Defaults to 10.
+    global_max_sub_slip : int, optional
+        Maximum subduction slip (m) for the colour scale.
+        Defaults to 40.
+    step_size : int, optional
+        Year increment per animation frame.  Defaults to 1.
+    interval : int, optional
+        Delay between frames in milliseconds.  Defaults to 50.
+    write : str or None, optional
+        Output file path (without extension).  If ``None``, display
+        interactively.
+    fps : int, optional
+        Frames per second for the output file.  Defaults to 20.
+    file_format : str, optional
+        Output format: ``"gif"``, ``"mp4"``, ``"mov"``, or ``"avi"``.
+        Defaults to ``"gif"``.
+    figsize : tuple, optional
+        Figure size ``(width, height)`` in inches.
+        Defaults to ``(9.6, 7.2)``.
+    hillshading_intensity : float, optional
+        Hillshade overlay transparency (0–1).  Defaults to 0.
+    bounds : tuple or None, optional
+        ``(x_min, y_min, x_max, y_max)`` map extent.
+    pickled_background : str or None, optional
+        Path to a pickled ``(fig, ax)`` background.
+    fading_increment : float, optional
+        Fading divisor per time step.  Defaults to 2.0.
+    plot_log : bool, optional
+        If ``True``, use a log colour scale.  Defaults to ``False``.
+    log_min : float, optional
+        Lower bound for the log scale.  Defaults to 1.
+    log_max : float, optional
+        Upper bound for the log scale.  Defaults to 100.
+    plot_subduction_cbar : bool, optional
+        If ``True`` (default), show the subduction colourbar.
+    plot_crustal_cbar : bool, optional
+        If ``True`` (default), show the crustal colourbar.
+    min_slip_value : float or None, optional
+        Minimum slip to plot; patches below this are hidden.
+    plot_zeros : bool, optional
+        If ``True`` (default), plot patches with zero slip.
+    extra_sub_list : list or None, optional
+        Additional subduction patch numbers to highlight.
+    plot_cbars : bool, optional
+        If ``True``, plot per-event colourbars.  Defaults to ``False``.
+    write_frames : bool, optional
+        If ``True``, write individual PNG frames instead of animating.
+        Defaults to ``False``.
+    pickle_plots : str or None, optional
+        Path to save pre-rendered plot pickles.
+    load_pickle_plots : str or None, optional
+        Path to load pre-rendered plot pickles.
+    num_threads : int, optional
+        Worker count for parallel frame rendering.  Defaults to 4.
     """
     assert file_format in ("gif", "mov", "avi", "mp4")
 
@@ -149,7 +218,28 @@ def AnimateSequence(catalogue: RsqSimCatalogue, fault_model: RsqSimMultiFault, s
 
 
 class AxesSequence(object):
-    """Controls a series of plots on the screen and when they are visible"""
+    """
+    Manage the visibility and fading of a time-ordered sequence of plots.
+
+    Tracks which event plots are currently on screen and progressively
+    fades them out according to ``fading_increment`` as the animation
+    advances.
+
+    Attributes
+    ----------
+    fig : matplotlib.figure.Figure
+        The figure containing all plots.
+    timestamps : list of int
+        Sorted year timestamps corresponding to each entry in ``plots``.
+    plots : list of list
+        Per-event lists of matplotlib artist objects.
+    coast_ax : matplotlib.axes.Axes
+        The main map axis.
+    fading_increment : float
+        Alpha divisor applied each time step.  Defaults to 2.0.
+    on_screen : list
+        Currently visible plot groups.
+    """
 
     def __init__(self, fig, timestamps, plots, coast_ax, fading_increment: float = 2.0):
         self.fig = fig
@@ -161,6 +251,14 @@ class AxesSequence(object):
         self.fading_increment = fading_increment
 
     def set_plot(self, val):
+        """
+        Advance the sequence to show all events at time ``val`` and fade older ones.
+
+        Parameters
+        ----------
+        val : int
+            Current slider year value.
+        """
         # plot corresponding event
         while self._i < len(self.timestamps) - 1 and val == self.timestamps[self._i + 1]:
             self._i += 1
@@ -175,6 +273,16 @@ class AxesSequence(object):
             self.fade(p, i)
 
     def fade(self, plot, index):
+        """
+        Reduce the alpha of a plot group and hide it once fully transparent.
+
+        Parameters
+        ----------
+        plot : list
+            List of matplotlib artists for one event.
+        index : int
+            Position of ``plot`` in :attr:`on_screen`; removed if invisible.
+        """
         visible = True
         for p in plot:
             opacity = p.get_alpha()
@@ -188,6 +296,7 @@ class AxesSequence(object):
             self.on_screen.pop(index)
 
     def stop(self):
+        """Hide all on-screen plots and reset the sequence to the start."""
         for plot in self.on_screen:
             for p in plot:
                 p.set_visible(False)
@@ -196,13 +305,54 @@ class AxesSequence(object):
         self.on_screen.clear()
 
     def show(self):
+        """Display the animation figure interactively."""
         plt.show()
 
 
 def plot_axis_sequence(frames, timestamps, all_plots, pickled_background, step_size=1,
                        interval=50, write=None, write_frames=False, file_format="gif", fps=20, fading_increment=2.0,
                        figsize: tuple = (9.6, 7.2), hillshading_intensity: float = 0.0):
-    """Controls a series of plots on the screen and when they are visible"""
+    """
+    Drive the slider animation loop for a pre-rendered set of event plots.
+
+    Attaches an :class:`AxesSequence` to a time slider and either
+    saves individual frames, saves an animation file, or shows the
+    animation interactively.
+
+    Parameters
+    ----------
+    frames : int or array-like
+        Number of frames, or array of frame indices.
+    timestamps : list of int
+        Year timestamps for each entry in ``all_plots``.
+    all_plots : list of list
+        Per-event lists of matplotlib artists.
+    pickled_background : tuple or None
+        ``(fig, background_ax, coast_ax, slider_ax, year_ax)`` tuple
+        loaded from a pickled background, or ``None`` to build one.
+    step_size : int, optional
+        Year increment per frame.  Defaults to 1.
+    interval : int, optional
+        Delay between frames in milliseconds.  Defaults to 50.
+    write : str or None, optional
+        Output file path (without extension).  If ``None``, show
+        interactively.
+    write_frames : bool, optional
+        If ``True``, write individual PNG frames to ``frames/``.
+        Defaults to ``False``.
+    file_format : str, optional
+        Output format: ``"gif"``, ``"mp4"``, ``"mov"``, or ``"avi"``.
+        Defaults to ``"gif"``.
+    fps : int, optional
+        Frames per second for the output file.  Defaults to 20.
+    fading_increment : float, optional
+        Alpha divisor per time step.  Defaults to 2.0.
+    figsize : tuple, optional
+        Figure size ``(width, height)`` in inches.
+        Defaults to ``(9.6, 7.2)``.
+    hillshading_intensity : float, optional
+        Hillshade transparency (0–1).  Defaults to 0.
+    """
 
     if pickled_background is not None:
 
@@ -282,8 +432,70 @@ def write_animation_frame(frame_num, frame_time, start_time, end_time, step_size
                            min_slip_value: float = None, plot_zeros: bool = True, extra_sub_list: list = None,
                            min_mw: float = None, decimals: int = 1, subplot_name: str = "main_figure"):
     """
-    Writes a single frame of an animation to file
+    Render a single animation frame and return the figure.
 
+    Filters the catalogue to events within ``time_to_threshold`` years
+    before ``frame_time``, plots their slip distributions with faded
+    alpha, and returns the figure for saving.
+
+    Parameters
+    ----------
+    frame_num : int
+        Frame index (used as the return key).
+    frame_time : float
+        Current animation time in years.
+    start_time : float
+        Animation start time in years.
+    end_time : float
+        Animation end time in years.
+    step_size : int
+        Year increment per frame.
+    catalogue : RsqSimCatalogue
+        Event catalogue to filter.
+    fault_model : RsqSimMultiFault
+        Fault model for plotting slip distributions.
+    pickled_background : str
+        Path to a pickled ``(fig, ax)`` background file.
+    subduction_cmap : str, optional
+        Colourmap for subduction slip.  Defaults to ``"plasma"``.
+    crustal_cmap : str, optional
+        Colourmap for crustal slip.  Defaults to ``"viridis"``.
+    global_max_slip : int, optional
+        Maximum crustal slip (m) for the colour scale.  Defaults to 10.
+    global_max_sub_slip : int, optional
+        Maximum subduction slip (m).  Defaults to 40.
+    bounds : tuple or None, optional
+        ``(x_min, y_min, x_max, y_max)`` map extent.
+    fading_increment : float, optional
+        Base of the exponential alpha decay.  Defaults to 2.0.
+    time_to_threshold : float, optional
+        Look-back window in years.  Defaults to 10.
+    plot_log : bool, optional
+        If ``True``, use a log colour scale.  Defaults to ``False``.
+    log_min : float, optional
+        Lower bound for the log scale.  Defaults to 1.
+    log_max : float, optional
+        Upper bound for the log scale.  Defaults to 100.
+    min_slip_value : float or None, optional
+        Minimum slip to plot.
+    plot_zeros : bool, optional
+        If ``True`` (default), plot zero-slip patches.
+    extra_sub_list : list or None, optional
+        Extra subduction patch numbers to highlight.
+    min_mw : float or None, optional
+        Minimum magnitude filter.
+    decimals : int, optional
+        Decimal places for the year label.  Defaults to 1.
+    subplot_name : str, optional
+        Key for the main axes in the ``axes`` dict.
+        Defaults to ``"main_figure"``.
+
+    Returns
+    -------
+    frame_num : int
+        The input frame index.
+    fig : matplotlib.figure.Figure or None
+        Rendered figure, or ``None`` if no events fall in the window.
     """
     frame_time_seconds = frame_time * seconds_per_year
 
@@ -338,8 +550,63 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
                             num_threads_plot: int = 4, frame_dir: str = "frames",
                            ):
         """
-        Writes all the frames of an animation to file
+        Write all animation frames to PNG files in parallel.
 
+        Iterates over time steps from ``start_time`` to ``end_time`` in
+        ``step_size`` increments and submits each frame to a
+        ``ThreadPoolExecutor``.  Frames without events are written
+        separately after the parallel pass.
+
+        Parameters
+        ----------
+        start_time : float
+            Animation start time in years.
+        end_time : float
+            Animation end time in years.
+        step_size : int
+            Year increment per frame.
+        catalogue : RsqSimCatalogue
+            Event catalogue.
+        fault_model : RsqSimMultiFault
+            Fault model for slip distributions.
+        pickled_background : str
+            Path to a pickled ``(fig, ax)`` background file.
+        subduction_cmap : str, optional
+            Colourmap for subduction slip.  Defaults to ``"plasma"``.
+        crustal_cmap : str, optional
+            Colourmap for crustal slip.  Defaults to ``"viridis"``.
+        global_max_slip : int, optional
+            Maximum crustal slip (m).  Defaults to 10.
+        global_max_sub_slip : int, optional
+            Maximum subduction slip (m).  Defaults to 40.
+        bounds : tuple or None, optional
+            ``(x_min, y_min, x_max, y_max)`` map extent.
+        fading_increment : float, optional
+            Base of the exponential alpha decay.  Defaults to 2.0.
+        time_to_threshold : float, optional
+            Look-back window in years.  Defaults to 10.
+        plot_log : bool, optional
+            If ``True``, use a log colour scale.  Defaults to ``False``.
+        log_min : float, optional
+            Lower bound for the log scale.  Defaults to 1.
+        log_max : float, optional
+            Upper bound for the log scale.  Defaults to 100.
+        min_slip_value : float or None, optional
+            Minimum slip to plot.
+        plot_zeros : bool, optional
+            If ``False`` (default), skip zero-slip patches.
+        extra_sub_list : list or None, optional
+            Extra subduction patch numbers to highlight.
+        min_mw : float or None, optional
+            Minimum magnitude filter.
+        decimals : int, optional
+            Decimal places for the year label.  Defaults to 1.
+        subplot_name : str, optional
+            Key for the main axes dict.  Defaults to ``"main_figure"``.
+        num_threads_plot : int, optional
+            Thread count for parallel rendering.  Defaults to 4.
+        frame_dir : str, optional
+            Directory for output PNG frames.  Defaults to ``"frames"``.
         """
         steps = np.arange(start_time, end_time + step_size, step_size)
         frames = np.arange(len(steps))
@@ -404,6 +671,21 @@ def write_animation_frames(start_time, end_time, step_size, catalogue: RsqSimCat
 
 
 def calculate_alpha(time_since_new, fading_increment):
+    """
+    Compute the opacity for an event that occurred ``time_since_new`` steps ago.
+
+    Parameters
+    ----------
+    time_since_new : float
+        Number of time steps since the event occurred.
+    fading_increment : float
+        Base of the exponential decay; higher values fade faster.
+
+    Returns
+    -------
+    float
+        Alpha value clamped to ``[0, 1]``.
+    """
     alpha = 1 / (fading_increment ** time_since_new)
     if alpha > 1:
         alpha = 1.
@@ -411,5 +693,21 @@ def calculate_alpha(time_since_new, fading_increment):
 
 
 def calculate_fading_increment(time_to_threshold, threshold):
+    """
+    Compute the fading increment so that alpha reaches ``threshold`` after ``time_to_threshold`` steps.
+
+    Parameters
+    ----------
+    time_to_threshold : float
+        Number of time steps until the event fades to ``threshold``.
+    threshold : float
+        Target alpha value after ``time_to_threshold`` steps
+        (e.g. 0.01 for near-invisible).
+
+    Returns
+    -------
+    float
+        The fading increment base to pass to :func:`calculate_alpha`.
+    """
     return (1 / threshold) ** (1 / time_to_threshold)
 
