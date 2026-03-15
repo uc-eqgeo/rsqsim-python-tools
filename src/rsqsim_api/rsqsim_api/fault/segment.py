@@ -1053,13 +1053,13 @@ class RsqSimSegment:
     def find_top_outside_edges(self, depth_tolerance: float | int = 100):
         all_outside_edges = self.find_all_outside_edges()
         top_outside_vertex_indices = self.find_top_outside_vertex_indices(depth_tolerance=depth_tolerance)
-        top_outside_edges = np.array([edge for edge in all_outside_edges if np.in1d(edge, top_outside_vertex_indices).all()])
+        top_outside_edges = np.array([edge for edge in all_outside_edges if np.isin(edge, top_outside_vertex_indices).all()])
         return top_outside_edges
 
     def find_bottom_outside_edges(self, depth_tolerance: float | int = 100):
         all_outside_edges = self.find_all_outside_edges()
         top_outside_edges = self.find_top_outside_edges(depth_tolerance=depth_tolerance)
-        bottom_outside_edges = np.array([edge for edge in all_outside_edges if not np.in1d(edge, top_outside_edges).all()])
+        bottom_outside_edges = np.array([edge for edge in all_outside_edges if not np.isin(edge, top_outside_edges).all()])
 
         return bottom_outside_edges
 

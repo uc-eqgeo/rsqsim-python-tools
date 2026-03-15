@@ -770,7 +770,7 @@ def get_mesh_boundary(triangles):
     # Get unique edges that are only present once.
     (uniq, uniq_ids, counts) = np.unique(edge_sort, axis=0, return_index=True, return_counts=True)
     edge_inds = np.arange(edge_sort.shape[0], dtype=int)
-    outer_edge_ids = edge_inds[np.in1d(edge_inds, uniq_ids[counts==1])]
+    outer_edge_ids = edge_inds[np.isin(edge_inds, uniq_ids[counts==1])]
     outer_edges = edge_sort[outer_edge_ids,:]
     num_outer_edges = outer_edges.shape[0]
 

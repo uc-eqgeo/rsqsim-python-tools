@@ -646,7 +646,7 @@ class RsqSimCatalogue:
         """
         trimmed_df = self.filter_df(min_t0, max_t0, min_m0, max_m0, min_mw, max_mw, min_x, max_x, min_y, max_y,
                                     min_z, max_z, min_area, max_area, min_dt, max_dt)
-        event_indices = np.where(np.in1d(self.event_list, np.array(trimmed_df.index)))[0]
+        event_indices = np.where(np.isin(self.event_list, np.array(trimmed_df.index)))[0]
         trimmed_event_ls = self.event_list[event_indices]
         trimmed_patch_ls = self.patch_list[event_indices]
         trimmed_patch_slip = self.patch_slip[event_indices]
@@ -688,7 +688,7 @@ class RsqSimCatalogue:
             ev_ls = list(event_number)
             assert all([isinstance(a, (int, np.int32,np.int64)) for a in ev_ls])
         trimmed_df = self.catalogue_df.loc[ev_ls]
-        event_indices = np.where(np.in1d(self.event_list, np.array(trimmed_df.index)))[0]
+        event_indices = np.where(np.isin(self.event_list, np.array(trimmed_df.index)))[0]
         trimmed_event_ls = self.event_list[event_indices]
         trimmed_patch_ls = self.patch_list[event_indices]
         trimmed_patch_slip = self.patch_slip[event_indices]
@@ -771,7 +771,7 @@ class RsqSimCatalogue:
 
         #in1d will return true if any value in patch_numbers matches a value in patch_list
         #i.e. don't have to rupture all faults in the list, only 1
-        patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
+        patch_indices = np.where(np.isin(self.patch_list, patch_numbers))[0]
         selected_events = self.event_list[patch_indices]
         selected_patches = self.patch_list[patch_indices]
         if selected_events.size > 0:
@@ -779,18 +779,18 @@ class RsqSimCatalogue:
                 events_gt_min = []
                 for fault in fault_ls:
                     fault_patches = np.array(list(fault.patch_dic.keys()))
-                    fault_patch_indices = np.where(np.in1d(selected_patches, fault_patches))[0]
+                    fault_patch_indices = np.where(np.isin(selected_patches, fault_patches))[0]
                     fault_event_list = selected_events[fault_patch_indices]
                     events_counter = Counter(fault_event_list)
                     events_sufficient_patches = np.array([ev for ev, count in events_counter.items()
                                                           if count >= minimum_patches_per_fault])
                     events_gt_min += list(events_sufficient_patches)
                 event_numbers = np.unique(np.array(events_gt_min))
-                event_indices = np.where(np.in1d(self.event_list, event_numbers))[0]
+                event_indices = np.where(np.isin(self.event_list, event_numbers))[0]
 
             else:
                 event_numbers = np.unique(selected_events)
-                event_indices = np.where(np.in1d(self.event_list, event_numbers))[0]
+                event_indices = np.where(np.isin(self.event_list, event_numbers))[0]
             trimmed_df = self.catalogue_df.loc[event_numbers]
 
             filtered_cat = self.from_dataframe(trimmed_df)
@@ -849,7 +849,7 @@ class RsqSimCatalogue:
         #in1d will return true if any value in patch_numbers matches a value in patch_list
         #i.e. don't have to rupture all faults in the list, only 1
         # choose all events where this is the case, then remove them from the catalogue
-        patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
+        patch_indices = np.where(np.isin(self.patch_list, patch_numbers))[0]
         selected_events = self.event_list[patch_indices]
         selected_patches = self.patch_list[patch_indices]
         if selected_events.size > 0:
@@ -857,7 +857,7 @@ class RsqSimCatalogue:
                 events_gt_min = []
                 for fault in fault_ls:
                     fault_patches = np.array(list(fault.patch_dic.keys()))
-                    fault_patch_indices = np.where(np.in1d(selected_patches, fault_patches))[0]
+                    fault_patch_indices = np.where(np.isin(selected_patches, fault_patches))[0]
                     fault_event_list = selected_events[fault_patch_indices]
                     events_counter = Counter(fault_event_list)
                     events_sufficient_patches = np.array([ev for ev, count in events_counter.items()
@@ -865,11 +865,11 @@ class RsqSimCatalogue:
                     events_gt_min += list(events_sufficient_patches)
 
                 event_numbers2reject = np.unique(np.array(events_gt_min))
-                event_indices = np.where(np.in1d(self.event_list, event_numbers2reject))[0]
+                event_indices = np.where(np.isin(self.event_list, event_numbers2reject))[0]
 
             else:
                 event_numbers2reject = np.unique(selected_events)
-                event_indices = np.where(np.in1d(self.event_list, event_numbers2reject))[0]
+                event_indices = np.where(np.isin(self.event_list, event_numbers2reject))[0]
             if len(event_indices) > 0:
                 trimmed_df = self.catalogue_df.drop(event_numbers2reject)
 
@@ -1005,7 +1005,7 @@ class RsqSimCatalogue:
         RsqSimCatalogue or None
             Filtered catalogue, or ``None`` if no events match.
         """
-        patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
+        patch_indices = np.where(np.isin(self.patch_list, patch_numbers))[0]
         event_numbers = self.event_list[patch_indices]
         if event_numbers.size:
             trimmed_df = self.catalogue_df.loc[np.unique(event_numbers)]

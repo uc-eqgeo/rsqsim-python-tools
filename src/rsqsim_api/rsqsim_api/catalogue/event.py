@@ -448,9 +448,9 @@ class RsqSimEvent:
         subevents = []
         for fault in self.faults:
             fault_patches = np.array(list(fault.patch_dic.keys()))
-            fault_patch_numbers = self.patch_numbers[np.in1d(self.patch_numbers, fault_patches)]
-            fault_patch_slip = self.patch_slip[np.in1d(self.patch_numbers, fault_patch_numbers)]
-            fault_patch_time = self.patch_time[np.in1d(self.patch_numbers, fault_patch_numbers)]
+            fault_patch_numbers = self.patch_numbers[np.isin(self.patch_numbers, fault_patches)]
+            fault_patch_slip = self.patch_slip[np.isin(self.patch_numbers, fault_patch_numbers)]
+            fault_patch_time = self.patch_time[np.isin(self.patch_numbers, fault_patch_numbers)]
 
             fault_t0 = self.t0 + np.min(fault_patch_time)
             fault_dt = np.max(fault_patch_time) - np.min(fault_patch_time)
@@ -611,8 +611,8 @@ class RsqSimEvent:
         m0_dict = {}
         for fault in self.faults:
             fault_patches = np.array(list(fault.patch_dic.keys()))
-            fault_patch_numbers = self.patch_numbers[np.in1d(self.patch_numbers, fault_patches)]
-            fault_patch_slip = self.patch_slip[np.in1d(self.patch_numbers, fault_patches)]
+            fault_patch_numbers = self.patch_numbers[np.isin(self.patch_numbers, fault_patches)]
+            fault_patch_slip = self.patch_slip[np.isin(self.patch_numbers, fault_patches)]
             areas = [fault.patch_dic[number].area for number in fault_patch_numbers]
             m0 = sum(fault_patch_slip * areas * mu)
             if m0 > min_m0:
@@ -1242,9 +1242,9 @@ class RsqSimEvent:
                 sub_m0 = moment_dict[fault.name]
                 sub_mw = m0_to_mw(sub_m0)
                 fault_patches = np.array(list(fault.patch_dic.keys()))
-                fault_patch_numbers = self.patch_numbers[np.in1d(self.patch_numbers, fault_patches)]
-                fault_patch_slip = self.patch_slip[np.in1d(self.patch_numbers, fault_patches)]
-                fault_patch_time = self.patch_time[np.in1d(self.patch_numbers, fault_patches)]
+                fault_patch_numbers = self.patch_numbers[np.isin(self.patch_numbers, fault_patches)]
+                fault_patch_slip = self.patch_slip[np.isin(self.patch_numbers, fault_patches)]
+                fault_patch_time = self.patch_time[np.isin(self.patch_numbers, fault_patches)]
                 sub_event = self.from_earthquake_list(t0=self.t0, m0=sub_m0, mw=sub_mw, x=self.x, y=self.y, z=self.z,
                                                       area=self.area, dt=self.dt,
                                                       patch_numbers=fault_patch_numbers, patch_slip=fault_patch_slip,
@@ -2159,9 +2159,9 @@ class RsqSimEvent:
             if segment_quads.size > 0:
                 segment = fault_model.name_dic[name]
                 segment_quad_centroids = segment_quads.mean(axis=1)
-                ruptured_patch_numbers = self.patch_numbers[np.in1d(self.patch_numbers, fault_patches) & (self.patch_slip > min_slip)]
+                ruptured_patch_numbers = self.patch_numbers[np.isin(self.patch_numbers, fault_patches) & (self.patch_slip > min_slip)]
                 segment_patch_centroids = segment.get_patch_centres()
-                ruptured_patch_centroids = segment_patch_centroids[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
+                ruptured_patch_centroids = segment_patch_centroids[np.isin(segment.patch_numbers, ruptured_patch_numbers)]
                 tree = KDTree(segment_quad_centroids)
                 _, all_patch_indices = tree.query(segment_patch_centroids)
                 _, ruptured_patch_indices = tree.query(ruptured_patch_centroids)
@@ -2174,7 +2174,7 @@ class RsqSimEvent:
                         ruptured_quads.append(quad)
                         if slip_per_quad:
                             areas = np.array([segment.patch_dic[patch_number].area for patch_number in ruptured_patch_indices])
-                            slip = self.patch_slip[np.in1d(self.patch_numbers, ruptured_patch_indices)]
+                            slip = self.patch_slip[np.isin(self.patch_numbers, ruptured_patch_indices)]
                             average_slip = np.average(slip, weights=areas)
                             quad_slip.append(average_slip)
 
@@ -2231,14 +2231,14 @@ class RsqSimEvent:
                     crustal_moment += moment
                     segment = fault_model.name_dic[name]
                     ruptured_patch_numbers = self.patch_numbers[
-                    np.in1d(self.patch_numbers, fault_patches) & (self.patch_slip > min_slip)]
-                    rakes = segment.rake[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
+                    np.isin(self.patch_numbers, fault_patches) & (self.patch_slip > min_slip)]
+                    rakes = segment.rake[np.isin(segment.patch_numbers, ruptured_patch_numbers)]
                     rake_list.append(rakes)
-                    patch_moment = segment.patch_moments[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
+                    patch_moment = segment.patch_moments[np.isin(segment.patch_numbers, ruptured_patch_numbers)]
                     moment_list.append(patch_moment)
                     patch_numbers_this_segment = segment.patch_numbers[
-                        np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
-                    patch_times_this_segment = self.patch_time[np.in1d(self.patch_numbers, patch_numbers_this_segment)]
+                        np.isin(segment.patch_numbers, ruptured_patch_numbers)]
+                    patch_times_this_segment = self.patch_time[np.isin(self.patch_numbers, patch_numbers_this_segment)]
                     segment_first_patch = fault_model.patch_dic[
                         patch_numbers_this_segment[np.argmin(patch_times_this_segment)]]
                     if patch_times_this_segment.min() < hypocentre_time:
@@ -2293,13 +2293,13 @@ class RsqSimEvent:
                     subduction_moment += moment
                     segment = fault_model.name_dic[name]
                     ruptured_patch_numbers = self.patch_numbers[
-                    np.in1d(self.patch_numbers, fault_patches) & (self.patch_slip > min_slip)]
-                    rakes = segment.rake[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
+                    np.isin(self.patch_numbers, fault_patches) & (self.patch_slip > min_slip)]
+                    rakes = segment.rake[np.isin(segment.patch_numbers, ruptured_patch_numbers)]
                     rake_list.append(rakes)
-                    patch_moment = segment.patch_moments[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
+                    patch_moment = segment.patch_moments[np.isin(segment.patch_numbers, ruptured_patch_numbers)]
                     moment_list.append(patch_moment)
-                    patch_numbers_this_segment = segment.patch_numbers[np.in1d(segment.patch_numbers, ruptured_patch_numbers)]
-                    patch_times_this_segment = self.patch_time[np.in1d(self.patch_numbers, patch_numbers_this_segment)]
+                    patch_numbers_this_segment = segment.patch_numbers[np.isin(segment.patch_numbers, ruptured_patch_numbers)]
+                    patch_times_this_segment = self.patch_time[np.isin(self.patch_numbers, patch_numbers_this_segment)]
                     segment_first_patch = fault_model.patch_dic[patch_numbers_this_segment[np.argmin(patch_times_this_segment)]]
                     if patch_times_this_segment.min() < hypocentre_time:
                         hypocentre_time = patch_times_this_segment.min()
