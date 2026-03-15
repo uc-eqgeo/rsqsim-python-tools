@@ -35,7 +35,7 @@ jobs:
 
     - name: Install test dependencies
       run: |
-        mamba install --no-update-deps flake8 pytest
+        mamba install --freeze-installed flake8 pytest
 
     - name: Run lint with flake8
       run: |
