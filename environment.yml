@@ -2,7 +2,7 @@ name: rsqsim-python-tools
 channels:
   - conda-forge
 dependencies:
-  - python=3.10
+  - python=3.12
   - pyproj
   - numpy
   - numba

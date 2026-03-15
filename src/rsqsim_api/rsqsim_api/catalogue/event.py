@@ -19,7 +19,6 @@ from collections import defaultdict
 from collections.abc import Iterable
 from math import isclose
 from string import digits
-from typing import Union, List
 from xml.dom import minidom
 
 import geopandas as gpd
@@ -266,11 +265,11 @@ class RsqSimEvent:
     @classmethod
     def from_earthquake_list(cls, t0: float, m0: float, mw: float, x: float,
                              y: float, z: float, area: float, dt: float,
-                             patch_numbers: Union[list, np.ndarray, tuple],
-                             patch_slip: Union[list, np.ndarray, tuple],
-                             patch_time: Union[list, np.ndarray, tuple],
+                             patch_numbers: list | np.ndarray | tuple,
+                             patch_slip: list | np.ndarray | tuple,
+                             patch_time: list | np.ndarray | tuple,
                              fault_model: RsqSimMultiFault, filter_single_patches: bool = True,
-                             min_patches: int = 10, min_slip: Union[float, int] = 1, event_id: int = None):
+                             min_patches: int = 10, min_slip: float | int = 1, event_id: int = None):
         """
         Construct an event from catalogue parameters and patch slip data.
 
@@ -359,9 +358,9 @@ class RsqSimEvent:
     @classmethod
     def from_multiprocessing(cls, t0: float, m0: float, mw: float, x: float,
                              y: float, z: float, area: float, dt: float,
-                             patch_numbers: Union[list, np.ndarray, tuple],
-                             patch_slip: Union[list, np.ndarray, tuple],
-                             patch_time: Union[list, np.ndarray, tuple],
+                             patch_numbers: list | np.ndarray | tuple,
+                             patch_slip: list | np.ndarray | tuple,
+                             patch_time: list | np.ndarray | tuple,
                              fault_model: RsqSimMultiFault, mask: list, event_id: int = None):
         """
         Construct an event from pre-computed multiprocessing results.
@@ -424,7 +423,7 @@ class RsqSimEvent:
 
         return event
     
-    def sub_events_by_fault(self, fault_model: RsqSimMultiFault, min_slip: float = 0.1) -> List["RsqSimEvent"]:
+    def sub_events_by_fault(self, fault_model: RsqSimMultiFault, min_slip: float = 0.1) -> list["RsqSimEvent"]:
         """
         Split the event into per-fault sub-events.
 
@@ -1624,7 +1623,7 @@ class RsqSimEvent:
                         for vertex in patch.vertices:
                             f.write(f"{vertex[0]} {vertex[1]} {vertex[2]}\n")
 
-    def discretize_tiles(self, tile_list: List[Polygon], probability: float, rake: float):
+    def discretize_tiles(self, tile_list: list[Polygon], probability: float, rake: float):
         """
         Select tiles that overlap the rupture exterior by at least 50 %.
 
@@ -1656,7 +1655,7 @@ class RsqSimEvent:
         out_gs = gpd.GeoSeries(included_tiles, crs=2193)
         return out_gs
 
-    def discretize_openquake(self, tile_list: List[Polygon], probability: float, rake: float):
+    def discretize_openquake(self, tile_list: list[Polygon], probability: float, rake: float):
         """
         Build an OpenQuake multi-planar rupture from overlapping tiles.
 
@@ -2461,7 +2460,7 @@ class OpenQuakeMultiSquareRupture:
         Tectonic region tag for OpenQuake.
     """
 
-    def __init__(self, tile_list: List[Polygon], probability: float, magnitude: float, rake: float,
+    def __init__(self, tile_list: list[Polygon], probability: float, magnitude: float, rake: float,
                  hypocentre: np.ndarray, event_id: int, name: str = "Subduction earthquake",
                  tectonic_region: str = "subduction", nztm2wgs: bool = True):
         """

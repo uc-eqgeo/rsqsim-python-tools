@@ -8,7 +8,6 @@ reversal, smoothing), and helpers for merging nearly-adjacent
 import os.path
 
 import numpy as np
-from typing import Union, List, Tuple, Dict
 from shapely.geometry import LineString, MultiLineString
 import geopandas as gpd
 import difflib
@@ -42,7 +41,7 @@ def smallest_difference(value1, value2):
     return smallest_diff
 
 
-def normalize_bearing(bearing: Union[float, int]):
+def normalize_bearing(bearing: float | int):
     """
     Normalise a bearing to the range [0, 360).
 
@@ -65,7 +64,7 @@ def normalize_bearing(bearing: Union[float, int]):
     return bearing
 
 
-def bearing_leq(value: Union[int, float], benchmark: Union[int, float], tolerance: Union[int, float] = 0.1):
+def bearing_leq(value: int | float, benchmark: int | float, tolerance: int | float = 0.1):
     """
     Check whether a bearing is anticlockwise of (less than) another bearing.
 
@@ -93,7 +92,7 @@ def bearing_leq(value: Union[int, float], benchmark: Union[int, float], toleranc
         return False
 
 
-def bearing_geq(value: Union[int, float], benchmark: Union[int, float], tolerance: Union[int, float] = 0.1):
+def bearing_geq(value: int | float, benchmark: int | float, tolerance: int | float = 0.1):
     """
     Check whether a bearing is clockwise of (greater than) another bearing.
 
@@ -121,7 +120,7 @@ def bearing_geq(value: Union[int, float], benchmark: Union[int, float], toleranc
         return False
 
 
-def reverse_bearing(bearing: Union[int, float]):
+def reverse_bearing(bearing: int | float):
     """
     Return the bearing 180° opposite to the supplied bearing.
 
@@ -440,7 +439,6 @@ def optimize_point_spacing(line: LineString, spacing: float):
 
 
 import numpy as np
-from typing import List
 from shapely.geometry import LineString, Point
 from shapely.ops import linemerge
 
@@ -544,7 +542,7 @@ def straighten(line: LineString, strike: float, damping: float):
     return LineString(new_locations)
 
 
-def align_two_nearly_adjacent_segments(segment_list: List[LineString], tolerance: float = 200.):
+def align_two_nearly_adjacent_segments(segment_list: list[LineString], tolerance: float = 200.):
     """
     Snap the closest endpoints of two nearly-adjacent LineStrings to their midpoint.
 
@@ -598,7 +596,7 @@ def align_two_nearly_adjacent_segments(segment_list: List[LineString], tolerance
 
     return LineString(new_line1), LineString(new_line2)
 
-def merge_two_nearly_adjacent_segments(segment_list: List[LineString], tolerance: float = 200.):
+def merge_two_nearly_adjacent_segments(segment_list: list[LineString], tolerance: float = 200.):
     """
     Merge two nearly-adjacent LineStrings into one by snapping their endpoints.
 
@@ -623,7 +621,7 @@ def merge_two_nearly_adjacent_segments(segment_list: List[LineString], tolerance
     return linemerge([new_line1, new_line2])
 
 
-def merge_multiple_nearly_adjacent_segments(segment_list: List[LineString], tolerance: float = 200.):
+def merge_multiple_nearly_adjacent_segments(segment_list: list[LineString], tolerance: float = 200.):
     """
     Iteratively merge a list of nearly-adjacent LineStrings into one.
 

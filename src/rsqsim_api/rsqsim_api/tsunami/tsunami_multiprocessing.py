@@ -7,7 +7,6 @@ netCDF output files via a producer/consumer pattern.
 """
 from rsqsim_api.fault.multifault import RsqSimMultiFault, RsqSimSegment
 import multiprocessing as mp
-from typing import Union
 import h5py
 import netCDF4 as nc
 import numpy as np
@@ -15,8 +14,8 @@ import random
 sentinel = None
 
 
-def multiprocess_gf_to_hdf(fault: Union[RsqSimSegment, RsqSimMultiFault], x_range: np.ndarray, y_range: np.ndarray,
-                           out_file_prefix: str, x_grid: np.ndarray = None, y_grid: np.ndarray = None, z_grid: np.ndarray = None, slip_magnitude: Union[float, int] = 1.,
+def multiprocess_gf_to_hdf(fault: RsqSimSegment | RsqSimMultiFault, x_range: np.ndarray, y_range: np.ndarray,
+                           out_file_prefix: str, x_grid: np.ndarray = None, y_grid: np.ndarray = None, z_grid: np.ndarray = None, slip_magnitude: float | int = 1.,
                            num_processors: int = None, num_write: int = 8):
     """
     Compute tsunami Green's functions for all patches and write to netCDF files.
@@ -243,7 +242,7 @@ def handle_output_netcdf(output_queue: mp.Queue, patch_indices: np.ndarray, outp
 
 def patch_greens_functions(in_queue: mp.Queue, x_sites: np.ndarray, y_sites: np.ndarray,
                            z_sites: np.ndarray,
-                           out_queue_dic: dict, grid_shape: tuple, slip_magnitude: Union[int, float] = 1):
+                           out_queue_dic: dict, grid_shape: tuple, slip_magnitude: int | float = 1):
     """
     Worker process that computes Green's functions for patches received from the input queue.
 

@@ -10,7 +10,6 @@ representations.
 """
 import os
 from collections.abc import Iterable
-from typing import Union, List
 
 import meshio
 import numpy as np
@@ -170,7 +169,7 @@ class RsqSimSegment:
         return self._patch_numbers
 
     @patch_numbers.setter
-    def patch_numbers(self, numbers: Union[list, tuple, np.ndarray]):
+    def patch_numbers(self, numbers: list | tuple | np.ndarray):
         number_array = np.array(numbers)
         assert number_array.dtype == "int"
         if self.patch_outlines is not None:
@@ -390,10 +389,10 @@ class RsqSimSegment:
         return triangle_index_list
 
     @classmethod
-    def from_triangles(cls, triangles: Union[np.ndarray, list, tuple], segment_number: int = 0,
-                       patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None,
-                       strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None,
-                       rake: Union[int, float, np.ndarray] = None, total_slip: np.ndarray = None, min_patch_area: float = 1.):
+    def from_triangles(cls, triangles: np.ndarray | list | tuple, segment_number: int = 0,
+                       patch_numbers: list | tuple | set | np.ndarray = None, fault_name: str = None,
+                       strike_slip: int | float = None, dip_slip: int | float = None,
+                       rake: int | float | np.ndarray = None, total_slip: np.ndarray = None, min_patch_area: float = 1.):
         """
         Create a segment from a flat triangle-vertex array.
 
@@ -501,8 +500,8 @@ class RsqSimSegment:
 
     @classmethod
     def from_tsurface(cls, tsurface_file: str, segment_number: int = 0,
-                      patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None,
-                      strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None):
+                      patch_numbers: list | tuple | set | np.ndarray = None, fault_name: str = None,
+                      strike_slip: int | float = None, dip_slip: int | float = None):
         """
         Create a segment from a tsurf (.ts) mesh file.
 
@@ -534,8 +533,8 @@ class RsqSimSegment:
 
     @classmethod
     def from_dxf(cls, dxf_file: str, segment_number: int = 0,
-                 patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None,
-                 strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None):
+                 patch_numbers: list | tuple | set | np.ndarray = None, fault_name: str = None,
+                 strike_slip: int | float = None, dip_slip: int | float = None):
         """
         Create a segment from a DXF mesh file.
 
@@ -567,8 +566,8 @@ class RsqSimSegment:
 
     @classmethod
     def from_pandas(cls, dataframe: pd.DataFrame, segment_number: int,
-                    patch_numbers: Union[list, tuple, set, np.ndarray], fault_name: str = None,
-                    strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None, read_rake: bool = True,
+                    patch_numbers: list | tuple | set | np.ndarray, fault_name: str = None,
+                    strike_slip: int | float = None, dip_slip: int | float = None, read_rake: bool = True,
                     read_slip_rate: bool = True, transform_from_utm: bool = False):
         """
         Create a segment from a pandas DataFrame with triangle and slip-rate columns.
@@ -662,7 +661,7 @@ class RsqSimSegment:
 
     @classmethod
     def from_pickle(cls, dataframe: pd.DataFrame, segment_number: int,
-                    patch_numbers: Union[list, tuple, set, np.ndarray], fault_name: str = None):
+                    patch_numbers: list | tuple | set | np.ndarray, fault_name: str = None):
         """
         Create a segment from a pickled patch DataFrame.
 
@@ -707,9 +706,9 @@ class RsqSimSegment:
 
     @classmethod
     def from_stl(cls, stl_file: str, segment_number: int = 0,
-                 patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None,
-                 strike_slip: Union[int, float] = None, dip_slip: Union[int, float] = None,
-                 rake: Union[int, float] = None, total_slip: np.ndarray = None):
+                 patch_numbers: list | tuple | set | np.ndarray = None, fault_name: str = None,
+                 strike_slip: int | float = None, dip_slip: int | float = None,
+                 rake: int | float = None, total_slip: np.ndarray = None):
         """
         Create a segment from an STL mesh file.
 
@@ -740,7 +739,7 @@ class RsqSimSegment:
 
     @classmethod
     def from_vtk(cls, vtk_file: str, segment_number: int = 0,
-                 patch_numbers: Union[list, tuple, set, np.ndarray] = None, fault_name: str = None):
+                 patch_numbers: list | tuple | set | np.ndarray = None, fault_name: str = None):
         """
         Create a segment from a VTK mesh file containing slip and rake data.
 
@@ -888,7 +887,7 @@ class RsqSimSegment:
     def laplacian_sing(self):
         return self._laplacian_sing
 
-    def find_top_vertex_indices(self, depth_tolerance: Union[float, int] = 100., complicated_faults: bool =False ):
+    def find_top_vertex_indices(self, depth_tolerance: float | int = 100., complicated_faults: bool =False ):
         """
         Return indices of the shallowest vertices within a depth tolerance.
 
@@ -926,10 +925,10 @@ class RsqSimSegment:
             shallow_indices = np.where(self.vertices[:, -1] >= top_vertex_depth - depth_tolerance)[0]
         return shallow_indices
 
-    def find_vertex_indices(self, depth_tolerance: Union[float, int] = 100., complicated_faults: bool =False ):
+    def find_vertex_indices(self, depth_tolerance: float | int = 100., complicated_faults: bool =False ):
         pass
 
-    def find_top_vertices(self, depth_tolerance: Union[float, int] = 100, complicated_faults: bool =False ):
+    def find_top_vertices(self, depth_tolerance: float | int = 100, complicated_faults: bool =False ):
         """
         Return 3-D coordinates of the shallowest vertices.
 
@@ -948,7 +947,7 @@ class RsqSimSegment:
         shallow_indices = self.find_top_vertex_indices(depth_tolerance, complicated_faults=complicated_faults)
         return self.vertices[shallow_indices]
 
-    def find_top_edges(self, depth_tolerance: Union[float, int] = 100, complicated_faults: bool =False):
+    def find_top_edges(self, depth_tolerance: float | int = 100, complicated_faults: bool =False):
         """
         Return the edge-line pairs (vertex index pairs) forming the top edge of the fault.
 
@@ -968,7 +967,7 @@ class RsqSimSegment:
         top_edges = self.edge_lines[np.all(np.isin(self.edge_lines, shallow_indices), axis=1)]
         return top_edges
 
-    def find_top_patch_numbers(self, depth_tolerance: Union[float, int] = 100):
+    def find_top_patch_numbers(self, depth_tolerance: float | int = 100):
         """
         Return the patch numbers whose triangles include at least one top-edge vertex.
 
@@ -987,7 +986,7 @@ class RsqSimSegment:
                              if any([shallow_index in triangle for shallow_index in shallow_indices])]
         return top_patch_numbers
 
-    def find_edge_patch_numbers(self, top: bool = True, depth_tolerance: Union[float, int] = 100):
+    def find_edge_patch_numbers(self, top: bool = True, depth_tolerance: float | int = 100):
         """
         Return patch numbers for patches that lie on the outer edge of the fault.
 
@@ -1038,42 +1037,42 @@ class RsqSimSegment:
         outside_vertex_indices = self.find_all_outside_vertex_indices()
         return self.vertices[outside_vertex_indices]
 
-    def find_top_outside_vertices(self, depth_tolerance: Union[float, int] = 100):
+    def find_top_outside_vertices(self, depth_tolerance: float | int = 100):
         outside_vertices = self.find_all_outside_vertices()
         top_vertex_indices = self.find_top_outside_vertex_indices(depth_tolerance=depth_tolerance)
         top_vertices = self.vertices[top_vertex_indices]
         return top_vertices
 
-    def find_top_outside_vertex_indices(self, depth_tolerance: Union[float, int] = 100):
+    def find_top_outside_vertex_indices(self, depth_tolerance: float | int = 100):
         outside_vertex_indices = self.find_all_outside_vertex_indices()
         outside_vertices = self.vertices[outside_vertex_indices]
         top_vertex_indices = outside_vertex_indices[np.where(outside_vertices[:, -1] >= max(outside_vertices[:, -1]) - depth_tolerance)[0]]
 
         return top_vertex_indices
 
-    def find_top_outside_edges(self, depth_tolerance: Union[float, int] = 100):
+    def find_top_outside_edges(self, depth_tolerance: float | int = 100):
         all_outside_edges = self.find_all_outside_edges()
         top_outside_vertex_indices = self.find_top_outside_vertex_indices(depth_tolerance=depth_tolerance)
         top_outside_edges = np.array([edge for edge in all_outside_edges if np.in1d(edge, top_outside_vertex_indices).all()])
         return top_outside_edges
 
-    def find_bottom_outside_edges(self, depth_tolerance: Union[float, int] = 100):
+    def find_bottom_outside_edges(self, depth_tolerance: float | int = 100):
         all_outside_edges = self.find_all_outside_edges()
         top_outside_edges = self.find_top_outside_edges(depth_tolerance=depth_tolerance)
         bottom_outside_edges = np.array([edge for edge in all_outside_edges if not np.in1d(edge, top_outside_edges).all()])
 
         return bottom_outside_edges
 
-    def find_bottom_outside_vertex_indices(self, depth_tolerance: Union[float, int] = 100):
+    def find_bottom_outside_vertex_indices(self, depth_tolerance: float | int = 100):
         bottom_outside_edges = self.find_bottom_outside_edges(depth_tolerance=depth_tolerance)
         bottom_outside_vertex_indices = np.unique(bottom_outside_edges.reshape(-1, 2))
         return bottom_outside_vertex_indices
 
-    def find_bottom_outside_vertices(self, depth_tolerance: Union[float, int] = 100):
+    def find_bottom_outside_vertices(self, depth_tolerance: float | int = 100):
         bottom_outside_vertex_indices = self.find_bottom_outside_vertex_indices(depth_tolerance=depth_tolerance)
         return self.vertices[bottom_outside_vertex_indices]
 
-    def bottom_edge_point_cloud(self, depth_tolerance: Union[float, int] = 100, num_interp: int = 25):
+    def bottom_edge_point_cloud(self, depth_tolerance: float | int = 100, num_interp: int = 25):
         bottom_outside_edges = self.find_bottom_outside_edges(depth_tolerance=depth_tolerance)
         bottom_edge = self.vertices[bottom_outside_edges]
         interp_steps = np.linspace(0, 1, num_interp)
@@ -1625,7 +1624,7 @@ class RsqSimFault:
         One or more segments composing this fault.
     """
 
-    def __init__(self, segments: Union[RsqSimSegment, List[RsqSimSegment]]):
+    def __init__(self, segments: RsqSimSegment | list[RsqSimSegment]):
         """
         Parameters
         ----------
@@ -1643,7 +1642,7 @@ class RsqSimFault:
         return self._segments
 
     @segments.setter
-    def segments(self, segments: Union[RsqSimSegment, List[RsqSimSegment]]):
+    def segments(self, segments: RsqSimSegment | list[RsqSimSegment]):
 
         if isinstance(segments, RsqSimSegment):
             self._segments = [segments]

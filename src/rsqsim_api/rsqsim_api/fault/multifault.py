@@ -10,7 +10,6 @@ GIS export methods.
 import glob
 import os
 from collections.abc import Iterable
-from typing import Union
 import fnmatch
 import pickle
 
@@ -29,7 +28,7 @@ from rsqsim_api.fault.utilities import merge_multiple_nearly_adjacent_segments
 from shapely.ops import linemerge
 from shapely.geometry import LineString,MultiLineString
 
-def check_unique_vertices(vertex_array: np.ndarray, tolerance: Union[int, float] = 1):
+def check_unique_vertices(vertex_array: np.ndarray, tolerance: int | float = 1):
     """
     Check whether any vertices in a 3-D array are potential duplicates.
 
@@ -86,7 +85,7 @@ class RsqSimMultiFault:
         Mapping of global patch number to the owning segment.
     """
 
-    def __init__(self, faults: Union[list, tuple, set], crs: int = 2193):
+    def __init__(self, faults: list | tuple | set, crs: int = 2193):
         """
         Parameters
         ----------
@@ -111,7 +110,7 @@ class RsqSimMultiFault:
 
         self.faults_with_patches = {patch_num: patch.segment for patch_num, patch in self.patch_dic.items()}
 
-    def filter_faults_by_patch_numbers(self, patch_ls: Union[int, list, tuple, np.ndarray],fault_from_single_patch : bool =False):
+    def filter_faults_by_patch_numbers(self, patch_ls: int | list | tuple | np.ndarray,fault_from_single_patch : bool =False):
         """
         Return the fault(s) associated with a given patch number or list of patch numbers.
 
@@ -146,7 +145,7 @@ class RsqSimMultiFault:
         return self._faults
 
     @faults.setter
-    def faults(self, faults: Union[list, tuple, set]):
+    def faults(self, faults: list | tuple | set):
         assert all([isinstance(fault, (RsqSimMultiFault, RsqSimSegment)) for fault in faults])
         self._faults = faults
 
@@ -491,7 +490,7 @@ class RsqSimMultiFault:
         df.to_pickle(file)
 
     @classmethod
-    def read_cfm_directory(cls, directory: str = None, files: Union[str, list, tuple] = None, shapefile=None):
+    def read_cfm_directory(cls, directory: str = None, files: str | list | tuple = None, shapefile=None):
         # TODO: finish writing
         directory_vs_file = [directory is None, files is None]
         assert not all(directory_vs_file)

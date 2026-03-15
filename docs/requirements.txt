@@ -1,3 +1,4 @@
-sphinx-autoapi
-sphinx-rtd-theme
-myst-parser
+sphinx>=7.0
+sphinx-autoapi>=3.0
+sphinx-rtd-theme>=2.0
+myst-parser>=2.0

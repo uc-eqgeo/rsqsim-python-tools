@@ -2,15 +2,14 @@
 import geopandas as gpd
 import numpy as np
 import os
-from typing import Union
 from netCDF4 import Dataset
 import rasterio
 from rasterio.warp import calculate_default_transform, reproject, Resampling
 
 
-def read_grid(raster_file: str, nan_threshold: Union[float, int] = 100,
-              window: Union[str, list, tuple, np.ndarray] = None,
-              buffer: Union[float, int] = 100, return_meta: bool = False):
+def read_grid(raster_file: str, nan_threshold: float | int = 100,
+              window: str | list | tuple | np.ndarray = None,
+              buffer: float | int = 100, return_meta: bool = False):
     """
     Read a raster file into coordinate and value arrays.
 
@@ -131,9 +130,9 @@ def read_grid(raster_file: str, nan_threshold: Union[float, int] = 100,
         return x, y, z
 
 
-def read_tiff(tiff: str, x_correct: float = None, y_correct: float = None, nan_threshold: Union[float, int] = 9000,
-              make_y_ascending: bool = False, window: Union[str, list, tuple, np.ndarray] = None,
-              buffer: Union[float, int]=100, return_meta: bool = False):
+def read_tiff(tiff: str, x_correct: float = None, y_correct: float = None, nan_threshold: float | int = 9000,
+              make_y_ascending: bool = False, window: str | list | tuple | np.ndarray = None,
+              buffer: float | int=100, return_meta: bool = False):
     """
     Read a GeoTIFF file into coordinate and value arrays.
 
@@ -375,7 +374,7 @@ def write_gmt_grd(x_array: np.ndarray, y_array: np.ndarray, mesh: np.ndarray, gr
 
 
 def tiff2grd(tiff: str, grd: str, x_correct: float = None, y_correct: float = None,
-             window: Union[list, tuple, int] = None, buffer: Union[float, int] = 100):
+             window: list | tuple | int = None, buffer: float | int = 100):
     """
     Convert a GeoTIFF to a GMT NetCDF4 grid file.
 
@@ -469,7 +468,7 @@ def array_to_gmt(array: np.ndarray, out_file: str):
     out_id.close()
 
 
-def clip_tiff(in_tiff: str, out_tiff: str, window: Union[str, list, tuple, int], buffer: Union[float, int] = 100):
+def clip_tiff(in_tiff: str, out_tiff: str, window: str | list | tuple | int, buffer: float | int = 100):
     """
     Clip a GeoTIFF to a spatial window and write the result.
 
@@ -499,7 +498,7 @@ def clip_tiff(in_tiff: str, out_tiff: str, window: Union[str, list, tuple, int],
 
 
 def reproject_tiff(in_raster: str, out_raster: str, dst_epsg: int = 4326,
-                   window: Union[str, list, tuple, int] = None, buffer: Union[float, int] = 100, out_format="tiff"):
+                   window: str | list | tuple | int = None, buffer: float | int = 100, out_format="tiff"):
     """
     Reproject a raster to a different coordinate reference system.
 

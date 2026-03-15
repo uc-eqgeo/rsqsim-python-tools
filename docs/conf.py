@@ -1,57 +1,74 @@
 # Configuration file for the Sphinx documentation builder.
 #
-# For the full list of built-in configuration values, see the documentation:
+# For the full list of built-in configuration values, see:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-# -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
-
-# -- Path setup --------------------------------------------------------------
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("../src/rsqsim_api/rsqsim_api/"))
+# Add the distribution-package root to sys.path so that the rsqsim_api
+# package (and its subpackages) are importable during the Sphinx build.
+# This is needed for type-hint resolution even though autoapi does its
+# own static analysis without importing the code.
+sys.path.insert(0, os.path.abspath("../src/rsqsim_api"))
 
-project = 'rsqsim-python-tools'
-copyright = '2022, Andy Howell and Camilla Penney'
-author = 'Andy Howell and Camilla Penney'
-release = '0.0.1'
+# -- Project information -----------------------------------------------------
+
+project = "rsqsim-python-tools"
+copyright = "2022, Andy Howell and Camilla Penney"
+author = "Andy Howell and Camilla Penney"
+release = "0.0.1"
 
 # -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.githubpages",
     "sphinx.ext.coverage",
     "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
     "autoapi.extension",
     "myst_parser",
 ]
 
-templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
-
+templates_path = ["_templates"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_rtd_theme'
-html_static_path = ['_static']
+html_theme = "sphinx_rtd_theme"
+html_static_path = ["_static"]
 
-# -- Extension configuration -------------------------------------------------
-autoapi_dirs = ["../src/rsqsim_api/rsqsim_api/"]
+# -- Napoleon (NumPy-style docstrings) ---------------------------------------
+
+napoleon_google_docstring = False
+napoleon_numpy_docstring = True
+napoleon_include_init_with_doc = True
+napoleon_include_private_with_doc = False
+napoleon_use_admonition_for_notes = True
+napoleon_use_admonition_for_examples = False
+
+# -- AutoAPI -----------------------------------------------------------------
+# Point to the distribution-package root; autoapi discovers the rsqsim_api
+# Python package (which contains __init__.py) inside it.
+autoapi_dirs = ["../src/rsqsim_api"]
+autoapi_type = "python"
+autoapi_root = "autoapi"
+
 autoapi_options = [
     "members",
+    "undoc-members",
     "show-inheritance",
     "show-module-summary",
     "special-members",
-    "imported-members",
 ]
+
+# Keep the generated .rst files so they can be inspected or customised.
+autoapi_keep_files = True
+
+# Let autoapi insert its own toctree entry after it has generated the
+# files, avoiding the "nonexisting document 'autoapi/index'" warning
+# that occurs when the entry is added manually before generation runs.
+autoapi_add_toctree_entry = True
+
 autodoc_typehints = "description"

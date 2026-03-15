@@ -1,8 +1,19 @@
 """
-Catalogue class
+RSQSim earthquake catalogue management and analysis.
+
+Provides :class:`RsqSimCatalogue` for loading, filtering, and analysing
+earthquake catalogues produced by RSQSim, along with module-level helper
+functions for reading Bruce Shaw run directories and combining spatial
+bounds.
+
+The catalogue stores per-event metadata (time, magnitude, location,
+area, duration) as a Pandas DataFrame alongside parallel flat arrays of
+per-patch slip, timing, and event identifiers that can be lazily resolved
+to :class:`~rsqsim_api.catalogue.event.RsqSimEvent` objects.
 """
-from typing import Union, Iterable, List, Any
+from typing import Any
 from collections import abc, Counter, defaultdict
+from collections.abc import Iterable
 import os
 import pickle
 
@@ -32,7 +43,7 @@ from rsqsim_api.catalogue.utilities import calculate_scaling_c, calculate_stress
 
 rng = default_rng()
 
-fint = Union[int, float]
+fint = int | float
 sensible_ranges = {"t0": (0, 1.e15), "m0": (1.e13, 1.e24), "mw": (2.5, 10.0),
                    "x": (-180., 1.e8), "y": (-90., 1.e8), "z": (-1.e6, 0),
                    "area": (0, 1.e12), "dt": (0, 1200)}
@@ -42,6 +53,31 @@ extra_file_suffixes = (".dmuList", ".dsigmaList", ".dtauList", ".taupList")
 
 
 def get_mask(ev_ls, min_patches, faults_with_patches, event_list, patch_list, queue):
+    """
+    Worker function: compute per-event patch masks and post results to a queue.
+
+    For each event index in ``ev_ls``, finds the patches belonging to each
+    fault segment and masks out segments that contribute fewer than
+    ``min_patches`` patches.  Results are posted to ``queue`` as
+    ``(event_index, ev_indices, mask)`` tuples.
+
+    Parameters
+    ----------
+    ev_ls : array-like of int
+        Event indices to process in this worker.
+    min_patches : int
+        Minimum patches per fault for a segment to be retained.
+    faults_with_patches : dict
+        Mapping of patch number to fault segment number (integer IDs
+        rather than objects, for serialisability).
+    event_list : array-like of int
+        Flat array of event IDs for every patch entry in the catalogue.
+    patch_list : array-like of int
+        Flat array of patch IDs parallel to ``event_list``.
+    queue : multiprocessing.Queue
+        Output queue; tuples of ``(event_id, ev_indices, mask)`` are
+        placed here.
+    """
     patches = np.asarray(patch_list)
     events = np.asarray(event_list)
 
@@ -68,7 +104,30 @@ def get_mask(ev_ls, min_patches, faults_with_patches, event_list, patch_list, qu
 
 
 class RsqSimCatalogue:
+    """
+    Container for an RSQSim earthquake catalogue with per-patch slip data.
+
+    Stores the catalogue as a Pandas DataFrame together with four
+    parallel flat arrays (event IDs, patch IDs, slip values, and rupture
+    times) that cover the slip distribution for every event.  Provides
+    methods to load data from RSQSim binary output files, filter by
+    magnitude, time, location, or fault, retrieve fully populated
+    :class:`~rsqsim_api.catalogue.event.RsqSimEvent` objects, and
+    produce diagnostic plots.
+
+    Attributes
+    ----------
+    t0, m0, mw : numpy.ndarray or None
+        Origin time (s), scalar moment (N·m), and moment magnitude
+        arrays from the catalogue DataFrame (set lazily).
+    x, y, z : numpy.ndarray or None
+        Hypocentre NZTM coordinates (m).
+    area, dt : numpy.ndarray or None
+        Rupture areas (m²) and durations (s).
+    """
+
     def __init__(self):
+        """Initialise an empty catalogue; use class methods to populate."""
         # Essential attributes
         self._catalogue_df = None
         self._event_list = None
@@ -87,6 +146,7 @@ class RsqSimCatalogue:
 
     @property
     def catalogue_df(self):
+        """pandas.DataFrame: Per-event catalogue with 8 numeric columns."""
         return self._catalogue_df
 
     @catalogue_df.setter
@@ -97,6 +157,24 @@ class RsqSimCatalogue:
         self._catalogue_df = dataframe
 
     def check_list(self, data_list: np.ndarray, data_type: str):
+        """
+        Validate a flat patch/event list array before assignment.
+
+        Parameters
+        ----------
+        data_list : numpy.ndarray
+            1-D array to validate.
+        data_type : str
+            ``"i"`` for integer arrays (patch/event lists) or ``"d"``
+            for floating-point arrays (slip/time lists).
+
+        Raises
+        ------
+        AttributeError
+            If the catalogue DataFrame has not been loaded yet.
+        AssertionError
+            If ``data_type``, dtype, or dimensionality are invalid.
+        """
         assert data_type in ("i", "d")
         if self.catalogue_df is None:
             raise AttributeError("Read in main catalogue (eqs.*.out) before list files")
@@ -109,6 +187,7 @@ class RsqSimCatalogue:
 
     @property
     def event_list(self):
+        """numpy.ndarray: Flat integer array of event IDs, one per patch entry."""
         return self._event_list
 
     @event_list.setter
@@ -121,6 +200,7 @@ class RsqSimCatalogue:
 
     @property
     def patch_list(self):
+        """numpy.ndarray: Flat integer array of patch IDs, parallel to ``event_list``."""
         return self._patch_list
 
     @patch_list.setter
@@ -130,6 +210,7 @@ class RsqSimCatalogue:
 
     @property
     def patch_time_list(self):
+        """numpy.ndarray: Rupture times (s) for each patch entry."""
         return self._patch_time_list
 
     @patch_time_list.setter
@@ -139,6 +220,7 @@ class RsqSimCatalogue:
 
     @property
     def patch_slip(self):
+        """numpy.ndarray: Slip magnitudes (m) for each patch entry."""
         return self._patch_slip
 
     @patch_slip.setter
@@ -148,24 +230,45 @@ class RsqSimCatalogue:
 
     @property
     def accumulated_slip(self):
+        """dict: Mapping of patch ID to total slip accumulated over all events."""
         if self._accumulated_slip is None:
             self.assign_accumulated_slip()
         return self._accumulated_slip
 
     @property
     def event_mean_slip(self):
+        """dict or None: Mapping of event ID to mean slip (m); populated by :meth:`assign_event_mean_slip`."""
         return self._event_mean_slip
 
     @property
     def event_mean_sdr(self):
+        """dict or None: Mapping of event ID to ``[strike, dip, rake]``; populated by :meth:`assign_event_mean_sdr`."""
         return self._event_mean_sdr
 
     @property
     def event_length(self):
+        """dict or None: Mapping of event ID to rupture length (m); populated by :meth:`assign_event_length`."""
         return self._event_length
 
     @classmethod
     def from_dataframe(cls, dataframe: pd.DataFrame, reproject: List = None):
+        """
+        Construct a catalogue from an existing DataFrame.
+
+        Parameters
+        ----------
+        dataframe : pandas.DataFrame
+            DataFrame with 8 numeric columns in the standard RSQSim
+            catalogue column order (t0, m0, mw, x, y, z, area, dt).
+        reproject : list or tuple of int, optional
+            ``[in_epsg, out_epsg]`` pair.  If provided, the ``x`` and
+            ``y`` columns are reprojected using PyProj.
+
+        Returns
+        -------
+        RsqSimCatalogue
+            Catalogue populated with the DataFrame (no patch lists).
+        """
         rsqsim_cat = cls()
         if reproject is not None:
             assert isinstance(reproject, (tuple, list))
@@ -180,6 +283,21 @@ class RsqSimCatalogue:
 
     @classmethod
     def from_catalogue_file(cls, filename: str, reproject: List = None):
+        """
+        Construct a catalogue by reading an RSQSim ``eqs.*.out`` file.
+
+        Parameters
+        ----------
+        filename : str
+            Path to the RSQSim catalogue file.
+        reproject : list or tuple of int, optional
+            ``[in_epsg, out_epsg]`` pair for coordinate reprojection.
+
+        Returns
+        -------
+        RsqSimCatalogue
+            Catalogue populated from the file (no patch lists).
+        """
         assert os.path.exists(filename)
         catalogue_df = read_earthquake_catalogue(filename)
         rsqsim_cat = cls.from_dataframe(catalogue_df, reproject=reproject)
@@ -188,6 +306,37 @@ class RsqSimCatalogue:
     @classmethod
     def from_catalogue_file_and_lists(cls, catalogue_file: str, list_file_directory: str,
                                       list_file_prefix: str, read_extra_lists: bool = False, reproject: List = None, serial: bool = False, endian: str = "little"):
+        """
+        Construct a fully populated catalogue from an RSQSim output directory.
+
+        Reads the ``eqs.*.out`` catalogue file together with the four
+        binary list files (``.pList``, ``.eList``, ``.dList``, ``.tList``).
+
+        Parameters
+        ----------
+        catalogue_file : str
+            Path to the ``eqs.*.out`` catalogue file.
+        list_file_directory : str
+            Directory containing the ``.pList``/``.eList``/``.dList``/
+            ``.tList`` binary files.
+        list_file_prefix : str
+            Common prefix for the list files (e.g. ``"rundir4627"``).
+        read_extra_lists : bool, optional
+            Unused; reserved for future extra list support.
+        reproject : list or tuple of int, optional
+            ``[in_epsg, out_epsg]`` pair for coordinate reprojection.
+        serial : bool, optional
+            If ``True``, read list files as plain text rather than
+            binary.  Defaults to ``False``.
+        endian : str, optional
+            Byte order of the binary list files: ``"little"`` (default)
+            or ``"big"``.
+
+        Returns
+        -------
+        RsqSimCatalogue
+            Fully populated catalogue with patch slip distribution.
+        """
         assert os.path.exists(catalogue_file)
         assert os.path.exists(list_file_directory)
 
@@ -241,6 +390,29 @@ class RsqSimCatalogue:
     @classmethod
     def from_dataframe_and_arrays(cls, dataframe: pd.DataFrame, event_list: np.ndarray, patch_list: np.ndarray,
                                   patch_slip: np.ndarray, patch_time_list: np.ndarray,reproject: List = None):
+        """
+        Construct a catalogue from a DataFrame and pre-loaded patch arrays.
+
+        Parameters
+        ----------
+        dataframe : pandas.DataFrame
+            Per-event catalogue DataFrame.
+        event_list : numpy.ndarray
+            Flat 1-D integer array of event IDs, one per patch entry.
+        patch_list : numpy.ndarray
+            Flat 1-D integer array of patch IDs parallel to ``event_list``.
+        patch_slip : numpy.ndarray
+            Flat 1-D float array of slip magnitudes (m).
+        patch_time_list : numpy.ndarray
+            Flat 1-D float array of rupture times (s).
+        reproject : list or tuple of int, optional
+            ``[in_epsg, out_epsg]`` pair for coordinate reprojection.
+
+        Returns
+        -------
+        RsqSimCatalogue
+            Fully populated catalogue.
+        """
         assert all([arr.ndim == 1 for arr in [event_list, patch_list, patch_slip, patch_time_list]])
         list_len = event_list.size
         assert all([arr.size == list_len for arr in [patch_list, patch_slip, patch_time_list]])
@@ -252,10 +424,42 @@ class RsqSimCatalogue:
 
     @classmethod
     def from_csv_and_arrays(cls, prefix: str, read_index: bool = True, reproject: List = None):
+        """
+        Construct a catalogue from a CSV and companion NumPy array files.
+
+        Parameters
+        ----------
+        prefix : str
+            File path prefix used by :func:`~rsqsim_api.io.read_utils.read_csv_and_array`.
+        read_index : bool, optional
+            Whether to read the DataFrame index from the CSV.
+            Defaults to ``True``.
+        reproject : list or tuple of int, optional
+            ``[in_epsg, out_epsg]`` pair for coordinate reprojection.
+
+        Returns
+        -------
+        RsqSimCatalogue
+            Fully populated catalogue.
+        """
         df, event_ls, patch_ls, slip_ls, time_ls = read_csv_and_array(prefix, read_index=read_index)
         return cls.from_dataframe_and_arrays(df, event_ls, patch_ls, slip_ls, time_ls, reproject=reproject)
 
     def write_csv_and_arrays(self, prefix: str, directory: str = None, write_index: bool = True):
+        """
+        Write the catalogue DataFrame and patch arrays to CSV and NumPy files.
+
+        Parameters
+        ----------
+        prefix : str
+            File name prefix for the output files.
+        directory : str or None, optional
+            Output directory.  Created if it does not exist.  If
+            ``None``, files are written to the current directory.
+        write_index : bool, optional
+            Whether to write the DataFrame index to the CSV.
+            Defaults to ``True``.
+        """
         assert prefix, "Empty prefix!"
         if directory is not None:
             if not os.path.exists(directory):
@@ -264,20 +468,76 @@ class RsqSimCatalogue:
         write_catalogue_dataframe_and_arrays(prefix, self, directory=directory, write_index=write_index)
 
     def first_event(self, fault_model: RsqSimMultiFault):
+        """Return the first event in the catalogue as an :class:`~rsqsim_api.catalogue.event.RsqSimEvent`."""
         return self.events_by_number(int(self.catalogue_df.index[0]), fault_model)[0]
 
     def nth_event(self,fault_model: RsqSimMultiFault,n: int):
+        """
+        Return the n-th event (1-based) from the catalogue.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model for resolving patch slip distributions.
+        n : int
+            1-based index of the event to retrieve.
+
+        Returns
+        -------
+        RsqSimEvent
+        """
         assert isinstance(n,int)
         return self.events_by_number(int(self.catalogue_df.index[n-1]), fault_model)[0]
 
     def first_n_events(self, number_of_events: int, fault_model: RsqSimMultiFault):
+        """
+        Return the first ``number_of_events`` events from the catalogue.
+
+        Parameters
+        ----------
+        number_of_events : int
+            Number of events to retrieve.
+        fault_model : RsqSimMultiFault
+            Fault model for resolving patch slip distributions.
+
+        Returns
+        -------
+        list of RsqSimEvent
+        """
         return self.events_by_number(list(self.catalogue_df.index[:number_of_events]), fault_model)
 
     def all_events(self, fault_model: RsqSimMultiFault):
+        """
+        Return all events in the catalogue.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model for resolving patch slip distributions.
+
+        Returns
+        -------
+        list of RsqSimEvent
+        """
         return self.events_by_number(list(self.catalogue_df.index), fault_model)
 
 
     def event_outlines(self, fault_model: RsqSimMultiFault, event_numbers: Iterable = None):
+        """
+        Return the Shapely exterior geometries for a set of events.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model for resolving patch slip distributions.
+        event_numbers : iterable of int, optional
+            Event IDs to retrieve.  If ``None``, all events are used.
+
+        Returns
+        -------
+        list of shapely.geometry.base.BaseGeometry
+            Unary-union patch outlines for each event.
+        """
         if event_numbers is not None:
             events = self.events_by_number(event_numbers, fault_model)
         else:
@@ -289,7 +549,35 @@ class RsqSimCatalogue:
                   min_x: fint = None, max_x: fint = None, min_y: fint = None, max_y: fint = None,
                   min_z: fint = None, max_z: fint = None, min_area: fint = None, max_area: fint = None,
                   min_dt: fint = None, max_dt: fint = None):
+        """
+        Return a filtered view of the catalogue DataFrame.
 
+        All parameters are optional range constraints.  Values outside
+        ``sensible_ranges`` raise a ``ValueError``.
+
+        Parameters
+        ----------
+        min_t0, max_t0 : float or int, optional
+            Origin time bounds (s).
+        min_m0, max_m0 : float or int, optional
+            Scalar moment bounds (N·m).
+        min_mw, max_mw : float or int, optional
+            Moment magnitude bounds.
+        min_x, max_x, min_y, max_y : float or int, optional
+            Horizontal coordinate bounds (NZTM metres).
+        min_z, max_z : float or int, optional
+            Depth bounds (m, negative downward).
+        min_area, max_area : float or int, optional
+            Rupture area bounds (m²).
+        min_dt, max_dt : float or int, optional
+            Duration bounds (s).
+
+        Returns
+        -------
+        pandas.DataFrame or None
+            Filtered DataFrame, or ``None`` if no conditions were
+            specified.
+        """
         assert isinstance(self.catalogue_df, pd.DataFrame), "Read in data first!"
         conditions_str = ""
         range_checks = [(min_t0, max_t0, "t0"), (min_m0, max_m0, "m0"), (min_mw, max_mw, "mw"),
@@ -336,7 +624,26 @@ class RsqSimCatalogue:
                                min_x: fint = None, max_x: fint = None, min_y: fint = None, max_y: fint = None,
                                min_z: fint = None, max_z: fint = None, min_area: fint = None, max_area: fint = None,
                                min_dt: fint = None, max_dt: fint = None, reset_index: bool = False):
+        """
+        Return a new catalogue filtered by catalogue-level parameter ranges.
 
+        Parameters are identical to :meth:`filter_df` with an additional
+        ``reset_index`` option.
+
+        Parameters
+        ----------
+        min_t0, max_t0, min_m0, max_m0, min_mw, max_mw, min_x, max_x,
+        min_y, max_y, min_z, max_z, min_area, max_area, min_dt, max_dt :
+            See :meth:`filter_df`.
+        reset_index : bool, optional
+            If ``True``, reindex the filtered catalogue starting from 0.
+
+        Returns
+        -------
+        RsqSimCatalogue
+            New catalogue containing only events within the specified
+            parameter ranges.
+        """
         trimmed_df = self.filter_df(min_t0, max_t0, min_m0, max_m0, min_mw, max_mw, min_x, max_x, min_y, max_y,
                                     min_z, max_z, min_area, max_area, min_dt, max_dt)
         event_indices = np.where(np.in1d(self.event_list, np.array(trimmed_df.index)))[0]
@@ -358,7 +665,22 @@ class RsqSimCatalogue:
                                               patch_slip=trimmed_patch_slip, patch_time_list=trimmed_patch_time)
         return rcat
 
-    def filter_by_events(self, event_number: Union[int, Iterable[int]], reset_index: bool = False):
+    def filter_by_events(self, event_number: int | Iterable[int], reset_index: bool = False):
+        """
+        Return a new catalogue containing only the specified events.
+
+        Parameters
+        ----------
+        event_number : int or iterable of int
+            One or more event IDs to retain.
+        reset_index : bool, optional
+            If ``True``, reindex the filtered catalogue from 0.
+
+        Returns
+        -------
+        RsqSimCatalogue
+            Catalogue containing only the selected events.
+        """
         if isinstance(event_number, (int, np.int32,np.int64)):
             ev_ls = [event_number]
         else:
@@ -387,14 +709,49 @@ class RsqSimCatalogue:
         return rcat
 
     def drop_few_patches(self, fault_model: RsqSimMultiFault, min_patches: int = 3):
+        """
+        Return a catalogue with events having fewer than ``min_patches`` dropped.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model for resolving patch distributions.
+        min_patches : int, optional
+            Minimum number of patches required for an event to be
+            retained.  Defaults to 3.
+
+        Returns
+        -------
+        RsqSimCatalogue
+            Filtered catalogue.
+        """
         event_list = self.events_by_number(self.catalogue_df.index, fault_model, min_patches=min_patches)
         new_ids = [ev.event_id for ev in event_list if len(ev.patches) >= min_patches]
         print(len(event_list), new_ids)
 
         return self.filter_by_events(new_ids)
 
-    def filter_by_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],
+    def filter_by_fault(self, fault_or_faults: RsqSimMultiFault | RsqSimSegment | list | tuple,
                         minimum_patches_per_fault: int = None):
+        """
+        Return a catalogue filtered to events that rupture specified faults.
+
+        An event is included if at least one of its patches belongs to
+        any fault in ``fault_or_faults``.
+
+        Parameters
+        ----------
+        fault_or_faults : RsqSimSegment, RsqSimMultiFault, list, or tuple
+            Fault(s) to filter on.
+        minimum_patches_per_fault : int or None, optional
+            If given, an event is only included if it ruptures at least
+            this many patches on at least one of the target faults.
+
+        Returns
+        -------
+        RsqSimCatalogue or None
+            Filtered catalogue, or ``None`` if no matching events found.
+        """
         if isinstance(fault_or_faults,RsqSimSegment):
             fault_ls = [fault_or_faults]
         elif isinstance(fault_or_faults,RsqSimMultiFault):
@@ -450,8 +807,28 @@ class RsqSimCatalogue:
 
             return None
 
-    def filter_not_on_fault(self, fault_or_faults: Union[RsqSimMultiFault, RsqSimSegment, list, tuple],
+    def filter_not_on_fault(self, fault_or_faults: RsqSimMultiFault | RsqSimSegment | list | tuple,
                             minimum_patches_per_fault: int = None):
+        """
+        Return a catalogue with events that rupture specified faults removed.
+
+        The complement of :meth:`filter_by_fault`: events are rejected if
+        they rupture any patch on the target faults.
+
+        Parameters
+        ----------
+        fault_or_faults : RsqSimSegment, RsqSimMultiFault, list, or tuple
+            Fault(s) whose events should be excluded.
+        minimum_patches_per_fault : int or None, optional
+            If given, an event is only rejected if it ruptures at least
+            this many patches on one of the target faults.
+
+        Returns
+        -------
+        RsqSimCatalogue or None
+            Filtered catalogue, or ``None`` if no events remain, or
+            ``self`` if no events were on the target faults.
+        """
         if isinstance(fault_or_faults,RsqSimSegment):
             fault_ls = [fault_or_faults]
         elif isinstance(fault_or_faults,RsqSimMultiFault):
@@ -517,13 +894,41 @@ class RsqSimCatalogue:
     def find_surface_rupturing_events(self,fault_model: RsqSimMultiFault,min_slip: float =0.1, method: str = 'vertex',
                                       n_patches: int = 1, max_depth: float = -1000., n_faults: int =1, write_flt_dict: bool = False,
                                       faults2ignore: [list,str] = 'hikurangi'):
-
         """
-        min_slip = 0.1  # min slip on a surface patch in m
-        method = 'centroid'  # specify vertex or centroid
-        n_patches = 1  # number of surface rupturing patches needed
-        max_depth = -2000.  # max depth for a 'surface' patch vertex or centroid - about 1000 for vertex or 2000 for centroid
-        n_faults = 1  # number of surface rupturing faults required (intended for sorting multifault events later)"""
+        Find catalogue event IDs that include surface rupture.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model used to resolve patch slip distributions.
+        min_slip : float, optional
+            Minimum slip (m) for a patch to count as ruptured.
+            Defaults to 0.1 m.
+        method : str, optional
+            ``"vertex"`` (use the shallowest vertex) or ``"centroid"``
+            (use the centroid depth) for the depth criterion.
+        n_patches : int, optional
+            Minimum number of qualifying surface patches per fault.
+            Defaults to 1.
+        max_depth : float, optional
+            Depth threshold (m, negative).  Defaults to -1000 m.
+        n_faults : int, optional
+            Minimum number of surface-rupturing faults per event.
+            Defaults to 1.
+        write_flt_dict : bool, optional
+            If ``True``, also return a dict mapping event IDs to lists
+            of surface-rupturing fault names.
+        faults2ignore : list of str or str, optional
+            Fault name(s) to exclude.  Defaults to ``"hikurangi"``.
+
+        Returns
+        -------
+        list of int
+            Event IDs with surface rupture.
+        dict, optional
+            Only returned when ``write_flt_dict=True``; maps event ID
+            to the list of surface-rupturing fault names.
+        """
 
         assert method in ['centroid','vertex'],"Method must be centroid or vertex"
         assert max_depth < 0., "depths should be negative"
@@ -544,17 +949,22 @@ class RsqSimCatalogue:
             return surface_ev_ids
     def find_multi_fault(self,fault_model: RsqSimMultiFault):
         """
-        Identify events involving more than 1 fault. Note that this is based on named fault segments so might not
-        reflect the area ruptured/ be consistent with other approaches to understanding multifault ruptures.
+        Identify events that rupture more than one named fault segment.
+
+        Note that segmentation is based on the fault model's segment
+        names and may not correspond to other multi-fault definitions.
 
         Parameters
         ----------
-        fault_model : RsqSimMultiFault object
+        fault_model : RsqSimMultiFault
+            Fault model for resolving patch slip distributions.
 
         Returns
         -------
-        list of multifault events
-        RsqSimCatalogue with only multifault ruptures
+        multifault : list of RsqSimEvent
+            Events that involve more than one fault segment.
+        multi_cat : RsqSimCatalogue
+            Sub-catalogue containing only those events.
         """
         multifault = [ev for ev in self.all_events(fault_model) if ev.num_faults > 1]
         # and filter catalogue to just these events
@@ -562,11 +972,39 @@ class RsqSimCatalogue:
         multi_cat = self.filter_by_events(multifault_ids)
         return multifault,multi_cat
 
-    def filter_by_region(self, region: Union[Polygon, gpd.GeoSeries], fault_model: RsqSimMultiFault,
+    def filter_by_region(self, region: Polygon | gpd.GeoSeries, fault_model: RsqSimMultiFault,
                          event_numbers: Iterable = None):
+        """
+        Filter events by geographic region.
+
+        Not yet implemented.
+
+        Parameters
+        ----------
+        region : Polygon or geopandas.GeoSeries
+            Region geometry (reserved for future use).
+        fault_model : RsqSimMultiFault
+            Fault model (reserved for future use).
+        event_numbers : iterable of int, optional
+            Reserved for future use.
+        """
         pass
 
     def filter_by_patch_numbers(self, patch_numbers):
+        """
+        Return a catalogue containing only events that ruptured specified patches.
+
+        Parameters
+        ----------
+        patch_numbers : array-like of int
+            Patch IDs to filter on; events with at least one matching
+            patch are retained.
+
+        Returns
+        -------
+        RsqSimCatalogue or None
+            Filtered catalogue, or ``None`` if no events match.
+        """
         patch_indices = np.where(np.in1d(self.patch_list, patch_numbers))[0]
         event_numbers = self.event_list[patch_indices]
         if event_numbers.size:
@@ -581,8 +1019,29 @@ class RsqSimCatalogue:
             print("No events found!")
             return
 
-    def events_by_number(self, event_number: Union[int, Iterable[int]], fault_model: RsqSimMultiFault,
-                         child_processes: int = 0, min_patches: int = 1) -> List[RsqSimEvent]:
+    def events_by_number(self, event_number: int | Iterable[int], fault_model: RsqSimMultiFault,
+                         child_processes: int = 0, min_patches: int = 1) -> list[RsqSimEvent]:
+        """
+        Retrieve one or more events as fully populated :class:`~rsqsim_api.catalogue.event.RsqSimEvent` objects.
+
+        Parameters
+        ----------
+        event_number : int or iterable of int
+            Event ID(s) to retrieve.
+        fault_model : RsqSimMultiFault
+            Fault model for resolving patch objects and fault associations.
+        child_processes : int, optional
+            If > 0, distribute event processing across this many child
+            processes using shared memory.  Defaults to 0 (serial).
+        min_patches : int, optional
+            Minimum patches per fault segment for an event to be
+            considered.  Defaults to 1.
+
+        Returns
+        -------
+        list of RsqSimEvent
+            Fully populated events in the order they were requested.
+        """
         assert isinstance(fault_model,RsqSimMultiFault), "Fault model required"
         if isinstance(event_number, (int, np.int32, np.int64)):
             ev_ls = [event_number]
@@ -660,8 +1119,11 @@ class RsqSimCatalogue:
 
     def assign_accumulated_slip(self):
         """
-        Create dict of patch numbers with slip accumulated over events in the catalogue.
-        Note that this overwrites any other value which could have been assigned to accumulated slip.
+        Compute and cache total accumulated slip per patch.
+
+        Sums ``patch_slip`` over all events for each unique patch ID
+        and stores the result in :attr:`_accumulated_slip`.  Subsequent
+        accesses via :attr:`accumulated_slip` return the cached value.
         """
         accumulated_slip = {}
         for patch_i in np.unique(self.patch_list):
@@ -672,8 +1134,12 @@ class RsqSimCatalogue:
 
     def assign_event_mean_slip(self, fault_model: RsqSimMultiFault):
         """
-        Create dict of event ids with associated mean slip on the patches which slip in them.
-        Note that this overwrites any other value which could have been assigned to mean slip.
+        Compute and cache mean slip per event.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model for resolving patch objects.
         """
         event_mean_slip = {}
         for event in self.all_events(fault_model):
@@ -682,8 +1148,12 @@ class RsqSimCatalogue:
 
     def assign_event_mean_sdr(self, fault_model: RsqSimMultiFault):
         """
-        Create dict of event ids with associated mean strike,dip and rake on the patches which slip in them.
-        Note that this overwrites any other value which could have been assigned to mean strike, mean dip or mean rake.
+        Compute and cache mean strike, dip, and rake per event.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model for resolving patch objects.
         """
         event_mean_sdr = {}
         for event in self.all_events(fault_model):
@@ -693,8 +1163,12 @@ class RsqSimCatalogue:
 
     def assign_event_length(self, fault_model: RsqSimMultiFault):
         """
-        Create dict of event ids with associated maximum horizontal straight line distances between patches which slip in them.
-        Note that this overwrites any other value which could have been assigned to event length.
+        Compute and cache rupture length per event.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model for resolving patch and fault objects.
         """
         event_lengths = {}
         for event in self.all_events(fault_model):
@@ -716,7 +1190,64 @@ class RsqSimCatalogue:
                                  log_max: float = 100., plot_traces: bool = True, trace_colour: str = "pink",
                                  min_slip_percentile: float = None, min_slip_value: float = None,
                                  plot_zeros: bool = True):
+        """
+        Plot a 2-D map of accumulated slip across all events in the catalogue.
 
+        Sums slip over the entire catalogue per patch and plots the
+        result with separate colourmaps for subduction-interface and
+        crustal faults.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model whose patches are coloured by accumulated slip.
+        subduction_cmap : str, optional
+            Colourmap for subduction-interface patches.  Defaults to
+            ``"plasma"``.
+        crustal_cmap : str, optional
+            Colourmap for crustal patches.  Defaults to ``"viridis"``.
+        show : bool, optional
+            If ``True`` (default), call ``plt.show()``.
+        write : str or None, optional
+            File path to save the figure.
+        subplots : tuple or str or None, optional
+            Existing ``(fig, ax)`` or pickled figure to plot on.
+        global_max_sub_slip, global_max_slip : float, optional
+            Fixed colourbar maxima; 0 means per-data maximum.
+        figsize : tuple of float, optional
+            Figure size in inches.
+        hillshading_intensity : float, optional
+            Hillshading intensity.
+        bounds : tuple or None, optional
+            Map extent ``(x_min, y_min, x_max, y_max)`` in NZTM.
+        plot_rivers, plot_lakes, plot_highways, plot_boundaries : bool, optional
+            Toggle background map layers.
+        create_background : bool, optional
+            Render full background map.
+        coast_only : bool, optional
+            Render coastline only as background.
+        hillshade_cmap : LinearSegmentedColormap, optional
+            Hillshade colourmap.
+        plot_log_scale : bool, optional
+            Use logarithmic colour scaling.
+        log_cmap, log_min, log_max : optional
+            Parameters for log-scale colouring.
+        plot_traces : bool, optional
+            Plot fault surface traces.
+        trace_colour : str, optional
+            Colour for fault traces.
+        min_slip_percentile : float or None, optional
+            Slip percentile threshold below which patches are zeroed.
+        min_slip_value : float or None, optional
+            Slip value threshold (m) below which patches are zeroed.
+        plot_zeros : bool, optional
+            If ``True`` (default), plot zero-slip patches.
+
+        Returns
+        -------
+        list
+            Matplotlib ``PolyCollection`` objects for each fault plotted.
+        """
         if bounds is None and fault_model.bounds is not None:
             bounds = fault_model.bounds
 
@@ -859,16 +1390,43 @@ class RsqSimCatalogue:
                 write: str = None, tmin: float = None, tmax: float = None, depth_min: float = None, depth_max: float =None, mmin: float = 4.5, mmax: float = 9.5,
                  plot_corrected_instrumental: bool = True):
         """
-        Plot cumulative or differential Gutenburg-Richter distribution for a given catalogue with Aki b-value at reference mag.
-        y-axis: log(annual frequency of events with M>Mw)
-        x axis: Mw
+        Plot a magnitude–frequency distribution for the catalogue.
+
+        Produces a Gutenberg-Richter plot (annual rates vs Mw) in either
+        differential or cumulative form.  Random time-window samples can
+        be overlaid to show variability.
 
         Parameters
         ----------
-
-        show : bool to indicate whether to display plot
-        write : file (if any) to write plot to
-        best_fit : whether to plot best fit linear trend w/b value
+        plot_type : str, optional
+            ``"differential"`` (default) or ``"cumulative"``.
+        nSamp : int, optional
+            Number of random time-window samples to draw for the
+            variability envelope.  Defaults to 1000.
+        window : float, optional
+            Duration (s) of each random sample window.  Defaults to
+            80 years.
+        n_bins : int, optional
+            Number of magnitude bins.  Defaults to 50.
+        instrumental_path : str or None, optional
+            Path to an instrumental seismicity CSV file for comparison.
+        inst_year_min : float, optional
+            Minimum year for the instrumental catalogue.  Defaults to
+            1940.
+        show : bool, optional
+            If ``True`` (default), call ``plt.show()``.
+        write : str or None, optional
+            File path to save the figure.
+        tmin, tmax : float or None, optional
+            Time range (s) to use.  Defaults to the catalogue range.
+        depth_min, depth_max : float or None, optional
+            Depth range (km) for filtering the instrumental catalogue.
+        mmin, mmax : float, optional
+            Magnitude range for the histogram/plot.  Defaults to
+            4.5–9.5.
+        plot_corrected_instrumental : bool, optional
+            If ``True`` (default), overlay a magnitude-corrected
+            cumulative curve for the instrumental catalogue.
         """
 
         assert plot_type in ['differential','cumulative'], "plot_type must be one of cumulative or differential"
@@ -989,17 +1547,25 @@ class RsqSimCatalogue:
             plt.show()
 
     def plot_depth_hist(self,fault_model: RsqSimMultiFault, n_bins: int = 10, depth_min: float=None, depth_max: float=None, write: str = None, show: bool = True):
-
         """
-        Plot histogram of synthetic earthquake hypocentral depths and depths to base of faults.
+        Plot a histogram of hypocentral depths alongside fault-base depths.
 
         Parameters
         ----------
-        fault_model: RsqSimMultiFault fault network
-        depth_min: minimum depth of synthetic seismicity (km)
-        depth_max: maximum depth of synthetic seismicity (km)
-        write: path to outputfile file to write to
-        show: boolean
+        fault_model : RsqSimMultiFault
+            Fault model used to extract fault base depths.
+        n_bins : int, optional
+            Number of depth bins.  Defaults to 10.
+        depth_min : float or None, optional
+            Minimum depth (km) for the plot.  Defaults to the shallowest
+            hypocentre.
+        depth_max : float or None, optional
+            Maximum depth (km) for the plot.  Defaults to the deepest
+            hypocentre.
+        write : str or None, optional
+            File path to save the figure.
+        show : bool, optional
+            If ``True`` (default), display the figure.
         """
         if depth_min is None:
             depth_min=-0.001 * self.catalogue_df['z'].max(axis=0)
@@ -1026,14 +1592,19 @@ class RsqSimCatalogue:
     def plot_mean_slip_vs_mag(self, fault_model: RsqSimMultiFault, show: bool = True,
                               write: str = None, plot_rel: bool = True):
         """
-        Plot the mean slip on each patch against the moment magnitude of the earthquake for each event in catalogue.
+        Scatter-plot mean patch slip vs moment magnitude for all events.
 
         Parameters
-        -------
-        fault_model : RsqSimMultiFault object
-        show : bool to indicate whether to display plot
-        write : file (if any) to write plot to
-        plot_rel : plot expected analytic relationship best on scaling laws
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model for computing mean slip per event.
+        show : bool, optional
+            If ``True`` (default), display the figure.
+        write : str or None, optional
+            File path to save the figure.
+        plot_rel : bool, optional
+            If ``True`` (default), overlay the best-fit trend and the
+            expected 1/3-slope scaling-law line.
         """
         # check mean slip is assigned
         if self.event_mean_slip is None:
@@ -1073,16 +1644,18 @@ class RsqSimCatalogue:
     def plot_area_vs_mag(self, fault_model: RsqSimMultiFault, show: bool = True,
                          write: str = None, plot_rel: bool = True):
         """
-        Plot the area of each event against the seismic moment of the earthquake for each event in catalogue.
+        Scatter-plot rupture area vs moment magnitude for all events.
 
         Parameters
-        -------
-
-        fault_model : RsqSimMultiFault object
-        show : bool to indicate whether to display plot
-        write : file (if any) to write plot to
-        plot_rel : plot best fit logarithmic trend
-
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model for retrieving event areas.
+        show : bool, optional
+            If ``True`` (default), display the figure.
+        write : str or None, optional
+            File path to save the figure.
+        plot_rel : bool, optional
+            If ``True`` (default), overlay the best-fit log-linear trend.
         """
         # create dictionary of magnitudes and areas
         mag_area = {}
@@ -1113,22 +1686,67 @@ class RsqSimCatalogue:
             plt.close()
 
     def stress_drops(self, stress_c: float = 2.44):
+        """
+        Compute stress drops for all events.
+
+        Parameters
+        ----------
+        stress_c : float, optional
+            Shape constant (default 2.44 for a circular crack).
+
+        Returns
+        -------
+        numpy.ndarray
+            Stress drop in Pa for each event.
+        """
         return calculate_stress_drop(self.m0, self.area, stress_c=stress_c)
 
     def scaling_c(self):
+        """
+        Compute the Gutenberg-Richter scaling parameter c for all events.
+
+        Returns
+        -------
+        numpy.ndarray
+            Scaling parameter c (``Mw - log10(area) + 6``) per event.
+        """
         return calculate_scaling_c(self.mw, self.area)
 
     def scaling_summary_statistics(self, stress_c: float = 2.44):
+        """
+        Return summary statistics of scaling parameters for the catalogue.
+
+        Parameters
+        ----------
+        stress_c : float, optional
+            Shape constant passed to
+            :func:`~rsqsim_api.catalogue.utilities.summary_statistics`.
+
+        Returns
+        -------
+        pandas.Series
+            Summary statistics including max Mw and percentiles of c and
+            stress drop.
+        """
         return summary_statistics(self.catalogue_df, stress_c=stress_c)
 
     def all_slip_distributions_to_vtk(self, fault_model: RsqSimMultiFault, output_directory: str,
                                       include_zeros: bool = False, min_slip_value: float = None):
         """
+        Write VTK slip distribution files for every event in the catalogue.
 
-        @param fault_model:
-        @param output_directory:
-        @param include_zeros:
-        @return:
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model for resolving patch objects.
+        output_directory : str
+            Existing directory to write ``event<id>.vtk`` files.
+        include_zeros : bool, optional
+            If ``True``, include zero-slip patches.  Defaults to
+            ``False``.
+        min_slip_value : float or None, optional
+            Minimum slip threshold (m) passed to
+            :meth:`~rsqsim_api.catalogue.event.RsqSimEvent.slip_dist_to_vtk`.
         """
         assert os.path.exists(output_directory), "Make directory before writing VTK"
         for event in self.all_events(fault_model):
@@ -1137,10 +1755,22 @@ class RsqSimCatalogue:
 
     def calculate_b_value(self, min_mw: float = 0.0, max_mw: float = 10.0, interval=0.1):
         """
-        Calculate b-value from magnitudes and completeness magnitude.
-        :param magnitudes:
-        :param mc:
-        :return:
+        Estimate the Gutenberg-Richter b-value for the catalogue.
+
+        Parameters
+        ----------
+        min_mw : float, optional
+            Minimum magnitude bin centre to include.  Defaults to 0.0.
+        max_mw : float, optional
+            Maximum magnitude bin centre to include.  Defaults to 10.0.
+        interval : float, optional
+            Magnitude bin width.  Defaults to 0.1.
+
+        Returns
+        -------
+        tuple of float
+            ``(b_value, intercept)`` from the least-squares fit to the
+            log-linear cumulative MFD.
         """
         time_interval = (self.catalogue_df['t0'].max() - self.catalogue_df['t0'].min())/csts.seconds_per_year
         return calculate_b_value(self.catalogue_df["mw"], time_interval, min_mw=min_mw, max_mw=max_mw, interval=interval)
@@ -1149,8 +1779,23 @@ class RsqSimCatalogue:
     def calculate_dominant_magnitudes(self, fault_model: RsqSimMultiFault, unfiltered_catalogue = None,
                                       min_for_median: int = 5):
         """
-        Method for calculating the median magnitude that a given patch will rupture in.
-        :return: median magnitudes
+        Compute the dominant (median cumulant) magnitude for each patch.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model providing patch indices.
+        unfiltered_catalogue : RsqSimCatalogue or None, optional
+            If provided, use this catalogue's magnitude arrays (useful
+            when the current catalogue is a filtered subset).
+        min_for_median : int, optional
+            Minimum number of matching events for the median to be
+            computed.  Defaults to 5.
+
+        Returns
+        -------
+        numpy.ndarray
+            Dominant magnitude (Mw) for each patch in ``fault_model``.
         """
         patch_indices = np.array(list(fault_model.patch_dic.keys()), dtype=np.int32)
         event_list = self.event_list
@@ -1169,18 +1814,35 @@ class RsqSimCatalogue:
 
     @staticmethod
     @njit(parallel=True)
-    def dominant_magnitudes(fault_patch_indices: np.ndarray[Union[int, np.int32, np.int64]],
-                            catalogue_patch_array: np.ndarray[Union[int, np.int32, np.int64]],
+    def dominant_magnitudes(fault_patch_indices: np.ndarray[int | np.int32 | np.int64],
+                            catalogue_patch_array: np.ndarray[int | np.int32 | np.int64],
                             event_mws: np.ndarray, event_m0s: np.ndarray,
                             min_for_median: int = 5):
         """
-        Method for calculating the median magnitude that a given patch will rupture in.
-        :param fault_patch_indices: indices of patches in fault model
-        :param catalogue_patch_array: array of patch numbers for each event
-        :param event_mws: array of magnitudes for each event
-        :param event_m0s: array of moment magnitudes for each event
-        :param min_for_median: minimum number of events for median to be calculated
-        :return: median magnitudes
+        Numba-parallel computation of dominant magnitude per patch.
+
+        For each patch index, finds all matching entries in the catalogue
+        and computes the median cumulant magnitude.
+
+        Parameters
+        ----------
+        fault_patch_indices : numpy.ndarray of int
+            All patch IDs in the fault model.
+        catalogue_patch_array : numpy.ndarray of int
+            Flat array of patch IDs from the catalogue (parallel to
+            ``event_list``).
+        event_mws : numpy.ndarray of float
+            Mw for each entry in ``catalogue_patch_array``.
+        event_m0s : numpy.ndarray of float
+            M0 (N·m) for each entry in ``catalogue_patch_array``.
+        min_for_median : int, optional
+            Minimum matching events required to compute the median.
+            Patches below this threshold receive 0.  Defaults to 5.
+
+        Returns
+        -------
+        numpy.ndarray of float
+            Dominant magnitude for each patch (0 if insufficient data).
         """
         medians_array = np.zeros_like(fault_patch_indices, dtype=np.float64)
 
@@ -1199,10 +1861,25 @@ class RsqSimCatalogue:
                                        subduction_names: tuple = ("hikkerm", "puysegur"),
                                        min_crustal_mw: float = 6.0):
         """
-        Filter events to only include those which occur on crustal faults.
-        :param fault_model:
-        :param subduction_names:
-        :param min_crustal_mw:
+        Return event IDs where crustal moment exceeds a magnitude threshold.
+
+        Uses Numba-parallel processing to check each event's crustal
+        moment contribution.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model providing patch areas and crustal patch numbers.
+        subduction_names : tuple of str, optional
+            Fault names classified as subduction interface; all other
+            patches are considered crustal.
+        min_crustal_mw : float, optional
+            Minimum crustal moment magnitude threshold.  Defaults to 6.0.
+
+        Returns
+        -------
+        numpy.ndarray of int
+            Event IDs whose crustal moment meets the threshold.
         """
         min_crustal_m0 = mw_to_m0(min_crustal_mw)
         crustal_patch_numbers = fault_model.get_crustal_patch_numbers(subduction_faults=subduction_names)
@@ -1216,22 +1893,37 @@ class RsqSimCatalogue:
 
     @staticmethod
     @njit(parallel=True)
-    def filter_crustal_events_parallel(event_indices: np.ndarray[Union[int, np.int32, np.int64]],
-                                       crustal_patch_numbers: np.ndarray[Union[int, np.int32, np.int64]],
-                                       event_list: np.ndarray[Union[int, np.int32, np.int64]],
-                                       patch_list: np.ndarray[Union[int, np.int32, np.int64]],
-                                       patch_slip: np.ndarray[Union[float, np.float32, np.float64]],
-                                       patch_area_list: np.ndarray[Union[float, np.float32, np.float64]],
-                                       min_crustal_m0: Union[float, np.float32, np.float64]):
+    def filter_crustal_events_parallel(event_indices: np.ndarray[int | np.int32 | np.int64],
+                                       crustal_patch_numbers: np.ndarray[int | np.int32 | np.int64],
+                                       event_list: np.ndarray[int | np.int32 | np.int64],
+                                       patch_list: np.ndarray[int | np.int32 | np.int64],
+                                       patch_slip: np.ndarray[float | np.float32 | np.float64],
+                                       patch_area_list: np.ndarray[float | np.float32 | np.float64],
+                                       min_crustal_m0: float | np.float32 | np.float64):
         """
-        Numba parallel function to filter events to only include those which occur on crustal faults.
-        :param event_indices:
-        :param crustal_patch_numbers:
-        :param patch_list:
-        :param patch_slip:
-        :param patch_area_list:
-        :param min_crustal_m0:
-        :return:
+        Numba-parallel filter: return events with crustal moment >= threshold.
+
+        Parameters
+        ----------
+        event_indices : numpy.ndarray of int
+            All event IDs to check.
+        crustal_patch_numbers : numpy.ndarray of int
+            Patch IDs classified as crustal (non-subduction).
+        event_list : numpy.ndarray of int
+            Flat catalogue event-ID array.
+        patch_list : numpy.ndarray of int
+            Flat catalogue patch-ID array.
+        patch_slip : numpy.ndarray of float
+            Slip (m) parallel to ``patch_list``.
+        patch_area_list : numpy.ndarray of float
+            Patch areas (m²) parallel to ``patch_list``.
+        min_crustal_m0 : float
+            Minimum crustal scalar moment (N·m) threshold.
+
+        Returns
+        -------
+        numpy.ndarray of int
+            Event IDs whose crustal moment meets ``min_crustal_m0``.
         """
         crustal_bool = np.zeros_like(event_indices, dtype=np.int32)
         for i in prange(len(event_indices)):
@@ -1251,9 +1943,40 @@ class RsqSimCatalogue:
         return event_indices[crustal_bool == 1]
 
     def match_events_to_crustal_nshm_dicts(self, fault_model: RsqSimMultiFault,
-                                           event_ids: np.ndarray[Union[int, np.int32, np.int64]],
+                                           event_ids: np.ndarray[int | np.int32 | np.int64],
                                            crustal_patch_dict: dict, crustal_n_dict: dict,
                                            subduction_names: tuple = ("hikkerm", "puysegur"), threshold_proportion: float = 0.5):
+        """
+        Match events to NSHM subsection indices using a KD-tree patch lookup.
+
+        For each event, determines which NSHM subsection indices are
+        ruptured based on the fraction of the subsection's patches that
+        slipped.
+
+        Parameters
+        ----------
+        fault_model : RsqSimMultiFault
+            Fault model providing crustal patch numbers.
+        event_ids : numpy.ndarray of int
+            Event IDs to process.
+        crustal_patch_dict : dict
+            Mapping of NSHM subsection index (int) to a dict with
+            ``"triangle_indices"`` giving the RSQSim patch IDs.
+        crustal_n_dict : dict
+            Mapping of NSHM subsection index (int) to total number of
+            RSQSim patches in that subsection.
+        subduction_names : tuple of str, optional
+            Fault names excluded from the crustal analysis.
+        threshold_proportion : float, optional
+            Fraction of subsection patches that must be ruptured for the
+            subsection to be considered active.  Defaults to 0.5.
+
+        Returns
+        -------
+        numba.typed.Dict
+            Mapping of event ID (int32) to an array of NSHM subsection
+            indices (int32) that were ruptured.
+        """
         crustal_patch_numbers = fault_model.get_crustal_patch_numbers(subduction_faults=subduction_names)
         crustal_patch_dict_typed = typed.Dict.empty(types.int32, types.int32[:])
         for key in crustal_patch_dict.keys():
@@ -1269,22 +1992,39 @@ class RsqSimCatalogue:
 
     @staticmethod
     @njit
-    def match_crustal_nshm_parallel(event_ids: np.ndarray[Union[int, np.int32, np.int64]],
-                                    event_list: np.ndarray[Union[int, np.int32, np.int64]],
-                                    patch_list: np.ndarray[Union[int, np.int32, np.int64]],
+    def match_crustal_nshm_parallel(event_ids: np.ndarray[int | np.int32 | np.int64],
+                                    event_list: np.ndarray[int | np.int32 | np.int64],
+                                    patch_list: np.ndarray[int | np.int32 | np.int64],
                                     crustal_patch_dict: typed.Dict,
                                     crustal_n_dict: typed.Dict,
-                                    crustal_patch_numbers: np.ndarray[Union[int, np.int32, np.int64]],
+                                    crustal_patch_numbers: np.ndarray[int | np.int32 | np.int64],
                                     threshold_proportion: float = 0.5):
         """
-        Numba parallel function to match events to crustal n values.
-        :param event_ids:
-        :param event_list:
-        :param patch_list:
-        :param crustal_patch_dict:
-        :param crustal_n_dict:
-        :param crustal_patch_numbers:
-        :param threshold_proportion:
+        Numba JIT-compiled: map events to NSHM subsection indices.
+
+        Parameters
+        ----------
+        event_ids : numpy.ndarray of int32
+            Events to process.
+        event_list : numpy.ndarray of int32
+            Flat catalogue event-ID array.
+        patch_list : numpy.ndarray of int32
+            Flat catalogue patch-ID array.
+        crustal_patch_dict : numba.typed.Dict
+            Mapping of subsection index to array of RSQSim patch IDs.
+        crustal_n_dict : numba.typed.Dict
+            Mapping of subsection index to total patch count.
+        crustal_patch_numbers : numpy.ndarray of int32
+            All crustal patch IDs.
+        threshold_proportion : float, optional
+            Fraction threshold for subsection inclusion.  Defaults to
+            0.5.
+
+        Returns
+        -------
+        numba.typed.Dict
+            Mapping of event ID (int32) to array of active subsection
+            indices (int32).
         """
         nshm_patch_dict = typed.Dict.empty(types.int32, types.int32[:])
         nshm_keys = np.array(list(crustal_patch_dict.keys()), dtype=np.int32)
@@ -1319,6 +2059,27 @@ class RsqSimCatalogue:
 def read_bruce(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/rnc2/data/shaw2021/rundir4627",
                fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in",
                catalogue_file: str = "eqs..out"):
+    """
+    Read a Bruce Shaw RSQSim run directory and return the fault model and catalogue.
+
+    Parameters
+    ----------
+    run_dir : str
+        Path to the RSQSim run directory.
+    fault_file : str, optional
+        Fault geometry file name.  Defaults to ``"bruce_faults.in"``.
+    names_file : str, optional
+        Fault names file name.  Defaults to ``"bruce_names.in"``.
+    catalogue_file : str, optional
+        Catalogue file name.  Defaults to ``"eqs..out"``.
+
+    Returns
+    -------
+    bruce_faults : RsqSimMultiFault
+        Fault model with UTM coordinates transformed to NZTM.
+    catalogue : RsqSimCatalogue
+        Fully populated catalogue.
+    """
     fault_full = os.path.join(run_dir, fault_file)
     names_full = os.path.join(run_dir, names_file)
 
@@ -1341,6 +2102,28 @@ def read_bruce_if_necessary(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/r
                             fault_file: str = "bruce_faults.in", names_file: str = "bruce_names.in",
                             catalogue_file: str = "eqs..out", default_faults: str = "bruce_faults",
                             default_cat: str = "catalogue"):
+    """
+    Read a Bruce Shaw run directory only if the variables are not already in global scope.
+
+    Parameters
+    ----------
+    run_dir : str
+        Path to the RSQSim run directory.
+    fault_file, names_file, catalogue_file : str, optional
+        File names for faults, fault names, and the catalogue.
+    default_faults : str, optional
+        Global variable name expected to hold the fault model.
+        Defaults to ``"bruce_faults"``.
+    default_cat : str, optional
+        Global variable name expected to hold the catalogue.
+        Defaults to ``"catalogue"``.
+
+    Returns
+    -------
+    tuple of (RsqSimMultiFault, RsqSimCatalogue) or None
+        Returns the fault model and catalogue if they were not already
+        defined; otherwise returns ``None``.
+    """
     print(globals())
     if not all([a in globals() for a in (default_faults, default_cat)]):
         bruce_faults, catalogue = read_bruce(run_dir=run_dir, fault_file=fault_file, names_file=names_file,
@@ -1349,6 +2132,29 @@ def read_bruce_if_necessary(run_dir: str = "/home/UOCNT/arh128/PycharmProjects/r
 
 
 def combine_boundaries(bounds1: list, bounds2: list):
+    """
+    Return the bounding box that encompasses both input bounding boxes.
+
+    Takes the element-wise minimum for the lower two coordinates and the
+    element-wise maximum for the upper two, producing a combined extent.
+
+    Parameters
+    ----------
+    bounds1 : list
+        First bounding box as ``[min_x, min_y, max_x, max_y]``.
+    bounds2 : list
+        Second bounding box in the same format.
+
+    Returns
+    -------
+    list
+        Combined bounding box ``[min_x, min_y, max_x, max_y]``.
+
+    Raises
+    ------
+    AssertionError
+        If ``bounds1`` and ``bounds2`` have different lengths.
+    """
     assert len(bounds1) == len(bounds2)
     min_bounds = [min([a, b]) for a, b in zip(bounds1, bounds2)]
     max_bounds = [max([a, b]) for a, b in zip(bounds1, bounds2)]
@@ -1356,10 +2162,33 @@ def combine_boundaries(bounds1: list, bounds2: list):
 
 def calculate_b_value(magnitudes, time_interval_years, min_mw: float = 0.0, max_mw: float = 10.0, interval = 0.1):
     """
-    Calculate b-value from magnitudes and completeness magnitude.
-    :param magnitudes:
-    :param mc:
-    :return:
+    Estimate the Gutenberg-Richter b-value from a magnitude catalogue.
+
+    Builds a cumulative MFD histogram, normalises by the observation
+    interval, and fits a straight line to log₁₀(rate) vs Mw to obtain
+    the b-value (negative slope) and the a-value (intercept).
+
+    Parameters
+    ----------
+    magnitudes : array-like
+        Array of moment magnitudes.
+    time_interval_years : float
+        Observation duration in years used to convert event counts to
+        annual rates.
+    min_mw : float, optional
+        Lower magnitude cutoff for the regression.  Defaults to 0.0.
+    max_mw : float, optional
+        Upper magnitude cutoff for the regression.  Defaults to 10.0.
+    interval : float, optional
+        Magnitude bin width.  Defaults to 0.1.
+
+    Returns
+    -------
+    b_value : float
+        Estimated b-value (positive, i.e. the negative of the fitted
+        gradient).
+    intercept : float
+        Log₁₀ a-value (y-intercept of the Gutenberg-Richter fit).
     """
     magnitudes = np.array(magnitudes)
     mfd_bins = np.arange(0., 10. + interval, interval)

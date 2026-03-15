@@ -13,7 +13,6 @@ import geopandas as gpd
 import pathlib
 import numpy as np
 from shapely.geometry import Polygon, MultiPolygon, box
-from typing import Union
 from rsqsim_api.io.array_operations import read_tiff
 from matplotlib.colors import LightSource, LinearSegmentedColormap
 from matplotlib import cm, colors
@@ -54,7 +53,7 @@ min_y1_wgs = -51.
 max_y2_wgs = -33.
 
 
-def clip_coast_with_trim(x1: Union[int, float], y1: Union[int, float], x2: Union[int, float], y2: Union[int, float],
+def clip_coast_with_trim(x1: int | float, y1: int | float, x2: int | float, y2: int | float,
                          wgs: bool = False, coarse: bool = False, fine: bool = False):
     """
     Clip the NZ coastline to a bounding box and trim polygon boundaries.
@@ -118,7 +117,7 @@ def clip_coast_with_trim(x1: Union[int, float], y1: Union[int, float], x2: Union
     return polygon_geoseries
 
 
-def clip_coast(x1: Union[int, float], y1: Union[int, float], x2: Union[int, float], y2: Union[int, float],
+def clip_coast(x1: int | float, y1: int | float, x2: int | float, y2: int | float,
                wgs: bool = False, coarse: bool = False, fine: bool = False):
     """
     Clip the NZ coastline to a bounding box using coordinate indexing.
@@ -177,7 +176,7 @@ def clip_coast(x1: Union[int, float], y1: Union[int, float], x2: Union[int, floa
 
     return polygon_geoseries
 
-def plot_gis_lines(gis_file: Union[str, pathlib.Path], ax: plt.Axes, color: str, linewidth: int = 0.3, clip_bounds: list = None,
+def plot_gis_lines(gis_file: str | pathlib.Path, ax: plt.Axes, color: str, linewidth: int = 0.3, clip_bounds: list = None,
                    linestyle: str = "-"):
     """
     Plot line features from a GIS vector file onto a matplotlib axis.
@@ -207,7 +206,7 @@ def plot_gis_lines(gis_file: Union[str, pathlib.Path], ax: plt.Axes, color: str,
 
     clipped_data.plot(color=color, ax=ax, linewidth=linewidth, linestyle=linestyle)
 
-def plot_gis_polygons(gis_file: Union[str, pathlib.Path], ax: plt.Axes, edgecolor: str, linewidth: int = 0.3, clip_bounds: list = None,
+def plot_gis_polygons(gis_file: str | pathlib.Path, ax: plt.Axes, edgecolor: str, linewidth: int = 0.3, clip_bounds: list = None,
                       linestyle: str = "-", facecolor="none"):
     """
     Plot polygon features from a GIS vector file onto a matplotlib axis.

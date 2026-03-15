@@ -1,5 +1,3 @@
-from typing import Union
-
 import xml.etree.ElementTree as ElemTree
 from xml.dom import minidom
 
@@ -69,7 +67,7 @@ def cross_3d(a, b):
     return np.array([x, y, z])
 
 
-def normalize_bearing(bearing: Union[float, int]):
+def normalize_bearing(bearing: float | int):
     """
     Wrap a bearing value into the half-open interval [0, 360).
 
@@ -390,8 +388,8 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         Area of the triangular patch in square metres.
     """
 
-    def __init__(self, segment, vertices: Union[list, np.ndarray, tuple], patch_number: int = 0,
-                 dip_slip: float = None, strike_slip: float = None, patch_data: Union[list, np.ndarray, tuple] = None,
+    def __init__(self, segment, vertices: list | np.ndarray | tuple, patch_number: int = 0,
+                 dip_slip: float = None, strike_slip: float = None, patch_data: list | np.ndarray | tuple = None,
                  rake: float = None, total_slip: float = None):
 
         super(RsqSimTriangularPatch, self).__init__(segment=segment, patch_number=patch_number,
@@ -416,7 +414,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
             self.set_slip_rake(total_slip, self.rake)
 
     @RsqSimGenericPatch.vertices.setter
-    def vertices(self, vertices: Union[list, np.ndarray, tuple]):
+    def vertices(self, vertices: list | np.ndarray | tuple):
         """
         Validate and store the triangle corner vertices.
 
@@ -723,7 +721,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
         area = 0.5 * norm
         return area
 
-    def slip3d_to_ss_ds(self, x1_slip: Union[float, int], x2_slip: Union[float, int], x3_slip: Union[float, int]):
+    def slip3d_to_ss_ds(self, x1_slip: float | int, x2_slip: float | int, x3_slip: float | int):
         """
         Decompose a 3-D slip vector into strike-slip and dip-slip components.
 
@@ -754,7 +752,7 @@ class RsqSimTriangularPatch(RsqSimGenericPatch):
 
         return ds, ss
 
-    def horizontal_sv_to_ds_ss(self, slipvec, magnitude: Union[float, int] = 1):
+    def horizontal_sv_to_ds_ss(self, slipvec, magnitude: float | int = 1):
         """
         Convert a horizontal slip-vector azimuth to dip-slip and strike-slip components.
 

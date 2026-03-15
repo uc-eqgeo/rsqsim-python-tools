@@ -7,7 +7,7 @@ grid, :class:`MultiEventSeaSurface` for a collection of events, and
 pre-computed netCDF file.
 """
 import numpy as np
-from typing import Iterable, Union
+from collections.abc import Iterable
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 from rsqsim_api.io.array_operations import write_gmt_grd, write_tiff
@@ -224,7 +224,7 @@ class MultiEventSeaSurface:
         self.event_dic = {event.event_number: event for event in self.event_ls}
 
     @classmethod
-    def from_netcdf_file(cls, event_ids: Union[int, Iterable[int]], nc_file: str):
+    def from_netcdf_file(cls, event_ids: int | Iterable[int], nc_file: str):
         """
         Load multiple events from a pre-computed netCDF SSD file.
 
@@ -279,7 +279,7 @@ class MultiEventSeaSurface:
         pass
 
 
-def events_from_ssd_netcdf(event_ids: Union[int, Iterable[int]], nc: Dataset, get_xy: bool = True):
+def events_from_ssd_netcdf(event_ids: int | Iterable[int], nc: Dataset, get_xy: bool = True):
     """
     Extract sea-surface displacement arrays from a netCDF SSD dataset.
 
