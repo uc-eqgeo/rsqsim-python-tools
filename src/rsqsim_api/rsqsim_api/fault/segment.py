@@ -215,7 +215,7 @@ class RsqSimSegment:
         return np.array(self.patch_vertices).reshape((len(self.patch_outlines), 1, 9)).squeeze()
 
     @patch_outlines.setter
-    def patch_outlines(self, patches: List):
+    def patch_outlines(self, patches: list):
         if self.patch_type == "triangle":
             assert all([isinstance(patch, RsqSimTriangularPatch) for patch in patches])
         elif self.patch_type == "rectangle":

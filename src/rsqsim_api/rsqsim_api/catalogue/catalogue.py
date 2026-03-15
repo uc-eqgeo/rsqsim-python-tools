@@ -251,7 +251,7 @@ class RsqSimCatalogue:
         return self._event_length
 
     @classmethod
-    def from_dataframe(cls, dataframe: pd.DataFrame, reproject: List = None):
+    def from_dataframe(cls, dataframe: pd.DataFrame, reproject: list = None):
         """
         Construct a catalogue from an existing DataFrame.
 
@@ -282,7 +282,7 @@ class RsqSimCatalogue:
         return rsqsim_cat
 
     @classmethod
-    def from_catalogue_file(cls, filename: str, reproject: List = None):
+    def from_catalogue_file(cls, filename: str, reproject: list = None):
         """
         Construct a catalogue by reading an RSQSim ``eqs.*.out`` file.
 
@@ -305,7 +305,7 @@ class RsqSimCatalogue:
 
     @classmethod
     def from_catalogue_file_and_lists(cls, catalogue_file: str, list_file_directory: str,
-                                      list_file_prefix: str, read_extra_lists: bool = False, reproject: List = None, serial: bool = False, endian: str = "little"):
+                                      list_file_prefix: str, read_extra_lists: bool = False, reproject: list = None, serial: bool = False, endian: str = "little"):
         """
         Construct a fully populated catalogue from an RSQSim output directory.
 
@@ -389,7 +389,7 @@ class RsqSimCatalogue:
 
     @classmethod
     def from_dataframe_and_arrays(cls, dataframe: pd.DataFrame, event_list: np.ndarray, patch_list: np.ndarray,
-                                  patch_slip: np.ndarray, patch_time_list: np.ndarray,reproject: List = None):
+                                  patch_slip: np.ndarray, patch_time_list: np.ndarray,reproject: list = None):
         """
         Construct a catalogue from a DataFrame and pre-loaded patch arrays.
 
@@ -423,7 +423,7 @@ class RsqSimCatalogue:
         return rcat
 
     @classmethod
-    def from_csv_and_arrays(cls, prefix: str, read_index: bool = True, reproject: List = None):
+    def from_csv_and_arrays(cls, prefix: str, read_index: bool = True, reproject: list = None):
         """
         Construct a catalogue from a CSV and companion NumPy array files.
 

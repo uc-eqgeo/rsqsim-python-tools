@@ -27,7 +27,6 @@ jobs:
         environment-file: environment.yml
         use-mamba: true
         auto-activate-base: false
-        cache-environment: true
 
     - name: Reinstall rsqsim_api from current checkout
       run: |
