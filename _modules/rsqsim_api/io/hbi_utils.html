@@ -1,0 +1,466 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.io.hbi_utils &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.io.hbi_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for rsqsim_api.io.hbi_utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Readers for HBI (Hierarchical-matrix Boundary Integral) earthquake-sequence</span>
+<span class="sd">simulator output, exposing it through the same fault/catalogue interfaces</span>
+<span class="sd">the rest of ``rsqsim_api`` uses.</span>
+
+<span class="sd">HBI is documented at https://github.com/sozawa94/hbi. For the</span>
+<span class="sd">``3dnt``/``3dht`` problem types the fault geometry is supplied as an ASCII</span>
+<span class="sd">STL file, and per-element data are written to a set of binary/ASCII</span>
+<span class="sd">stream files keyed by an integer ``filenumber``:</span>
+
+<span class="sd">================  ========================================================</span>
+<span class="sd">File              Contents</span>
+<span class="sd">================  ========================================================</span>
+<span class="sd">``xyzN.dat``      Element-centre coordinates (km), reordered by the</span>
+<span class="sd">                  H-matrix.  ``N`` rows of ``x y z``.</span>
+<span class="sd">``eventN.dat``    Earthquake catalogue: ``event_num time_step onset_time</span>
+<span class="sd">                  Mw hypocenter_id``.  ``hypocenter_id`` is a 1-based row</span>
+<span class="sd">                  index into ``xyzN.dat``.</span>
+<span class="sd">``EQslipN.dat``   Per-event slip per element, ``float64`` stream of</span>
+<span class="sd">                  ``n_events * n_elements`` values, event-major.</span>
+<span class="sd">``timeN.dat``     Field-snapshot timing: ``time_step time(s)``.</span>
+<span class="sd">================  ========================================================</span>
+
+<span class="sd">Coordinate units inside HBI are kilometres; this module converts to metres</span>
+<span class="sd">on read so the rest of ``rsqsim_api`` (which uses metres internally) can</span>
+<span class="sd">consume the data without further conversion.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">scipy.spatial</span> <span class="kn">import</span> <span class="n">KDTree</span>
+
+<span class="kn">from</span> <span class="nn">rsqsim_api.fault.multifault</span> <span class="kn">import</span> <span class="n">RsqSimMultiFault</span>
+<span class="kn">from</span> <span class="nn">rsqsim_api.fault.segment</span> <span class="kn">import</span> <span class="n">RsqSimSegment</span>
+<span class="kn">from</span> <span class="nn">rsqsim_api.io.read_utils</span> <span class="kn">import</span> <span class="n">read_stl</span>
+
+
+<div class="viewcode-block" id="HBI_EVENT_COLUMNS">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/hbi_utils/index.html#rsqsim_api.io.hbi_utils.HBI_EVENT_COLUMNS">[docs]</a>
+<span class="n">HBI_EVENT_COLUMNS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;event_num&quot;</span><span class="p">,</span> <span class="s2">&quot;time_step&quot;</span><span class="p">,</span> <span class="s2">&quot;onset_time&quot;</span><span class="p">,</span> <span class="s2">&quot;mw&quot;</span><span class="p">,</span> <span class="s2">&quot;hypocenter_id&quot;</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="read_hbi_event_file">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/hbi_utils/index.html#rsqsim_api.io.hbi_utils.read_hbi_event_file">[docs]</a>
+<span class="k">def</span> <span class="nf">read_hbi_event_file</span><span class="p">(</span><span class="n">event_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parse an HBI ``eventN.dat`` file into a DataFrame.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    event_file : str</span>
+<span class="sd">        Path to the ``eventN.dat`` file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        Columns ``event_num`` (int), ``time_step`` (int),</span>
+<span class="sd">        ``onset_time`` (s, float), ``mw`` (float),</span>
+<span class="sd">        ``hypocenter_id`` (1-based int).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">event_file</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Event file not found: </span><span class="si">{</span><span class="n">event_file</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">event_file</span><span class="p">,</span> <span class="n">ndmin</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+        <span class="s2">&quot;event_num&quot;</span><span class="p">:</span> <span class="n">arr</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">),</span>
+        <span class="s2">&quot;time_step&quot;</span><span class="p">:</span> <span class="n">arr</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">),</span>
+        <span class="s2">&quot;onset_time&quot;</span><span class="p">:</span> <span class="n">arr</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+        <span class="s2">&quot;mw&quot;</span><span class="p">:</span> <span class="n">arr</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+        <span class="s2">&quot;hypocenter_id&quot;</span><span class="p">:</span> <span class="n">arr</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">),</span>
+    <span class="p">})</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+
+<div class="viewcode-block" id="read_hbi_xyz_file">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/hbi_utils/index.html#rsqsim_api.io.hbi_utils.read_hbi_xyz_file">[docs]</a>
+<span class="k">def</span> <span class="nf">read_hbi_xyz_file</span><span class="p">(</span><span class="n">xyz_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">to_metres</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parse an HBI ``xyzN.dat`` element-centre file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    xyz_file : str</span>
+<span class="sd">        Path to the ``xyzN.dat`` file.</span>
+<span class="sd">    to_metres : bool, optional</span>
+<span class="sd">        If ``True`` (default), multiply by 1000 to convert from HBI&#39;s</span>
+<span class="sd">        native kilometres to metres.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray of shape (n_elements, 3)</span>
+<span class="sd">        Element-centre coordinates in metres (or km if ``to_metres`` is</span>
+<span class="sd">        ``False``), in the H-matrix ordering used by all other HBI</span>
+<span class="sd">        per-element output files.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">xyz_file</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;xyz file not found: </span><span class="si">{</span><span class="n">xyz_file</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">xyz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">xyz_file</span><span class="p">,</span> <span class="n">ndmin</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">xyz</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected 3 columns in </span><span class="si">{</span><span class="n">xyz_file</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">xyz</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">if</span> <span class="n">to_metres</span><span class="p">:</span>
+        <span class="n">xyz</span> <span class="o">=</span> <span class="n">xyz</span> <span class="o">*</span> <span class="mf">1000.0</span>
+    <span class="k">return</span> <span class="n">xyz</span></div>
+
+
+
+<div class="viewcode-block" id="read_hbi_eqslip_file">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/hbi_utils/index.html#rsqsim_api.io.hbi_utils.read_hbi_eqslip_file">[docs]</a>
+<span class="k">def</span> <span class="nf">read_hbi_eqslip_file</span><span class="p">(</span><span class="n">eqslip_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">n_events</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n_elements</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                         <span class="n">dtype</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&lt;f8&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read a binary ``EQslipN.dat`` slip-per-event-per-element stream.</span>
+
+<span class="sd">    HBI writes ``EQslipN.dat`` as a flat Fortran stream of length</span>
+<span class="sd">    ``n_events * n_elements`` with the per-event slip vector contiguous</span>
+<span class="sd">    (event-major), so reshaping as ``(n_events, n_elements)`` in C order</span>
+<span class="sd">    yields one event per row.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    eqslip_file : str</span>
+<span class="sd">        Path to the ``EQslipN.dat`` file.</span>
+<span class="sd">    n_events : int</span>
+<span class="sd">        Number of events (rows in ``eventN.dat``).</span>
+<span class="sd">    n_elements : int</span>
+<span class="sd">        Number of mesh elements (rows in ``xyzN.dat``).</span>
+<span class="sd">    dtype : str, optional</span>
+<span class="sd">        NumPy dtype string for the binary entries.  Defaults to</span>
+<span class="sd">        little-endian float64 (``&quot;&lt;f8&quot;``); use ``&quot;&gt;f8&quot;`` for big-endian.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray of shape (n_events, n_elements)</span>
+<span class="sd">        Per-event slip (m) for each element, in the H-matrix ordering of</span>
+<span class="sd">        ``xyzN.dat``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">eqslip_file</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;EQslip file not found: </span><span class="si">{</span><span class="n">eqslip_file</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">expected_bytes</span> <span class="o">=</span> <span class="n">n_events</span> <span class="o">*</span> <span class="n">n_elements</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">itemsize</span>
+    <span class="n">actual_bytes</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">eqslip_file</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">actual_bytes</span> <span class="o">==</span> <span class="n">expected_bytes</span><span class="p">,</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">eqslip_file</span><span class="si">}</span><span class="s2"> size </span><span class="si">{</span><span class="n">actual_bytes</span><span class="si">}</span><span class="s2"> bytes does not match &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;n_events=</span><span class="si">{</span><span class="n">n_events</span><span class="si">}</span><span class="s2"> * n_elements=</span><span class="si">{</span><span class="n">n_elements</span><span class="si">}</span><span class="s2"> * &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">itemsize</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">expected_bytes</span><span class="si">}</span><span class="s2"> bytes&quot;</span>
+    <span class="p">)</span>
+    <span class="n">flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfile</span><span class="p">(</span><span class="n">eqslip_file</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">flat</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">n_events</span><span class="p">,</span> <span class="n">n_elements</span><span class="p">))</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">_match_stl_triangles_to_xyz</span><span class="p">(</span><span class="n">triangle_centroids</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">xyz</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute a permutation that reorders STL triangles to match xyz row order.</span>
+
+<span class="sd">    For each row of ``xyz`` finds the nearest STL triangle centroid; the</span>
+<span class="sd">    returned array ``perm`` has the property that</span>
+<span class="sd">    ``triangle_centroids[perm[i]]`` is the centroid closest to</span>
+<span class="sd">    ``xyz[i]``.  Asserts a one-to-one match and that all matches are</span>
+<span class="sd">    within ``tolerance``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    triangle_centroids : numpy.ndarray of shape (n, 3)</span>
+<span class="sd">        STL triangle centroids (same units as ``xyz``).</span>
+<span class="sd">    xyz : numpy.ndarray of shape (n, 3)</span>
+<span class="sd">        HBI ``xyzN.dat`` rows in H-matrix order.</span>
+<span class="sd">    tolerance : float, optional</span>
+<span class="sd">        Maximum allowed distance (same units as ``xyz``) for a centroid</span>
+<span class="sd">        to count as matching an ``xyz`` row.  Defaults to 1 metre.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">triangle_centroids</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">xyz</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;STL has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">triangle_centroids</span><span class="p">)</span><span class="si">}</span><span class="s2"> triangles but xyz has &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">xyz</span><span class="p">)</span><span class="si">}</span><span class="s2"> rows; they must match one-to-one.&quot;</span>
+    <span class="p">)</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">KDTree</span><span class="p">(</span><span class="n">triangle_centroids</span><span class="p">)</span>
+    <span class="n">distances</span><span class="p">,</span> <span class="n">perm</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">distances</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">tolerance</span><span class="p">:</span>
+        <span class="n">worst</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">distances</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;STL triangle centroid for xyz row </span><span class="si">{</span><span class="n">worst</span><span class="si">}</span><span class="s2"> is &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">distances</span><span class="p">[</span><span class="n">worst</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> away (tolerance </span><span class="si">{</span><span class="n">tolerance</span><span class="si">}</span><span class="s2">). &quot;</span>
+            <span class="s2">&quot;STL and xyz files may not describe the same mesh.&quot;</span>
+        <span class="p">)</span>
+    <span class="n">unique</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">perm</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">perm</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;STL triangles do not map one-to-one to xyz rows &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">unique</span><span class="p">)</span><span class="si">}</span><span class="s2"> unique matches for </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">perm</span><span class="p">)</span><span class="si">}</span><span class="s2"> rows). &quot;</span>
+            <span class="s2">&quot;Check the STL and xyz files describe the same mesh.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">perm</span>
+
+
+<div class="viewcode-block" id="multifault_from_hbi_stl">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/hbi_utils/index.html#rsqsim_api.io.hbi_utils.multifault_from_hbi_stl">[docs]</a>
+<span class="k">def</span> <span class="nf">multifault_from_hbi_stl</span><span class="p">(</span><span class="n">stl_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">xyz_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                            <span class="n">rake</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">90.0</span><span class="p">,</span>
+                            <span class="n">fault_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;hbi_fault&quot;</span><span class="p">,</span>
+                            <span class="n">min_point_sep</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+                            <span class="n">match_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span>
+                            <span class="n">crs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2193</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RsqSimMultiFault</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build a single-segment :class:`~rsqsim_api.fault.multifault.RsqSimMultiFault`</span>
+<span class="sd">    from an HBI STL geometry file, with patches indexed to match ``xyzN.dat``.</span>
+
+<span class="sd">    Triangles are reordered so that ``multifault.patch_dic[i]`` corresponds</span>
+<span class="sd">    to row ``i`` of ``xyzN.dat`` (and therefore column ``i`` of</span>
+<span class="sd">    ``EQslipN.dat``).  Vertex coordinates are converted from HBI&#39;s</span>
+<span class="sd">    kilometres to metres.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    stl_file : str</span>
+<span class="sd">        Path to the HBI STL geometry file (ASCII).  In HBI&#39;s</span>
+<span class="sd">        ``3dnt``/``3dht`` problems this is the same STL passed to the</span>
+<span class="sd">        simulator.</span>
+<span class="sd">    xyz_file : str</span>
+<span class="sd">        Path to the corresponding ``xyzN.dat`` file used to derive the</span>
+<span class="sd">        H-matrix ordering.</span>
+<span class="sd">    rake : float, optional</span>
+<span class="sd">        Uniform rake angle (degrees) assigned to every patch.  Defaults</span>
+<span class="sd">        to 90 (pure reverse).  HBI&#39;s ``crake`` convention is used: 90 =</span>
+<span class="sd">        reverse, 0 = left-lateral, -180 = right-lateral, -90 = normal.</span>
+<span class="sd">    fault_name : str, optional</span>
+<span class="sd">        Name attached to the resulting segment.</span>
+<span class="sd">    min_point_sep : float, optional</span>
+<span class="sd">        Vertex-merge tolerance for :func:`read_stl`, in **metres**</span>
+<span class="sd">        (vertices closer than this after the km→m conversion are</span>
+<span class="sd">        treated as duplicates).  Defaults to 1 m.</span>
+<span class="sd">    match_tolerance : float, optional</span>
+<span class="sd">        Maximum allowed distance (metres) between an STL triangle</span>
+<span class="sd">        centroid and its matching ``xyzN.dat`` row.  Defaults to 1 m.</span>
+<span class="sd">    crs : int, optional</span>
+<span class="sd">        EPSG code attached to the multifault.  Defaults to 2193 (NZTM).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    RsqSimMultiFault</span>
+<span class="sd">        Single-segment multifault with ``n_elements`` triangular</span>
+<span class="sd">        patches ordered to match ``xyzN.dat``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">triangles_km</span> <span class="o">=</span> <span class="n">read_stl</span><span class="p">(</span><span class="n">stl_file</span><span class="p">,</span> <span class="n">min_point_sep</span><span class="o">=</span><span class="n">min_point_sep</span> <span class="o">/</span> <span class="mf">1000.0</span><span class="p">)</span>
+    <span class="n">triangles_m</span> <span class="o">=</span> <span class="n">triangles_km</span> <span class="o">*</span> <span class="mf">1000.0</span>
+    <span class="n">xyz_m</span> <span class="o">=</span> <span class="n">read_hbi_xyz_file</span><span class="p">(</span><span class="n">xyz_file</span><span class="p">,</span> <span class="n">to_metres</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">centroids_m</span> <span class="o">=</span> <span class="n">triangles_m</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">perm</span> <span class="o">=</span> <span class="n">_match_stl_triangles_to_xyz</span><span class="p">(</span><span class="n">centroids_m</span><span class="p">,</span> <span class="n">xyz_m</span><span class="p">,</span>
+                                       <span class="n">tolerance</span><span class="o">=</span><span class="n">match_tolerance</span><span class="p">)</span>
+    <span class="n">triangles_ordered</span> <span class="o">=</span> <span class="n">triangles_m</span><span class="p">[</span><span class="n">perm</span><span class="p">]</span>
+
+    <span class="n">segment</span> <span class="o">=</span> <span class="n">RsqSimSegment</span><span class="o">.</span><span class="n">from_triangles</span><span class="p">(</span>
+        <span class="n">triangles_ordered</span><span class="p">,</span>
+        <span class="n">segment_number</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">patch_numbers</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">triangles_ordered</span><span class="p">)),</span>
+        <span class="n">fault_name</span><span class="o">=</span><span class="n">fault_name</span><span class="p">,</span>
+        <span class="n">rake</span><span class="o">=</span><span class="n">rake</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">RsqSimMultiFault</span><span class="p">([</span><span class="n">segment</span><span class="p">],</span> <span class="n">crs</span><span class="o">=</span><span class="n">crs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="hbi_events_to_catalogue_df">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/hbi_utils/index.html#rsqsim_api.io.hbi_utils.hbi_events_to_catalogue_df">[docs]</a>
+<span class="k">def</span> <span class="nf">hbi_events_to_catalogue_df</span><span class="p">(</span><span class="n">events</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">xyz_m</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                               <span class="n">eqslip</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                               <span class="n">patch_areas_m2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build the standard RSQSim catalogue DataFrame from parsed HBI inputs.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    events : pandas.DataFrame</span>
+<span class="sd">        Output of :func:`read_hbi_event_file`.</span>
+<span class="sd">    xyz_m : numpy.ndarray of shape (n_elements, 3)</span>
+<span class="sd">        Element-centre coordinates in metres (H-matrix order).</span>
+<span class="sd">    eqslip : numpy.ndarray of shape (n_events, n_elements)</span>
+<span class="sd">        Per-event slip (m).</span>
+<span class="sd">    patch_areas_m2 : numpy.ndarray of shape (n_elements,)</span>
+<span class="sd">        Area of each patch in m², in the same H-matrix order as</span>
+<span class="sd">        ``xyz_m``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        Columns ``t0, m0, mw, x, y, z, area, dt`` with one row per</span>
+<span class="sd">        event.  ``m0`` is derived from ``mw`` via</span>
+<span class="sd">        ``M0 = 10**(1.5*Mw + 9.05)``.  ``area`` is the summed area of</span>
+<span class="sd">        all patches with non-zero slip; ``dt`` is set to ``0`` (HBI&#39;s</span>
+<span class="sd">        ``eventN.dat`` does not record rupture duration).  Index is the</span>
+<span class="sd">        0-based event ordinal (so ``event_num - 1``).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">rsqsim_api.catalogue.utilities</span> <span class="kn">import</span> <span class="n">mw_to_m0</span>
+
+    <span class="n">hypo_idx0</span> <span class="o">=</span> <span class="n">events</span><span class="p">[</span><span class="s2">&quot;hypocenter_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="k">assert</span> <span class="n">hypo_idx0</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">hypo_idx0</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">xyz_m</span><span class="p">),</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;hypocenter_id out of range for xyz of length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">xyz_m</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+    <span class="n">hypo_xyz</span> <span class="o">=</span> <span class="n">xyz_m</span><span class="p">[</span><span class="n">hypo_idx0</span><span class="p">]</span>
+
+    <span class="n">slip_mask</span> <span class="o">=</span> <span class="n">eqslip</span> <span class="o">!=</span> <span class="mi">0</span>
+    <span class="n">area_per_event</span> <span class="o">=</span> <span class="n">slip_mask</span> <span class="o">@</span> <span class="n">patch_areas_m2</span>
+
+    <span class="n">mw</span> <span class="o">=</span> <span class="n">events</span><span class="p">[</span><span class="s2">&quot;mw&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+        <span class="s2">&quot;t0&quot;</span><span class="p">:</span> <span class="n">events</span><span class="p">[</span><span class="s2">&quot;onset_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+        <span class="s2">&quot;m0&quot;</span><span class="p">:</span> <span class="n">mw_to_m0</span><span class="p">(</span><span class="n">mw</span><span class="p">),</span>
+        <span class="s2">&quot;mw&quot;</span><span class="p">:</span> <span class="n">mw</span><span class="p">,</span>
+        <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="n">hypo_xyz</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="n">hypo_xyz</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="s2">&quot;z&quot;</span><span class="p">:</span> <span class="n">hypo_xyz</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span>
+        <span class="s2">&quot;area&quot;</span><span class="p">:</span> <span class="n">area_per_event</span><span class="p">,</span>
+        <span class="s2">&quot;dt&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+    <span class="p">})</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+
+<div class="viewcode-block" id="flatten_hbi_eqslip">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/io/hbi_utils/index.html#rsqsim_api.io.hbi_utils.flatten_hbi_eqslip">[docs]</a>
+<span class="k">def</span> <span class="nf">flatten_hbi_eqslip</span><span class="p">(</span><span class="n">eqslip</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">onset_times</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Flatten a dense per-event-per-patch slip matrix into RSQSim list arrays.</span>
+
+<span class="sd">    Skips zero-slip entries so the resulting arrays look like RSQSim&#39;s</span>
+<span class="sd">    native ``.pList``/``.eList``/``.dList``/``.tList`` representation,</span>
+<span class="sd">    which only stores patches that actually slipped.</span>
+
+<span class="sd">    All patches within a given event are assigned the event&#39;s onset</span>
+<span class="sd">    time as their ``patch_time``; HBI&#39;s ``EQslipN.dat`` is per-event</span>
+<span class="sd">    cumulative slip with no within-event rupture timing.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    eqslip : numpy.ndarray of shape (n_events, n_elements)</span>
+<span class="sd">        Per-event slip (m).  Rows are events in the order of</span>
+<span class="sd">        ``eventN.dat`` (0-based event index).</span>
+<span class="sd">    onset_times : numpy.ndarray of shape (n_events,)</span>
+<span class="sd">        Event onset times (s) from ``eventN.dat``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    event_list : numpy.ndarray of int</span>
+<span class="sd">        0-based event index repeated once per non-zero patch entry.</span>
+<span class="sd">    patch_list : numpy.ndarray of int</span>
+<span class="sd">        0-based patch index (column of ``eqslip``).</span>
+<span class="sd">    patch_slip : numpy.ndarray of float64</span>
+<span class="sd">        Slip (m) for each entry.</span>
+<span class="sd">    patch_time_list : numpy.ndarray of float64</span>
+<span class="sd">        Onset time (s) of the event each entry belongs to.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">eqslip</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span>
+    <span class="k">assert</span> <span class="n">onset_times</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">eqslip</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span>
+
+    <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">eqslip</span><span class="p">)</span>
+    <span class="n">event_list</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">patch_list</span> <span class="o">=</span> <span class="n">cols</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">patch_slip</span> <span class="o">=</span> <span class="n">eqslip</span><span class="p">[</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">patch_time_list</span> <span class="o">=</span> <span class="n">onset_times</span><span class="p">[</span><span class="n">rows</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">event_list</span><span class="p">,</span> <span class="n">patch_list</span><span class="p">,</span> <span class="n">patch_slip</span><span class="p">,</span> <span class="n">patch_time_list</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

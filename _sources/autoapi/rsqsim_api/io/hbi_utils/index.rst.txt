@@ -1,0 +1,201 @@
+rsqsim_api.io.hbi_utils
+=======================
+
+.. py:module:: rsqsim_api.io.hbi_utils
+
+.. autoapi-nested-parse::
+
+   Readers for HBI (Hierarchical-matrix Boundary Integral) earthquake-sequence
+   simulator output, exposing it through the same fault/catalogue interfaces
+   the rest of ``rsqsim_api`` uses.
+
+   HBI is documented at https://github.com/sozawa94/hbi. For the
+   ``3dnt``/``3dht`` problem types the fault geometry is supplied as an ASCII
+   STL file, and per-element data are written to a set of binary/ASCII
+   stream files keyed by an integer ``filenumber``:
+
+   ================  ========================================================
+   File              Contents
+   ================  ========================================================
+   ``xyzN.dat``      Element-centre coordinates (km), reordered by the
+                     H-matrix.  ``N`` rows of ``x y z``.
+   ``eventN.dat``    Earthquake catalogue: ``event_num time_step onset_time
+                     Mw hypocenter_id``.  ``hypocenter_id`` is a 1-based row
+                     index into ``xyzN.dat``.
+   ``EQslipN.dat``   Per-event slip per element, ``float64`` stream of
+                     ``n_events * n_elements`` values, event-major.
+   ``timeN.dat``     Field-snapshot timing: ``time_step time(s)``.
+   ================  ========================================================
+
+   Coordinate units inside HBI are kilometres; this module converts to metres
+   on read so the rest of ``rsqsim_api`` (which uses metres internally) can
+   consume the data without further conversion.
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   rsqsim_api.io.hbi_utils.HBI_EVENT_COLUMNS
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   rsqsim_api.io.hbi_utils.read_hbi_event_file
+   rsqsim_api.io.hbi_utils.read_hbi_xyz_file
+   rsqsim_api.io.hbi_utils.read_hbi_eqslip_file
+   rsqsim_api.io.hbi_utils.multifault_from_hbi_stl
+   rsqsim_api.io.hbi_utils.hbi_events_to_catalogue_df
+   rsqsim_api.io.hbi_utils.flatten_hbi_eqslip
+
+
+Module Contents
+---------------
+
+.. py:data:: HBI_EVENT_COLUMNS
+   :value: ['event_num', 'time_step', 'onset_time', 'mw', 'hypocenter_id']
+
+
+.. py:function:: read_hbi_event_file(event_file)
+
+   Parse an HBI ``eventN.dat`` file into a DataFrame.
+
+   :param event_file: Path to the ``eventN.dat`` file.
+   :type event_file: str
+
+   :returns: Columns ``event_num`` (int), ``time_step`` (int),
+             ``onset_time`` (s, float), ``mw`` (float),
+             ``hypocenter_id`` (1-based int).
+   :rtype: pandas.DataFrame
+
+
+.. py:function:: read_hbi_xyz_file(xyz_file, to_metres = True)
+
+   Parse an HBI ``xyzN.dat`` element-centre file.
+
+   :param xyz_file: Path to the ``xyzN.dat`` file.
+   :type xyz_file: str
+   :param to_metres: If ``True`` (default), multiply by 1000 to convert from HBI's
+                     native kilometres to metres.
+   :type to_metres: bool, optional
+
+   :returns: Element-centre coordinates in metres (or km if ``to_metres`` is
+             ``False``), in the H-matrix ordering used by all other HBI
+             per-element output files.
+   :rtype: numpy.ndarray of shape (n_elements, 3)
+
+
+.. py:function:: read_hbi_eqslip_file(eqslip_file, n_events, n_elements, dtype = '<f8')
+
+   Read a binary ``EQslipN.dat`` slip-per-event-per-element stream.
+
+   HBI writes ``EQslipN.dat`` as a flat Fortran stream of length
+   ``n_events * n_elements`` with the per-event slip vector contiguous
+   (event-major), so reshaping as ``(n_events, n_elements)`` in C order
+   yields one event per row.
+
+   :param eqslip_file: Path to the ``EQslipN.dat`` file.
+   :type eqslip_file: str
+   :param n_events: Number of events (rows in ``eventN.dat``).
+   :type n_events: int
+   :param n_elements: Number of mesh elements (rows in ``xyzN.dat``).
+   :type n_elements: int
+   :param dtype: NumPy dtype string for the binary entries.  Defaults to
+                 little-endian float64 (``"<f8"``); use ``">f8"`` for big-endian.
+   :type dtype: str, optional
+
+   :returns: Per-event slip (m) for each element, in the H-matrix ordering of
+             ``xyzN.dat``.
+   :rtype: numpy.ndarray of shape (n_events, n_elements)
+
+
+.. py:function:: multifault_from_hbi_stl(stl_file, xyz_file, rake = 90.0, fault_name = 'hbi_fault', min_point_sep = 1.0, match_tolerance = 10.0, crs = 2193)
+
+   Build a single-segment :class:`~rsqsim_api.fault.multifault.RsqSimMultiFault`
+   from an HBI STL geometry file, with patches indexed to match ``xyzN.dat``.
+
+   Triangles are reordered so that ``multifault.patch_dic[i]`` corresponds
+   to row ``i`` of ``xyzN.dat`` (and therefore column ``i`` of
+   ``EQslipN.dat``).  Vertex coordinates are converted from HBI's
+   kilometres to metres.
+
+   :param stl_file: Path to the HBI STL geometry file (ASCII).  In HBI's
+                    ``3dnt``/``3dht`` problems this is the same STL passed to the
+                    simulator.
+   :type stl_file: str
+   :param xyz_file: Path to the corresponding ``xyzN.dat`` file used to derive the
+                    H-matrix ordering.
+   :type xyz_file: str
+   :param rake: Uniform rake angle (degrees) assigned to every patch.  Defaults
+                to 90 (pure reverse).  HBI's ``crake`` convention is used: 90 =
+                reverse, 0 = left-lateral, -180 = right-lateral, -90 = normal.
+   :type rake: float, optional
+   :param fault_name: Name attached to the resulting segment.
+   :type fault_name: str, optional
+   :param min_point_sep: Vertex-merge tolerance for :func:`read_stl`, in **metres**
+                         (vertices closer than this after the km→m conversion are
+                         treated as duplicates).  Defaults to 1 m.
+   :type min_point_sep: float, optional
+   :param match_tolerance: Maximum allowed distance (metres) between an STL triangle
+                           centroid and its matching ``xyzN.dat`` row.  Defaults to 1 m.
+   :type match_tolerance: float, optional
+   :param crs: EPSG code attached to the multifault.  Defaults to 2193 (NZTM).
+   :type crs: int, optional
+
+   :returns: Single-segment multifault with ``n_elements`` triangular
+             patches ordered to match ``xyzN.dat``.
+   :rtype: RsqSimMultiFault
+
+
+.. py:function:: hbi_events_to_catalogue_df(events, xyz_m, eqslip, patch_areas_m2)
+
+   Build the standard RSQSim catalogue DataFrame from parsed HBI inputs.
+
+   :param events: Output of :func:`read_hbi_event_file`.
+   :type events: pandas.DataFrame
+   :param xyz_m: Element-centre coordinates in metres (H-matrix order).
+   :type xyz_m: numpy.ndarray of shape (n_elements, 3)
+   :param eqslip: Per-event slip (m).
+   :type eqslip: numpy.ndarray of shape (n_events, n_elements)
+   :param patch_areas_m2: Area of each patch in m², in the same H-matrix order as
+                          ``xyz_m``.
+   :type patch_areas_m2: numpy.ndarray of shape (n_elements,)
+
+   :returns: Columns ``t0, m0, mw, x, y, z, area, dt`` with one row per
+             event.  ``m0`` is derived from ``mw`` via
+             ``M0 = 10**(1.5*Mw + 9.05)``.  ``area`` is the summed area of
+             all patches with non-zero slip; ``dt`` is set to ``0`` (HBI's
+             ``eventN.dat`` does not record rupture duration).  Index is the
+             0-based event ordinal (so ``event_num - 1``).
+   :rtype: pandas.DataFrame
+
+
+.. py:function:: flatten_hbi_eqslip(eqslip, onset_times)
+
+   Flatten a dense per-event-per-patch slip matrix into RSQSim list arrays.
+
+   Skips zero-slip entries so the resulting arrays look like RSQSim's
+   native ``.pList``/``.eList``/``.dList``/``.tList`` representation,
+   which only stores patches that actually slipped.
+
+   All patches within a given event are assigned the event's onset
+   time as their ``patch_time``; HBI's ``EQslipN.dat`` is per-event
+   cumulative slip with no within-event rupture timing.
+
+   :param eqslip: Per-event slip (m).  Rows are events in the order of
+                  ``eventN.dat`` (0-based event index).
+   :type eqslip: numpy.ndarray of shape (n_events, n_elements)
+   :param onset_times: Event onset times (s) from ``eventN.dat``.
+   :type onset_times: numpy.ndarray of shape (n_events,)
+
+   :returns: * **event_list** (*numpy.ndarray of int*) -- 0-based event index repeated once per non-zero patch entry.
+             * **patch_list** (*numpy.ndarray of int*) -- 0-based patch index (column of ``eqslip``).
+             * **patch_slip** (*numpy.ndarray of float64*) -- Slip (m) for each entry.
+             * **patch_time_list** (*numpy.ndarray of float64*) -- Onset time (s) of the event each entry belongs to.
+
+

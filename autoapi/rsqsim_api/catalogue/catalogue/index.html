@@ -445,6 +445,53 @@ or <code class="docutils literal notranslate"><span class="pre">&quot;big&quot;<
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_hbi_files">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_hbi_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xyz_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eqslip_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multifault</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stl_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rake</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">90.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eqslip_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'&lt;f8'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reproject</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.from_hbi_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_hbi_files" title="Link to this definition"></a></dt>
+<dd><p>Construct a catalogue from HBI (sozawa94/hbi) output files.</p>
+<p>Reads <code class="docutils literal notranslate"><span class="pre">eventN.dat</span></code> (per-event metadata), <code class="docutils literal notranslate"><span class="pre">xyzN.dat</span></code>
+(H-matrix-ordered element centres, km), and <code class="docutils literal notranslate"><span class="pre">EQslipN.dat</span></code>
+(per-event slip stream, float64) and flattens them into the same
+<code class="docutils literal notranslate"><span class="pre">(event_list,</span> <span class="pre">patch_list,</span> <span class="pre">patch_slip,</span> <span class="pre">patch_time_list)</span></code>
+representation used by <a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_catalogue_file_and_lists" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_catalogue_file_and_lists"><code class="xref py py-meth docutils literal notranslate"><span class="pre">from_catalogue_file_and_lists()</span></code></a>.</p>
+<p>Patches with zero slip in an event are omitted (matching RSQSim’s
+sparse list format).  Because <code class="docutils literal notranslate"><span class="pre">EQslipN.dat</span></code> is per-event
+cumulative slip with no within-event timing, every patch entry
+is assigned its event’s onset time as its <code class="docutils literal notranslate"><span class="pre">patch_time</span></code>.</p>
+<p>Either <code class="docutils literal notranslate"><span class="pre">multifault</span></code> or <code class="docutils literal notranslate"><span class="pre">stl_file</span></code> must be provided so the
+resulting catalogue is paired with a fault model whose patch
+indices match the <code class="docutils literal notranslate"><span class="pre">xyzN.dat</span></code> ordering.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_file</strong> (<em>str</em>) – Path to <code class="docutils literal notranslate"><span class="pre">eventN.dat</span></code>.</p></li>
+<li><p><strong>xyz_file</strong> (<em>str</em>) – Path to <code class="docutils literal notranslate"><span class="pre">xyzN.dat</span></code>.</p></li>
+<li><p><strong>eqslip_file</strong> (<em>str</em>) – Path to <code class="docutils literal notranslate"><span class="pre">EQslipN.dat</span></code>.</p></li>
+<li><p><strong>multifault</strong> (<a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><em>RsqSimMultiFault</em></a><em>, </em><em>optional</em>) – Pre-built fault model whose patches are already ordered to
+match <code class="docutils literal notranslate"><span class="pre">xyzN.dat</span></code>.  Mutually exclusive with <code class="docutils literal notranslate"><span class="pre">stl_file</span></code>.</p></li>
+<li><p><strong>stl_file</strong> (<em>str</em><em>, </em><em>optional</em>) – HBI geometry STL file; if given (and <code class="docutils literal notranslate"><span class="pre">multifault</span></code> is not),
+a single-segment multifault is built via
+<a class="reference internal" href="../../io/hbi_utils/index.html#rsqsim_api.io.hbi_utils.multifault_from_hbi_stl" title="rsqsim_api.io.hbi_utils.multifault_from_hbi_stl"><code class="xref py py-func docutils literal notranslate"><span class="pre">rsqsim_api.io.hbi_utils.multifault_from_hbi_stl()</span></code></a>.</p></li>
+<li><p><strong>rake</strong> (<em>float</em><em>, </em><em>optional</em>) – Uniform rake (degrees) for patches when building from
+<code class="docutils literal notranslate"><span class="pre">stl_file</span></code>.  Defaults to 90.  Ignored if <code class="docutils literal notranslate"><span class="pre">multifault</span></code> is
+given.</p></li>
+<li><p><strong>eqslip_dtype</strong> (<em>str</em><em>, </em><em>optional</em>) – NumPy dtype string for <code class="docutils literal notranslate"><span class="pre">EQslipN.dat</span></code>.  Defaults to
+little-endian float64 (<code class="docutils literal notranslate"><span class="pre">&quot;&lt;f8&quot;</span></code>); use <code class="docutils literal notranslate"><span class="pre">&quot;&gt;f8&quot;</span></code> for
+big-endian.</p></li>
+<li><p><strong>reproject</strong> (<em>list</em><em> or </em><em>tuple</em><em> of </em><em>int</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[in_epsg,</span> <span class="pre">out_epsg]</span></code> pair for coordinate reprojection of
+the catalogue DataFrame’s hypocentre columns.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Fully populated catalogue.  The matching fault model is
+attached as <code class="docutils literal notranslate"><span class="pre">rcat.fault_model</span></code> for convenience.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue" title="rsqsim_api.catalogue.catalogue.RsqSimCatalogue">RsqSimCatalogue</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_dataframe_and_arrays">
 <span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_dataframe_and_arrays</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_slip</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_time_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reproject</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/catalogue/catalogue.html#RsqSimCatalogue.from_dataframe_and_arrays"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_dataframe_and_arrays" title="Link to this definition"></a></dt>
 <dd><p>Construct a catalogue from a DataFrame and pre-loaded patch arrays.</p>

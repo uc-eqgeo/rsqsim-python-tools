@@ -18,6 +18,7 @@ Submodules
    /autoapi/rsqsim_api/io/array_operations/index
    /autoapi/rsqsim_api/io/bruce_shaw_utilities/index
    /autoapi/rsqsim_api/io/compressed_pickle/index
+   /autoapi/rsqsim_api/io/hbi_utils/index
    /autoapi/rsqsim_api/io/mesh_utils/index
    /autoapi/rsqsim_api/io/multiprocessing_utils/index
    /autoapi/rsqsim_api/io/read_utils/index

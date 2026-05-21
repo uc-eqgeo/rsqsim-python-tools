@@ -520,6 +520,104 @@
 
 
     <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="RsqSimCatalogue.from_hbi_files">
+<a class="viewcode-back" href="../../../autoapi/rsqsim_api/catalogue/catalogue/index.html#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_hbi_files">[docs]</a>
+    <span class="k">def</span> <span class="nf">from_hbi_files</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">event_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">xyz_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">eqslip_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                       <span class="n">multifault</span><span class="p">:</span> <span class="s2">&quot;RsqSimMultiFault&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stl_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">rake</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">90.0</span><span class="p">,</span> <span class="n">eqslip_dtype</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&lt;f8&quot;</span><span class="p">,</span>
+                       <span class="n">reproject</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct a catalogue from HBI (sozawa94/hbi) output files.</span>
+
+<span class="sd">        Reads ``eventN.dat`` (per-event metadata), ``xyzN.dat``</span>
+<span class="sd">        (H-matrix-ordered element centres, km), and ``EQslipN.dat``</span>
+<span class="sd">        (per-event slip stream, float64) and flattens them into the same</span>
+<span class="sd">        ``(event_list, patch_list, patch_slip, patch_time_list)``</span>
+<span class="sd">        representation used by :meth:`from_catalogue_file_and_lists`.</span>
+
+<span class="sd">        Patches with zero slip in an event are omitted (matching RSQSim&#39;s</span>
+<span class="sd">        sparse list format).  Because ``EQslipN.dat`` is per-event</span>
+<span class="sd">        cumulative slip with no within-event timing, every patch entry</span>
+<span class="sd">        is assigned its event&#39;s onset time as its ``patch_time``.</span>
+
+<span class="sd">        Either ``multifault`` or ``stl_file`` must be provided so the</span>
+<span class="sd">        resulting catalogue is paired with a fault model whose patch</span>
+<span class="sd">        indices match the ``xyzN.dat`` ordering.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        event_file : str</span>
+<span class="sd">            Path to ``eventN.dat``.</span>
+<span class="sd">        xyz_file : str</span>
+<span class="sd">            Path to ``xyzN.dat``.</span>
+<span class="sd">        eqslip_file : str</span>
+<span class="sd">            Path to ``EQslipN.dat``.</span>
+<span class="sd">        multifault : RsqSimMultiFault, optional</span>
+<span class="sd">            Pre-built fault model whose patches are already ordered to</span>
+<span class="sd">            match ``xyzN.dat``.  Mutually exclusive with ``stl_file``.</span>
+<span class="sd">        stl_file : str, optional</span>
+<span class="sd">            HBI geometry STL file; if given (and ``multifault`` is not),</span>
+<span class="sd">            a single-segment multifault is built via</span>
+<span class="sd">            :func:`rsqsim_api.io.hbi_utils.multifault_from_hbi_stl`.</span>
+<span class="sd">        rake : float, optional</span>
+<span class="sd">            Uniform rake (degrees) for patches when building from</span>
+<span class="sd">            ``stl_file``.  Defaults to 90.  Ignored if ``multifault`` is</span>
+<span class="sd">            given.</span>
+<span class="sd">        eqslip_dtype : str, optional</span>
+<span class="sd">            NumPy dtype string for ``EQslipN.dat``.  Defaults to</span>
+<span class="sd">            little-endian float64 (``&quot;&lt;f8&quot;``); use ``&quot;&gt;f8&quot;`` for</span>
+<span class="sd">            big-endian.</span>
+<span class="sd">        reproject : list or tuple of int, optional</span>
+<span class="sd">            ``[in_epsg, out_epsg]`` pair for coordinate reprojection of</span>
+<span class="sd">            the catalogue DataFrame&#39;s hypocentre columns.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        RsqSimCatalogue</span>
+<span class="sd">            Fully populated catalogue.  The matching fault model is</span>
+<span class="sd">            attached as ``rcat.fault_model`` for convenience.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">rsqsim_api.io.hbi_utils</span> <span class="kn">import</span> <span class="p">(</span>
+            <span class="n">flatten_hbi_eqslip</span><span class="p">,</span>
+            <span class="n">hbi_events_to_catalogue_df</span><span class="p">,</span>
+            <span class="n">multifault_from_hbi_stl</span><span class="p">,</span>
+            <span class="n">read_hbi_eqslip_file</span><span class="p">,</span>
+            <span class="n">read_hbi_event_file</span><span class="p">,</span>
+            <span class="n">read_hbi_xyz_file</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">assert</span> <span class="p">(</span><span class="n">multifault</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="n">stl_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span>
+            <span class="s2">&quot;Provide exactly one of `multifault` or `stl_file`.&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">events</span> <span class="o">=</span> <span class="n">read_hbi_event_file</span><span class="p">(</span><span class="n">event_file</span><span class="p">)</span>
+        <span class="n">xyz_m</span> <span class="o">=</span> <span class="n">read_hbi_xyz_file</span><span class="p">(</span><span class="n">xyz_file</span><span class="p">,</span> <span class="n">to_metres</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">eqslip</span> <span class="o">=</span> <span class="n">read_hbi_eqslip_file</span><span class="p">(</span><span class="n">eqslip_file</span><span class="p">,</span> <span class="n">n_events</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">),</span>
+                                      <span class="n">n_elements</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">xyz_m</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">eqslip_dtype</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">multifault</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">multifault</span> <span class="o">=</span> <span class="n">multifault_from_hbi_stl</span><span class="p">(</span><span class="n">stl_file</span><span class="p">,</span> <span class="n">xyz_file</span><span class="p">,</span> <span class="n">rake</span><span class="o">=</span><span class="n">rake</span><span class="p">)</span>
+
+        <span class="n">patch_areas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">multifault</span><span class="o">.</span><span class="n">patch_dic</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">area</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xyz_m</span><span class="p">))],</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">catalogue_df</span> <span class="o">=</span> <span class="n">hbi_events_to_catalogue_df</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">xyz_m</span><span class="p">,</span> <span class="n">eqslip</span><span class="p">,</span>
+                                                  <span class="n">patch_areas</span><span class="p">)</span>
+        <span class="n">event_list</span><span class="p">,</span> <span class="n">patch_list</span><span class="p">,</span> <span class="n">patch_slip</span><span class="p">,</span> <span class="n">patch_time_list</span> <span class="o">=</span> <span class="n">flatten_hbi_eqslip</span><span class="p">(</span>
+            <span class="n">eqslip</span><span class="p">,</span> <span class="n">events</span><span class="p">[</span><span class="s2">&quot;onset_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="n">rcat</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_dataframe_and_arrays</span><span class="p">(</span>
+            <span class="n">catalogue_df</span><span class="p">,</span> <span class="n">event_list</span><span class="p">,</span> <span class="n">patch_list</span><span class="p">,</span> <span class="n">patch_slip</span><span class="p">,</span> <span class="n">patch_time_list</span><span class="p">,</span>
+            <span class="n">reproject</span><span class="o">=</span><span class="n">reproject</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">rcat</span><span class="o">.</span><span class="n">fault_model</span> <span class="o">=</span> <span class="n">multifault</span>
+        <span class="k">return</span> <span class="n">rcat</span></div>
+
+
+    <span class="nd">@classmethod</span>
 <div class="viewcode-block" id="RsqSimCatalogue.from_dataframe_and_arrays">
 <a class="viewcode-back" href="../../../autoapi/rsqsim_api/catalogue/catalogue/index.html#rsqsim_api.catalogue.catalogue.RsqSimCatalogue.from_dataframe_and_arrays">[docs]</a>
     <span class="k">def</span> <span class="nf">from_dataframe_and_arrays</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">event_list</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">patch_list</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>

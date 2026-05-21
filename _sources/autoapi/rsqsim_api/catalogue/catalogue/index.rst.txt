@@ -269,6 +269,58 @@ Module Contents
 
 
 
+   .. py:method:: from_hbi_files(event_file, xyz_file, eqslip_file, multifault = None, stl_file = None, rake = 90.0, eqslip_dtype = '<f8', reproject = None)
+      :classmethod:
+
+
+      Construct a catalogue from HBI (sozawa94/hbi) output files.
+
+      Reads ``eventN.dat`` (per-event metadata), ``xyzN.dat``
+      (H-matrix-ordered element centres, km), and ``EQslipN.dat``
+      (per-event slip stream, float64) and flattens them into the same
+      ``(event_list, patch_list, patch_slip, patch_time_list)``
+      representation used by :meth:`from_catalogue_file_and_lists`.
+
+      Patches with zero slip in an event are omitted (matching RSQSim's
+      sparse list format).  Because ``EQslipN.dat`` is per-event
+      cumulative slip with no within-event timing, every patch entry
+      is assigned its event's onset time as its ``patch_time``.
+
+      Either ``multifault`` or ``stl_file`` must be provided so the
+      resulting catalogue is paired with a fault model whose patch
+      indices match the ``xyzN.dat`` ordering.
+
+      :param event_file: Path to ``eventN.dat``.
+      :type event_file: str
+      :param xyz_file: Path to ``xyzN.dat``.
+      :type xyz_file: str
+      :param eqslip_file: Path to ``EQslipN.dat``.
+      :type eqslip_file: str
+      :param multifault: Pre-built fault model whose patches are already ordered to
+                         match ``xyzN.dat``.  Mutually exclusive with ``stl_file``.
+      :type multifault: RsqSimMultiFault, optional
+      :param stl_file: HBI geometry STL file; if given (and ``multifault`` is not),
+                       a single-segment multifault is built via
+                       :func:`rsqsim_api.io.hbi_utils.multifault_from_hbi_stl`.
+      :type stl_file: str, optional
+      :param rake: Uniform rake (degrees) for patches when building from
+                   ``stl_file``.  Defaults to 90.  Ignored if ``multifault`` is
+                   given.
+      :type rake: float, optional
+      :param eqslip_dtype: NumPy dtype string for ``EQslipN.dat``.  Defaults to
+                           little-endian float64 (``"<f8"``); use ``">f8"`` for
+                           big-endian.
+      :type eqslip_dtype: str, optional
+      :param reproject: ``[in_epsg, out_epsg]`` pair for coordinate reprojection of
+                        the catalogue DataFrame's hypocentre columns.
+      :type reproject: list or tuple of int, optional
+
+      :returns: Fully populated catalogue.  The matching fault model is
+                attached as ``rcat.fault_model`` for convenience.
+      :rtype: RsqSimCatalogue
+
+
+
    .. py:method:: from_dataframe_and_arrays(dataframe, event_list, patch_list, patch_slip, patch_time_list, reproject = None)
       :classmethod:
 

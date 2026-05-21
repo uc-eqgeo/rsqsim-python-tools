@@ -1,0 +1,374 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rsqsim_api.io.hbi_utils &mdash; rsqsim-python-tools 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="rsqsim_api.io.mesh_utils" href="../mesh_utils/index.html" />
+    <link rel="prev" title="rsqsim_api.io.compressed_pickle" href="../compressed_pickle/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            rsqsim-python-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../help/intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">rsqsim_api</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../../catalogue/index.html">rsqsim_api.catalogue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../fault/index.html">rsqsim_api.fault</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../index.html">rsqsim_api.io</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../tsunami/index.html">rsqsim_api.tsunami</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../visualisation/index.html">rsqsim_api.visualisation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_fault/index.html">test_fault</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../test_catalogue/index.html">test_catalogue</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">rsqsim-python-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">rsqsim_api</a></li>
+          <li class="breadcrumb-item"><a href="../index.html">rsqsim_api.io</a></li>
+      <li class="breadcrumb-item active">rsqsim_api.io.hbi_utils</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/rsqsim_api/io/hbi_utils/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-rsqsim_api.io.hbi_utils">
+<span id="rsqsim-api-io-hbi-utils"></span><h1>rsqsim_api.io.hbi_utils<a class="headerlink" href="#module-rsqsim_api.io.hbi_utils" title="Link to this heading"></a></h1>
+<p>Readers for HBI (Hierarchical-matrix Boundary Integral) earthquake-sequence
+simulator output, exposing it through the same fault/catalogue interfaces
+the rest of <code class="docutils literal notranslate"><span class="pre">rsqsim_api</span></code> uses.</p>
+<p>HBI is documented at <a class="reference external" href="https://github.com/sozawa94/hbi">https://github.com/sozawa94/hbi</a>. For the
+<code class="docutils literal notranslate"><span class="pre">3dnt</span></code>/<code class="docutils literal notranslate"><span class="pre">3dht</span></code> problem types the fault geometry is supplied as an ASCII
+STL file, and per-element data are written to a set of binary/ASCII
+stream files keyed by an integer <code class="docutils literal notranslate"><span class="pre">filenumber</span></code>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>File</p></th>
+<th class="head"><p>Contents</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">xyzN.dat</span></code></p></td>
+<td><p>Element-centre coordinates (km), reordered by the
+H-matrix.  <code class="docutils literal notranslate"><span class="pre">N</span></code> rows of <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">y</span> <span class="pre">z</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">eventN.dat</span></code></p></td>
+<td><p>Earthquake catalogue: <code class="docutils literal notranslate"><span class="pre">event_num</span> <span class="pre">time_step</span> <span class="pre">onset_time</span>
+<span class="pre">Mw</span> <span class="pre">hypocenter_id</span></code>.  <code class="docutils literal notranslate"><span class="pre">hypocenter_id</span></code> is a 1-based row
+index into <code class="docutils literal notranslate"><span class="pre">xyzN.dat</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">EQslipN.dat</span></code></p></td>
+<td><p>Per-event slip per element, <code class="docutils literal notranslate"><span class="pre">float64</span></code> stream of
+<code class="docutils literal notranslate"><span class="pre">n_events</span> <span class="pre">*</span> <span class="pre">n_elements</span></code> values, event-major.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">timeN.dat</span></code></p></td>
+<td><p>Field-snapshot timing: <code class="docutils literal notranslate"><span class="pre">time_step</span> <span class="pre">time(s)</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+<p>Coordinate units inside HBI are kilometres; this module converts to metres
+on read so the rest of <code class="docutils literal notranslate"><span class="pre">rsqsim_api</span></code> (which uses metres internally) can
+consume the data without further conversion.</p>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.hbi_utils.HBI_EVENT_COLUMNS" title="rsqsim_api.io.hbi_utils.HBI_EVENT_COLUMNS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HBI_EVENT_COLUMNS</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.hbi_utils.read_hbi_event_file" title="rsqsim_api.io.hbi_utils.read_hbi_event_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_hbi_event_file</span></code></a>(event_file)</p></td>
+<td><p>Parse an HBI <code class="docutils literal notranslate"><span class="pre">eventN.dat</span></code> file into a DataFrame.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.hbi_utils.read_hbi_xyz_file" title="rsqsim_api.io.hbi_utils.read_hbi_xyz_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_hbi_xyz_file</span></code></a>(xyz_file[, to_metres])</p></td>
+<td><p>Parse an HBI <code class="docutils literal notranslate"><span class="pre">xyzN.dat</span></code> element-centre file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.hbi_utils.read_hbi_eqslip_file" title="rsqsim_api.io.hbi_utils.read_hbi_eqslip_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_hbi_eqslip_file</span></code></a>(eqslip_file, n_events, n_elements)</p></td>
+<td><p>Read a binary <code class="docutils literal notranslate"><span class="pre">EQslipN.dat</span></code> slip-per-event-per-element stream.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.hbi_utils.multifault_from_hbi_stl" title="rsqsim_api.io.hbi_utils.multifault_from_hbi_stl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">multifault_from_hbi_stl</span></code></a>(stl_file, xyz_file[, rake, ...])</p></td>
+<td><p>Build a single-segment <a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimMultiFault</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#rsqsim_api.io.hbi_utils.hbi_events_to_catalogue_df" title="rsqsim_api.io.hbi_utils.hbi_events_to_catalogue_df"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hbi_events_to_catalogue_df</span></code></a>(events, xyz_m, eqslip, ...)</p></td>
+<td><p>Build the standard RSQSim catalogue DataFrame from parsed HBI inputs.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#rsqsim_api.io.hbi_utils.flatten_hbi_eqslip" title="rsqsim_api.io.hbi_utils.flatten_hbi_eqslip"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flatten_hbi_eqslip</span></code></a>(eqslip, onset_times)</p></td>
+<td><p>Flatten a dense per-event-per-patch slip matrix into RSQSim list arrays.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="rsqsim_api.io.hbi_utils.HBI_EVENT_COLUMNS">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.hbi_utils.</span></span><span class="sig-name descname"><span class="pre">HBI_EVENT_COLUMNS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['event_num',</span> <span class="pre">'time_step',</span> <span class="pre">'onset_time',</span> <span class="pre">'mw',</span> <span class="pre">'hypocenter_id']</span></span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/hbi_utils.html#HBI_EVENT_COLUMNS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.hbi_utils.HBI_EVENT_COLUMNS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.hbi_utils.read_hbi_event_file">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.hbi_utils.</span></span><span class="sig-name descname"><span class="pre">read_hbi_event_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_file</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/hbi_utils.html#read_hbi_event_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.hbi_utils.read_hbi_event_file" title="Link to this definition"></a></dt>
+<dd><p>Parse an HBI <code class="docutils literal notranslate"><span class="pre">eventN.dat</span></code> file into a DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>event_file</strong> (<em>str</em>) – Path to the <code class="docutils literal notranslate"><span class="pre">eventN.dat</span></code> file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Columns <code class="docutils literal notranslate"><span class="pre">event_num</span></code> (int), <code class="docutils literal notranslate"><span class="pre">time_step</span></code> (int),
+<code class="docutils literal notranslate"><span class="pre">onset_time</span></code> (s, float), <code class="docutils literal notranslate"><span class="pre">mw</span></code> (float),
+<code class="docutils literal notranslate"><span class="pre">hypocenter_id</span></code> (1-based int).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.hbi_utils.read_hbi_xyz_file">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.hbi_utils.</span></span><span class="sig-name descname"><span class="pre">read_hbi_xyz_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xyz_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_metres</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/hbi_utils.html#read_hbi_xyz_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.hbi_utils.read_hbi_xyz_file" title="Link to this definition"></a></dt>
+<dd><p>Parse an HBI <code class="docutils literal notranslate"><span class="pre">xyzN.dat</span></code> element-centre file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xyz_file</strong> (<em>str</em>) – Path to the <code class="docutils literal notranslate"><span class="pre">xyzN.dat</span></code> file.</p></li>
+<li><p><strong>to_metres</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), multiply by 1000 to convert from HBI’s
+native kilometres to metres.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Element-centre coordinates in metres (or km if <code class="docutils literal notranslate"><span class="pre">to_metres</span></code> is
+<code class="docutils literal notranslate"><span class="pre">False</span></code>), in the H-matrix ordering used by all other HBI
+per-element output files.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray of shape (n_elements, 3)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.hbi_utils.read_hbi_eqslip_file">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.hbi_utils.</span></span><span class="sig-name descname"><span class="pre">read_hbi_eqslip_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eqslip_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_events</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_elements</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'&lt;f8'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/hbi_utils.html#read_hbi_eqslip_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.hbi_utils.read_hbi_eqslip_file" title="Link to this definition"></a></dt>
+<dd><p>Read a binary <code class="docutils literal notranslate"><span class="pre">EQslipN.dat</span></code> slip-per-event-per-element stream.</p>
+<p>HBI writes <code class="docutils literal notranslate"><span class="pre">EQslipN.dat</span></code> as a flat Fortran stream of length
+<code class="docutils literal notranslate"><span class="pre">n_events</span> <span class="pre">*</span> <span class="pre">n_elements</span></code> with the per-event slip vector contiguous
+(event-major), so reshaping as <code class="docutils literal notranslate"><span class="pre">(n_events,</span> <span class="pre">n_elements)</span></code> in C order
+yields one event per row.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eqslip_file</strong> (<em>str</em>) – Path to the <code class="docutils literal notranslate"><span class="pre">EQslipN.dat</span></code> file.</p></li>
+<li><p><strong>n_events</strong> (<em>int</em>) – Number of events (rows in <code class="docutils literal notranslate"><span class="pre">eventN.dat</span></code>).</p></li>
+<li><p><strong>n_elements</strong> (<em>int</em>) – Number of mesh elements (rows in <code class="docutils literal notranslate"><span class="pre">xyzN.dat</span></code>).</p></li>
+<li><p><strong>dtype</strong> (<em>str</em><em>, </em><em>optional</em>) – NumPy dtype string for the binary entries.  Defaults to
+little-endian float64 (<code class="docutils literal notranslate"><span class="pre">&quot;&lt;f8&quot;</span></code>); use <code class="docutils literal notranslate"><span class="pre">&quot;&gt;f8&quot;</span></code> for big-endian.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Per-event slip (m) for each element, in the H-matrix ordering of
+<code class="docutils literal notranslate"><span class="pre">xyzN.dat</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray of shape (n_events, n_elements)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.hbi_utils.multifault_from_hbi_stl">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.hbi_utils.</span></span><span class="sig-name descname"><span class="pre">multifault_from_hbi_stl</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stl_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xyz_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rake</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">90.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fault_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hbi_fault'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_point_sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">match_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2193</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/hbi_utils.html#multifault_from_hbi_stl"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.hbi_utils.multifault_from_hbi_stl" title="Link to this definition"></a></dt>
+<dd><p>Build a single-segment <a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault"><code class="xref py py-class docutils literal notranslate"><span class="pre">RsqSimMultiFault</span></code></a>
+from an HBI STL geometry file, with patches indexed to match <code class="docutils literal notranslate"><span class="pre">xyzN.dat</span></code>.</p>
+<p>Triangles are reordered so that <code class="docutils literal notranslate"><span class="pre">multifault.patch_dic[i]</span></code> corresponds
+to row <code class="docutils literal notranslate"><span class="pre">i</span></code> of <code class="docutils literal notranslate"><span class="pre">xyzN.dat</span></code> (and therefore column <code class="docutils literal notranslate"><span class="pre">i</span></code> of
+<code class="docutils literal notranslate"><span class="pre">EQslipN.dat</span></code>).  Vertex coordinates are converted from HBI’s
+kilometres to metres.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stl_file</strong> (<em>str</em>) – Path to the HBI STL geometry file (ASCII).  In HBI’s
+<code class="docutils literal notranslate"><span class="pre">3dnt</span></code>/<code class="docutils literal notranslate"><span class="pre">3dht</span></code> problems this is the same STL passed to the
+simulator.</p></li>
+<li><p><strong>xyz_file</strong> (<em>str</em>) – Path to the corresponding <code class="docutils literal notranslate"><span class="pre">xyzN.dat</span></code> file used to derive the
+H-matrix ordering.</p></li>
+<li><p><strong>rake</strong> (<em>float</em><em>, </em><em>optional</em>) – Uniform rake angle (degrees) assigned to every patch.  Defaults
+to 90 (pure reverse).  HBI’s <code class="docutils literal notranslate"><span class="pre">crake</span></code> convention is used: 90 =
+reverse, 0 = left-lateral, -180 = right-lateral, -90 = normal.</p></li>
+<li><p><strong>fault_name</strong> (<em>str</em><em>, </em><em>optional</em>) – Name attached to the resulting segment.</p></li>
+<li><p><strong>min_point_sep</strong> (<em>float</em><em>, </em><em>optional</em>) – Vertex-merge tolerance for <code class="xref py py-func docutils literal notranslate"><span class="pre">read_stl()</span></code>, in <strong>metres</strong>
+(vertices closer than this after the km→m conversion are
+treated as duplicates).  Defaults to 1 m.</p></li>
+<li><p><strong>match_tolerance</strong> (<em>float</em><em>, </em><em>optional</em>) – Maximum allowed distance (metres) between an STL triangle
+centroid and its matching <code class="docutils literal notranslate"><span class="pre">xyzN.dat</span></code> row.  Defaults to 1 m.</p></li>
+<li><p><strong>crs</strong> (<em>int</em><em>, </em><em>optional</em>) – EPSG code attached to the multifault.  Defaults to 2193 (NZTM).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Single-segment multifault with <code class="docutils literal notranslate"><span class="pre">n_elements</span></code> triangular
+patches ordered to match <code class="docutils literal notranslate"><span class="pre">xyzN.dat</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../fault/multifault/index.html#rsqsim_api.fault.multifault.RsqSimMultiFault" title="rsqsim_api.fault.multifault.RsqSimMultiFault">RsqSimMultiFault</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.hbi_utils.hbi_events_to_catalogue_df">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.hbi_utils.</span></span><span class="sig-name descname"><span class="pre">hbi_events_to_catalogue_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">events</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xyz_m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eqslip</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_areas_m2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/hbi_utils.html#hbi_events_to_catalogue_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.hbi_utils.hbi_events_to_catalogue_df" title="Link to this definition"></a></dt>
+<dd><p>Build the standard RSQSim catalogue DataFrame from parsed HBI inputs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>events</strong> (<em>pandas.DataFrame</em>) – Output of <a class="reference internal" href="#rsqsim_api.io.hbi_utils.read_hbi_event_file" title="rsqsim_api.io.hbi_utils.read_hbi_event_file"><code class="xref py py-func docutils literal notranslate"><span class="pre">read_hbi_event_file()</span></code></a>.</p></li>
+<li><p><strong>xyz_m</strong> (<em>numpy.ndarray</em><em> of </em><em>shape</em><em> (</em><em>n_elements</em><em>, </em><em>3</em><em>)</em>) – Element-centre coordinates in metres (H-matrix order).</p></li>
+<li><p><strong>eqslip</strong> (<em>numpy.ndarray</em><em> of </em><em>shape</em><em> (</em><em>n_events</em><em>, </em><em>n_elements</em><em>)</em>) – Per-event slip (m).</p></li>
+<li><p><strong>patch_areas_m2</strong> (<em>numpy.ndarray</em><em> of </em><em>shape</em><em> (</em><em>n_elements</em><em>,</em><em>)</em>) – Area of each patch in m², in the same H-matrix order as
+<code class="docutils literal notranslate"><span class="pre">xyz_m</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Columns <code class="docutils literal notranslate"><span class="pre">t0,</span> <span class="pre">m0,</span> <span class="pre">mw,</span> <span class="pre">x,</span> <span class="pre">y,</span> <span class="pre">z,</span> <span class="pre">area,</span> <span class="pre">dt</span></code> with one row per
+event.  <code class="docutils literal notranslate"><span class="pre">m0</span></code> is derived from <code class="docutils literal notranslate"><span class="pre">mw</span></code> via
+<code class="docutils literal notranslate"><span class="pre">M0</span> <span class="pre">=</span> <span class="pre">10**(1.5*Mw</span> <span class="pre">+</span> <span class="pre">9.05)</span></code>.  <code class="docutils literal notranslate"><span class="pre">area</span></code> is the summed area of
+all patches with non-zero slip; <code class="docutils literal notranslate"><span class="pre">dt</span></code> is set to <code class="docutils literal notranslate"><span class="pre">0</span></code> (HBI’s
+<code class="docutils literal notranslate"><span class="pre">eventN.dat</span></code> does not record rupture duration).  Index is the
+0-based event ordinal (so <code class="docutils literal notranslate"><span class="pre">event_num</span> <span class="pre">-</span> <span class="pre">1</span></code>).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rsqsim_api.io.hbi_utils.flatten_hbi_eqslip">
+<span class="sig-prename descclassname"><span class="pre">rsqsim_api.io.hbi_utils.</span></span><span class="sig-name descname"><span class="pre">flatten_hbi_eqslip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eqslip</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">onset_times</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/rsqsim_api/io/hbi_utils.html#flatten_hbi_eqslip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rsqsim_api.io.hbi_utils.flatten_hbi_eqslip" title="Link to this definition"></a></dt>
+<dd><p>Flatten a dense per-event-per-patch slip matrix into RSQSim list arrays.</p>
+<p>Skips zero-slip entries so the resulting arrays look like RSQSim’s
+native <code class="docutils literal notranslate"><span class="pre">.pList</span></code>/<code class="docutils literal notranslate"><span class="pre">.eList</span></code>/<code class="docutils literal notranslate"><span class="pre">.dList</span></code>/<code class="docutils literal notranslate"><span class="pre">.tList</span></code> representation,
+which only stores patches that actually slipped.</p>
+<p>All patches within a given event are assigned the event’s onset
+time as their <code class="docutils literal notranslate"><span class="pre">patch_time</span></code>; HBI’s <code class="docutils literal notranslate"><span class="pre">EQslipN.dat</span></code> is per-event
+cumulative slip with no within-event rupture timing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>eqslip</strong> (<em>numpy.ndarray</em><em> of </em><em>shape</em><em> (</em><em>n_events</em><em>, </em><em>n_elements</em><em>)</em>) – Per-event slip (m).  Rows are events in the order of
+<code class="docutils literal notranslate"><span class="pre">eventN.dat</span></code> (0-based event index).</p></li>
+<li><p><strong>onset_times</strong> (<em>numpy.ndarray</em><em> of </em><em>shape</em><em> (</em><em>n_events</em><em>,</em><em>)</em>) – Event onset times (s) from <code class="docutils literal notranslate"><span class="pre">eventN.dat</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>event_list</strong> (<em>numpy.ndarray of int</em>) – 0-based event index repeated once per non-zero patch entry.</p></li>
+<li><p><strong>patch_list</strong> (<em>numpy.ndarray of int</em>) – 0-based patch index (column of <code class="docutils literal notranslate"><span class="pre">eqslip</span></code>).</p></li>
+<li><p><strong>patch_slip</strong> (<em>numpy.ndarray of float64</em>) – Slip (m) for each entry.</p></li>
+<li><p><strong>patch_time_list</strong> (<em>numpy.ndarray of float64</em>) – Onset time (s) of the event each entry belongs to.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../compressed_pickle/index.html" class="btn btn-neutral float-left" title="rsqsim_api.io.compressed_pickle" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../mesh_utils/index.html" class="btn btn-neutral float-right" title="rsqsim_api.io.mesh_utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Andy Howell and Camilla Penney.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
