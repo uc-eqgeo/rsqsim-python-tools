@@ -388,6 +388,101 @@ class RsqSimCatalogue:
 
 
     @classmethod
+    def from_hbi_files(cls, event_file: str, xyz_file: str, eqslip_file: str,
+                       multifault: "RsqSimMultiFault" = None, stl_file: str = None,
+                       rake: float = 90.0, eqslip_dtype: str = "<f8",
+                       reproject: list = None):
+        """
+        Construct a catalogue from HBI (sozawa94/hbi) output files.
+
+        Reads ``eventN.dat`` (per-event metadata), ``xyzN.dat``
+        (H-matrix-ordered element centres, km), and ``EQslipN.dat``
+        (per-event slip stream, float64) and flattens them into the same
+        ``(event_list, patch_list, patch_slip, patch_time_list)``
+        representation used by :meth:`from_catalogue_file_and_lists`.
+
+        Patches with zero slip in an event are omitted (matching RSQSim's
+        sparse list format).  Because ``EQslipN.dat`` is per-event
+        cumulative slip with no within-event timing, every patch entry
+        is assigned its event's onset time as its ``patch_time``.
+
+        Either ``multifault`` or ``stl_file`` must be provided so the
+        resulting catalogue is paired with a fault model whose patch
+        indices match the ``xyzN.dat`` ordering.
+
+        Parameters
+        ----------
+        event_file : str
+            Path to ``eventN.dat``.
+        xyz_file : str
+            Path to ``xyzN.dat``.
+        eqslip_file : str
+            Path to ``EQslipN.dat``.
+        multifault : RsqSimMultiFault, optional
+            Pre-built fault model whose patches are already ordered to
+            match ``xyzN.dat``.  Mutually exclusive with ``stl_file``.
+        stl_file : str, optional
+            HBI geometry STL file; if given (and ``multifault`` is not),
+            a single-segment multifault is built via
+            :func:`rsqsim_api.io.hbi_utils.multifault_from_hbi_stl`.
+        rake : float, optional
+            Uniform rake (degrees) for patches when building from
+            ``stl_file``.  Defaults to 90.  Ignored if ``multifault`` is
+            given.
+        eqslip_dtype : str, optional
+            NumPy dtype string for ``EQslipN.dat``.  Defaults to
+            little-endian float64 (``"<f8"``); use ``">f8"`` for
+            big-endian.
+        reproject : list or tuple of int, optional
+            ``[in_epsg, out_epsg]`` pair for coordinate reprojection of
+            the catalogue DataFrame's hypocentre columns.
+
+        Returns
+        -------
+        RsqSimCatalogue
+            Fully populated catalogue.  The matching fault model is
+            attached as ``rcat.fault_model`` for convenience.
+        """
+        from rsqsim_api.io.hbi_utils import (
+            flatten_hbi_eqslip,
+            hbi_events_to_catalogue_df,
+            multifault_from_hbi_stl,
+            read_hbi_eqslip_file,
+            read_hbi_event_file,
+            read_hbi_xyz_file,
+        )
+
+        assert (multifault is None) != (stl_file is None), (
+            "Provide exactly one of `multifault` or `stl_file`."
+        )
+
+        events = read_hbi_event_file(event_file)
+        xyz_m = read_hbi_xyz_file(xyz_file, to_metres=True)
+        eqslip = read_hbi_eqslip_file(eqslip_file, n_events=len(events),
+                                      n_elements=len(xyz_m), dtype=eqslip_dtype)
+
+        if multifault is None:
+            multifault = multifault_from_hbi_stl(stl_file, xyz_file, rake=rake)
+
+        patch_areas = np.array(
+            [multifault.patch_dic[i].area for i in range(len(xyz_m))],
+            dtype=np.float64,
+        )
+
+        catalogue_df = hbi_events_to_catalogue_df(events, xyz_m, eqslip,
+                                                  patch_areas)
+        event_list, patch_list, patch_slip, patch_time_list = flatten_hbi_eqslip(
+            eqslip, events["onset_time"].to_numpy()
+        )
+
+        rcat = cls.from_dataframe_and_arrays(
+            catalogue_df, event_list, patch_list, patch_slip, patch_time_list,
+            reproject=reproject,
+        )
+        rcat.fault_model = multifault
+        return rcat
+
+    @classmethod
     def from_dataframe_and_arrays(cls, dataframe: pd.DataFrame, event_list: np.ndarray, patch_list: np.ndarray,
                                   patch_slip: np.ndarray, patch_time_list: np.ndarray,reproject: list = None):
         """

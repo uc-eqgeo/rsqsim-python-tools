@@ -413,7 +413,7 @@ class RsqSimMultiFault:
                             "slip_rate", "fault_num", "bruce_name"]
 
             # Read in data
-            all_fault_df = pd.read_csv(main_fault_file, sep='\s+', header=None, comment='#', names=column_names,
+            all_fault_df = pd.read_csv(main_fault_file, sep=r'\s+', header=None, comment='#', names=column_names,
                                        usecols=range(len(column_names)))
 
         all_fault_df["fault_name"] = fault_names
