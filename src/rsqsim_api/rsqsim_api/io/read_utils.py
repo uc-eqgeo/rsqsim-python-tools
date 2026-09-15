@@ -84,6 +84,39 @@ def read_binary(file: str, format: str, endian: str = "little"):
     return numbers
 
 
+def read_binary_time_plus_values(file: str, format: str, num_patches: int, endian: str = "little"):
+    """
+    Reads time plus values from binary files that are output of RSQSim.
+    These are files created when writeTau, writeSigma, etc., are set to
+    nonzero values.
+
+    :param file: file to read
+    :param format: either "d" (double), "i" (integer), or "b" (byte)
+    :param num_patches: number of fault patches
+    :param endian: usually "little" unless we end up running on a non-standard system
+    :return:
+    """
+    
+    # Check that parameter supplied for endianness makes sense
+    assert endian in ("little", "big"), "Must specify either 'big' or 'little' endian"
+    endian_sign = "<" if endian == "little" else ">"
+    assert format in ("d", "i", "b")
+    assert os.path.exists(file)
+    time_type = endian_sign + "f8"
+    if format == "d":
+        val_type = endian_sign + "f8"
+    elif format == "i":
+        val_type = endian_sign + "i4"
+    else:
+        val_type = endian_sign + "b"
+    dtype = [('time', time_type), ('val', val_type, (num_patches))]
+    data = np.fromfile(file, dtype)
+    time = data['time']
+    numbers = data['val']
+
+    return (time, numbers)
+
+
 def read_csv_and_array(prefix: str, read_index: bool = True):
     """
     Read a catalogue CSV and its associated NumPy array files from a common prefix.
